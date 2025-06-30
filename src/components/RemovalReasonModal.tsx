@@ -31,7 +31,6 @@ export default function RemovalReasonModal({ open, onClose }: RemovalReasonModal
     lost: 'Book is lost',
     damaged: 'Book is damaged beyond repair',
     missing: 'Book is missing from its location',
-    delicious: 'Book was delicious',
     other: 'Other reason'
   }
 
@@ -97,11 +96,6 @@ export default function RemovalReasonModal({ open, onClose }: RemovalReasonModal
                 value="missing" 
                 control={<Radio />} 
                 label="Book is missing from its location" 
-              />
-              <FormControlLabel 
-                value="delicious" 
-                control={<Radio />} 
-                label="Book was delicious" 
               />
               <FormControlLabel 
                 value="other" 
