@@ -131,7 +131,7 @@ export default function BookActions({
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
         <Box sx={{ display: 'flex', gap: 1 }}>
-          {userRole !== 'admin' && (
+          {!isAdmin(userRole) && (
             <>
               {!isCheckedOut ? (
                 <Button
@@ -260,7 +260,7 @@ export default function BookActions({
         )}
       </Box>
 
-      {userRole !== 'admin' && (
+      {!isAdmin(userRole) && (
         <Box sx={{ ml: 1 }}>
           {!hasPendingRemovalRequest ? (
             <Button

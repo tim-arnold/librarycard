@@ -4,55 +4,155 @@ import { isUserAdmin, isUserSuperAdmin } from '../auth';
 // Extended admin functions extracted from main worker
 
 export async function getAdminAnalytics(userId: string, env: Env, corsHeaders: Record<string, string>) {
-  // Check if user is super admin (global analytics is super admin only)
-  if (!(await isUserSuperAdmin(userId, env))) {
-    return new Response(JSON.stringify({ error: 'Super admin privileges required' }), {
+  // Check if user is at least admin
+  if (!(await isUserAdmin(userId, env))) {
+    return new Response(JSON.stringify({ error: 'Admin privileges required' }), {
       status: 403,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
+  const isSuperAdmin = await isUserSuperAdmin(userId, env);
+
   try {
-    // Get total counts
-    const totalBooks = await env.DB.prepare('SELECT COUNT(*) as count FROM books').first();
-    const totalUsers = await env.DB.prepare('SELECT COUNT(*) as count FROM users').first();
-    const totalLocations = await env.DB.prepare('SELECT COUNT(*) as count FROM locations').first();
-    const pendingRequests = await env.DB.prepare('SELECT COUNT(*) as count FROM book_removal_requests WHERE status = "pending"').first();
+    let totalBooks, totalUsers, totalLocations, pendingRequests;
+    
+    if (isSuperAdmin) {
+      // Super admin gets global statistics
+      totalBooks = await env.DB.prepare('SELECT COUNT(*) as count FROM books').first();
+      totalUsers = await env.DB.prepare('SELECT COUNT(*) as count FROM users').first();
+      totalLocations = await env.DB.prepare('SELECT COUNT(*) as count FROM locations').first();
+      pendingRequests = await env.DB.prepare('SELECT COUNT(*) as count FROM book_removal_requests WHERE status = "pending"').first();
+    } else {
+      // Regular admin gets location-scoped statistics
+      totalBooks = await env.DB.prepare(`
+        SELECT COUNT(DISTINCT b.id) as count 
+        FROM books b
+        LEFT JOIN shelves s ON b.shelf_id = s.id
+        LEFT JOIN locations l ON s.location_id = l.id
+        LEFT JOIN location_members lm ON l.id = lm.location_id
+        WHERE l.owner_id = ? OR lm.user_id = ?
+      `).bind(userId, userId).first();
+      
+      totalUsers = await env.DB.prepare(`
+        SELECT COUNT(DISTINCT u.id) as count 
+        FROM users u
+        LEFT JOIN location_members lm ON u.id = lm.user_id
+        LEFT JOIN locations l ON lm.location_id = l.id OR l.owner_id = u.id
+        WHERE l.owner_id = ? OR lm.location_id IN (
+          SELECT id FROM locations WHERE owner_id = ?
+        )
+      `).bind(userId, userId).first();
+      
+      totalLocations = await env.DB.prepare(`
+        SELECT COUNT(*) as count 
+        FROM locations l
+        LEFT JOIN location_members lm ON l.id = lm.location_id
+        WHERE l.owner_id = ? OR lm.user_id = ?
+      `).bind(userId, userId).first();
+      
+      pendingRequests = await env.DB.prepare(`
+        SELECT COUNT(*) as count 
+        FROM book_removal_requests brr
+        LEFT JOIN books b ON brr.book_id = b.id
+        LEFT JOIN shelves s ON b.shelf_id = s.id
+        LEFT JOIN locations l ON s.location_id = l.id
+        LEFT JOIN location_members lm ON l.id = lm.location_id
+        WHERE brr.status = "pending" AND (l.owner_id = ? OR lm.user_id = ?)
+      `).bind(userId, userId).first();
+    }
 
     // Books per location
-    const booksPerLocation = await env.DB.prepare(`
-      SELECT l.name, COUNT(b.id) as book_count
-      FROM locations l
-      LEFT JOIN shelves s ON l.id = s.location_id
-      LEFT JOIN books b ON s.id = b.shelf_id
-      GROUP BY l.id, l.name
-      ORDER BY book_count DESC
-    `).all();
+    let booksPerLocation;
+    if (isSuperAdmin) {
+      booksPerLocation = await env.DB.prepare(`
+        SELECT l.name, COUNT(b.id) as book_count
+        FROM locations l
+        LEFT JOIN shelves s ON l.id = s.location_id
+        LEFT JOIN books b ON s.id = b.shelf_id
+        GROUP BY l.id, l.name
+        ORDER BY book_count DESC
+      `).all();
+    } else {
+      booksPerLocation = await env.DB.prepare(`
+        SELECT l.name, COUNT(b.id) as book_count
+        FROM locations l
+        LEFT JOIN shelves s ON l.id = s.location_id
+        LEFT JOIN books b ON s.id = b.shelf_id
+        LEFT JOIN location_members lm ON l.id = lm.location_id
+        WHERE l.owner_id = ? OR lm.user_id = ?
+        GROUP BY l.id, l.name
+        ORDER BY book_count DESC
+      `).bind(userId, userId).all();
+    }
 
     // Recent activity (last 30 days)
-    const recentBooks = await env.DB.prepare(`
-      SELECT COUNT(*) as count
-      FROM books 
-      WHERE created_at >= datetime('now', '-30 days')
-    `).first();
+    let recentBooks;
+    if (isSuperAdmin) {
+      recentBooks = await env.DB.prepare(`
+        SELECT COUNT(*) as count
+        FROM books 
+        WHERE created_at >= datetime('now', '-30 days')
+      `).first();
+    } else {
+      recentBooks = await env.DB.prepare(`
+        SELECT COUNT(*) as count
+        FROM books b
+        LEFT JOIN shelves s ON b.shelf_id = s.id
+        LEFT JOIN locations l ON s.location_id = l.id
+        LEFT JOIN location_members lm ON l.id = lm.location_id
+        WHERE b.created_at >= datetime('now', '-30 days') 
+        AND (l.owner_id = ? OR lm.user_id = ?)
+      `).bind(userId, userId).first();
+    }
 
     // Most active users (by books added)
-    const activeUsers = await env.DB.prepare(`
-      SELECT u.first_name, u.last_name, u.email, COUNT(b.id) as books_added
-      FROM users u
-      LEFT JOIN books b ON u.id = b.added_by
-      GROUP BY u.id
-      HAVING books_added > 0
-      ORDER BY books_added DESC
-      LIMIT 10
-    `).all();
+    let activeUsers;
+    if (isSuperAdmin) {
+      activeUsers = await env.DB.prepare(`
+        SELECT u.first_name, u.last_name, u.email, COUNT(b.id) as books_added
+        FROM users u
+        LEFT JOIN books b ON u.id = b.added_by
+        GROUP BY u.id
+        HAVING books_added > 0
+        ORDER BY books_added DESC
+        LIMIT 10
+      `).all();
+    } else {
+      activeUsers = await env.DB.prepare(`
+        SELECT u.first_name, u.last_name, u.email, COUNT(b.id) as books_added
+        FROM users u
+        LEFT JOIN books b ON u.id = b.added_by
+        LEFT JOIN shelves s ON b.shelf_id = s.id
+        LEFT JOIN locations l ON s.location_id = l.id
+        LEFT JOIN location_members lm ON l.id = lm.location_id
+        WHERE l.owner_id = ? OR lm.user_id = ?
+        GROUP BY u.id
+        HAVING books_added > 0
+        ORDER BY books_added DESC
+        LIMIT 10
+      `).bind(userId, userId).all();
+    }
 
     // Genre distribution
-    const genreStats = await env.DB.prepare(`
-      SELECT b.categories, b.enhanced_genres
-      FROM books b
-      WHERE b.categories IS NOT NULL OR b.enhanced_genres IS NOT NULL
-    `).all();
+    let genreStats;
+    if (isSuperAdmin) {
+      genreStats = await env.DB.prepare(`
+        SELECT b.categories, b.enhanced_genres
+        FROM books b
+        WHERE b.categories IS NOT NULL OR b.enhanced_genres IS NOT NULL
+      `).all();
+    } else {
+      genreStats = await env.DB.prepare(`
+        SELECT b.categories, b.enhanced_genres
+        FROM books b
+        LEFT JOIN shelves s ON b.shelf_id = s.id
+        LEFT JOIN locations l ON s.location_id = l.id
+        LEFT JOIN location_members lm ON l.id = lm.location_id
+        WHERE (b.categories IS NOT NULL OR b.enhanced_genres IS NOT NULL)
+        AND (l.owner_id = ? OR lm.user_id = ?)
+      `).bind(userId, userId).all();
+    }
 
     // Process genre statistics
     const genreCounts: Record<string, number> = {};
@@ -72,18 +172,44 @@ export async function getAdminAnalytics(userId: string, env: Env, corsHeaders: R
       .map(([genre, count]) => ({ genre, count }));
 
     // Books without shelves
-    const unorganizedBooks = await env.DB.prepare(`
-      SELECT COUNT(*) as count
-      FROM books 
-      WHERE shelf_id IS NULL
-    `).first();
+    let unorganizedBooks;
+    if (isSuperAdmin) {
+      unorganizedBooks = await env.DB.prepare(`
+        SELECT COUNT(*) as count
+        FROM books 
+        WHERE shelf_id IS NULL
+      `).first();
+    } else {
+      unorganizedBooks = await env.DB.prepare(`
+        SELECT COUNT(*) as count
+        FROM books b
+        LEFT JOIN shelves s ON b.shelf_id = s.id
+        LEFT JOIN locations l ON s.location_id = l.id
+        LEFT JOIN location_members lm ON l.id = lm.location_id
+        WHERE b.shelf_id IS NULL 
+        AND (l.owner_id = ? OR lm.user_id = ?)
+      `).bind(userId, userId).first();
+    }
 
     // Recent checkout activity
-    const recentCheckouts = await env.DB.prepare(`
-      SELECT COUNT(*) as count
-      FROM books 
-      WHERE checked_out_date >= datetime('now', '-30 days')
-    `).first();
+    let recentCheckouts;
+    if (isSuperAdmin) {
+      recentCheckouts = await env.DB.prepare(`
+        SELECT COUNT(*) as count
+        FROM books 
+        WHERE checked_out_date >= datetime('now', '-30 days')
+      `).first();
+    } else {
+      recentCheckouts = await env.DB.prepare(`
+        SELECT COUNT(*) as count
+        FROM books b
+        LEFT JOIN shelves s ON b.shelf_id = s.id
+        LEFT JOIN locations l ON s.location_id = l.id
+        LEFT JOIN location_members lm ON l.id = lm.location_id
+        WHERE b.checked_out_date >= datetime('now', '-30 days')
+        AND (l.owner_id = ? OR lm.user_id = ?)
+      `).bind(userId, userId).first();
+    }
 
     return new Response(JSON.stringify({
       overview: {
@@ -238,6 +364,234 @@ export async function getAvailableAdmins(userId: string, env: Env, corsHeaders: 
   } catch (error) {
     console.error('Error fetching available admins:', error);
     return new Response(JSON.stringify({ error: 'Failed to fetch admin users' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+export async function getUserLocationAssignments(targetUserId: string, adminUserId: string, env: Env, corsHeaders: Record<string, string>) {
+  // Check if user is super admin (location assignment is super admin only)
+  if (!(await isUserSuperAdmin(adminUserId, env))) {
+    return new Response(JSON.stringify({ error: 'Super admin privileges required' }), {
+      status: 403,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  try {
+    // Check if target user exists and is an admin
+    const targetUser = await env.DB.prepare(`
+      SELECT id, email, user_role FROM users WHERE id = ?
+    `).bind(targetUserId).first();
+
+    if (!targetUser) {
+      return new Response(JSON.stringify({ error: 'User not found' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if ((targetUser as any).user_role !== 'admin') {
+      return new Response(JSON.stringify({ error: 'Location assignment is only available for admin users' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Get locations assigned to this admin
+    const assignedLocations = await env.DB.prepare(`
+      SELECT l.id, l.name, l.description
+      FROM locations l
+      LEFT JOIN location_members lm ON l.id = lm.location_id
+      WHERE l.owner_id = ? OR lm.user_id = ?
+      ORDER BY l.name
+    `).bind(targetUserId, targetUserId).all();
+
+    // Get all locations that could be assigned (not currently assigned)
+    const availableLocations = await env.DB.prepare(`
+      SELECT l.id, l.name, l.description
+      FROM locations l
+      WHERE l.id NOT IN (
+        SELECT DISTINCT l2.id
+        FROM locations l2
+        LEFT JOIN location_members lm2 ON l2.id = lm2.location_id
+        WHERE l2.owner_id = ? OR lm2.user_id = ?
+      )
+      ORDER BY l.name
+    `).bind(targetUserId, targetUserId).all();
+
+    return new Response(JSON.stringify({
+      assigned_locations: assignedLocations.results,
+      available_locations: availableLocations.results
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (error) {
+    console.error('Error fetching user location assignments:', error);
+    return new Response(JSON.stringify({ error: 'Failed to fetch location assignments' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+export async function assignLocationToUser(targetUserId: string, locationId: string, adminUserId: string, env: Env, corsHeaders: Record<string, string>) {
+  // Check if user is super admin (location assignment is super admin only)
+  if (!(await isUserSuperAdmin(adminUserId, env))) {
+    return new Response(JSON.stringify({ error: 'Super admin privileges required' }), {
+      status: 403,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  try {
+    // Check if target user exists and is an admin
+    const targetUser = await env.DB.prepare(`
+      SELECT id, email, user_role FROM users WHERE id = ?
+    `).bind(targetUserId).first();
+
+    if (!targetUser) {
+      return new Response(JSON.stringify({ error: 'User not found' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if ((targetUser as any).user_role !== 'admin') {
+      return new Response(JSON.stringify({ error: 'Location assignment is only available for admin users' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Check if location exists
+    const location = await env.DB.prepare(`
+      SELECT id, name FROM locations WHERE id = ?
+    `).bind(locationId).first();
+
+    if (!location) {
+      return new Response(JSON.stringify({ error: 'Location not found' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Check if user already has access to this location
+    const existingAccess = await env.DB.prepare(`
+      SELECT 1 FROM locations l
+      LEFT JOIN location_members lm ON l.id = lm.location_id
+      WHERE l.id = ? AND (l.owner_id = ? OR lm.user_id = ?)
+    `).bind(locationId, targetUserId, targetUserId).first();
+
+    if (existingAccess) {
+      return new Response(JSON.stringify({ error: 'User already has access to this location' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Add user as a member of the location
+    await env.DB.prepare(`
+      INSERT INTO location_members (location_id, user_id, joined_at)
+      VALUES (?, ?, datetime('now'))
+    `).bind(locationId, targetUserId).run();
+
+    return new Response(JSON.stringify({ 
+      message: `User successfully assigned to location "${(location as any).name}"`,
+      locationId,
+      userId: targetUserId
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (error) {
+    console.error('Error assigning location to user:', error);
+    return new Response(JSON.stringify({ error: 'Failed to assign location to user' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+export async function unassignLocationFromUser(targetUserId: string, locationId: string, adminUserId: string, env: Env, corsHeaders: Record<string, string>) {
+  // Check if user is super admin (location assignment is super admin only)
+  if (!(await isUserSuperAdmin(adminUserId, env))) {
+    return new Response(JSON.stringify({ error: 'Super admin privileges required' }), {
+      status: 403,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  try {
+    // Check if target user exists and is an admin
+    const targetUser = await env.DB.prepare(`
+      SELECT id, email, user_role FROM users WHERE id = ?
+    `).bind(targetUserId).first();
+
+    if (!targetUser) {
+      return new Response(JSON.stringify({ error: 'User not found' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if ((targetUser as any).user_role !== 'admin') {
+      return new Response(JSON.stringify({ error: 'Location assignment is only available for admin users' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Check if location exists
+    const location = await env.DB.prepare(`
+      SELECT id, name FROM locations WHERE id = ?
+    `).bind(locationId).first();
+
+    if (!location) {
+      return new Response(JSON.stringify({ error: 'Location not found' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Check if user owns this location (cannot unassign ownership)
+    const isOwner = await env.DB.prepare(`
+      SELECT 1 FROM locations WHERE id = ? AND owner_id = ?
+    `).bind(locationId, targetUserId).first();
+
+    if (isOwner) {
+      return new Response(JSON.stringify({ error: 'Cannot unassign location owner. Transfer ownership first.' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Remove user as a member of the location
+    const result = await env.DB.prepare(`
+      DELETE FROM location_members 
+      WHERE location_id = ? AND user_id = ?
+    `).bind(locationId, targetUserId).run();
+
+    if (result.changes === 0) {
+      return new Response(JSON.stringify({ error: 'User was not assigned to this location' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    return new Response(JSON.stringify({ 
+      message: `User successfully unassigned from location "${(location as any).name}"`,
+      locationId,
+      userId: targetUserId
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (error) {
+    console.error('Error unassigning location from user:', error);
+    return new Response(JSON.stringify({ error: 'Failed to unassign location from user' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

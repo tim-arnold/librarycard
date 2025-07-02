@@ -65,7 +65,10 @@ import {
   getAdminAnalytics,
   getAdminUsers,
   updateUserRole,
-  getAvailableAdmins
+  getAvailableAdmins,
+  getUserLocationAssignments,
+  assignLocationToUser,
+  unassignLocationFromUser
 } from './admin-extended';
 import {
   getUserProfile,
@@ -359,6 +362,24 @@ export default {
       // Admin-only endpoint to get available admin users for ownership transfer
       if (path === '/api/admin/available-admins' && request.method === 'GET') {
         return await getAvailableAdmins(userId, env, corsHeaders);
+      }
+
+      // Super admin-only endpoints for location assignment
+      if (path.match(/^\/api\/admin\/users\/[^\/]+\/locations$/) && request.method === 'GET') {
+        const targetUserId = path.split('/')[4];
+        return await getUserLocationAssignments(targetUserId, userId, env, corsHeaders);
+      }
+
+      if (path.match(/^\/api\/admin\/users\/[^\/]+\/locations\/[^\/]+$/) && request.method === 'POST') {
+        const targetUserId = path.split('/')[4];
+        const locationId = path.split('/')[6];
+        return await assignLocationToUser(targetUserId, locationId, userId, env, corsHeaders);
+      }
+
+      if (path.match(/^\/api\/admin\/users\/[^\/]+\/locations\/[^\/]+$/) && request.method === 'DELETE') {
+        const targetUserId = path.split('/')[4];
+        const locationId = path.split('/')[6];
+        return await unassignLocationFromUser(targetUserId, locationId, userId, env, corsHeaders);
       }
 
       return new Response('Not Found', { 

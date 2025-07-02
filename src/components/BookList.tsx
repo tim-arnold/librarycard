@@ -147,7 +147,7 @@ export default function BookText({
               )}
               
               {/* Genre - only show for regular users */}
-              {userRole !== 'admin' && (book.enhancedGenres?.[0] || book.categories?.[0]) && (
+              {!isAdmin(userRole) && (book.enhancedGenres?.[0] || book.categories?.[0]) && (
                 <Chip 
                   label={book.enhancedGenres?.[0] || book.categories?.[0]} 
                   size="small" 

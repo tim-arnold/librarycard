@@ -198,7 +198,7 @@ export default function BookList({
               )}
 
               {/* Rating and Genre area - mini star chips alongside genre */}
-              {(userRole !== 'admin' && (book.enhancedGenres || book.categories) && (book.enhancedGenres?.[0] || book.categories?.[0])) || (book.userRating || book.averageRating) || onRateBook ? (
+              {(!isAdmin(userRole) && (book.enhancedGenres || book.categories) && (book.enhancedGenres?.[0] || book.categories?.[0])) || (book.userRating || book.averageRating) || onRateBook ? (
                 <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                   {/* Star rating - mini variant for compact space */}
                   <StarRating
@@ -231,7 +231,7 @@ export default function BookList({
                   )}
                   
                   {/* Genre chip - only show for regular users */}
-                  {userRole !== 'admin' && (book.enhancedGenres || book.categories) && (book.enhancedGenres?.[0] || book.categories?.[0]) && (
+                  {!isAdmin(userRole) && (book.enhancedGenres || book.categories) && (book.enhancedGenres?.[0] || book.categories?.[0]) && (
                     <Chip 
                       label={book.enhancedGenres?.[0] || book.categories?.[0]} 
                       size="small" 
