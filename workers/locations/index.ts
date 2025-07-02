@@ -296,13 +296,7 @@ export async function updateShelf(request: Request, userId: string, env: Env, co
 
   await stmt.bind(shelf.name, id).run();
 
-  // Get the shelf's location_id for the response
-  const shelfStmt = env.DB.prepare(`
-    SELECT location_id FROM shelves WHERE id = ?
-  `);
-  const shelfResult = await shelfStmt.bind(id).first();
-
-  // Return the updated shelf
+  // Return the updated shelf (we already have location_id from earlier query)
   const updatedShelf = {
     id,
     name: shelf.name,
