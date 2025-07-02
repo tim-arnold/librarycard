@@ -1,4 +1,5 @@
 import { Env, Book } from '../types';
+import { isUserAdmin } from '../auth';
 
 // Core Book Management Functions
 export async function getUserBooks(userId: string, env: Env, corsHeaders: Record<string, string>) {
@@ -277,14 +278,6 @@ export async function checkoutBook(request: Request, bookId: number, userId: str
 }
 
 export async function checkinBook(bookId: number, userId: string, env: Env, corsHeaders: Record<string, string>) {
-  // Helper function to check if user is admin
-  async function isUserAdmin(userId: string, env: Env): Promise<boolean> {
-    const user = await env.DB.prepare(`
-      SELECT user_role FROM users WHERE id = ?
-    `).bind(userId).first();
-    
-    return (user as any)?.user_role === 'admin';
-  }
 
   try {
     // Check if user has access to this book and that it's checked out by them
@@ -361,14 +354,6 @@ export async function checkinBook(bookId: number, userId: string, env: Env, cors
 }
 
 export async function getCheckoutHistory(userId: string, env: Env, corsHeaders: Record<string, string>) {
-  // Helper function to check if user is admin
-  async function isUserAdmin(userId: string, env: Env): Promise<boolean> {
-    const user = await env.DB.prepare(`
-      SELECT user_role FROM users WHERE id = ?
-    `).bind(userId).first();
-    
-    return (user as any)?.user_role === 'admin';
-  }
 
   try {
     // Check if user is admin to determine what data they can see
@@ -523,14 +508,6 @@ export async function createBookRemovalRequest(request: Request, userId: string,
 }
 
 export async function getBookRemovalRequests(userId: string, env: Env, corsHeaders: Record<string, string>) {
-  // Helper function to check if user is admin
-  async function isUserAdmin(userId: string, env: Env): Promise<boolean> {
-    const user = await env.DB.prepare(`
-      SELECT user_role FROM users WHERE id = ?
-    `).bind(userId).first();
-    
-    return (user as any)?.user_role === 'admin';
-  }
 
   try {
     // Check if user is admin
@@ -600,14 +577,6 @@ export async function getBookRemovalRequests(userId: string, env: Env, corsHeade
 }
 
 export async function approveBookRemovalRequest(requestId: number, userId: string, env: Env, corsHeaders: Record<string, string>) {
-  // Helper function to check if user is admin
-  async function isUserAdmin(userId: string, env: Env): Promise<boolean> {
-    const user = await env.DB.prepare(`
-      SELECT user_role FROM users WHERE id = ?
-    `).bind(userId).first();
-    
-    return (user as any)?.user_role === 'admin';
-  }
 
   // Check if user is admin (only admins can approve requests)
   if (!(await isUserAdmin(userId, env))) {
@@ -666,14 +635,6 @@ export async function approveBookRemovalRequest(requestId: number, userId: strin
 }
 
 export async function denyBookRemovalRequest(request: Request, requestId: number, userId: string, env: Env, corsHeaders: Record<string, string>) {
-  // Helper function to check if user is admin
-  async function isUserAdmin(userId: string, env: Env): Promise<boolean> {
-    const user = await env.DB.prepare(`
-      SELECT user_role FROM users WHERE id = ?
-    `).bind(userId).first();
-    
-    return (user as any)?.user_role === 'admin';
-  }
 
   // Check if user is admin (only admins can deny requests)
   if (!(await isUserAdmin(userId, env))) {

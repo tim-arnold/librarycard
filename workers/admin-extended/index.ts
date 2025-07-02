@@ -1,12 +1,12 @@
 import { Env } from '../types';
-import { isUserAdmin } from '../auth';
+import { isUserAdmin, isUserSuperAdmin } from '../auth';
 
 // Extended admin functions extracted from main worker
 
 export async function getAdminAnalytics(userId: string, env: Env, corsHeaders: Record<string, string>) {
-  // Check if user is admin
-  if (!(await isUserAdmin(userId, env))) {
-    return new Response(JSON.stringify({ error: 'Admin privileges required' }), {
+  // Check if user is super admin (global analytics is super admin only)
+  if (!(await isUserSuperAdmin(userId, env))) {
+    return new Response(JSON.stringify({ error: 'Super admin privileges required' }), {
       status: 403,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -113,9 +113,9 @@ export async function getAdminAnalytics(userId: string, env: Env, corsHeaders: R
 }
 
 export async function getAdminUsers(userId: string, env: Env, corsHeaders: Record<string, string>) {
-  // Check if user is admin
-  if (!(await isUserAdmin(userId, env))) {
-    return new Response(JSON.stringify({ error: 'Admin privileges required' }), {
+  // Check if user is super admin (global user management is super admin only)
+  if (!(await isUserSuperAdmin(userId, env))) {
+    return new Response(JSON.stringify({ error: 'Super admin privileges required' }), {
       status: 403,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -151,19 +151,19 @@ export async function getAdminUsers(userId: string, env: Env, corsHeaders: Recor
 }
 
 export async function updateUserRole(request: Request, targetUserId: string, adminUserId: string, env: Env, corsHeaders: Record<string, string>) {
-  // Check if user is admin
-  if (!(await isUserAdmin(adminUserId, env))) {
-    return new Response(JSON.stringify({ error: 'Admin privileges required' }), {
+  // Check if user is super admin (role management is super admin only)
+  if (!(await isUserSuperAdmin(adminUserId, env))) {
+    return new Response(JSON.stringify({ error: 'Super admin privileges required' }), {
       status: 403,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
   try {
-    const { role }: { role: 'admin' | 'user' } = await request.json();
+    const { role }: { role: 'super_admin' | 'admin' | 'user' } = await request.json();
 
-    if (!['admin', 'user'].includes(role)) {
-      return new Response(JSON.stringify({ error: 'Invalid role. Must be "admin" or "user"' }), {
+    if (!['super_admin', 'admin', 'user'].includes(role)) {
+      return new Response(JSON.stringify({ error: 'Invalid role. Must be "super_admin", "admin" or "user"' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -227,7 +227,7 @@ export async function getAvailableAdmins(userId: string, env: Env, corsHeaders: 
     const admins = await env.DB.prepare(`
       SELECT id, email, first_name, last_name
       FROM users 
-      WHERE user_role = 'admin'
+      WHERE user_role IN ('admin', 'super_admin')
       ORDER BY first_name, last_name, email
     `).all();
 
