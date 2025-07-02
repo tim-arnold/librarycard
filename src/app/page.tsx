@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getSessionItem, setSessionItem } from '@/lib/storage'
+import { isAdmin } from '@/lib/permissions'
 import {
   Container,
   Paper,
@@ -199,7 +200,7 @@ export default function Home() {
           
           <Typography variant="body2" sx={{ mr: 2 }}>
             Hello, {userFirstName || session.user?.name?.split(' ')[0] || 'User'}!
-            {userRole === 'admin' && <Build sx={{ ml: 0.5, fontSize: '1rem' }} />}
+            {isAdmin(userRole) && <Build sx={{ ml: 0.5, fontSize: '1rem' }} />}
           </Typography>
           
           <IconButton
@@ -264,7 +265,7 @@ export default function Home() {
           >
             <Tab 
               value="library" 
-              label={userRole === 'admin' ? "Libraries" : (userLocation ? `${userLocation} Library` : "My Library")}
+              label={isAdmin(userRole) ? "Libraries" : (userLocation ? `${userLocation} Library` : "My Library")}
               icon={<LibraryBooks />}
               iconPosition="start"
             />
@@ -274,7 +275,7 @@ export default function Home() {
               icon={<QrCodeScanner />}
               iconPosition="start"
             />
-            {userRole === 'admin' && (
+            {isAdmin(userRole) && (
               <Tab 
                 value="admin" 
                 label="Admin Dashboard"

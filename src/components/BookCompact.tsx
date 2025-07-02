@@ -11,6 +11,7 @@ import {
 import { Info, Star } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
 import BookActions from './BookActions'
+import { isAdmin } from '@/lib/permissions'
 import StarRating from './StarRating'
 
 interface BookListProps {
@@ -264,7 +265,7 @@ export default function BookList({
               ) : null}
 
               {/* More Details button for when no genre or rating is shown */}
-              {(userRole === 'admin' || (!book.enhancedGenres?.[0] && !book.categories?.[0])) && !(book.userRating || book.averageRating) && (book.extendedDescription || book.subjects || book.pageCount || book.googleAverageRating || book.publisherInfo || book.openLibraryKey) && (
+              {(isAdmin(userRole) || (!book.enhancedGenres?.[0] && !book.categories?.[0])) && !(book.userRating || book.averageRating) && (book.extendedDescription || book.subjects || book.pageCount || book.googleAverageRating || book.publisherInfo || book.openLibraryKey) && (
                 <Box sx={{ mb: 1.5 }}>
                   <Button
                     size="small"

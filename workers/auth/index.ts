@@ -33,5 +33,32 @@ export async function getUserRole(userId: string, env: Env): Promise<string> {
 
 export async function isUserAdmin(userId: string, env: Env): Promise<boolean> {
   const role = await getUserRole(userId, env);
-  return role === 'admin';
+  return role === 'admin' || role === 'super_admin';
+}
+
+export async function isUserSuperAdmin(userId: string, env: Env): Promise<boolean> {
+  const role = await getUserRole(userId, env);
+  return role === 'super_admin';
+}
+
+export async function canManageLocation(userId: string, locationId: number, env: Env): Promise<boolean> {
+  const role = await getUserRole(userId, env);
+  
+  // Super admins can manage all locations
+  if (role === 'super_admin') {
+    return true;
+  }
+  
+  // Regular admins can manage locations they own or are members of
+  if (role === 'admin') {
+    const locationAccess = await env.DB.prepare(`
+      SELECT 1 FROM locations WHERE id = ? AND owner_id = ?
+      UNION
+      SELECT 1 FROM location_members WHERE location_id = ? AND user_id = ?
+    `).bind(locationId, userId, locationId, userId).first();
+    
+    return !!locationAccess;
+  }
+  
+  return false;
 }

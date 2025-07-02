@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { isAdmin } from '@/lib/permissions'
 import { useSession } from 'next-auth/react'
 import {
   Container,
@@ -127,7 +128,7 @@ export default function LocationManager() {
       if (response.ok) {
         const data = await response.json()
         setLocations(data)
-        if (data.length === 0 && userRole === 'admin') {
+        if (data.length === 0 && isAdmin(userRole)) {
           setShowCreateForm(true)
         } else {
           setSelectedLocation(data[0])
@@ -579,12 +580,12 @@ export default function LocationManager() {
       {locations.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '2rem' }}>
           <p style={{ marginBottom: '1rem', color: '#666' }}>
-            {userRole === 'admin' 
+            {isAdmin(userRole) 
               ? "You don't have any locations yet. Create your first location to start organizing your books!"
               : "No locations are available. Contact an administrator to create locations."
             }
           </p>
-          {userRole === 'admin' && (
+          {isAdmin(userRole) && (
             <Button 
               variant="contained"
               startIcon={<Add />}
@@ -599,7 +600,7 @@ export default function LocationManager() {
           <div style={{ marginBottom: '2rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <h3>Your Locations</h3>
-              {userRole === 'admin' && (
+              {isAdmin(userRole) && (
                 <Button 
                   variant="contained"
                   startIcon={<Add />}
@@ -628,7 +629,7 @@ export default function LocationManager() {
                       <p style={{ fontSize: '0.9em', color: '#666', margin: 0 }}>{location.description}</p>
                     )}
                   </div>
-                  {userRole === 'admin' && (
+                  {isAdmin(userRole) && (
                     <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
                       <Button
                         variant="outlined"
@@ -665,7 +666,7 @@ export default function LocationManager() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <h3>Shelves in {selectedLocation.name}</h3>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  {userRole === 'admin' && (
+                  {isAdmin(userRole) && (
                     <>
                       <Button 
                         variant="contained"
@@ -704,7 +705,7 @@ export default function LocationManager() {
                     <div style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
                       <strong>{shelf.name}</strong>
                     </div>
-                    {userRole === 'admin' && (
+                    {isAdmin(userRole) && (
                       <Box sx={{ display: 'flex', gap: 0.25, justifyContent: 'center' }}>
                         <IconButton
                           size="small"
@@ -736,7 +737,7 @@ export default function LocationManager() {
               </div>
 
               {/* Invitations Section */}
-              {showInvitations && userRole === 'admin' && (
+              {showInvitations && isAdmin(userRole) && (
                 <div style={{ marginTop: '2rem', border: '1px solid #e0e0e0', borderRadius: '0.5rem', padding: '1rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                     <h4 style={{ margin: 0 }}>📧 Location Invitations</h4>

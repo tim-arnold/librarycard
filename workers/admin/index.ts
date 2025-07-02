@@ -1,24 +1,17 @@
 import { Env } from '../types';
 import { sendSignupApprovalEmail } from '../email';
+import { isUserAdmin, isUserSuperAdmin } from '../auth';
 
 // Utility functions
 function generateUUID(): string {
   return crypto.randomUUID();
 }
 
-async function isUserAdmin(userId: string, env: Env): Promise<boolean> {
-  const user = await env.DB.prepare(`
-    SELECT user_role FROM users WHERE id = ?
-  `).bind(userId).first();
-  
-  return (user as any)?.user_role === 'admin';
-}
-
 // Admin-only signup approval functions
 export async function getSignupRequests(userId: string, env: Env, corsHeaders: Record<string, string>) {
-  // Check if user is admin
-  if (!(await isUserAdmin(userId, env))) {
-    return new Response(JSON.stringify({ error: 'Admin privileges required' }), {
+  // Check if user is super admin (signup management is super admin only)
+  if (!(await isUserSuperAdmin(userId, env))) {
+    return new Response(JSON.stringify({ error: 'Super admin privileges required' }), {
       status: 403,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -47,9 +40,9 @@ export async function getSignupRequests(userId: string, env: Env, corsHeaders: R
 }
 
 export async function approveSignupRequest(request: Request, requestId: number, userId: string, env: Env, corsHeaders: Record<string, string>) {
-  // Check if user is admin
-  if (!(await isUserAdmin(userId, env))) {
-    return new Response(JSON.stringify({ error: 'Admin privileges required' }), {
+  // Check if user is super admin (signup management is super admin only)
+  if (!(await isUserSuperAdmin(userId, env))) {
+    return new Response(JSON.stringify({ error: 'Super admin privileges required' }), {
       status: 403,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -131,9 +124,9 @@ export async function approveSignupRequest(request: Request, requestId: number, 
 }
 
 export async function denySignupRequest(request: Request, requestId: number, userId: string, env: Env, corsHeaders: Record<string, string>) {
-  // Check if user is admin
-  if (!(await isUserAdmin(userId, env))) {
-    return new Response(JSON.stringify({ error: 'Admin privileges required' }), {
+  // Check if user is super admin (signup management is super admin only)
+  if (!(await isUserSuperAdmin(userId, env))) {
+    return new Response(JSON.stringify({ error: 'Super admin privileges required' }), {
       status: 403,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -191,9 +184,9 @@ export async function denySignupRequest(request: Request, requestId: number, use
 
 // Admin-only user cleanup function
 export async function cleanupUser(request: Request, userId: string, env: Env, corsHeaders: Record<string, string>) {
-  // Check if user is admin
-  if (!(await isUserAdmin(userId, env))) {
-    return new Response(JSON.stringify({ error: 'Admin privileges required' }), {
+  // Check if user is super admin (user deletion is super admin only)
+  if (!(await isUserSuperAdmin(userId, env))) {
+    return new Response(JSON.stringify({ error: 'Super admin privileges required' }), {
       status: 403,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -265,9 +258,9 @@ export async function cleanupUser(request: Request, userId: string, env: Env, co
           SELECT user_role FROM users WHERE id = ?
         `).bind(newOwnerId).first();
 
-        if (!newOwner || (newOwner as any).user_role !== 'admin') {
+        if (!newOwner || ((newOwner as any).user_role !== 'admin' && (newOwner as any).user_role !== 'super_admin')) {
           return new Response(JSON.stringify({ 
-            error: `New owner must be an admin user` 
+            error: `New owner must be an admin or super admin user` 
           }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -344,9 +337,9 @@ export async function cleanupUser(request: Request, userId: string, env: Env, co
 
 // Admin-only debug function to list all users
 export async function debugListUsers(userId: string, env: Env, corsHeaders: Record<string, string>) {
-  // Check if user is admin
-  if (!(await isUserAdmin(userId, env))) {
-    return new Response(JSON.stringify({ error: 'Admin privileges required' }), {
+  // Check if user is super admin (global user listing is super admin only)
+  if (!(await isUserSuperAdmin(userId, env))) {
+    return new Response(JSON.stringify({ error: 'Super admin privileges required' }), {
       status: 403,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
