@@ -11,9 +11,9 @@ import {
 } from '@mui/material'
 import { Info, Star } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
+import { isAdmin } from '@/lib/permissions'
 import BookActions from './BookActions'
 import StarRating from './StarRating'
-// Note: BookGrid doesn't currently use admin checks
 
 interface BookGridProps {
   books: EnhancedBook[]
@@ -165,7 +165,7 @@ export default function BookGrid({
                   )}
                   
                   {/* Genre chip - only show for regular users and when there's space */}
-                  {userRole !== 'admin' && (book.enhancedGenres || book.categories) && (book.enhancedGenres?.[0] || book.categories?.[0]) && (
+                  {!isAdmin(userRole) && (book.enhancedGenres || book.categories) && (book.enhancedGenres?.[0] || book.categories?.[0]) && (
                     <Chip 
                       label={book.enhancedGenres?.[0] || book.categories?.[0]} 
                       size="small" 

@@ -5,13 +5,14 @@ A comprehensive overview of LibraryCard's capabilities and functionality.
 ## Recent Highlights
 
 ### ✅ Recently Completed
+- **🔐 Super Admin Role System**: Hierarchical permission structure separating global system administration from location-scoped management
 - **🎯 Enhanced Duplicate Detection**: Sophisticated three-tier algorithm with publication date comparison and "Add Anyway" override
 - **🎉 OCR Migration to Cloudflare Workers**: Bookshelf Photo Scanning now 100% functional with 80-90% accuracy in production
 - **Global Footer**: "Contact the Librarian" feature with professional email workflow
 - **Component Architecture Refactoring**: Improved maintainability and token efficiency (32-52% line reduction)
 - **Organized Documentation**: Focused subdirectories (guides/, development/, deployment/, reference/)
 - **Material UI Design System**: Dark mode support and WCAG-compliant accessibility
-- **Role-Based Permission System**: Admin/user roles with comprehensive access controls
+- **Role-Based Permission System**: Three-tier role hierarchy with comprehensive access controls
 - **Book Checkout System**: History tracking and admin override capabilities
 - **Enhanced ISBN Scanner**: Google Books API integration with improved metadata
 - **Curated Genre Classification**: 26 meaningful categories for better organization
@@ -42,10 +43,11 @@ A comprehensive overview of LibraryCard's capabilities and functionality.
 - **Development Mode**: Mock authentication for local testing
 
 #### Role-Based Access Control
-- **Admin Role**: Full access to location management, user oversight, and system configuration
-- **User Role**: Book management within assigned locations, personal library features
-- **Permission Enforcement**: Server-side validation of user capabilities
-- **Access Indicators**: Clear UI feedback showing user permissions and capabilities
+- **Super Admin Role**: Global system administration including user role management, system analytics, and location creation/deletion
+- **Admin Role**: Location-scoped management with access to assigned locations, book oversight, and user invitations
+- **User Role**: Book management within assigned locations, personal library features, and basic interactions
+- **Permission Enforcement**: Hierarchical server-side validation with comprehensive access control
+- **Access Indicators**: Role-appropriate UI rendering hiding unavailable features based on permission level
 
 #### User Management Features
 - **Invitation System**: Admins can invite new users to shared libraries

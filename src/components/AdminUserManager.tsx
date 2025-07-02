@@ -44,11 +44,12 @@ import {
   CheckCircle,
   Cancel,
   Refresh,
+  LocationOn,
 } from '@mui/icons-material'
 import ConfirmationModal from './ConfirmationModal'
 import AlertModal from './AlertModal'
 import { useModal } from '@/hooks/useModal'
-// Note: Admin user management permissions will be updated in future iteration
+import { isSuperAdmin } from '@/lib/permissions'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
 
@@ -59,7 +60,7 @@ interface AdminUser {
   last_name: string
   auth_provider: string
   email_verified: boolean
-  user_role: 'admin' | 'user'
+  user_role: 'super_admin' | 'admin' | 'user'
   created_at: string
   books_added: number
   locations_joined: number
@@ -115,6 +116,16 @@ export default function AdminUserManager() {
   const [availableLocations, setAvailableLocations] = useState<Location[]>([])
   const [invitationsLoading, setInvitationsLoading] = useState(false)
   
+  // Super admin management state
+  const [currentUserRole, setCurrentUserRole] = useState<string>('')
+  const [rolePromotionDialogOpen, setRolePromotionDialogOpen] = useState(false)
+  const [locationAssignmentDialogOpen, setLocationAssignmentDialogOpen] = useState(false)
+  const [userForRoleChange, setUserForRoleChange] = useState<AdminUser | null>(null)
+  const [userForLocationAssignment, setUserForLocationAssignment] = useState<AdminUser | null>(null)
+  const [newRole, setNewRole] = useState<string>('')
+  const [userAssignedLocations, setUserAssignedLocations] = useState<Location[]>([])
+  const [availableLocationsForAssignment, setAvailableLocationsForAssignment] = useState<Location[]>([])
+  
   // Bulk invitation state
   const [bulkInviteMode, setBulkInviteMode] = useState(false)
   const [bulkEmails, setBulkEmails] = useState('')
@@ -124,8 +135,22 @@ export default function AdminUserManager() {
   useEffect(() => {
     if (session?.user?.email) {
       loadUsers()
+      loadCurrentUserRole()
     }
   }, [session])
+
+  const loadCurrentUserRole = async () => {
+    try {
+      const response = await fetch('/api/profile')
+      if (response.ok) {
+        const data = await response.json()
+        setCurrentUserRole(data.user_role || 'user')
+      }
+    } catch (error) {
+      console.error('Failed to fetch current user role:', error)
+      setCurrentUserRole('user')
+    }
+  }
 
   const loadUsers = async () => {
     if (!session?.user?.email) return
@@ -163,6 +188,129 @@ export default function AdminUserManager() {
   const handleMenuClose = () => {
     setAnchorEl(null)
     setSelectedUser(null)
+  }
+
+  const loadUserAssignedLocations = async (userId: string) => {
+    try {
+      const response = await fetch(`${API_BASE}/api/admin/users/${userId}/locations`, {
+        headers: {
+          'Authorization': `Bearer ${session?.user?.email}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setUserAssignedLocations(data.assigned_locations || [])
+        setAvailableLocationsForAssignment(data.available_locations || [])
+      } else {
+        console.error('Failed to load user locations')
+      }
+    } catch (error) {
+      console.error('Error loading user locations:', error)
+    }
+  }
+
+  const promoteToSuperAdmin = async () => {
+    if (!userForRoleChange) return
+
+    try {
+      const response = await fetch(`${API_BASE}/api/admin/users/${userForRoleChange.id}/role`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${session?.user?.email}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ role: 'super_admin' })
+      })
+
+      if (response.ok) {
+        setRolePromotionDialogOpen(false)
+        setUserForRoleChange(null)
+        await loadUsers()
+        await alert({
+          title: 'Promotion Successful',
+          message: `${userForRoleChange.first_name || userForRoleChange.email} has been promoted to Super Admin.`,
+          variant: 'success'
+        })
+      } else {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to promote user')
+      }
+    } catch (error) {
+      console.error('Error promoting user:', error)
+      await alert({
+        title: 'Promotion Failed',
+        message: error instanceof Error ? error.message : 'Failed to promote user. Please try again.',
+        variant: 'error'
+      })
+    }
+  }
+
+  const assignLocationToUser = async (locationId: number) => {
+    if (!userForLocationAssignment) return
+
+    try {
+      const response = await fetch(`${API_BASE}/api/admin/users/${userForLocationAssignment.id}/locations/${locationId}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session?.user?.email}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (response.ok) {
+        await loadUserAssignedLocations(userForLocationAssignment.id)
+        await alert({
+          title: 'Location Assigned',
+          message: 'Location has been successfully assigned to the user.',
+          variant: 'success'
+        })
+      } else {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to assign location')
+      }
+    } catch (error) {
+      console.error('Error assigning location:', error)
+      await alert({
+        title: 'Assignment Failed',
+        message: error instanceof Error ? error.message : 'Failed to assign location. Please try again.',
+        variant: 'error'
+      })
+    }
+  }
+
+  const unassignLocationFromUser = async (locationId: number) => {
+    if (!userForLocationAssignment) return
+
+    try {
+      const response = await fetch(`${API_BASE}/api/admin/users/${userForLocationAssignment.id}/locations/${locationId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session?.user?.email}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (response.ok) {
+        await loadUserAssignedLocations(userForLocationAssignment.id)
+        await alert({
+          title: 'Location Unassigned',
+          message: 'Location has been successfully unassigned from the user.',
+          variant: 'success'
+        })
+      } else {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to unassign location')
+      }
+    } catch (error) {
+      console.error('Error unassigning location:', error)
+      await alert({
+        title: 'Unassignment Failed',
+        message: error instanceof Error ? error.message : 'Failed to unassign location. Please try again.',
+        variant: 'error'
+      })
+    }
   }
 
   const updateUserRole = async (userId: string, newRole: 'admin' | 'user', userName: string) => {
@@ -462,6 +610,9 @@ export default function AdminUserManager() {
   }
 
   const getRoleChip = (role: string, verified: boolean) => {
+    if (role === 'super_admin') {
+      return <Chip icon={<Security />} label="Super Admin" color="error" size="small" />
+    }
     if (role === 'admin') {
       return <Chip icon={<Security />} label="Admin" color="primary" size="small" />
     }
@@ -1090,6 +1241,35 @@ export default function AdminUserManager() {
           </MenuItem>
         )}
         
+        {/* Super Admin Only Actions */}
+        {isSuperAdmin(currentUserRole) && selectedUser && selectedUser.user_role === 'admin' && selectedUser.email !== session?.user?.email && (
+          <MenuItem 
+            onClick={() => {
+              handleMenuClose()
+              setUserForRoleChange(selectedUser)
+              setNewRole('super_admin')
+              setRolePromotionDialogOpen(true)
+            }}
+          >
+            <Security sx={{ mr: 1 }} />
+            Promote to Super Admin
+          </MenuItem>
+        )}
+        
+        {isSuperAdmin(currentUserRole) && selectedUser && selectedUser.user_role === 'admin' && (
+          <MenuItem 
+            onClick={() => {
+              handleMenuClose()
+              setUserForLocationAssignment(selectedUser)
+              loadUserAssignedLocations(selectedUser.id)
+              setLocationAssignmentDialogOpen(true)
+            }}
+          >
+            <LocationOn sx={{ mr: 1 }} />
+            Manage Locations
+          </MenuItem>
+        )}
+        
         {selectedUser && (
           <MenuItem 
             onClick={() => {
@@ -1436,6 +1616,145 @@ export default function AdminUserManager() {
           buttonText={modalState.options.buttonText}
         />
       )}
+
+      {/* Role Promotion Dialog */}
+      <Dialog 
+        open={rolePromotionDialogOpen} 
+        onClose={() => setRolePromotionDialogOpen(false)} 
+        maxWidth="sm" 
+        fullWidth
+      >
+        <DialogTitle>🚀 Promote to Super Admin</DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" paragraph>
+            Are you sure you want to promote <strong>{userForRoleChange?.first_name || userForRoleChange?.email}</strong> to Super Admin?
+          </Typography>
+          <Typography variant="body2" color="text.secondary" paragraph>
+            Super Admins have full system privileges including:
+          </Typography>
+          <Box component="ul" sx={{ pl: 2, mb: 2 }}>
+            <Typography component="li" variant="body2">Global access to all locations and books</Typography>
+            <Typography component="li" variant="body2">User role management and promotion</Typography>
+            <Typography component="li" variant="body2">Location assignment to regular admins</Typography>
+            <Typography component="li" variant="body2">System-wide analytics and administration</Typography>
+          </Box>
+          <Alert severity="warning" sx={{ mt: 2 }}>
+            This action grants the highest level of administrative privileges. Only promote trusted users.
+          </Alert>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRolePromotionDialogOpen(false)}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={promoteToSuperAdmin}
+            color="error" 
+            variant="contained"
+          >
+            Promote to Super Admin
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Location Assignment Dialog */}
+      <Dialog 
+        open={locationAssignmentDialogOpen} 
+        onClose={() => setLocationAssignmentDialogOpen(false)} 
+        maxWidth="md" 
+        fullWidth
+      >
+        <DialogTitle>📍 Manage Location Access</DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" paragraph>
+            Managing location access for <strong>{userForLocationAssignment?.first_name || userForLocationAssignment?.email}</strong>
+          </Typography>
+          
+          {userAssignedLocations.length > 0 && (
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Currently Assigned Locations:
+              </Typography>
+              <List dense>
+                {userAssignedLocations.map((location) => (
+                  <ListItem 
+                    key={location.id}
+                    sx={{ 
+                      border: 1, 
+                      borderColor: 'divider', 
+                      borderRadius: 1, 
+                      mb: 1,
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <ListItemText 
+                      primary={location.name}
+                      secondary={location.description}
+                    />
+                    <Button
+                      size="small"
+                      color="error"
+                      variant="outlined"
+                      onClick={() => unassignLocationFromUser(location.id)}
+                    >
+                      Remove
+                    </Button>
+                  </ListItem>
+                ))}
+              </List>
+            </Box>
+          )}
+
+          {availableLocationsForAssignment.length > 0 && (
+            <Box>
+              <Typography variant="h6" gutterBottom>
+                Available Locations to Assign:
+              </Typography>
+              <List dense>
+                {availableLocationsForAssignment.map((location) => (
+                  <ListItem 
+                    key={location.id}
+                    sx={{ 
+                      border: 1, 
+                      borderColor: 'divider', 
+                      borderRadius: 1, 
+                      mb: 1,
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <ListItemText 
+                      primary={location.name}
+                      secondary={location.description}
+                    />
+                    <Button
+                      size="small"
+                      color="primary"
+                      variant="contained"
+                      onClick={() => assignLocationToUser(location.id)}
+                    >
+                      Assign
+                    </Button>
+                  </ListItem>
+                ))}
+              </List>
+            </Box>
+          )}
+
+          {userAssignedLocations.length === 0 && availableLocationsForAssignment.length === 0 && (
+            <Alert severity="info">
+              This user has access to all available locations or no locations are available for assignment.
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setLocationAssignmentDialogOpen(false)}>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   )
 }

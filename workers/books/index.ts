@@ -1,49 +1,97 @@
 import { Env, Book } from '../types';
-import { isUserAdmin } from '../auth';
+import { isUserAdmin, isUserSuperAdmin } from '../auth';
 
 // Core Book Management Functions
 export async function getUserBooks(userId: string, env: Env, corsHeaders: Record<string, string>) {
-  const stmt = env.DB.prepare(`
-    SELECT DISTINCT b.id, b.isbn, b.title, b.authors, b.description, b.thumbnail, b.published_date,
-           b.categories, b.shelf_id, b.tags, b.added_by, b.created_at, b.status,
-           b.checked_out_by, b.checked_out_date, b.due_date,
-           b.extended_description, b.subjects, b.page_count, b.google_average_rating, b.google_ratings_count, b.rating_updated_at,
-           b.publisher_info, b.open_library_key, b.enhanced_genres, b.series, b.series_number,
-           s.name as shelf_name, l.name as location_name,
-           br.rating as user_rating, br.review_text as user_review,
-           -- Calculate library-specific average rating from book_ratings table
-           (SELECT AVG(CAST(rating AS REAL)) FROM book_ratings 
-            WHERE book_id = b.id AND user_id IN (
-              SELECT DISTINCT u.id FROM users u
-              LEFT JOIN location_members lm2 ON u.id = lm2.user_id
-              LEFT JOIN locations l2 ON lm2.location_id = l2.id OR l2.owner_id = u.id
-              WHERE l2.id = l.id
-            )
-           ) as library_average_rating,
-           -- Calculate library-specific rating count from book_ratings table
-           (SELECT COUNT(*) FROM book_ratings 
-            WHERE book_id = b.id AND user_id IN (
-              SELECT DISTINCT u.id FROM users u
-              LEFT JOIN location_members lm2 ON u.id = lm2.user_id
-              LEFT JOIN locations l2 ON lm2.location_id = l2.id OR l2.owner_id = u.id
-              WHERE l2.id = l.id
-            )
-           ) as library_rating_count,
-           CASE 
-             WHEN b.checked_out_by IS NOT NULL THEN 
-               (SELECT first_name FROM users WHERE id = b.checked_out_by)
-             ELSE NULL 
-           END as checked_out_by_name
-    FROM books b
-    LEFT JOIN shelves s ON b.shelf_id = s.id
-    LEFT JOIN locations l ON s.location_id = l.id
-    LEFT JOIN location_members lm ON l.id = lm.location_id
-    LEFT JOIN book_ratings br ON b.id = br.book_id AND br.user_id = ?
-    WHERE b.added_by = ? OR l.owner_id = ? OR lm.user_id = ?
-    ORDER BY b.created_at DESC
-  `);
-
-  const result = await stmt.bind(userId, userId, userId, userId).all();
+  // Check if user is super admin first
+  const isSuperAdmin = await isUserSuperAdmin(userId, env);
+  
+  let stmt;
+  let result;
+  
+  if (isSuperAdmin) {
+    // Super admins can see all books
+    stmt = env.DB.prepare(`
+      SELECT DISTINCT b.id, b.isbn, b.title, b.authors, b.description, b.thumbnail, b.published_date,
+             b.categories, b.shelf_id, b.tags, b.added_by, b.created_at, b.status,
+             b.checked_out_by, b.checked_out_date, b.due_date,
+             b.extended_description, b.subjects, b.page_count, b.google_average_rating, b.google_ratings_count, b.rating_updated_at,
+             b.publisher_info, b.open_library_key, b.enhanced_genres, b.series, b.series_number,
+             s.name as shelf_name, l.name as location_name,
+             br.rating as user_rating, br.review_text as user_review,
+             -- Calculate library-specific average rating from book_ratings table
+             (SELECT AVG(CAST(rating AS REAL)) FROM book_ratings 
+              WHERE book_id = b.id AND user_id IN (
+                SELECT DISTINCT u.id FROM users u
+                LEFT JOIN location_members lm2 ON u.id = lm2.user_id
+                LEFT JOIN locations l2 ON lm2.location_id = l2.id OR l2.owner_id = u.id
+                WHERE l2.id = l.id
+              )
+             ) as library_average_rating,
+             -- Calculate library-specific rating count from book_ratings table
+             (SELECT COUNT(*) FROM book_ratings 
+              WHERE book_id = b.id AND user_id IN (
+                SELECT DISTINCT u.id FROM users u
+                LEFT JOIN location_members lm2 ON u.id = lm2.user_id
+                LEFT JOIN locations l2 ON lm2.location_id = l2.id OR l2.owner_id = u.id
+                WHERE l2.id = l.id
+              )
+             ) as library_rating_count,
+             CASE 
+               WHEN b.checked_out_by IS NOT NULL THEN 
+                 (SELECT first_name FROM users WHERE id = b.checked_out_by)
+               ELSE NULL 
+             END as checked_out_by_name
+      FROM books b
+      LEFT JOIN shelves s ON b.shelf_id = s.id
+      LEFT JOIN locations l ON s.location_id = l.id
+      LEFT JOIN book_ratings br ON b.id = br.book_id AND br.user_id = ?
+      ORDER BY b.created_at DESC
+    `);
+    result = await stmt.bind(userId).all();
+  } else {
+    // Regular admins and users see books based on ownership/membership
+    stmt = env.DB.prepare(`
+      SELECT DISTINCT b.id, b.isbn, b.title, b.authors, b.description, b.thumbnail, b.published_date,
+             b.categories, b.shelf_id, b.tags, b.added_by, b.created_at, b.status,
+             b.checked_out_by, b.checked_out_date, b.due_date,
+             b.extended_description, b.subjects, b.page_count, b.google_average_rating, b.google_ratings_count, b.rating_updated_at,
+             b.publisher_info, b.open_library_key, b.enhanced_genres, b.series, b.series_number,
+             s.name as shelf_name, l.name as location_name,
+             br.rating as user_rating, br.review_text as user_review,
+             -- Calculate library-specific average rating from book_ratings table
+             (SELECT AVG(CAST(rating AS REAL)) FROM book_ratings 
+              WHERE book_id = b.id AND user_id IN (
+                SELECT DISTINCT u.id FROM users u
+                LEFT JOIN location_members lm2 ON u.id = lm2.user_id
+                LEFT JOIN locations l2 ON lm2.location_id = l2.id OR l2.owner_id = u.id
+                WHERE l2.id = l.id
+              )
+             ) as library_average_rating,
+             -- Calculate library-specific rating count from book_ratings table
+             (SELECT COUNT(*) FROM book_ratings 
+              WHERE book_id = b.id AND user_id IN (
+                SELECT DISTINCT u.id FROM users u
+                LEFT JOIN location_members lm2 ON u.id = lm2.user_id
+                LEFT JOIN locations l2 ON lm2.location_id = l2.id OR l2.owner_id = u.id
+                WHERE l2.id = l.id
+              )
+             ) as library_rating_count,
+             CASE 
+               WHEN b.checked_out_by IS NOT NULL THEN 
+                 (SELECT first_name FROM users WHERE id = b.checked_out_by)
+               ELSE NULL 
+             END as checked_out_by_name
+      FROM books b
+      LEFT JOIN shelves s ON b.shelf_id = s.id
+      LEFT JOIN locations l ON s.location_id = l.id
+      LEFT JOIN location_members lm ON l.id = lm.location_id
+      LEFT JOIN book_ratings br ON b.id = br.book_id AND br.user_id = ?
+      WHERE b.added_by = ? OR l.owner_id = ? OR lm.user_id = ?
+      ORDER BY b.created_at DESC
+    `);
+    result = await stmt.bind(userId, userId, userId, userId).all();
+  }
   
   const books = result.results.map((book: any) => ({
     ...book,

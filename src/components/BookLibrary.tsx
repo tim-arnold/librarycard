@@ -325,7 +325,7 @@ export default function BookLibrary() {
     if (isAdmin(userRole) && booksByLocation) {
       // For admin view, we need to handle pagination across grouped locations
       // We'll flatten all books, paginate them, then regroup
-      const allBooks = booksByLocation.flatMap(location => location.books)
+      const allBooks = booksByLocation.flatMap(location => location.books || [])
       const paginatedBooks = getPaginatedBooks(allBooks)
       
       // Regroup paginated books by location
@@ -391,7 +391,7 @@ export default function BookLibrary() {
       if (response.ok) {
         const locations = await response.json()
         if (locations.length > 0) {
-          if (currentUserRole === 'admin') {
+          if (isAdmin(currentUserRole)) {
             // Admin users: store all locations and load all shelves
             setAllLocations(locations)
             
@@ -435,7 +435,7 @@ export default function BookLibrary() {
     }
 
     // Load pending removal requests for regular users
-    if (currentUserRole !== 'admin') {
+    if (!isAdmin(currentUserRole)) {
       await loadPendingRemovalRequests()
     }
     
@@ -1183,7 +1183,7 @@ export default function BookLibrary() {
 
   // Group books by location for admin users
   const getBooksByLocation = () => {
-    if (userRole !== 'admin') {
+    if (!isAdmin(userRole)) {
       return null // Regular users don't need location grouping
     }
 
@@ -1264,7 +1264,7 @@ export default function BookLibrary() {
           >
             {shelves.length <= 1 ? (
               <Typography variant="body2">
-                📖 <strong>Your Library:</strong> Use search and category filters to find what you're looking for.{userRole !== 'admin' && ' Click "Request Removal" to submit requests to an administrator.'}
+                📖 <strong>Your Library:</strong> Use search and category filters to find what you're looking for.{!isAdmin(userRole) && ' Click "Request Removal" to submit requests to an administrator.'}
               </Typography>
             ) : isAdmin(userRole) ? (
               <Typography variant="body2">
@@ -1278,8 +1278,8 @@ export default function BookLibrary() {
           </Alert>
         )}
 
-      {/* Shelf tiles for regular users, hidden for admin */}
-        {userRole !== 'admin' && shelves.length > 1 && (
+      {/* Shelf tiles for regular users, hidden for admins */}
+        {!isAdmin(userRole) && shelves.length > 1 && (
           <Box sx={{ mb: 3 }}>
             <Typography variant="h6" gutterBottom>
               📚 My Shelves
@@ -1499,7 +1499,7 @@ export default function BookLibrary() {
                         alignItems: 'center'
                       }}>
                         <Typography variant="h6" sx={{ m: 0, fontSize: '1.1rem' }}>
-                          📍 {location.name} ({location.books.length} book{location.books.length !== 1 ? 's' : ''})
+                          📍 {location.name} ({(location.books || []).length} book{(location.books || []).length !== 1 ? 's' : ''})
                         </Typography>
                         {location.description && (
                           <Typography variant="body2" color="text.secondary" sx={{ m: 0, fontStyle: 'italic' }}>
@@ -1510,7 +1510,7 @@ export default function BookLibrary() {
                     )}
                     
                     <BookCompact
-                      books={location.books}
+                      books={location.books || []}
                       userRole={userRole}
                       currentUserId={currentUserId}
                       shelves={shelves}
@@ -1570,7 +1570,7 @@ export default function BookLibrary() {
                         alignItems: 'center'
                       }}>
                         <Typography variant="h6" sx={{ m: 0, fontSize: '1.1rem' }}>
-                          📍 {location.name} ({location.books.length} book{location.books.length !== 1 ? 's' : ''})
+                          📍 {location.name} ({(location.books || []).length} book{(location.books || []).length !== 1 ? 's' : ''})
                         </Typography>
                         {location.description && (
                           <Typography variant="body2" color="text.secondary" sx={{ m: 0, fontStyle: 'italic' }}>
@@ -1581,7 +1581,7 @@ export default function BookLibrary() {
                     )}
                     
                     <BookGrid
-                      books={location.books}
+                      books={location.books || []}
                       userRole={userRole}
                       currentUserId={currentUserId}
                       shelves={shelves}
