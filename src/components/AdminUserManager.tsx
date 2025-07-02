@@ -48,6 +48,7 @@ import {
 import ConfirmationModal from './ConfirmationModal'
 import AlertModal from './AlertModal'
 import { useModal } from '@/hooks/useModal'
+// Note: Admin user management permissions will be updated in future iteration
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
 

@@ -13,6 +13,7 @@ import { Info, Star } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
 import BookActions from './BookActions'
 import StarRating from './StarRating'
+// Note: BookGrid doesn't currently use admin checks
 
 interface BookGridProps {
   books: EnhancedBook[]

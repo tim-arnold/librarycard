@@ -10,6 +10,7 @@ import {
   IconButton,
 } from '@mui/material'
 import { Search, Sort, ArrowUpward, ArrowDownward } from '@mui/icons-material'
+import { isAdmin } from '@/lib/permissions'
 
 export type SortField = 'title' | 'author' | 'publishedDate' | 'dateAdded'
 export type SortDirection = 'asc' | 'desc'
@@ -68,7 +69,7 @@ export default function BookFilters({
         />
       </Box>
       
-      {userRole === 'admin' && allLocations.length > 1 && (
+      {isAdmin(userRole) && allLocations.length > 1 && (
         <Box sx={{ flex: '1 1 200px', minWidth: 200 }}>
           <FormControl fullWidth size="small">
             <InputLabel>Location</InputLabel>
@@ -85,7 +86,7 @@ export default function BookFilters({
         </Box>
       )}
 
-      {userRole === 'admin' && shelves.length > 1 && (
+      {isAdmin(userRole) && shelves.length > 1 && (
         <Box sx={{ flex: '1 1 200px', minWidth: 200 }}>
           <FormControl fullWidth size="small">
             <InputLabel>Shelf</InputLabel>

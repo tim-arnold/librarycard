@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
+import { isAdmin } from '@/lib/permissions'
 import {
   Dialog,
   DialogTitle,
@@ -62,7 +63,7 @@ export default function HelpModal({ open, onClose }: HelpModalProps) {
     return null
   }
 
-  const isAdmin = userRole === 'admin'
+  const userIsAdmin = isAdmin(userRole)
 
   return (
     <Dialog
@@ -97,7 +98,7 @@ export default function HelpModal({ open, onClose }: HelpModalProps) {
                 Your personal book library management system. This guide will help you make the most of all features available to you.
               </Typography>
               
-              {isAdmin && (
+              {userIsAdmin && (
                 <Alert severity="info" sx={{ mt: 2 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <AdminPanelSettings />
@@ -119,7 +120,7 @@ export default function HelpModal({ open, onClose }: HelpModalProps) {
                 </AccordionSummary>
                 <AccordionDetails>
                   <Typography variant="body1" gutterBottom>
-                    LibraryCard has {isAdmin ? 'three' : 'two'} main sections accessible via the top navigation:
+                    LibraryCard has {userIsAdmin ? 'three' : 'two'} main sections accessible via the top navigation:
                   </Typography>
                   <List>
                     <ListItem>
@@ -136,7 +137,7 @@ export default function HelpModal({ open, onClose }: HelpModalProps) {
                         secondary="Browse and manage your book collection"
                       />
                     </ListItem>
-                    {isAdmin && (
+                    {userIsAdmin && (
                       <ListItem>
                         <LocationOn sx={{ mr: 2 }} />
                         <ListItemText
@@ -221,7 +222,7 @@ export default function HelpModal({ open, onClose }: HelpModalProps) {
                     </ListItem>
                   </List>
 
-                  {!isAdmin && (
+                  {!userIsAdmin && (
                     <Alert severity="info" sx={{ mt: 2 }}>
                       If you don't have any locations available, contact an administrator to set up locations and shelves.
                     </Alert>
@@ -229,7 +230,7 @@ export default function HelpModal({ open, onClose }: HelpModalProps) {
                 </AccordionDetails>
               </Accordion>
 
-              {isAdmin && (
+              {userIsAdmin && (
                 <Accordion>
                   <AccordionSummary expandIcon={<ExpandMore />}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>

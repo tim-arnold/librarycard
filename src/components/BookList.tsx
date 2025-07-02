@@ -12,6 +12,7 @@ import { Info, Star } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
 import BookActions from './BookActions'
 import StarRating from './StarRating'
+import { isAdmin } from '@/lib/permissions'
 
 interface BookTextProps {
   books: EnhancedBook[]

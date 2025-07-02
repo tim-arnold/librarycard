@@ -37,6 +37,7 @@ import RatingModal from './RatingModal'
 import { useModal } from '@/hooks/useModal'
 import { CURATED_GENRES } from '@/lib/genreClassifier'
 import { getStorageItem, setStorageItem } from '@/lib/storage'
+import { isAdmin } from '@/lib/permissions'
 import {
   Dialog,
   DialogTitle,
@@ -321,7 +322,7 @@ export default function BookLibrary() {
 
   // Get paginated books for current view
   const getPaginatedBooksForView = () => {
-    if (userRole === 'admin' && booksByLocation) {
+    if (isAdmin(userRole) && booksByLocation) {
       // For admin view, we need to handle pagination across grouped locations
       // We'll flatten all books, paginate them, then regroup
       const allBooks = booksByLocation.flatMap(location => location.books)
@@ -675,7 +676,7 @@ export default function BookLibrary() {
     }
 
     // Admin location filter
-    if (userRole === 'admin' && locationFilter) {
+    if (isAdmin(userRole) && locationFilter) {
       filtered = filtered.filter(book => {
         const shelf = shelves.find(s => s.id === book.shelf_id)
         if (!shelf) return false
@@ -1158,7 +1159,7 @@ export default function BookLibrary() {
 
   // Generate title based on user role and current filters
   const getLibraryTitle = () => {
-    if (userRole === 'admin') {
+    if (isAdmin(userRole)) {
       return `📚 ${locationFilter} (${filteredBooks.length} books)`
     }
     
@@ -1265,7 +1266,7 @@ export default function BookLibrary() {
               <Typography variant="body2">
                 📖 <strong>Your Library:</strong> Use search and category filters to find what you're looking for.{userRole !== 'admin' && ' Click "Request Removal" to submit requests to an administrator.'}
               </Typography>
-            ) : userRole === 'admin' ? (
+            ) : isAdmin(userRole) ? (
               <Typography variant="body2">
                 🔧 <strong>Admin View:</strong> {books.length} books across {allLocations.length} location{allLocations.length !== 1 ? 's' : ''} and {shelves.length} shelves.
               </Typography>
@@ -1408,7 +1409,7 @@ export default function BookLibrary() {
           {/* Conditional rendering based on view mode */}
           {viewMode === 'list' ? (
             // Ultra-compact list view (text only)
-            userRole === 'admin' ? (
+            isAdmin(userRole) ? (
               // Admin ultra-compact view with location grouping (paginated)
               <div>
                 {getPaginatedBooksForView().map((location: any) => (
@@ -1479,7 +1480,7 @@ export default function BookLibrary() {
             )
           ) : viewMode === 'compact' ? (
             // Compact list view (with images)
-            userRole === 'admin' ? (
+            isAdmin(userRole) ? (
               // Admin compact list view with location grouping (paginated)
               <div>
                 {getPaginatedBooksForView().map((location: any) => (
@@ -1550,7 +1551,7 @@ export default function BookLibrary() {
             )
           ) : (
             // Card view (default)
-            userRole === 'admin' ? (
+            isAdmin(userRole) ? (
               // Admin card view with location grouping (paginated)
               <div>
                 {getPaginatedBooksForView().map((location: any) => (

@@ -10,6 +10,7 @@ import {
   SwapHoriz,
 } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
+import { isAdmin } from '@/lib/permissions'
 
 export interface BookActionsProps {
   book: EnhancedBook
@@ -45,7 +46,7 @@ export default function BookActions({
   const hasMultipleShelves = shelves.length > 1
   
   // Only show return button if user checked out the book OR user is admin
-  const canReturn = isCheckedOut && (userRole === 'admin' || book.checked_out_by === currentUserId)
+  const canReturn = isCheckedOut && (isAdmin(userRole) || book.checked_out_by === currentUserId)
   
   // Don't show relocate button if book is checked out
   const canRelocate = !isCheckedOut && hasMultipleShelves
@@ -54,7 +55,7 @@ export default function BookActions({
     // Ultra-compact list view - icon-only buttons in horizontal layout
     return (
       <Box sx={{ display: 'flex', gap: 0.5 }}>
-        {userRole === 'admin' ? (
+        {isAdmin(userRole) ? (
           <Button
             size="small"
             variant="outlined"
@@ -158,7 +159,7 @@ export default function BookActions({
         </Box>
         
         <Box sx={{ display: 'flex', gap: 1 }}>
-          {userRole === 'admin' ? (
+          {isAdmin(userRole) ? (
             <Button
               size="small"
               variant="outlined"
@@ -211,7 +212,7 @@ export default function BookActions({
   return (
     <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
       <Box sx={{ display: 'flex', gap: 1 }}>
-        {userRole === 'admin' ? (
+        {isAdmin(userRole) ? (
           <Button
             size="small"
             variant="outlined"
