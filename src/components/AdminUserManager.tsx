@@ -1217,60 +1217,8 @@ export default function AdminUserManager() {
         open={Boolean(anchorEl)}
         onClose={handleMenuClose}
       >
-        {selectedUser && selectedUser.user_role === 'user' && (
-          <MenuItem 
-            onClick={() => {
-              handleMenuClose()
-              updateUserRole(selectedUser.id, 'admin', `${selectedUser.first_name || ''} ${selectedUser.last_name || ''}`.trim() || selectedUser.email)
-            }}
-          >
-            <Security sx={{ mr: 1 }} />
-            Promote to Admin
-          </MenuItem>
-        )}
-        
-        {selectedUser && selectedUser.user_role === 'admin' && selectedUser.email !== session?.user?.email && (
-          <MenuItem 
-            onClick={() => {
-              handleMenuClose()
-              updateUserRole(selectedUser.id, 'user', `${selectedUser.first_name || ''} ${selectedUser.last_name || ''}`.trim() || selectedUser.email)
-            }}
-          >
-            <Person sx={{ mr: 1 }} />
-            Demote to User
-          </MenuItem>
-        )}
-        
-        {/* Super Admin Only Actions */}
-        {isSuperAdmin(currentUserRole) && selectedUser && selectedUser.user_role === 'admin' && selectedUser.email !== session?.user?.email && (
-          <MenuItem 
-            onClick={() => {
-              handleMenuClose()
-              setUserForRoleChange(selectedUser)
-              setNewRole('super_admin')
-              setRolePromotionDialogOpen(true)
-            }}
-          >
-            <Security sx={{ mr: 1 }} />
-            Promote to Super Admin
-          </MenuItem>
-        )}
-        
-        {isSuperAdmin(currentUserRole) && selectedUser && selectedUser.user_role === 'admin' && (
-          <MenuItem 
-            onClick={() => {
-              handleMenuClose()
-              setUserForLocationAssignment(selectedUser)
-              loadUserAssignedLocations(selectedUser.id)
-              setLocationAssignmentDialogOpen(true)
-            }}
-          >
-            <LocationOn sx={{ mr: 1 }} />
-            Manage Locations
-          </MenuItem>
-        )}
-        
-        {selectedUser && (
+        {/* Check if current user is regular admin viewing super admin - only show email action */}
+        {selectedUser && selectedUser.user_role === 'super_admin' && !isSuperAdmin(currentUserRole) ? (
           <MenuItem 
             onClick={() => {
               handleMenuClose()
@@ -1283,19 +1231,93 @@ export default function AdminUserManager() {
             <Email sx={{ mr: 1 }} />
             Email
           </MenuItem>
-        )}
-        
-        {selectedUser && selectedUser.email !== session?.user?.email && (
-          <MenuItem 
-            onClick={() => {
-              handleMenuClose()
-              handleDeleteUser(selectedUser)
-            }}
-            sx={{ color: 'error.main' }}
-          >
-            <Delete sx={{ mr: 1 }} />
-            Delete User
-          </MenuItem>
+        ) : (
+          <>
+            {/* Regular user actions - promote to admin */}
+            {selectedUser && selectedUser.user_role === 'user' && (
+              <MenuItem 
+                onClick={() => {
+                  handleMenuClose()
+                  updateUserRole(selectedUser.id, 'admin', `${selectedUser.first_name || ''} ${selectedUser.last_name || ''}`.trim() || selectedUser.email)
+                }}
+              >
+                <Security sx={{ mr: 1 }} />
+                Promote to Admin
+              </MenuItem>
+            )}
+            
+            {/* Admin actions - demote to user */}
+            {selectedUser && selectedUser.user_role === 'admin' && selectedUser.email !== session?.user?.email && (
+              <MenuItem 
+                onClick={() => {
+                  handleMenuClose()
+                  updateUserRole(selectedUser.id, 'user', `${selectedUser.first_name || ''} ${selectedUser.last_name || ''}`.trim() || selectedUser.email)
+                }}
+              >
+                <Person sx={{ mr: 1 }} />
+                Demote to User
+              </MenuItem>
+            )}
+            
+            {/* Super Admin Only Actions */}
+            {isSuperAdmin(currentUserRole) && selectedUser && selectedUser.user_role === 'admin' && selectedUser.email !== session?.user?.email && (
+              <MenuItem 
+                onClick={() => {
+                  handleMenuClose()
+                  setUserForRoleChange(selectedUser)
+                  setNewRole('super_admin')
+                  setRolePromotionDialogOpen(true)
+                }}
+              >
+                <Security sx={{ mr: 1 }} />
+                Promote to Super Admin
+              </MenuItem>
+            )}
+            
+            {isSuperAdmin(currentUserRole) && selectedUser && selectedUser.user_role === 'admin' && (
+              <MenuItem 
+                onClick={() => {
+                  handleMenuClose()
+                  setUserForLocationAssignment(selectedUser)
+                  loadUserAssignedLocations(selectedUser.id)
+                  setLocationAssignmentDialogOpen(true)
+                }}
+              >
+                <LocationOn sx={{ mr: 1 }} />
+                Manage Locations
+              </MenuItem>
+            )}
+            
+            {/* Email action for all users */}
+            {selectedUser && (
+              <MenuItem 
+                onClick={() => {
+                  handleMenuClose()
+                  setEmailRecipient(selectedUser)
+                  setEmailSubject('')
+                  setEmailMessage('')
+                  setEmailDialogOpen(true)
+                }}
+              >
+                <Email sx={{ mr: 1 }} />
+                Email
+              </MenuItem>
+            )}
+            
+            {/* Delete action - not available for super admins when viewed by regular admins */}
+            {selectedUser && selectedUser.email !== session?.user?.email && !(selectedUser.user_role === 'super_admin' && !isSuperAdmin(currentUserRole)) && (
+              <MenuItem 
+                onClick={() => {
+                  handleMenuClose()
+                  handleDeleteUser(selectedUser)
+                }}
+                sx={{ color: 'error.main' }}
+              >
+                <Delete sx={{ mr: 1 }} />
+                Delete User
+              </MenuItem>
+            )}
+          </>
         )}
       </Menu>
 
