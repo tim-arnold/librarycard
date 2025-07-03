@@ -444,6 +444,17 @@ export async function getUserLocationAssignments(targetUserId: string, adminUser
       });
     }
 
+    if ((targetUser as any).user_role === 'super_admin') {
+      // Super admins have global access and don't need explicit location assignments
+      return new Response(JSON.stringify({
+        assigned_locations: [],
+        available_locations: [],
+        message: 'Super admins have global access to all locations and do not need explicit assignments'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     if ((targetUser as any).user_role !== 'admin') {
       return new Response(JSON.stringify({ error: 'Location assignment is only available for admin users' }), {
         status: 400,
@@ -609,19 +620,20 @@ export async function unassignLocationFromUser(targetUserId: string, locationId:
     }
 
     // Check if there are other admins assigned to this location
+    // Note: Super admins are excluded since they have global access and don't need explicit assignments
     const otherAdmins = await env.DB.prepare(`
       SELECT COUNT(*) as admin_count FROM (
-        -- Count location owner if they are an admin
+        -- Count location owner if they are a regular admin (not super_admin)
         SELECT 1 FROM locations l
         INNER JOIN users u ON l.owner_id = u.id
-        WHERE l.id = ? AND u.user_role IN ('admin', 'super_admin') AND u.id != ?
+        WHERE l.id = ? AND u.user_role = 'admin' AND u.id != ?
         
         UNION ALL
         
-        -- Count other admin members of this location
+        -- Count other regular admin members of this location (not super_admin)
         SELECT 1 FROM location_members lm
         INNER JOIN users u ON lm.user_id = u.id
-        WHERE lm.location_id = ? AND u.user_role IN ('admin', 'super_admin') AND u.id != ?
+        WHERE lm.location_id = ? AND u.user_role = 'admin' AND u.id != ?
       )
     `).bind(locationId, targetUserId, locationId, targetUserId).first();
 
