@@ -558,14 +558,15 @@ export async function createBookRemovalRequest(request: Request, userId: string,
 export async function getBookRemovalRequests(userId: string, env: Env, corsHeaders: Record<string, string>) {
 
   try {
-    // Check if user is admin
+    // Check user permissions
     const isAdmin = await isUserAdmin(userId, env);
+    const isSuperAdmin = await isUserSuperAdmin(userId, env);
     
     let requestsStmt;
     let bindings: any[];
 
-    if (isAdmin) {
-      // Admins can see all requests
+    if (isSuperAdmin) {
+      // Super admins can see all requests
       requestsStmt = env.DB.prepare(`
         SELECT rr.*, 
                b.title as book_title, 
@@ -584,6 +585,33 @@ export async function getBookRemovalRequests(userId: string, env: Env, corsHeade
         ORDER BY rr.created_at DESC
       `);
       bindings = [];
+    } else if (isAdmin) {
+      // Regular admins can only see requests from their assigned locations
+      requestsStmt = env.DB.prepare(`
+        SELECT rr.*, 
+               b.title as book_title, 
+               b.authors as book_authors,
+               b.isbn as book_isbn,
+               l.name as location_name,
+               u_requester.first_name as requester_name,
+               u_requester.email as requester_email,
+               u_reviewer.first_name as reviewer_name
+        FROM book_removal_requests rr
+        LEFT JOIN books b ON rr.book_id = b.id
+        LEFT JOIN shelves s ON b.shelf_id = s.id
+        LEFT JOIN locations l ON s.location_id = l.id
+        LEFT JOIN users u_requester ON rr.requester_id = u_requester.id
+        LEFT JOIN users u_reviewer ON rr.reviewed_by = u_reviewer.id
+        WHERE l.id IN (
+          SELECT location_id FROM (
+            SELECT id as location_id FROM locations WHERE owner_id = ?
+            UNION
+            SELECT location_id FROM location_members WHERE user_id = ?
+          )
+        )
+        ORDER BY rr.created_at DESC
+      `);
+      bindings = [userId, userId];
     } else {
       // Regular users can only see their own requests
       requestsStmt = env.DB.prepare(`
