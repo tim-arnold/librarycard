@@ -259,11 +259,13 @@ export async function getAdminUsers(userId: string, env: Env, corsHeaders: Recor
                u.email_verified, u.user_role, u.created_at,
                COUNT(DISTINCT b.id) as books_added,
                COUNT(DISTINCT COALESCE(lm.location_id, l.id)) as locations_joined,
-               MAX(b.created_at) as last_book_added
+               MAX(b.created_at) as last_book_added,
+               GROUP_CONCAT(DISTINCT loc.name) as location_names
         FROM users u
         LEFT JOIN books b ON u.id = b.added_by
         LEFT JOIN location_members lm ON u.id = lm.user_id
         LEFT JOIN locations l ON u.id = l.owner_id
+        LEFT JOIN locations loc ON (loc.id = lm.location_id OR loc.id = l.id)
         GROUP BY u.id
         ORDER BY u.created_at DESC
       `).all();
@@ -274,11 +276,13 @@ export async function getAdminUsers(userId: string, env: Env, corsHeaders: Recor
                u.email_verified, u.user_role, u.created_at,
                COUNT(DISTINCT b.id) as books_added,
                COUNT(DISTINCT COALESCE(lm_user.location_id, l_user.id)) as locations_joined,
-               MAX(b.created_at) as last_book_added
+               MAX(b.created_at) as last_book_added,
+               GROUP_CONCAT(DISTINCT loc_user.name) as location_names
         FROM users u
         LEFT JOIN books b ON u.id = b.added_by
         LEFT JOIN location_members lm_user ON u.id = lm_user.user_id
         LEFT JOIN locations l_user ON u.id = l_user.owner_id
+        LEFT JOIN locations loc_user ON (loc_user.id = lm_user.location_id OR loc_user.id = l_user.id)
         WHERE u.id IN (
           SELECT DISTINCT user_id FROM (
             -- Users who are members of locations owned by this admin
