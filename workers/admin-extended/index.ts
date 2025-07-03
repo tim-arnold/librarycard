@@ -608,29 +608,86 @@ export async function unassignLocationFromUser(targetUserId: string, locationId:
       });
     }
 
-    // Check if user owns this location (cannot unassign ownership)
-    const isOwner = await env.DB.prepare(`
-      SELECT 1 FROM locations WHERE id = ? AND owner_id = ?
-    `).bind(locationId, targetUserId).first();
+    // Check if there are other admins assigned to this location
+    const otherAdmins = await env.DB.prepare(`
+      SELECT COUNT(*) as admin_count FROM (
+        -- Count location owner if they are an admin
+        SELECT 1 FROM locations l
+        INNER JOIN users u ON l.owner_id = u.id
+        WHERE l.id = ? AND u.user_role IN ('admin', 'super_admin') AND u.id != ?
+        
+        UNION ALL
+        
+        -- Count other admin members of this location
+        SELECT 1 FROM location_members lm
+        INNER JOIN users u ON lm.user_id = u.id
+        WHERE lm.location_id = ? AND u.user_role IN ('admin', 'super_admin') AND u.id != ?
+      )
+    `).bind(locationId, targetUserId, locationId, targetUserId).first();
 
-    if (isOwner) {
-      return new Response(JSON.stringify({ error: 'Cannot unassign location owner. Transfer ownership first.' }), {
+    if ((otherAdmins as any)?.admin_count === 0) {
+      return new Response(JSON.stringify({ 
+        error: 'Cannot remove the last admin from this location. Please assign another admin to this location first.' 
+      }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Remove user as a member of the location
-    const result = await env.DB.prepare(`
-      DELETE FROM location_members 
-      WHERE location_id = ? AND user_id = ?
-    `).bind(locationId, targetUserId).run();
+    // Check if user is the owner of this location
+    const isOwner = await env.DB.prepare(`
+      SELECT 1 FROM locations WHERE id = ? AND owner_id = ?
+    `).bind(locationId, targetUserId).first();
 
-    if (result.changes === 0) {
-      return new Response(JSON.stringify({ error: 'User was not assigned to this location' }), {
-        status: 400,
+    if (isOwner) {
+      // If user is owner, transfer ownership to another admin
+      const newOwner = await env.DB.prepare(`
+        SELECT u.id FROM users u
+        INNER JOIN location_members lm ON u.id = lm.user_id
+        WHERE lm.location_id = ? AND u.user_role IN ('admin', 'super_admin') AND u.id != ?
+        ORDER BY u.created_at ASC
+        LIMIT 1
+      `).bind(locationId, targetUserId).first();
+
+      if (!newOwner) {
+        // No other admin members found, check if there's another admin who owns this location
+        return new Response(JSON.stringify({ 
+          error: 'Cannot remove location owner without another admin assigned to this location. Please assign another admin first.' 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Transfer ownership to the new admin
+      await env.DB.prepare(`
+        UPDATE locations 
+        SET owner_id = ?
+        WHERE id = ?
+      `).bind((newOwner as any).id, locationId).run();
+
+      return new Response(JSON.stringify({ 
+        message: `User successfully removed from location "${(location as any).name}" and ownership transferred to another admin`,
+        locationId,
+        userId: targetUserId,
+        ownershipTransferred: true,
+        newOwnerId: (newOwner as any).id
+      }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    } else {
+      // Remove user as a member of the location
+      const result = await env.DB.prepare(`
+        DELETE FROM location_members 
+        WHERE location_id = ? AND user_id = ?
+      `).bind(locationId, targetUserId).run();
+
+      if (result.changes === 0) {
+        return new Response(JSON.stringify({ error: 'User was not assigned to this location' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     }
 
     return new Response(JSON.stringify({ 
