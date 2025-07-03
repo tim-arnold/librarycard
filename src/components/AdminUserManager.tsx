@@ -65,6 +65,7 @@ interface AdminUser {
   books_added: number
   locations_joined: number
   last_book_added: string | null
+  location_names: string | null
 }
 
 interface LocationInvitation {
@@ -631,6 +632,22 @@ export default function AdminUserManager() {
     return <Chip label={provider} color={color} size="small" variant="outlined" />
   }
 
+  const formatLocationDisplay = (user: AdminUser) => {
+    if (!user.location_names) {
+      return `${user.locations_joined} locations`
+    }
+    
+    const locationNames = user.location_names.split(',').filter(name => name && name.trim())
+    
+    if (locationNames.length === 1) {
+      return locationNames[0].trim()
+    } else if (locationNames.length > 1) {
+      return `${locationNames.length} locations`
+    } else {
+      return `${user.locations_joined} locations`
+    }
+  }
+
   // Invitation Management Functions
   const loadInvitations = async () => {
     if (!session?.user?.email) return
@@ -1033,7 +1050,7 @@ export default function AdminUserManager() {
                             📚 {user.books_added} books
                           </Typography>
                           <Typography variant="body2" color="text.secondary">
-                            📍 {user.locations_joined} locations
+                            📍 {formatLocationDisplay(user)}
                           </Typography>
                           {user.last_book_added && (
                             <Typography variant="caption" color="text.secondary">
