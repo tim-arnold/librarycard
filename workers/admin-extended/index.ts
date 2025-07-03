@@ -239,29 +239,81 @@ export async function getAdminAnalytics(userId: string, env: Env, corsHeaders: R
 }
 
 export async function getAdminUsers(userId: string, env: Env, corsHeaders: Record<string, string>) {
-  // Check if user is super admin (global user management is super admin only)
-  if (!(await isUserSuperAdmin(userId, env))) {
-    return new Response(JSON.stringify({ error: 'Super admin privileges required' }), {
+  // Check if user is at least admin
+  if (!(await isUserAdmin(userId, env))) {
+    return new Response(JSON.stringify({ error: 'Admin privileges required' }), {
       status: 403,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
+  const isSuperAdmin = await isUserSuperAdmin(userId, env);
+
   try {
-    // Get all users with activity stats
-    const users = await env.DB.prepare(`
-      SELECT u.id, u.email, u.first_name, u.last_name, u.auth_provider, 
-             u.email_verified, u.user_role, u.created_at,
-             COUNT(DISTINCT b.id) as books_added,
-             COUNT(DISTINCT COALESCE(lm.location_id, l.id)) as locations_joined,
-             MAX(b.created_at) as last_book_added
-      FROM users u
-      LEFT JOIN books b ON u.id = b.added_by
-      LEFT JOIN location_members lm ON u.id = lm.user_id
-      LEFT JOIN locations l ON u.id = l.owner_id
-      GROUP BY u.id
-      ORDER BY u.created_at DESC
-    `).all();
+    let users;
+    
+    if (isSuperAdmin) {
+      // Super admins can see all users globally
+      users = await env.DB.prepare(`
+        SELECT u.id, u.email, u.first_name, u.last_name, u.auth_provider, 
+               u.email_verified, u.user_role, u.created_at,
+               COUNT(DISTINCT b.id) as books_added,
+               COUNT(DISTINCT COALESCE(lm.location_id, l.id)) as locations_joined,
+               MAX(b.created_at) as last_book_added
+        FROM users u
+        LEFT JOIN books b ON u.id = b.added_by
+        LEFT JOIN location_members lm ON u.id = lm.user_id
+        LEFT JOIN locations l ON u.id = l.owner_id
+        GROUP BY u.id
+        ORDER BY u.created_at DESC
+      `).all();
+    } else {
+      // Regular admins can only see users from their assigned locations
+      users = await env.DB.prepare(`
+        SELECT DISTINCT u.id, u.email, u.first_name, u.last_name, u.auth_provider, 
+               u.email_verified, u.user_role, u.created_at,
+               COUNT(DISTINCT b.id) as books_added,
+               COUNT(DISTINCT COALESCE(lm_user.location_id, l_user.id)) as locations_joined,
+               MAX(b.created_at) as last_book_added
+        FROM users u
+        LEFT JOIN books b ON u.id = b.added_by
+        LEFT JOIN location_members lm_user ON u.id = lm_user.user_id
+        LEFT JOIN locations l_user ON u.id = l_user.owner_id
+        WHERE u.id IN (
+          SELECT DISTINCT user_id FROM (
+            -- Users who are members of locations owned by this admin
+            SELECT lm.user_id 
+            FROM location_members lm
+            INNER JOIN locations l ON lm.location_id = l.id
+            WHERE l.owner_id = ?
+            
+            UNION
+            
+            -- Users who are members of locations this admin is assigned to
+            SELECT lm.user_id 
+            FROM location_members lm
+            WHERE lm.location_id IN (
+              SELECT location_id FROM location_members WHERE user_id = ?
+            )
+            
+            UNION
+            
+            -- Users who own locations this admin is assigned to
+            SELECT l.owner_id as user_id
+            FROM locations l
+            INNER JOIN location_members lm ON l.id = lm.location_id
+            WHERE lm.user_id = ?
+            
+            UNION
+            
+            -- Include the admin themselves
+            SELECT ? as user_id
+          )
+        )
+        GROUP BY u.id
+        ORDER BY u.created_at DESC
+      `).bind(userId, userId, userId, userId).all();
+    }
 
     return new Response(JSON.stringify(users.results), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
