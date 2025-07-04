@@ -21,6 +21,7 @@ import {
   checkoutBook,
   checkinBook,
   getCheckoutHistory,
+  getBookCheckoutHistory,
   createBookRemovalRequest,
   getBookRemovalRequests,
   approveBookRemovalRequest,
@@ -251,6 +252,12 @@ export default {
 
       if (path === '/api/books/checkout-history' && request.method === 'GET') {
         return await getCheckoutHistory(userId, env, corsHeaders);
+      }
+
+      // Get checkout history for a specific book
+      if (path.match(/^\/api\/books\/\d+\/checkout-history$/) && request.method === 'GET') {
+        const id = parseInt(path.split('/')[3]);
+        return await getBookCheckoutHistory(id, userId, env, corsHeaders);
       }
 
       if (path.startsWith('/api/books/') && request.method === 'PUT') {
