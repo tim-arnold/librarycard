@@ -213,7 +213,7 @@ export default function BookGrid({
             {book.status === 'checked_out' && (
               <Box sx={{ mt: 2, p: 1, border: 1, borderColor: 'warning.main', borderRadius: 1 }}>
                 <Typography variant="body2" color="text.primary" sx={{ fontWeight: 500 }}>
-                  📖 Checked out by {book.checked_out_by === currentUserId ? 'you' : (book.checked_out_by_name || 'Unknown')}
+                  📖 Checked out
                   {book.checked_out_date && (() => {
                     const checkoutDate = new Date(book.checked_out_date)
                     const today = new Date()
