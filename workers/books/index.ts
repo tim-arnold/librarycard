@@ -355,14 +355,8 @@ export async function checkinBook(bookId: number, userId: string, env: Env, cors
       });
     }
 
-    // Check if book is checked out by this user or if user is admin
-    const isAdmin = await isUserAdmin(userId, env);
-    if (!isAdmin && (book as any).checked_out_by !== userId) {
-      return new Response(JSON.stringify({ error: 'You can only check in books that you have checked out' }), {
-        status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    // Allow any user to check in any book (trusting community approach)
+    // No additional permission check needed beyond location access
 
     // Update book status
     const updateBookStmt = env.DB.prepare(`

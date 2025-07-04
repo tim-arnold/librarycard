@@ -45,8 +45,8 @@ export default function BookActions({
   const hasPendingRemovalRequest = pendingRemovalRequests[book.id]
   const hasMultipleShelves = shelves.length > 1
   
-  // Only show return button if user checked out the book OR user is admin
-  const canReturn = isCheckedOut && (isAdmin(userRole) || book.checked_out_by === currentUserId)
+  // Allow any user to return any checked out book (trusting community approach)
+  const canReturn = isCheckedOut
   
   // Don't show relocate button if book is checked out
   const canRelocate = !isCheckedOut && hasMultipleShelves
