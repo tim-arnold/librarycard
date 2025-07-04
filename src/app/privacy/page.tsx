@@ -1,6 +1,6 @@
 'use client'
 
-import { Container, Typography, Paper, Box, Link } from '@mui/material'
+import { Container, Typography, Paper, Box } from '@mui/material'
 import { useRouter } from 'next/navigation'
 import { ArrowBack } from '@mui/icons-material'
 import { IconButton } from '@mui/material'
@@ -67,7 +67,7 @@ export default function PrivacyPage() {
         </ul>
         <Typography variant="body1" paragraph>
           You can disable functional storage through our cookie consent banner. The app will 
-          continue to work, but won't remember your preferences between sessions.
+          continue to work, but won&apos;t remember your preferences between sessions.
         </Typography>
 
         <Typography variant="h5" gutterBottom sx={{ mt: 3 }}>
@@ -110,7 +110,7 @@ export default function PrivacyPage() {
         </Typography>
         <Typography variant="body1" paragraph>
           If you have questions about this privacy policy or your data, please contact us 
-          through the app's contact form or at the email address provided in your account settings.
+          through the app&apos;s contact form or at the email address provided in your account settings.
         </Typography>
 
         <Typography variant="h5" gutterBottom sx={{ mt: 3 }}>
@@ -123,7 +123,7 @@ export default function PrivacyPage() {
 
         <Box sx={{ mt: 4, pt: 2, borderTop: 1, borderColor: 'divider' }}>
           <Typography variant="body2" color="text.secondary">
-            This privacy policy is part of LibraryCard's commitment to transparency and user privacy.
+            This privacy policy is part of LibraryCard&apos;s commitment to transparency and user privacy.
           </Typography>
         </Box>
       </Paper>

@@ -1426,7 +1426,7 @@ export default function BookLibrary() {
           >
             {shelves.length <= 1 ? (
               <Typography variant="body2">
-                📖 <strong>Your Library:</strong> Use search and category filters to find what you're looking for.{!isAdmin(userRole) && ' Click "Request Removal" to submit requests to an administrator.'}
+                📖 <strong>Your Library:</strong> Use search and category filters to find what you&apos;re looking for.{!isAdmin(userRole) && ' Click &quot;Request Removal&quot; to submit requests to an administrator.'}
               </Typography>
             ) : isAdmin(userRole) ? (
               <Typography variant="body2">
@@ -1434,7 +1434,7 @@ export default function BookLibrary() {
               </Typography>
             ) : (
               <Typography variant="body2">
-                📚 <strong>Your Collection:</strong> Browse your {books.length} books across {shelves.length} shelves. Click shelf tiles to filter, or use the search bar to find specific titles. Click "Request Removal" to submit requests to an administrator.
+                📚 <strong>Your Collection:</strong> Browse your {books.length} books across {shelves.length} shelves. Click shelf tiles to filter, or use the search bar to find specific titles. Click &quot;Request Removal&quot; to submit requests to an administrator.
               </Typography>
             )}
           </Alert>
@@ -1747,7 +1747,6 @@ export default function BookLibrary() {
                     <BookGrid
                       books={location.books || []}
                       userRole={userRole}
-                      currentUserId={currentUserId}
                       shelves={shelves}
                       pendingRemovalRequests={pendingRemovalRequests}
                       onCheckout={checkoutBook}
@@ -1769,7 +1768,6 @@ export default function BookLibrary() {
               <BookGrid
                 books={paginatedBooks}
                 userRole={userRole}
-                currentUserId={currentUserId}
                 shelves={shelves}
                 pendingRemovalRequests={pendingRemovalRequests}
                 onCheckout={checkoutBook}
@@ -1846,7 +1844,7 @@ export default function BookLibrary() {
       {showRelocateModal && selectedBookForRelocate && (
         <Dialog open={showRelocateModal} onClose={() => setShowRelocateModal(false)} maxWidth="sm" fullWidth>
           <DialogTitle>
-            📦 Relocate "{selectedBookForRelocate.title}"
+            📦 Relocate &quot;{selectedBookForRelocate.title}&quot;
           </DialogTitle>
           <DialogContent>
             <Box sx={{ pt: 2 }}>

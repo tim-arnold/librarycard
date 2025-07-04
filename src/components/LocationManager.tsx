@@ -10,19 +10,9 @@ import {
   Button,
   Box,
   TextField,
-  Card,
-  CardContent,
-  CardActions,
   Alert,
   CircularProgress,
-  Divider,
-  Chip,
   IconButton,
-  Collapse,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -253,7 +243,7 @@ export default function LocationManager() {
     const confirmed = await confirmAsync(
       {
         title: 'Delete Location',
-        message: `Are you sure you want to delete "${locationName}"? This will permanently delete all shelves and books in this location. This action cannot be undone.`,
+        message: `Are you sure you want to delete &quot;${locationName}&quot;? This will permanently delete all shelves and books in this location. This action cannot be undone.`,
         confirmText: 'Delete Location',
         variant: 'danger'
       },
@@ -277,7 +267,7 @@ export default function LocationManager() {
           }
           await alert({
             title: 'Location Deleted',
-            message: `"${locationName}" and all its contents have been successfully deleted.`,
+            message: `&quot;${locationName}&quot; and all its contents have been successfully deleted.`,
             variant: 'success'
           })
         } else {
@@ -949,7 +939,7 @@ export default function LocationManager() {
               value={inviteEmail}
               onChange={(e) => setInviteEmail(e.target.value)}
               placeholder="user@example.com"
-              helperText="If the user doesn't have a LibraryCard account, they can create one when accepting the invitation."
+              helperText="If the user doesn&apos;t have a LibraryCard account, they can create one when accepting the invitation."
               sx={{ mt: 1 }}
             />
           </DialogContent>

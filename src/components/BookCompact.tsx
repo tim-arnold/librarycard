@@ -325,7 +325,6 @@ export default function BookList({
           <BookActions
             book={book}
             userRole={userRole}
-            currentUserId={currentUserId}
             shelves={shelves}
             pendingRemovalRequests={pendingRemovalRequests}
             viewMode="compact"

@@ -1,4 +1,4 @@
-import { createTheme, ThemeOptions } from '@mui/material/styles'
+import { createTheme, ThemeOptions, Theme } from '@mui/material/styles'
 
 const commonTypography = {
   fontFamily: [
@@ -19,7 +19,7 @@ const commonTypography = {
 const commonComponents = {
   MuiContainer: {
     styleOverrides: {
-      root: ({ theme }: { theme: any }) => ({
+      root: ({ theme }: { theme: Theme }) => ({
         paddingLeft: '0 !important',
         paddingRight: '0 !important',
         [theme.breakpoints.up('md')]: {
