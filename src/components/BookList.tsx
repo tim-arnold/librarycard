@@ -195,7 +195,6 @@ export default function BookText({
             <BookActions
               book={book}
               userRole={userRole}
-              currentUserId={currentUserId}
               shelves={shelves}
               pendingRemovalRequests={pendingRemovalRequests}
               viewMode="list"

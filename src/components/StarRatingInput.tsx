@@ -21,7 +21,6 @@ export default function StarRatingInput({
   size = 'medium',
   label,
   showClearButton = true,
-  allowHalfStars = false
 }: StarRatingInputProps) {
   const [hoverRating, setHoverRating] = useState<number | null>(null)
   

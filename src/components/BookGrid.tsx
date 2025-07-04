@@ -18,7 +18,6 @@ import StarRating from './StarRating'
 interface BookGridProps {
   books: EnhancedBook[]
   userRole: string | null
-  currentUserId: string | null
   shelves: Array<{ id: number; name: string; location_id: number; created_at: string }>
   pendingRemovalRequests: Record<string, number>
   onCheckout: (bookId: string, bookTitle: string) => Promise<void>
@@ -36,7 +35,6 @@ interface BookGridProps {
 export default function BookGrid({
   books,
   userRole,
-  currentUserId,
   shelves,
   pendingRemovalRequests,
   onCheckout,
@@ -230,7 +228,6 @@ export default function BookGrid({
             <BookActions
               book={book}
               userRole={userRole}
-              currentUserId={currentUserId}
               shelves={shelves}
               pendingRemovalRequests={pendingRemovalRequests}
               viewMode="card"

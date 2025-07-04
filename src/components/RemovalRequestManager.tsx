@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import {
   Container,
@@ -57,13 +57,7 @@ export default function RemovalRequestManager() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'denied'>('pending')
 
-  useEffect(() => {
-    if (session?.user?.email) {
-      loadRequests()
-    }
-  }, [session])
-
-  const loadRequests = async () => {
+  const loadRequests = useCallback(async () => {
     if (!session?.user?.email) return
 
     try {
@@ -86,7 +80,13 @@ export default function RemovalRequestManager() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [session])
+
+  useEffect(() => {
+    if (session?.user?.email) {
+      loadRequests()
+    }
+  }, [session, loadRequests])
 
   const approveRequest = async (requestId: number, bookTitle: string, reason?: string) => {
     // Different confirmation message for overdue books
@@ -577,7 +577,7 @@ export default function RemovalRequestManager() {
                           <strong>Details:</strong>
                         </Typography>
                         <Typography variant="body2" fontStyle="italic">
-                          "{request.reason_details}"
+                          &quot;{request.reason_details}&quot;
                         </Typography>
                       </Box>
                     )}
@@ -588,7 +588,7 @@ export default function RemovalRequestManager() {
                           <strong>Admin Comment:</strong>
                         </Typography>
                         <Typography variant="body2" fontStyle="italic">
-                          "{request.review_comment}"
+                          &quot;{request.review_comment}&quot;
                         </Typography>
                       </Box>
                     )}

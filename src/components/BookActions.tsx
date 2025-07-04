@@ -15,7 +15,6 @@ import { isAdmin } from '@/lib/permissions'
 export interface BookActionsProps {
   book: EnhancedBook
   userRole: string | null
-  currentUserId: string | null
   shelves: Array<{ id: number; name: string; location_id: number; created_at: string }>
   pendingRemovalRequests: Record<string, number>
   viewMode: 'card' | 'compact' | 'list'
@@ -30,7 +29,6 @@ export interface BookActionsProps {
 export default function BookActions({
   book,
   userRole,
-  currentUserId,
   shelves,
   pendingRemovalRequests,
   viewMode,

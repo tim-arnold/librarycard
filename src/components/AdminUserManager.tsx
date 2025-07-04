@@ -15,7 +15,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   Chip,
   Button,
   IconButton,
@@ -35,7 +34,6 @@ import {
 } from '@mui/material'
 import {
   MoreVert,
-  Edit,
   Delete,
   Security,
   Person,
@@ -123,7 +121,6 @@ export default function AdminUserManager() {
   const [locationAssignmentDialogOpen, setLocationAssignmentDialogOpen] = useState(false)
   const [userForRoleChange, setUserForRoleChange] = useState<AdminUser | null>(null)
   const [userForLocationAssignment, setUserForLocationAssignment] = useState<AdminUser | null>(null)
-  const [newRole, setNewRole] = useState<string>('')
   const [userAssignedLocations, setUserAssignedLocations] = useState<Location[]>([])
   const [availableLocationsForAssignment, setAvailableLocationsForAssignment] = useState<Location[]>([])
   
@@ -1282,7 +1279,6 @@ export default function AdminUserManager() {
                 onClick={() => {
                   handleMenuClose()
                   setUserForRoleChange(selectedUser)
-                  setNewRole('super_admin')
                   setRolePromotionDialogOpen(true)
                 }}
               >
@@ -1382,7 +1378,7 @@ export default function AdminUserManager() {
         <DialogTitle>🏢 Transfer Location Ownership</DialogTitle>
         <DialogContent>
           <Typography variant="body1" paragraph>
-            The user "{userToDelete}" owns {ownedLocations.length} location(s). Before deleting the user, you must assign new admin owners for each location.
+            The user &quot;{userToDelete}&quot; owns {ownedLocations.length} location(s). Before deleting the user, you must assign new admin owners for each location.
           </Typography>
           
           <Alert severity="info" sx={{ mb: 3 }}>
