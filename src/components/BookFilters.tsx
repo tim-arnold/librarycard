@@ -20,8 +20,8 @@ interface BookFiltersProps {
   setSearchTerm: (term: string) => void
   shelfFilter: string
   setShelfFilter: (shelf: string) => void
-  categoryFilter: string
-  setCategoryFilter: (category: string) => void
+  categoryFilter: string[]
+  setCategoryFilter: (categories: string[]) => void
   locationFilter: string
   setLocationFilter: (location: string) => void
   checkoutFilter: string
@@ -136,11 +136,17 @@ export default function BookFilters({
         <FormControl fullWidth size="small">
           <InputLabel>Genre</InputLabel>
           <Select
+            multiple
             value={categoryFilter}
             label="Genre"
-            onChange={(e) => setCategoryFilter(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value
+              setCategoryFilter(typeof value === 'string' ? value.split(',') : value)
+            }}
+            renderValue={(selected) => 
+              selected.length === 0 ? 'All genres' : `${selected.length} selected`
+            }
           >
-            <MenuItem value="">All genres</MenuItem>
             {allCategories.map(genre => (
               <MenuItem key={genre} value={genre}>{genre}</MenuItem>
             ))}

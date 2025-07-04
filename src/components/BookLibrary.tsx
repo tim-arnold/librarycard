@@ -368,9 +368,10 @@ export default function BookLibrary() {
   const [filteredBooks, setFilteredBooks] = useState<EnhancedBook[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [shelfFilter, setShelfFilter] = useState('')
-  const [categoryFilter, setCategoryFilter] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState<string[]>([])
   const [locationFilter, setLocationFilter] = useState('')
   const [checkoutFilter, setCheckoutFilter] = useState('')
+  const [authorFilter, setAuthorFilter] = useState('')
   const [shelves, setShelves] = useState<Shelf[]>([])
   const [userRole, setUserRole] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
@@ -812,8 +813,10 @@ export default function BookLibrary() {
       filtered = filtered.filter(book => book.shelf_name === shelfFilter)
     }
 
-    if (categoryFilter) {
-      filtered = filtered.filter(book => bookMatchesGenreFilter(book, categoryFilter))
+    if (categoryFilter.length > 0) {
+      filtered = filtered.filter(book => 
+        categoryFilter.some(genre => bookMatchesGenreFilter(book, genre))
+      )
     }
 
     // Admin location filter
@@ -837,6 +840,15 @@ export default function BookLibrary() {
         }
         return true
       })
+    }
+
+    // Author filter
+    if (authorFilter) {
+      filtered = filtered.filter(book =>
+        book.authors.some(author => 
+          author.toLowerCase().includes(authorFilter.toLowerCase())
+        )
+      )
     }
 
     // Apply sorting (create new array to ensure React detects the change)
@@ -896,7 +908,7 @@ export default function BookLibrary() {
     setFilteredBooks(filtered)
     // Reset to first page when filters or sorting change
     setCurrentPage(1)
-  }, [books, searchTerm, shelfFilter, categoryFilter, locationFilter, checkoutFilter, userRole, shelves, allLocations, sortField, sortDirection])
+  }, [books, searchTerm, shelfFilter, categoryFilter, locationFilter, checkoutFilter, authorFilter, userRole, shelves, allLocations, sortField, sortDirection])
 
   const deleteBook = async (bookId: string, bookTitle: string) => {
     const confirmed = await confirmAsync(
@@ -932,11 +944,14 @@ export default function BookLibrary() {
   }
 
   const handleAuthorClick = (authorName: string) => {
-    alert({
-      title: 'Author Search',
-      message: `This feature will search your library for other books by ${authorName}. Feature coming soon!`,
-      variant: 'info'
-    })
+    // Clear other filters to focus on this author
+    setSearchTerm('')
+    setShelfFilter('')
+    setCategoryFilter([])
+    setCheckoutFilter('')
+    
+    // Set the author filter
+    setAuthorFilter(authorName)
   }
 
   const handleSeriesClick = (seriesName: string) => {
@@ -1513,6 +1528,88 @@ export default function BookLibrary() {
           allLocations={allLocations}
           allCategories={allCategories}
         />
+
+        {/* Active Filter Chips */}
+        {(authorFilter || shelfFilter || categoryFilter.length > 0 || locationFilter || checkoutFilter) && (
+          <Box sx={{ mb: 3, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            {authorFilter && (
+              <Chip
+                label={`Author: ${authorFilter}`}
+                onDelete={() => setAuthorFilter('')}
+                color="primary"
+                variant="filled"
+                sx={{ 
+                  fontSize: '0.9rem',
+                  height: 32,
+                  '& .MuiChip-deleteIcon': {
+                    color: 'primary.contrastText'
+                  }
+                }}
+              />
+            )}
+            {shelfFilter && (
+              <Chip
+                label={`Shelf: ${shelfFilter}`}
+                onDelete={() => setShelfFilter('')}
+                color="secondary"
+                variant="filled"
+                sx={{ 
+                  fontSize: '0.9rem',
+                  height: 32,
+                  '& .MuiChip-deleteIcon': {
+                    color: 'secondary.contrastText'
+                  }
+                }}
+              />
+            )}
+            {categoryFilter.map((genre) => (
+              <Chip
+                key={genre}
+                label={`Genre: ${genre}`}
+                onDelete={() => setCategoryFilter(categoryFilter.filter(g => g !== genre))}
+                color="info"
+                variant="filled"
+                sx={{ 
+                  fontSize: '0.9rem',
+                  height: 32,
+                  '& .MuiChip-deleteIcon': {
+                    color: 'info.contrastText'
+                  }
+                }}
+              />
+            ))}
+            {locationFilter && (
+              <Chip
+                label={`Location: ${locationFilter}`}
+                onDelete={() => setLocationFilter('')}
+                color="success"
+                variant="filled"
+                sx={{ 
+                  fontSize: '0.9rem',
+                  height: 32,
+                  '& .MuiChip-deleteIcon': {
+                    color: 'success.contrastText'
+                  }
+                }}
+              />
+            )}
+            {checkoutFilter && (
+              <Chip
+                label={`Status: ${checkoutFilter === 'available' ? 'Available' : 'Checked Out'}`}
+                onDelete={() => setCheckoutFilter('')}
+                color="warning"
+                variant="filled"
+                sx={{ 
+                  fontSize: '0.9rem',
+                  height: 32,
+                  '& .MuiChip-deleteIcon': {
+                    color: 'warning.contrastText'
+                  }
+                }}
+              />
+            )}
+          </Box>
+        )}
 
         {/* View Mode Toggle and Books Per Page - Only show if there are books to display */}
         {filteredBooks.length > 0 && (
