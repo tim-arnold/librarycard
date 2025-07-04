@@ -355,14 +355,8 @@ export async function checkinBook(bookId: number, userId: string, env: Env, cors
       });
     }
 
-    // Check if book is checked out by this user or if user is admin
-    const isAdmin = await isUserAdmin(userId, env);
-    if (!isAdmin && (book as any).checked_out_by !== userId) {
-      return new Response(JSON.stringify({ error: 'You can only check in books that you have checked out' }), {
-        status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    // Allow any user to check in any book (trusting community approach)
+    // No additional permission check needed beyond location access
 
     // Update book status
     const updateBookStmt = env.DB.prepare(`
@@ -965,6 +959,44 @@ export async function getBookRating(bookId: number, userId: string, env: Env, co
   } catch (error) {
     console.error('Error getting book rating:', error);
     return new Response(JSON.stringify({ error: 'Failed to get book rating' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+// Get checkout history for a specific book - admin only
+export async function getBookCheckoutHistory(bookId: number, userId: string, env: Env, corsHeaders: Record<string, string>) {
+  try {
+    // Check if user is admin - only admins can see book checkout history
+    const isAdmin = await isUserAdmin(userId, env);
+    if (!isAdmin) {
+      return new Response(JSON.stringify({ error: 'Admin access required' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Get checkout history for the specific book
+    const historyStmt = env.DB.prepare(`
+      SELECT ch.*, 
+             u.first_name as user_name,
+             u.email as user_email
+      FROM book_checkout_history ch
+      LEFT JOIN users u ON ch.user_id = u.id
+      WHERE ch.book_id = ?
+      ORDER BY ch.action_date DESC
+    `);
+
+    const result = await historyStmt.bind(bookId).all();
+    
+    return new Response(JSON.stringify(result.results || []), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (error) {
+    console.error('Error getting book checkout history:', error);
+    return new Response(JSON.stringify({ error: 'Failed to get book checkout history' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

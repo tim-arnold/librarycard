@@ -24,6 +24,8 @@ interface BookFiltersProps {
   setCategoryFilter: (category: string) => void
   locationFilter: string
   setLocationFilter: (location: string) => void
+  checkoutFilter: string
+  setCheckoutFilter: (status: string) => void
   sortField: SortField
   setSortField: (field: SortField) => void
   sortDirection: SortDirection
@@ -43,6 +45,8 @@ export default function BookFilters({
   setCategoryFilter,
   locationFilter,
   setLocationFilter,
+  checkoutFilter,
+  setCheckoutFilter,
   sortField,
   setSortField,
   sortDirection,
@@ -112,6 +116,21 @@ export default function BookFilters({
           </FormControl>
         </Box>
       )}
+
+      <Box sx={{ flex: '1 1 200px', minWidth: 200 }}>
+        <FormControl fullWidth size="small">
+          <InputLabel>Status</InputLabel>
+          <Select
+            value={checkoutFilter}
+            label="Status"
+            onChange={(e) => setCheckoutFilter(e.target.value)}
+          >
+            <MenuItem value="">All books</MenuItem>
+            <MenuItem value="available">Available</MenuItem>
+            <MenuItem value="checked_out">Checked out</MenuItem>
+          </Select>
+        </FormControl>
+      </Box>
 
       <Box sx={{ flex: '1 1 200px', minWidth: 200 }}>
         <FormControl fullWidth size="small">
