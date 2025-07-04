@@ -476,9 +476,9 @@ export async function createBookRemovalRequest(request: Request, userId: string,
   }
 
   // Validate reason
-  const validReasons = ['lost', 'damaged', 'missing', 'other'];
+  const validReasons = ['lost', 'damaged', 'missing', 'overdue', 'other'];
   if (!validReasons.includes(reason)) {
-    return new Response(JSON.stringify({ error: 'Invalid reason. Must be one of: lost, damaged, missing, other' }), {
+    return new Response(JSON.stringify({ error: 'Invalid reason. Must be one of: lost, damaged, missing, overdue, other' }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
