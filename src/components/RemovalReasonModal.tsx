@@ -31,6 +31,7 @@ export default function RemovalReasonModal({ open, onClose }: RemovalReasonModal
     lost: 'Book is lost',
     damaged: 'Book is damaged beyond repair',
     missing: 'Book is missing from its location',
+    overdue: 'Book has been checked out for a very long time',
     other: 'Other reason'
   }
 
@@ -63,7 +64,7 @@ export default function RemovalReasonModal({ open, onClose }: RemovalReasonModal
   return (
     <Dialog open={open} onClose={handleCancel} maxWidth="sm" fullWidth>
       <DialogTitle>
-        Notify the Libarian
+        Notify the Librarian
       </DialogTitle>
       
       <DialogContent>
@@ -96,6 +97,11 @@ export default function RemovalReasonModal({ open, onClose }: RemovalReasonModal
                 value="missing" 
                 control={<Radio />} 
                 label="Book is missing from its location" 
+              />
+              <FormControlLabel 
+                value="overdue" 
+                control={<Radio />} 
+                label="Book has been checked out for a very long time" 
               />
               <FormControlLabel 
                 value="other" 
