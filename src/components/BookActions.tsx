@@ -80,7 +80,7 @@ export default function BookActions({
             ) : canReturn ? (
               <Button
                 size="small"
-                variant="outlined"
+                variant="contained"
                 color="secondary"
                 onClick={() => onCheckin(book.id, book.title)}
                 sx={{ minWidth: 'auto', p: 0.5 }}
@@ -146,7 +146,7 @@ export default function BookActions({
               ) : canReturn ? (
                 <Button
                   size="small"
-                  variant="outlined"
+                  variant="contained"
                   color="secondary"
                   startIcon={<Undo />}
                   onClick={() => onCheckin(book.id, book.title)}
@@ -237,7 +237,7 @@ export default function BookActions({
             ) : canReturn ? (
               <Button
                 size="small"
-                variant="outlined"
+                variant="contained"
                 color="secondary"
                 startIcon={<Undo />}
                 onClick={() => onCheckin(book.id, book.title)}
