@@ -28,7 +28,8 @@ import {
   denyBookRemovalRequest,
   deleteBookRemovalRequest,
   rateBook,
-  getBookRating
+  getBookRating,
+  emailOverdueUser
 } from './books';
 import {
   sendInvitationEmail,
@@ -258,6 +259,12 @@ export default {
       if (path.match(/^\/api\/books\/\d+\/checkout-history$/) && request.method === 'GET') {
         const id = parseInt(path.split('/')[3]);
         return await getBookCheckoutHistory(id, userId, env, corsHeaders);
+      }
+
+      // Email overdue user for a specific book
+      if (path.match(/^\/api\/books\/\d+\/email-overdue-user$/) && request.method === 'POST') {
+        const id = parseInt(path.split('/')[3]);
+        return await emailOverdueUser(id, userId, env, corsHeaders);
       }
 
       if (path.startsWith('/api/books/') && request.method === 'PUT') {

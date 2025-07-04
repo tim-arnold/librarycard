@@ -21,6 +21,8 @@ import {
   Cancel,
   Schedule,
   Inbox,
+  Delete,
+  Email,
 } from '@mui/icons-material'
 import ConfirmationModal from './ConfirmationModal'
 import AlertModal from './AlertModal'
@@ -86,12 +88,20 @@ export default function RemovalRequestManager() {
     }
   }
 
-  const approveRequest = async (requestId: number, bookTitle: string) => {
+  const approveRequest = async (requestId: number, bookTitle: string, reason?: string) => {
+    // Different confirmation message for overdue books
+    const isOverdue = reason === 'overdue'
+    const title = isOverdue ? 'Remove Overdue Book' : 'Remove Book'
+    const message = isOverdue 
+      ? `Are you sure you want to remove "${bookTitle}" from the library? This book has been checked out for a very long time and will be permanently deleted. This action cannot be undone.`
+      : `Are you sure you want to remove "${bookTitle}" from the library? This will permanently delete the book and cannot be undone.`
+    const confirmText = isOverdue ? 'Remove Overdue Book' : 'Remove Book'
+
     const confirmed = await confirmAsync(
       {
-        title: 'Approve Removal Request',
-        message: `Are you sure you want to approve the removal of "${bookTitle}"? This will permanently delete the book from the library and cannot be undone.`,
-        confirmText: 'Approve & Delete Book',
+        title,
+        message,
+        confirmText,
         variant: 'danger'
       },
       async () => {
@@ -106,21 +116,21 @@ export default function RemovalRequestManager() {
         if (response.ok) {
           await loadRequests() // Refresh the list
           await alert({
-            title: 'Request Approved',
-            message: `The removal request for "${bookTitle}" has been approved and the book has been deleted from the library.`,
+            title: 'Book Removed',
+            message: `"${bookTitle}" has been removed from the library.`,
             variant: 'success'
           })
         } else {
           const errorData = await response.json()
-          throw new Error(errorData.error || 'Failed to approve request')
+          throw new Error(errorData.error || 'Failed to remove book')
         }
       }
     )
 
     if (!confirmed) {
       await alert({
-        title: 'Approval Failed',
-        message: 'Failed to approve the removal request. Please try again.',
+        title: 'Removal Failed',
+        message: 'Failed to remove the book. Please try again.',
         variant: 'error'
       })
     }
@@ -168,6 +178,45 @@ export default function RemovalRequestManager() {
       await alert({
         title: 'Denial Failed',
         message: 'Failed to deny the removal request. Please try again.',
+        variant: 'error'
+      })
+    }
+  }
+
+  const emailUser = async (bookId: number, bookTitle: string) => {
+    const confirmed = await confirmAsync(
+      {
+        title: 'Email Current Book Holder',
+        message: `Send an email notification to the person who currently has "${bookTitle}" checked out? They will receive a reminder that the book is overdue and should be returned.`,
+        confirmText: 'Send Email',
+        variant: 'primary'
+      },
+      async () => {
+        const response = await fetch(`${API_BASE}/api/books/${bookId}/email-overdue-user`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session?.user?.email}`,
+            'Content-Type': 'application/json',
+          },
+        })
+
+        if (response.ok) {
+          await alert({
+            title: 'Email Sent',
+            message: `An overdue notice has been sent to the current book holder for "${bookTitle}".`,
+            variant: 'success'
+          })
+        } else {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Failed to send email')
+        }
+      }
+    )
+
+    if (!confirmed) {
+      await alert({
+        title: 'Email Failed',
+        message: 'Failed to send email notification. Please try again.',
         variant: 'error'
       })
     }
@@ -294,6 +343,7 @@ export default function RemovalRequestManager() {
       lost: 'Book is lost',
       damaged: 'Book is damaged beyond repair',
       missing: 'Book is missing from its location',
+      overdue: 'Book has been checked out for a very long time',
       other: 'Other reason'
     }
     return labels[reason] || reason
@@ -419,25 +469,61 @@ export default function RemovalRequestManager() {
                     </Box>
                     
                     {request.status === 'pending' && (
-                      <Box sx={{ display: 'flex', gap: 1 }}>
-                        <Button
-                          variant="contained"
-                          color="success"
-                          size="small"
-                          startIcon={<CheckCircle />}
-                          onClick={() => approveRequest(request.id, request.book_title)}
-                        >
-                          Approve
-                        </Button>
-                        <Button
-                          variant="contained"
-                          color="warning"
-                          size="small"
-                          startIcon={<Cancel />}
-                          onClick={() => denyRequest(request.id, request.book_title)}
-                        >
-                          Deny
-                        </Button>
+                      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                        {request.reason === 'overdue' ? (
+                          // Special buttons for overdue requests
+                          <>
+                            <Button
+                              variant="contained"
+                              color="error"
+                              size="small"
+                              startIcon={<Delete />}
+                              onClick={() => approveRequest(request.id, request.book_title, request.reason)}
+                            >
+                              Remove
+                            </Button>
+                            <Button
+                              variant="contained"
+                              color="info"
+                              size="small"
+                              startIcon={<Email />}
+                              onClick={() => emailUser(request.book_id, request.book_title)}
+                            >
+                              Email User
+                            </Button>
+                            <Button
+                              variant="contained"
+                              color="warning"
+                              size="small"
+                              startIcon={<Cancel />}
+                              onClick={() => denyRequest(request.id, request.book_title)}
+                            >
+                              Reject
+                            </Button>
+                          </>
+                        ) : (
+                          // Standard buttons for other requests
+                          <>
+                            <Button
+                              variant="contained"
+                              color="error"
+                              size="small"
+                              startIcon={<Delete />}
+                              onClick={() => approveRequest(request.id, request.book_title, request.reason)}
+                            >
+                              Remove
+                            </Button>
+                            <Button
+                              variant="contained"
+                              color="warning"
+                              size="small"
+                              startIcon={<Cancel />}
+                              onClick={() => denyRequest(request.id, request.book_title)}
+                            >
+                              Reject
+                            </Button>
+                          </>
+                        )}
                       </Box>
                     )}
                   </Box>
