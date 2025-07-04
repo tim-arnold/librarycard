@@ -43,7 +43,15 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  List,
+  ListItem,
+  ListItemText,
+  Divider,
 } from '@mui/material'
+import { ExpandMore, History, Email } from '@mui/icons-material'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
 
@@ -67,9 +75,50 @@ interface MoreDetailsModalProps {
   book: EnhancedBook
   isOpen: boolean
   onClose: () => void
+  userRole: string | null
 }
 
-function MoreDetailsModal({ book, isOpen, onClose }: MoreDetailsModalProps) {
+interface CheckoutHistoryItem {
+  id: number
+  book_id: number
+  user_id: string
+  action: string
+  action_date: string
+  due_date?: string
+  notes?: string
+  user_name?: string
+  user_email?: string
+}
+
+function MoreDetailsModal({ book, isOpen, onClose, userRole }: MoreDetailsModalProps) {
+  const [checkoutHistory, setCheckoutHistory] = useState<CheckoutHistoryItem[]>([])
+  const [showCheckoutHistory, setShowCheckoutHistory] = useState(false)
+  const [loadingHistory, setLoadingHistory] = useState(false)
+
+  const fetchCheckoutHistory = async () => {
+    if (!isAdmin(userRole)) return
+    
+    setLoadingHistory(true)
+    try {
+      const response = await fetch(`/api/books/${book.id}/checkout-history`)
+      if (response.ok) {
+        const history = await response.json()
+        setCheckoutHistory(history)
+      }
+    } catch (error) {
+      console.error('Failed to fetch checkout history:', error)
+    } finally {
+      setLoadingHistory(false)
+    }
+  }
+
+  const handleToggleCheckoutHistory = () => {
+    if (!showCheckoutHistory && checkoutHistory.length === 0) {
+      fetchCheckoutHistory()
+    }
+    setShowCheckoutHistory(!showCheckoutHistory)
+  }
+
   return (
     <Dialog open={isOpen} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>
@@ -210,6 +259,97 @@ function MoreDetailsModal({ book, isOpen, onClose }: MoreDetailsModalProps) {
               </Box>
             )}
           </Box>
+          
+          {/* Checkout History Section - Only for admins */}
+          {isAdmin(userRole) && (
+            <Box sx={{ mt: 3 }}>
+              <Accordion expanded={showCheckoutHistory} onChange={handleToggleCheckoutHistory}>
+                <AccordionSummary expandIcon={<ExpandMore />}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <History />
+                    <Typography variant="h6">
+                      Checkout History
+                    </Typography>
+                  </Box>
+                </AccordionSummary>
+                <AccordionDetails>
+                  {loadingHistory ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+                      <CircularProgress size={24} />
+                    </Box>
+                  ) : checkoutHistory.length === 0 ? (
+                    <Typography color="text.secondary">
+                      No checkout history found for this book.
+                    </Typography>
+                  ) : (
+                    <List>
+                      {checkoutHistory.map((item, index) => (
+                        <Box key={item.id}>
+                          <ListItem alignItems="flex-start">
+                            <ListItemText
+                              primary={
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <Typography variant="body2" color="text.primary">
+                                    {item.action === 'checkout' ? 'Checked out' : 'Returned'} by {item.user_name || item.user_email}
+                                  </Typography>
+                                  {item.action === 'checkout' && book.checked_out_by === item.user_id && (
+                                    <Chip label="Current" color="primary" size="small" />
+                                  )}
+                                </Box>
+                              }
+                              secondary={
+                                <Box>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {new Date(item.action_date).toLocaleDateString('en-US', {
+                                      year: 'numeric',
+                                      month: 'short',
+                                      day: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })}
+                                  </Typography>
+                                  {item.due_date && (
+                                    <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                                      • Due: {new Date(item.due_date).toLocaleDateString('en-US', {
+                                        year: 'numeric',
+                                        month: 'short',
+                                        day: 'numeric'
+                                      })}
+                                    </Typography>
+                                  )}
+                                  {item.notes && (
+                                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                                      Note: {item.notes}
+                                    </Typography>
+                                  )}
+                                </Box>
+                              }
+                            />
+                            {item.action === 'checkout' && book.checked_out_by === item.user_id && (
+                              <Button
+                                size="small"
+                                startIcon={<Email />}
+                                onClick={() => {
+                                  const email = item.user_email
+                                  const subject = `Regarding "${book.title}" from the library`
+                                  const body = `Hello,\n\nI hope this message finds you well. I wanted to reach out regarding the book "${book.title}" that you currently have checked out from our library.\n\nBest regards`
+                                  window.location.href = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+                                }}
+                                sx={{ ml: 1 }}
+                              >
+                                Email
+                              </Button>
+                            )}
+                          </ListItem>
+                          {index < checkoutHistory.length - 1 && <Divider />}
+                        </Box>
+                      ))}
+                    </List>
+                  )}
+                </AccordionDetails>
+              </Accordion>
+            </Box>
+          )}
         </Box>
       </DialogContent>
       <DialogActions>
@@ -230,6 +370,7 @@ export default function BookLibrary() {
   const [shelfFilter, setShelfFilter] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
   const [locationFilter, setLocationFilter] = useState('')
+  const [checkoutFilter, setCheckoutFilter] = useState('')
   const [shelves, setShelves] = useState<Shelf[]>([])
   const [userRole, setUserRole] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
@@ -685,6 +826,19 @@ export default function BookLibrary() {
       })
     }
 
+    // Checkout status filter
+    if (checkoutFilter) {
+      filtered = filtered.filter(book => {
+        const isCheckedOut = book.checked_out_by && book.checked_out_by !== ''
+        if (checkoutFilter === 'checked_out') {
+          return isCheckedOut
+        } else if (checkoutFilter === 'available') {
+          return !isCheckedOut
+        }
+        return true
+      })
+    }
+
     // Apply sorting (create new array to ensure React detects the change)
     filtered = [...filtered].sort((a, b) => {
       let comparison = 0
@@ -742,7 +896,7 @@ export default function BookLibrary() {
     setFilteredBooks(filtered)
     // Reset to first page when filters or sorting change
     setCurrentPage(1)
-  }, [books, searchTerm, shelfFilter, categoryFilter, locationFilter, userRole, shelves, allLocations, sortField, sortDirection])
+  }, [books, searchTerm, shelfFilter, categoryFilter, locationFilter, checkoutFilter, userRole, shelves, allLocations, sortField, sortDirection])
 
   const deleteBook = async (bookId: string, bookTitle: string) => {
     const confirmed = await confirmAsync(
@@ -1340,6 +1494,8 @@ export default function BookLibrary() {
           setCategoryFilter={setCategoryFilter}
           locationFilter={locationFilter}
           setLocationFilter={setLocationFilter}
+          checkoutFilter={checkoutFilter}
+          setCheckoutFilter={setCheckoutFilter}
           sortField={sortField}
           setSortField={handleSortFieldChange}
           sortDirection={sortDirection}
@@ -1674,6 +1830,7 @@ export default function BookLibrary() {
             setShowMoreDetailsModal(false)
             setSelectedBookForDetails(null)
           }}
+          userRole={userRole}
         />
       )}
 
