@@ -101,7 +101,24 @@ export default function BookText({
                   fontStyle: 'italic'
                 }}
               >
-                {book.authors.join(', ')}
+                {book.authors.map((author, index) => (
+                  <span key={index}>
+                    <Typography 
+                      component="span" 
+                      sx={{ 
+                        color: 'primary.main', 
+                        cursor: 'pointer',
+                        textDecoration: 'underline',
+                        '&:hover': { textDecoration: 'none', color: 'primary.dark' },
+                        fontWeight: 500
+                      }}
+                      onClick={() => onAuthorClick(author)}
+                    >
+                      {author}
+                    </Typography>
+                    {index < book.authors.length - 1 && ', '}
+                  </span>
+                ))}
                 {book.publishedDate && `, ${new Date(book.publishedDate).getFullYear()}`}
               </Typography>
             </Box>
@@ -152,7 +169,16 @@ export default function BookText({
                   label={book.enhancedGenres?.[0] || book.categories?.[0]} 
                   size="small" 
                   color={book.enhancedGenres ? 'primary' : 'default'}
-                  sx={{ fontSize: '0.7rem', height: 20 }}
+                  sx={{ 
+                    fontSize: '0.7rem', 
+                    height: 20,
+                    maxWidth: '120px',
+                    '& .MuiChip-label': {
+                      textOverflow: 'ellipsis',
+                      overflow: 'hidden',
+                      whiteSpace: 'nowrap'
+                    }
+                  }}
                 />
               )}
               
