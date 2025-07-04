@@ -1002,3 +1002,166 @@ export async function getBookCheckoutHistory(bookId: number, userId: string, env
     });
   }
 }
+
+// Email overdue user for a specific book - admin only
+export async function emailOverdueUser(bookId: number, userId: string, env: Env, corsHeaders: Record<string, string>) {
+  try {
+    // Check if user is admin - only admins can send overdue emails
+    const isAdmin = await isUserAdmin(userId, env);
+    if (!isAdmin) {
+      return new Response(JSON.stringify({ error: 'Admin access required' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Get book details and current checkout info
+    const bookStmt = env.DB.prepare(`
+      SELECT b.*, 
+             u.email as checked_out_user_email,
+             u.first_name as checked_out_user_name,
+             l.name as location_name
+      FROM books b
+      LEFT JOIN users u ON b.checked_out_by = u.id
+      LEFT JOIN shelves s ON b.shelf_id = s.id
+      LEFT JOIN locations l ON s.location_id = l.id
+      WHERE b.id = ? AND b.checked_out_by IS NOT NULL
+    `);
+
+    const book = await bookStmt.bind(bookId).first();
+    
+    if (!book) {
+      return new Response(JSON.stringify({ error: 'Book not found or not currently checked out' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const bookData = book as any;
+    
+    // Send overdue email using Resend
+    if (env.RESEND_API_KEY) {
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from: env.FROM_EMAIL || 'LibraryCard <noreply@resend.dev>',
+          to: [bookData.checked_out_user_email],
+          subject: `LibraryCard: Overdue Book Reminder - "${bookData.title}"`,
+          html: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Overdue Book Reminder</title>
+            </head>
+            <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f4f4f4;">
+              <div style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                
+                <!-- Header -->
+                <div style="background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%); color: white; padding: 30px; text-align: center;">
+                  <h1 style="margin: 0; font-size: 28px; font-weight: 300;">📚 LibraryCard</h1>
+                  <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">Overdue Book Reminder</p>
+                </div>
+                
+                <!-- Content -->
+                <div style="padding: 40px 30px;">
+                  <h2 style="color: #ff6b35; margin-top: 0; font-size: 24px;">Book Return Reminder</h2>
+                  
+                  <p style="font-size: 16px; margin-bottom: 20px;">Hello ${bookData.checked_out_user_name},</p>
+                  
+                  <p style="font-size: 16px; margin-bottom: 20px;">
+                    This is a friendly reminder that you have a book checked out from ${bookData.location_name} that may be overdue:
+                  </p>
+                  
+                  <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 20px; margin: 25px 0; border-radius: 5px;">
+                    <p style="margin: 0 0 10px 0; font-size: 18px; font-weight: bold;">📖 "${bookData.title}"</p>
+                    ${bookData.authors ? `<p style="margin: 0 0 10px 0; font-size: 14px; color: #666;">by ${JSON.parse(bookData.authors).join(', ')}</p>` : ''}
+                    ${bookData.checked_out_date ? `<p style="margin: 0 0 10px 0; font-size: 14px; color: #666;"><strong>Checked out:</strong> ${new Date(bookData.checked_out_date).toLocaleDateString()}</p>` : ''}
+                    ${bookData.due_date ? `<p style="margin: 0; font-size: 14px; color: #666;"><strong>Due date:</strong> ${new Date(bookData.due_date).toLocaleDateString()}</p>` : ''}
+                  </div>
+                  
+                  <p style="font-size: 16px; margin-bottom: 25px;">
+                    Please return this book to the library when you have a chance. Other community members may be waiting to read it!
+                  </p>
+                  
+                  <p style="font-size: 14px; color: #666; margin-top: 25px;">
+                    If you've already returned this book, please disregard this message - there may be a delay in our system updates.
+                  </p>
+                  
+                  <p style="font-size: 14px; color: #666; margin-top: 20px;">
+                    Thank you for being part of our library community!
+                  </p>
+                </div>
+                
+                <!-- Footer -->
+                <div style="background-color: #f8f9fa; padding: 20px 30px; border-top: 1px solid #dee2e6;">
+                  <p style="margin: 0; font-size: 12px; color: #6c757d; text-align: center;">
+                    This is an automated reminder from LibraryCard. Please do not reply to this email.
+                  </p>
+                </div>
+              </div>
+            </body>
+            </html>
+          `,
+          text: `
+LibraryCard - Overdue Book Reminder
+
+Hello ${bookData.checked_out_user_name},
+
+This is a friendly reminder that you have a book checked out from ${bookData.location_name} that may be overdue:
+
+"${bookData.title}"
+${bookData.authors ? `by ${JSON.parse(bookData.authors).join(', ')}` : ''}
+${bookData.checked_out_date ? `Checked out: ${new Date(bookData.checked_out_date).toLocaleDateString()}` : ''}
+${bookData.due_date ? `Due date: ${new Date(bookData.due_date).toLocaleDateString()}` : ''}
+
+Please return this book to the library when you have a chance. Other community members may be waiting to read it!
+
+If you've already returned this book, please disregard this message - there may be a delay in our system updates.
+
+Thank you for being part of our library community!
+
+This is an automated reminder from LibraryCard.
+          `
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Email service error: ${response.status} ${errorText}`);
+      }
+
+      const result = await response.json() as { id: string };
+      console.log('Overdue email sent successfully:', result.id);
+    } else {
+      // Fallback for development without email service
+      console.log(`
+        Overdue email would be sent to: ${bookData.checked_out_user_email}
+        User: ${bookData.checked_out_user_name}
+        Book: "${bookData.title}"
+        Location: ${bookData.location_name}
+      `);
+    }
+    
+    return new Response(JSON.stringify({ 
+      message: 'Overdue notice sent successfully',
+      book_title: bookData.title,
+      user_email: bookData.checked_out_user_email,
+      user_name: bookData.checked_out_user_name
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (error) {
+    console.error('Error sending overdue email:', error);
+    return new Response(JSON.stringify({ error: 'Failed to send overdue email' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+}

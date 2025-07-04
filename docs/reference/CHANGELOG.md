@@ -2,7 +2,19 @@
 
 This file documents all completed features, fixes, and improvements to the LibraryCard project.
 
-## July 4, 2025 - Checked Out Books Management Features
+## July 4, 2025 - Enhanced Overdue Book Management and Admin Workflows
+
+### Advanced Overdue Book Handling System
+- **ENHANCED**: Admin removal request management with specialized handling for overdue book notifications
+- **IMPLEMENTED**: Multi-option workflow for overdue books with "Remove", "Email User", and "Reject" actions
+- **CREATED**: Professional email system for overdue book reminders with custom HTML templates
+- **BUILT**: New API endpoint `/api/books/[id]/email-overdue-user` for automated overdue notifications
+- **IMPROVED**: Admin confirmation modals with context-specific messaging for overdue vs standard removals
+- **UPDATED**: All removal request buttons from "Approve" to "Remove" for clarity and transparency
+- **ADDED**: Admin-only overdue email functionality with rich HTML templates including book details, checkout dates, and due dates
+- **ENHANCED**: RemovalRequestManager component with conditional button rendering based on removal reason
+- **FEATURED**: Smart fallback email system for development environments with console logging
+- **DEPLOYED**: Backend `emailOverdueUser` function with comprehensive book and user data retrieval
 
 ### Comprehensive Checkout Status Management System
 - **ADDED**: Checkout status filter to book listings with "All books", "Available", and "Checked out" options
