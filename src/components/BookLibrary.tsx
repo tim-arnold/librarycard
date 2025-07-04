@@ -1161,10 +1161,18 @@ export default function BookLibrary() {
   const checkinBook = async (bookId: string, bookTitle: string) => {
     if (!session?.user?.email) return
 
+    // Find the book to check who checked it out
+    const book = books.find(b => b.id === bookId)
+    const isReturningSomeoneElsesBook = book?.checked_out_by && book.checked_out_by !== currentUserId
+
+    const message = isReturningSomeoneElsesBook 
+      ? `Return "${bookTitle}" even though it was checked out by another person? This will mark the book as available and you will be able to immediately check it out.`
+      : `Return "${bookTitle}"? This will mark the book as available.`
+
     const confirmed = await confirmAsync(
       {
         title: 'Return Book',
-        message: `Return "${bookTitle}"? This will mark the book as available.`,
+        message,
         confirmText: 'Return Book',
         variant: 'primary'
       },
