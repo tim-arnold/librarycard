@@ -2,6 +2,21 @@
 
 This file documents all completed features, fixes, and improvements to the LibraryCard project.
 
+## July 4, 2025 - Checked Out Books Management Features
+
+### Comprehensive Checkout Status Management System
+- **ADDED**: Checkout status filter to book listings with "All books", "Available", and "Checked out" options
+- **IMPLEMENTED**: Admin-only checkout history section in book details modal with collapsible accordion interface
+- **CREATED**: Email functionality for contacting current book holders with pre-filled professional templates
+- **BUILT**: New API endpoint `/api/books/[id]/checkout-history` for fetching book-specific checkout history
+- **ENHANCED**: BookFilters component with checkout status dropdown and improved filtering logic
+- **DEPLOYED**: Backend `getBookCheckoutHistory` function with admin-only access controls
+- **UPDATED**: Book details modal to display comprehensive checkout/return history with user information
+- **FEATURED**: Smart email integration using mailto links with book title and context
+- **IMPLEMENTED**: Lazy loading for checkout history data to improve performance
+- **ADDED**: Visual indicators for current book holders with "Current" badges
+- **ENHANCED**: Filtering system to support checkout status alongside existing shelf, genre, and location filters
+
 ## July 3, 2025 - Admin User Interface Improvements
 
 ### Enhanced Admin User List Display
