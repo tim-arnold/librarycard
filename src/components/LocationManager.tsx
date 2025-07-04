@@ -743,7 +743,7 @@ export default function LocationManager() {
                   
                   {invitations.length === 0 ? (
                     <p style={{ color: '#666', textAlign: 'center', margin: '1rem 0' }}>
-                      No invitations sent yet. Click "Send Invitation" to invite users to this location.
+                      No invitations sent yet. Click &quot;Send Invitation&quot; to invite users to this location.
                     </p>
                   ) : (
                     <div style={{ display: 'grid', gap: '0.5rem' }}>
@@ -927,7 +927,7 @@ export default function LocationManager() {
           <DialogContent>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               Invite a user to join the <strong>{selectedLocation?.name}</strong> location. 
-              They'll receive an email with an invitation link.
+              They&apos;ll receive an email with an invitation link.
             </Typography>
             
             <TextField

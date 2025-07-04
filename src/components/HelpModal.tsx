@@ -224,7 +224,7 @@ export default function HelpModal({ open, onClose }: HelpModalProps) {
 
                   {!userIsAdmin && (
                     <Alert severity="info" sx={{ mt: 2 }}>
-                      If you don't have any locations available, contact an administrator to set up locations and shelves.
+                      If you don&apos;t have any locations available, contact an administrator to set up locations and shelves.
                     </Alert>
                   )}
                 </AccordionDetails>
@@ -261,7 +261,7 @@ export default function HelpModal({ open, onClose }: HelpModalProps) {
                     </List>
 
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 2 }}>
-                      Each new location automatically gets a starter shelf called "my first shelf" that you can rename or organize as needed.
+                      Each new location automatically gets a starter shelf called &quot;my first shelf&quot; that you can rename or organize as needed.
                     </Typography>
 
                     <Divider sx={{ my: 2 }} />
@@ -374,7 +374,7 @@ export default function HelpModal({ open, onClose }: HelpModalProps) {
                     </List>
 
                     <Alert severity="info" sx={{ mt: 2 }}>
-                      Note: Deleting a shelf won't delete the books - they'll become unassigned and you can move them to other shelves.
+                      Note: Deleting a shelf won&apos;t delete the books - they&apos;ll become unassigned and you can move them to other shelves.
                     </Alert>
                   </AccordionDetails>
                 </Accordion>
@@ -392,7 +392,7 @@ export default function HelpModal({ open, onClose }: HelpModalProps) {
                     Library Overview
                   </Typography>
                   <Typography variant="body1" gutterBottom>
-                    The "📖 My Library" section shows:
+                    The &quot;📖 My Library&quot; section shows:
                   </Typography>
                   <List dense>
                     <ListItem>
