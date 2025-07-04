@@ -238,7 +238,13 @@ export default function BookList({
                       color={book.enhancedGenres ? 'primary' : 'default'}
                       sx={{ 
                         fontSize: { xs: '0.7rem', sm: '0.75rem', md: '0.8125rem' },
-                        height: { xs: 20, sm: 24, md: 28 }
+                        height: { xs: 20, sm: 24, md: 28 },
+                        maxWidth: '120px',
+                        '& .MuiChip-label': {
+                          textOverflow: 'ellipsis',
+                          overflow: 'hidden',
+                          whiteSpace: 'nowrap'
+                        }
                       }} 
                     />
                   )}

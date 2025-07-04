@@ -168,7 +168,16 @@ export default function BookGrid({
                       label={book.enhancedGenres?.[0] || book.categories?.[0]} 
                       size="small" 
                       color={book.enhancedGenres ? 'primary' : 'default'}
-                      sx={{ fontSize: '0.7rem', height: 20 }} 
+                      sx={{ 
+                        fontSize: '0.7rem', 
+                        height: 20,
+                        maxWidth: '120px',
+                        '& .MuiChip-label': {
+                          textOverflow: 'ellipsis',
+                          overflow: 'hidden',
+                          whiteSpace: 'nowrap'
+                        }
+                      }} 
                     />
                   )}
                 </Box>
