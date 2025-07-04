@@ -144,7 +144,7 @@ export default function CookieNotice() {
             ) : (
               <>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  Choose which cookies and local storage you're comfortable with:
+                  Choose which cookies and local storage you&apos;re comfortable with:
                 </Typography>
                 
                 <Accordion disableGutters elevation={0} sx={{ mb: 2 }}>
@@ -168,7 +168,7 @@ export default function CookieNotice() {
                   <AccordionDetails>
                     <Typography variant="body2" color="text.secondary">
                       Required for authentication, security, and core app functionality. 
-                      These cannot be disabled as they're necessary for the app to work.
+                      These cannot be disabled as they&apos;re necessary for the app to work.
                     </Typography>
                   </AccordionDetails>
                 </Accordion>
@@ -198,7 +198,7 @@ export default function CookieNotice() {
                     <Typography variant="body2" color="text.secondary">
                       Remember your preferences like theme (dark/light mode), view settings, 
                       last selected shelf, and other personalization options. Disabling these 
-                      means the app won't remember your preferences between sessions.
+                      means the app won&apos;t remember your preferences between sessions.
                     </Typography>
                   </AccordionDetails>
                 </Accordion>
