@@ -54,7 +54,8 @@ import {
   verifyEmail,
   forgotPassword,
   verifyResetToken,
-  resetPassword
+  resetPassword,
+  changePassword
 } from './auth-core';
 import {
   createLocationInvitation,
@@ -345,6 +346,11 @@ export default {
 
       if (path === '/api/profile' && request.method === 'PUT') {
         return await updateUserProfile(request, userId, env, corsHeaders);
+      }
+
+      // Change password endpoint (authenticated users only)
+      if (path === '/api/auth/change-password' && request.method === 'POST') {
+        return await changePassword(request, env, corsHeaders);
       }
 
       // Admin-only cleanup endpoint
