@@ -1,4 +1,4 @@
-# Netlify Deployment Guide
+so # Netlify Deployment Guide
 
 This guide walks you through deploying LibraryCard to Netlify with your existing Cloudflare Workers API.
 
@@ -45,13 +45,15 @@ In your Netlify site dashboard:
 1. **Go to Site Settings** → **Environment Variables**
 2. **Add the following variable**:
    - **Key**: `NEXT_PUBLIC_API_URL`
-   - **Value**: `https://api.librarycard.tim52.io`
+   - **Value**: `https://your-worker-name.your-subdomain.workers.dev`
+   
+   > Replace with your actual Cloudflare Worker URL from your deployment
 
 ## Step 3: Deploy
 
 1. **Trigger deployment**: Push to main branch or click "Deploy site"
 2. **Monitor build**: Check the deploy log for any errors
-3. **Get your URL**: Netlify will provide a URL like `https://librarycard.tim52.io`
+3. **Get your URL**: Netlify will provide a URL like `https://your-app-name.netlify.app`
 
 ## Step 4: Custom Domain (Optional)
 
@@ -84,10 +86,14 @@ The repository includes these Netlify-specific files:
   package = "@netlify/plugin-nextjs"
 ```
 
-### .env.production
-```env
-NEXT_PUBLIC_API_URL=https://api.librarycard.tim52.io
-```
+### Environment Variables in Netlify Dashboard
+
+Instead of using .env.production files, configure environment variables directly in the Netlify dashboard:
+
+1. **Go to Site Settings** → **Environment Variables**
+2. **Add the following variable**:
+   - **Key**: `NEXT_PUBLIC_API_URL`
+   - **Value**: `https://your-worker-name.your-subdomain.workers.dev`
 
 ## Verification Steps
 
@@ -95,7 +101,7 @@ After deployment:
 
 1. **Test the site**: Visit your Netlify URL
 2. **Check camera access**: Ensure HTTPS works for camera API
-3. **Test ISBN scanning**: Try scanning a book
+3. **Test ISBN scanning**: Try scanning a book barcode
 4. **Verify API connection**: Check that books save to your Cloudflare database
 5. **Test library view**: Ensure books display properly
 

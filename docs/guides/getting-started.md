@@ -51,7 +51,6 @@ LibraryCard is a sophisticated library management platform with comprehensive fe
 
 ### 📱 Book Scanning & Management
 - **ISBN Scanning**: Camera-based barcode scanning with Google Books API integration
-- **Bookshelf Photo Scanning**: OCR technology to scan entire bookshelves at once (80-90% accuracy)
 - **Manual Entry**: ISBN entry option with automatic book data retrieval
 - **Enhanced Metadata**: Title, author, description, cover images, publication dates, and categories
 

@@ -1,3 +1,5 @@
+-- Updated LibraryCard Database Schema (matches production as of July 2025)
+
 -- Users table for multiple auth providers
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY, -- UUID for email/password users, Google ID for OAuth users
@@ -10,8 +12,27 @@ CREATE TABLE IF NOT EXISTS users (
   email_verification_token TEXT,
   email_verification_expires DATETIME,
   user_role TEXT DEFAULT 'user', -- 'admin' or 'user'
+  password_reset_token TEXT,
+  password_reset_expires DATETIME,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Signup approval requests (for admin approval workflow)
+CREATE TABLE IF NOT EXISTS signup_approval_requests (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  email TEXT UNIQUE NOT NULL,
+  first_name TEXT NOT NULL,
+  last_name TEXT,
+  password_hash TEXT NOT NULL,
+  auth_provider TEXT DEFAULT 'email',
+  status TEXT DEFAULT 'pending', -- 'pending', 'approved', 'denied'
+  requested_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  reviewed_by TEXT, -- Admin who approved/denied
+  reviewed_at DATETIME, -- When the request was reviewed
+  review_comment TEXT, -- Admin's comment on the decision
+  created_user_id TEXT, -- User ID created after approval (for tracking)
+  FOREIGN KEY (reviewed_by) REFERENCES users(id)
 );
 
 -- Locations (e.g., "Finsbury Road", "Office Building")
@@ -21,7 +42,7 @@ CREATE TABLE IF NOT EXISTS locations (
   description TEXT,
   owner_id TEXT NOT NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME,
   FOREIGN KEY (owner_id) REFERENCES users(id)
 );
 
@@ -39,34 +60,6 @@ CREATE TABLE IF NOT EXISTS location_members (
   UNIQUE(location_id, user_id)
 );
 
--- Shelves (formerly "location" - basement, Tim's room, etc.)
-CREATE TABLE IF NOT EXISTS shelves (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL,
-  location_id INTEGER NOT NULL,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (location_id) REFERENCES locations(id)
-);
-
--- Updated books table
-CREATE TABLE IF NOT EXISTS books (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  isbn TEXT NOT NULL,
-  title TEXT NOT NULL,
-  authors TEXT NOT NULL, -- JSON array
-  description TEXT,
-  thumbnail TEXT,
-  published_date TEXT,
-  categories TEXT, -- JSON array
-  shelf_id INTEGER, -- Reference to shelves table
-  tags TEXT, -- JSON array
-  added_by TEXT NOT NULL, -- User who added the book
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (shelf_id) REFERENCES shelves(id),
-  FOREIGN KEY (added_by) REFERENCES users(id)
-);
-
 -- Location invitations (for inviting users to locations)
 CREATE TABLE IF NOT EXISTS location_invitations (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -79,6 +72,81 @@ CREATE TABLE IF NOT EXISTS location_invitations (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (location_id) REFERENCES locations(id),
   FOREIGN KEY (invited_by) REFERENCES users(id)
+);
+
+-- Shelves (formerly "location" - basement, Tim's room, etc.)
+CREATE TABLE IF NOT EXISTS shelves (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  location_id INTEGER NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME,
+  FOREIGN KEY (location_id) REFERENCES locations(id)
+);
+
+-- Updated books table (with all enhancements)
+CREATE TABLE IF NOT EXISTS books (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  isbn TEXT NOT NULL,
+  title TEXT NOT NULL,
+  authors TEXT NOT NULL, -- JSON array
+  description TEXT,
+  thumbnail TEXT,
+  published_date TEXT,
+  categories TEXT, -- JSON array
+  shelf_id INTEGER, -- Reference to shelves table
+  tags TEXT, -- JSON array
+  added_by TEXT, -- NOW NULLABLE (was NOT NULL)
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  status TEXT DEFAULT 'available',
+  checked_out_by TEXT,
+  checked_out_date DATETIME,
+  due_date DATETIME,
+  extended_description TEXT,
+  subjects TEXT,
+  page_count INTEGER,
+  average_rating REAL,
+  ratings_count INTEGER,
+  publisher_info TEXT,
+  open_library_key TEXT,
+  enhanced_genres TEXT,
+  series TEXT,
+  series_number TEXT,
+  rating_count INTEGER DEFAULT 0,
+  rating_updated_at DATETIME,
+  user_rating INTEGER,
+  google_average_rating REAL,
+  google_ratings_count INTEGER,
+  FOREIGN KEY (shelf_id) REFERENCES shelves(id)
+  -- Note: Removed FOREIGN KEY constraint for added_by to allow NULL
+);
+
+-- Book checkout history
+CREATE TABLE IF NOT EXISTS book_checkout_history (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  book_id INTEGER NOT NULL,
+  user_id TEXT NOT NULL, -- User who checked out the book
+  action TEXT NOT NULL, -- 'checkout' or 'return'
+  action_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+  due_date DATETIME, -- Due date when checked out
+  notes TEXT, -- Optional notes from user or admin
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- Book ratings system
+CREATE TABLE IF NOT EXISTS book_ratings (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  book_id INTEGER NOT NULL,
+  user_id TEXT NOT NULL,
+  rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+  review_text TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  UNIQUE(book_id, user_id)
 );
 
 -- Book removal requests table for admin approval workflow
@@ -98,25 +166,43 @@ CREATE TABLE IF NOT EXISTS book_removal_requests (
   FOREIGN KEY (reviewed_by) REFERENCES users(id)
 );
 
--- Indexes
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_role ON users(user_role);
-CREATE INDEX idx_locations_owner ON locations(owner_id);
-CREATE INDEX idx_location_members_location ON location_members(location_id);
-CREATE INDEX idx_location_members_user ON location_members(user_id);
-CREATE INDEX idx_location_invitations_token ON location_invitations(invitation_token);
-CREATE INDEX idx_location_invitations_email ON location_invitations(invited_email);
-CREATE INDEX idx_location_invitations_location ON location_invitations(location_id);
-CREATE INDEX idx_shelves_location ON shelves(location_id);
-CREATE INDEX idx_books_isbn ON books(isbn);
-CREATE INDEX idx_books_shelf ON books(shelf_id);
-CREATE INDEX idx_books_added_by ON books(added_by);
-CREATE INDEX idx_books_created_at ON books(created_at);
-CREATE INDEX idx_removal_requests_book ON book_removal_requests(book_id);
-CREATE INDEX idx_removal_requests_requester ON book_removal_requests(requester_id);
-CREATE INDEX idx_removal_requests_status ON book_removal_requests(status);
-CREATE INDEX idx_removal_requests_created ON book_removal_requests(created_at);
-CREATE INDEX idx_removal_requests_reviewed_by ON book_removal_requests(reviewed_by);
+-- Indexes for performance
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_role ON users(user_role);
+CREATE INDEX IF NOT EXISTS idx_users_password_reset_token ON users(password_reset_token);
+CREATE INDEX IF NOT EXISTS idx_users_password_reset_expires ON users(password_reset_expires);
 
--- Default shelves for new locations
--- (These will be created programmatically when a new location is created)
+CREATE INDEX IF NOT EXISTS idx_locations_owner ON locations(owner_id);
+CREATE INDEX IF NOT EXISTS idx_location_members_location ON location_members(location_id);
+CREATE INDEX IF NOT EXISTS idx_location_members_user ON location_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_location_invitations_token ON location_invitations(invitation_token);
+CREATE INDEX IF NOT EXISTS idx_location_invitations_email ON location_invitations(invited_email);
+CREATE INDEX IF NOT EXISTS idx_location_invitations_location ON location_invitations(location_id);
+
+CREATE INDEX IF NOT EXISTS idx_shelves_location ON shelves(location_id);
+
+CREATE INDEX IF NOT EXISTS idx_books_isbn ON books(isbn);
+CREATE INDEX IF NOT EXISTS idx_books_shelf ON books(shelf_id);
+CREATE INDEX IF NOT EXISTS idx_books_added_by ON books(added_by);
+CREATE INDEX IF NOT EXISTS idx_books_created_at ON books(created_at);
+CREATE INDEX IF NOT EXISTS idx_books_status ON books(status);
+CREATE INDEX IF NOT EXISTS idx_books_checked_out_by ON books(checked_out_by);
+
+CREATE INDEX IF NOT EXISTS idx_checkout_history_book ON book_checkout_history(book_id);
+CREATE INDEX IF NOT EXISTS idx_checkout_history_user ON book_checkout_history(user_id);
+CREATE INDEX IF NOT EXISTS idx_checkout_history_action ON book_checkout_history(action);
+CREATE INDEX IF NOT EXISTS idx_checkout_history_date ON book_checkout_history(action_date);
+
+CREATE INDEX IF NOT EXISTS idx_ratings_book ON book_ratings(book_id);
+CREATE INDEX IF NOT EXISTS idx_ratings_user ON book_ratings(user_id);
+CREATE INDEX IF NOT EXISTS idx_ratings_rating ON book_ratings(rating);
+
+CREATE INDEX IF NOT EXISTS idx_removal_requests_book ON book_removal_requests(book_id);
+CREATE INDEX IF NOT EXISTS idx_removal_requests_requester ON book_removal_requests(requester_id);
+CREATE INDEX IF NOT EXISTS idx_removal_requests_status ON book_removal_requests(status);
+CREATE INDEX IF NOT EXISTS idx_removal_requests_created ON book_removal_requests(created_at);
+CREATE INDEX IF NOT EXISTS idx_removal_requests_reviewed_by ON book_removal_requests(reviewed_by);
+
+CREATE INDEX IF NOT EXISTS idx_signup_requests_email ON signup_approval_requests(email);
+CREATE INDEX IF NOT EXISTS idx_signup_requests_status ON signup_approval_requests(status);
+CREATE INDEX IF NOT EXISTS idx_signup_requests_reviewed_by ON signup_approval_requests(reviewed_by);

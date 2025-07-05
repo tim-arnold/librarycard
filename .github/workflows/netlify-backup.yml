@@ -1,0 +1,127 @@
+name: Netlify Frontend Backup
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  backup-netlify:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Get full history for comprehensive backup
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build frontend
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+      
+      - name: Create backup metadata
+        run: |
+          echo "Creating backup metadata..."
+          mkdir -p backup
+          
+          # Backup metadata
+          cat > backup/backup-metadata.json << EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "commit_sha": "${{ github.sha }}",
+            "commit_message": "$(git log -1 --pretty=%B)",
+            "build_status": "success",
+            "node_version": "$(node --version)",
+            "npm_version": "$(npm --version)"
+          }
+          EOF
+          
+          # Backup package files
+          cp package.json backup/
+          cp package-lock.json backup/
+          cp netlify.toml backup/
+          
+          # Backup environment template
+          if [ -f .env.example ]; then
+            cp .env.example backup/
+          fi
+          
+          # Create deployment info
+          echo "# Deployment Information" > backup/deployment-info.md
+          echo "" >> backup/deployment-info.md
+          echo "**Backup Date:** $(date -u)" >> backup/deployment-info.md
+          echo "**Commit:** ${{ github.sha }}" >> backup/deployment-info.md
+          echo "**Branch:** ${{ github.ref_name }}" >> backup/deployment-info.md
+          echo "" >> backup/deployment-info.md
+          echo "## Build Configuration" >> backup/deployment-info.md
+          echo "- Node.js: $(node --version)" >> backup/deployment-info.md
+          echo "- npm: $(npm --version)" >> backup/deployment-info.md
+          echo "" >> backup/deployment-info.md
+          echo "## Required Environment Variables" >> backup/deployment-info.md
+          echo "- \`NEXT_PUBLIC_API_URL\`: Cloudflare Worker API endpoint" >> backup/deployment-info.md
+      
+      - name: Archive build artifacts
+        run: |
+          echo "Creating build archive..."
+          tar -czf backup/build-artifacts.tar.gz .next
+          
+          # Create source code backup (excluding node_modules and build artifacts)
+          tar --exclude='node_modules' \
+              --exclude='.next' \
+              --exclude='backup' \
+              --exclude='.git' \
+              -czf backup/source-code.tar.gz .
+      
+      - name: Upload backup to GitHub Releases
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: backup-${{ github.run_number }}-$(date +%Y%m%d)
+          name: "Frontend Backup - $(date +%Y-%m-%d)"
+          body: |
+            ## Automated Frontend Backup
+            
+            **Backup Date:** $(date -u)
+            **Commit:** ${{ github.sha }}
+            **Build Status:** ✅ Success
+            
+            ### Contents:
+            - 📦 Complete source code backup
+            - 🏗️ Built frontend artifacts (.next)
+            - ⚙️ Configuration files (package.json, netlify.toml)
+            - 📋 Deployment metadata and instructions
+            
+            ### Restore Instructions:
+            1. Download and extract `source-code.tar.gz`
+            2. Run `npm install`
+            3. Configure environment variables (see deployment-info.md)
+            4. Deploy to Netlify or run locally with `npm run dev`
+            
+            This backup can be used to restore the complete frontend application.
+          files: |
+            backup/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Cleanup old backups
+        run: |
+          echo "Note: Consider implementing cleanup of old backup releases"
+          echo "GitHub releases should be manually managed to avoid storage costs"
+          
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "❌ Backup failed!"
+          echo "Check the workflow logs for details"

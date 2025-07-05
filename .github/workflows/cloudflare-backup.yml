@@ -1,0 +1,264 @@
+name: Cloudflare Workers & D1 Backup
+
+on:
+  schedule:
+    # Run daily at 3 AM UTC (1 hour after Netlify backup)
+    - cron: '0 3 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  backup-cloudflare:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Install Wrangler CLI
+        run: npm install -g wrangler
+      
+      - name: Authenticate with Cloudflare
+        run: echo "${{ secrets.CLOUDFLARE_API_TOKEN }}" | wrangler auth api-token
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      
+      - name: Create backup directory
+        run: |
+          mkdir -p backup/cloudflare
+          cd backup/cloudflare
+      
+      - name: Backup Worker source code
+        run: |
+          echo "📦 Backing up Worker source code..."
+          
+          # Create worker source backup
+          tar -czf backup/cloudflare/worker-source.tar.gz workers/
+          
+          # Copy configuration files
+          cp wrangler.toml backup/cloudflare/
+          cp schema.sql backup/cloudflare/
+          
+          # Copy migration files
+          if [ -d "migrations" ]; then
+            tar -czf backup/cloudflare/migrations.tar.gz migrations/
+          fi
+      
+      - name: Backup D1 database schema
+        run: |
+          echo "🗄️ Backing up D1 database schema..."
+          cd backup/cloudflare
+          
+          # Export current schema
+          wrangler d1 execute librarycard-db --command=".schema" > database-schema-backup.sql || echo "Schema backup failed"
+          
+          # Get table info for verification
+          wrangler d1 execute librarycard-db --command="SELECT name FROM sqlite_master WHERE type='table';" > tables-list.txt || echo "Tables list failed"
+      
+      - name: Backup D1 database data
+        run: |
+          echo "💾 Backing up D1 database data..."
+          cd backup/cloudflare
+          
+          # Note: Full data export is complex with D1 and might hit limits
+          # We'll export table structures and row counts for verification
+          
+          # Create data backup script for manual use
+          cat > backup-d1-data.sh << 'EOF'
+          #!/bin/bash
+          # Manual D1 data backup script
+          # Note: Large tables may need pagination
+          
+          echo "Backing up D1 database data..."
+          
+          # Backup each table (adjust for your tables)
+          wrangler d1 execute librarycard-db --command="SELECT * FROM users;" > users-backup.sql
+          wrangler d1 execute librarycard-db --command="SELECT * FROM locations;" > locations-backup.sql
+          wrangler d1 execute librarycard-db --command="SELECT * FROM shelves;" > shelves-backup.sql
+          wrangler d1 execute librarycard-db --command="SELECT * FROM books;" > books-backup.sql
+          wrangler d1 execute librarycard-db --command="SELECT * FROM location_members;" > location_members-backup.sql
+          wrangler d1 execute librarycard-db --command="SELECT * FROM location_invitations;" > location_invitations-backup.sql
+          wrangler d1 execute librarycard-db --command="SELECT * FROM book_checkout_history;" > book_checkout_history-backup.sql
+          wrangler d1 execute librarycard-db --command="SELECT * FROM book_ratings;" > book_ratings-backup.sql
+          wrangler d1 execute librarycard-db --command="SELECT * FROM book_removal_requests;" > book_removal_requests-backup.sql
+          wrangler d1 execute librarycard-db --command="SELECT * FROM signup_approval_requests;" > signup_approval_requests-backup.sql
+          
+          echo "Data backup completed"
+          EOF
+          
+          chmod +x backup-d1-data.sh
+          
+          # Get row counts for verification
+          echo "📊 Getting database statistics..."
+          cat > database-stats.txt << EOF
+          Database Statistics - $(date -u)
+          ================================
+          
+          EOF
+          
+          # Try to get row counts (may fail if DB is busy)
+          wrangler d1 execute librarycard-db --command="SELECT 'users' as table_name, COUNT(*) as row_count FROM users UNION ALL SELECT 'locations', COUNT(*) FROM locations UNION ALL SELECT 'shelves', COUNT(*) FROM shelves UNION ALL SELECT 'books', COUNT(*) FROM books UNION ALL SELECT 'location_members', COUNT(*) FROM location_members;" >> database-stats.txt || echo "Row count query failed" >> database-stats.txt
+      
+      - name: Get Worker deployment info
+        run: |
+          echo "⚙️ Getting Worker deployment information..."
+          cd backup/cloudflare
+          
+          # Try to get worker info
+          wrangler whoami > worker-auth-info.txt || echo "Auth info failed"
+          
+          # List workers
+          wrangler list > workers-list.txt || echo "Workers list failed"
+          
+          # Get current deployment info if possible
+          echo "Checking worker deployment status..." > deployment-status.txt
+          wrangler status || echo "Status check failed" >> deployment-status.txt
+      
+      - name: Create backup metadata
+        run: |
+          cd backup/cloudflare
+          
+          cat > backup-metadata.json << EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "backup_type": "automated",
+            "commit_sha": "${{ github.sha }}",
+            "commit_message": "$(git log -1 --pretty=%B | tr '\n' ' ')",
+            "branch": "${{ github.ref_name }}",
+            "worker_source_files": [
+              "worker-source.tar.gz",
+              "wrangler.toml",
+              "schema.sql"
+            ],
+            "database_files": [
+              "database-schema-backup.sql",
+              "tables-list.txt",
+              "database-stats.txt"
+            ],
+            "scripts": [
+              "backup-d1-data.sh"
+            ]
+          }
+          EOF
+          
+          # Create restoration guide
+          cat > RESTORE-CLOUDFLARE.md << 'EOF'
+          # Cloudflare Workers & D1 Restoration Guide
+          
+          ## Worker Restoration
+          
+          ### 1. Extract Worker Source
+          \`\`\`bash
+          tar -xzf worker-source.tar.gz
+          \`\`\`
+          
+          ### 2. Deploy Worker
+          \`\`\`bash
+          # Install dependencies
+          npm install
+          
+          # Authenticate with Cloudflare
+          wrangler auth login
+          
+          # Deploy worker
+          cd workers
+          wrangler deploy
+          \`\`\`
+          
+          ## D1 Database Restoration
+          
+          ### 1. Create New Database
+          \`\`\`bash
+          wrangler d1 create librarycard-db-restored
+          \`\`\`
+          
+          ### 2. Update wrangler.toml
+          Update the database ID in wrangler.toml with the new database ID.
+          
+          ### 3. Apply Schema
+          \`\`\`bash
+          wrangler d1 execute librarycard-db-restored --file=schema.sql
+          \`\`\`
+          
+          ### 4. Restore Data (Manual Process)
+          Due to D1 limitations, data restoration requires manual steps:
+          
+          1. Run the backup-d1-data.sh script to export current data
+          2. Use wrangler d1 execute commands to restore data table by table
+          3. Verify data integrity with row counts
+          
+          ## Environment Configuration
+          
+          ### Required Secrets
+          - Cloudflare API Token with Workers and D1 permissions
+          - Any additional API keys (Google Books, Resend, etc.)
+          
+          ### Verification Steps
+          1. Worker deploys successfully
+          2. Database schema matches original
+          3. API endpoints respond correctly
+          4. Frontend can connect to restored worker
+          
+          ## Important Notes
+          - D1 data export is limited by Cloudflare's query timeouts
+          - Large tables may need pagination during restoration
+          - Always test restored worker with a small dataset first
+          - Keep backups of working configurations
+          EOF
+      
+      - name: Create archive
+        run: |
+          cd backup
+          tar -czf cloudflare-backup-$(date +%Y%m%d).tar.gz cloudflare/
+      
+      - name: Upload backup to GitHub Releases
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: cf-backup-${{ github.run_number }}-$(date +%Y%m%d)
+          name: "Cloudflare Backup - $(date +%Y-%m-%d)"
+          body: |
+            ## Automated Cloudflare Workers & D1 Backup
+            
+            **Backup Date:** $(date -u)
+            **Commit:** ${{ github.sha }}
+            **Type:** Workers + D1 Database
+            
+            ### Contents:
+            - 🔧 Complete Worker source code
+            - 🗄️ Database schema backup
+            - 📊 Database statistics and table info
+            - 📋 Configuration files (wrangler.toml, schema.sql)
+            - 🔄 Migration files
+            - 📖 Restoration guide
+            
+            ### Restore Instructions:
+            1. Download and extract the backup archive
+            2. Follow RESTORE-CLOUDFLARE.md for detailed steps
+            3. Use backup-d1-data.sh for data export/import
+            
+            **Note:** D1 data restoration requires manual steps due to platform limitations.
+          files: |
+            backup/cloudflare-backup-*.tar.gz
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "❌ Cloudflare backup failed!"
+          echo "Check workflow logs and verify:"
+          echo "1. CLOUDFLARE_API_TOKEN secret is set"
+          echo "2. Token has Workers and D1 permissions"
+          echo "3. Database name matches wrangler.toml"
