@@ -1,6 +1,6 @@
 import { Env } from '../types';
 import { sendInvitationEmail } from '../email';
-import { isUserAdmin } from '../auth';
+import { isUserAdmin, canManageLocation } from '../auth';
 import { generateUUID } from '../auth-core';
 
 // Invitation functions extracted from main worker
@@ -24,14 +24,9 @@ export async function createLocationInvitation(request: Request, locationId: num
     });
   }
 
-  // Check if user has access to this location (only owner can invite)
-  const accessStmt = env.DB.prepare(`
-    SELECT id FROM locations WHERE id = ? AND owner_id = ?
-  `);
-  const accessResult = await accessStmt.bind(locationId, userId).first();
-  
-  if (!accessResult) {
-    return new Response(JSON.stringify({ error: 'Access denied' }), {
+  // Check if user can manage this location (includes ownership and membership)
+  if (!(await canManageLocation(userId, locationId, env))) {
+    return new Response(JSON.stringify({ error: 'Access denied - you must be able to manage this location to send invitations' }), {
       status: 403,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -212,7 +207,7 @@ export async function acceptLocationInvitation(request: Request, userId: string,
 }
 
 export async function getLocationInvitations(locationId: number, userId: string, env: Env, corsHeaders: Record<string, string>) {
-  // Check if user is admin and has access to this location
+  // Check if user is admin and can manage this location
   if (!(await isUserAdmin(userId, env))) {
     return new Response(JSON.stringify({ error: 'Admin privileges required to view invitations' }), {
       status: 403,
@@ -220,13 +215,8 @@ export async function getLocationInvitations(locationId: number, userId: string,
     });
   }
 
-  const accessStmt = env.DB.prepare(`
-    SELECT id FROM locations WHERE id = ? AND owner_id = ?
-  `);
-  const accessResult = await accessStmt.bind(locationId, userId).first();
-  
-  if (!accessResult) {
-    return new Response(JSON.stringify({ error: 'Access denied' }), {
+  if (!(await canManageLocation(userId, locationId, env))) {
+    return new Response(JSON.stringify({ error: 'Access denied - you must be able to manage this location to view invitations' }), {
       status: 403,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -319,9 +309,9 @@ export async function revokeLocationInvitation(invitationId: number, userId: str
     });
   }
 
-  // Check if user has access to this location (only owner can revoke invitations)
-  if ((invitation as any).owner_id !== userId) {
-    return new Response(JSON.stringify({ error: 'Access denied - only location owner can revoke invitations' }), {
+  // Check if user can manage this location (includes ownership and membership)
+  if (!(await canManageLocation(userId, (invitation as any).location_id, env))) {
+    return new Response(JSON.stringify({ error: 'Access denied - you must be able to manage this location to revoke invitations' }), {
       status: 403,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
