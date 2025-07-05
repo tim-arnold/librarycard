@@ -25,6 +25,12 @@ This file contains AI-specific context and working preferences for Claude Code w
 - **Build verification**: Always run `npm run build` and `npm run lint` after changes
 - **Environment setup**: Screenshots require `SCREENSHOT_USER` and `SCREENSHOT_PASSWORD` in `.env.local`
 
+### Development Workflow
+- **Branch-based development**: ALL work must be done on feature/fix/enhancement branches
+- **Never work directly on main**: Direct commits to main branch are prohibited
+- **Pull request required**: All changes must be submitted via pull request for review
+- **Branch naming**: Use descriptive names like `feature/user-metrics`, `fix/auth-bug`, `enhancement/ui-improvements`
+
 ### Commit Guidelines
 - **Commit messages**: Use clear, descriptive messages without AI tool attribution
 - **No co-authoring**: Never include "Co-Authored-By: Claude" or similar

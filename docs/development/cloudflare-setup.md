@@ -62,14 +62,14 @@ This guide walks you through setting up the complete Cloudflare infrastructure f
 
 3. **Note the worker URL**: Save the worker URL from the deployment output. It will look like:
    ```
-   https://api.librarycard.tim52.io
+   https://your-worker-name.your-subdomain.workers.dev
    ```
 
 ### Test the Worker
 
 1. **Test the API endpoint**:
    ```bash
-   curl https://api.librarycard.tim52.io/api/books
+   curl https://your-worker-name.your-subdomain.workers.dev/api/books
    ```
    You should receive an empty array: `[]`
 
@@ -84,7 +84,7 @@ This guide walks you through setting up the complete Cloudflare infrastructure f
 
 2. **Update the API URL** in `.env.local`:
    ```
-   NEXT_PUBLIC_API_URL=https://api.librarycard.tim52.io
+   NEXT_PUBLIC_API_URL=https://your-worker-name.your-subdomain.workers.dev
    ```
 
 ### Test Local Development
@@ -121,7 +121,7 @@ This guide walks you through setting up the complete Cloudflare infrastructure f
 
 4. **Set environment variables**:
    - Add `NEXT_PUBLIC_API_URL` with your worker URL
-   - Value: `https://api.librarycard.tim52.io`
+   - Value: `https://your-worker-name.your-subdomain.workers.dev`
 
 5. **Deploy**: Click "Save and Deploy"
 

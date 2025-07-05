@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "seed-local": "node scripts/seed-local-data.js",
+    "dev-worker": "npx wrangler dev --env local --port 8787"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
