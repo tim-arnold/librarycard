@@ -6,6 +6,23 @@ This file tracks active development tasks and future enhancements for the Librar
 
 ## ✅ Recently Completed (July 2025)
 
+### Enhanced Filtering System with Author Clicks and Multi-Genre Support - COMPLETE!
+- [x] **Author Click Filtering**: Implemented clickable author names across all book views (card, compact, list) to enable filtering by author
+- [x] **Author Filter Integration**: Click any author to filter library showing only books by that author with automatic clearing of other filters
+- [x] **Multi-Genre Filter System**: Enhanced genre filtering with multi-select support allowing selection of multiple genres simultaneously
+- [x] **Visual Filter Chips**: Added comprehensive dismissible filter chips system for all active filters (author, shelf, genre, location, status)
+- [x] **Individual Chip Removal**: Each filter appears as color-coded chip with individual removal capability for granular control
+- [x] **OR Logic Genre Filtering**: Multiple selected genres show books matching any of the selected genres for comprehensive discovery
+- [x] **UI Polish**: Added text overflow ellipsis to genre chips in book cards (120px max-width) for consistent layout
+
+### Admin Location Invitation Permissions Fix - COMPLETE!
+- [x] **Permission System Fix**: Fixed "permission denied" errors for regular admins trying to invite users to locations they manage
+- [x] **Enhanced Permission Logic**: Replaced restrictive ownership-only checks with comprehensive `canManageLocation()` function
+- [x] **Location Management Consistency**: Aligned invitation permissions with other location management operations
+- [x] **Multi-Role Support**: Regular admins can now invite users to locations they are assigned to manage, not just locations they own
+- [x] **Invitation System Enhancement**: Applied fix to create, view, and revoke invitation operations for consistent behavior
+- [x] **Error Message Improvements**: Enhanced error messages to clearly indicate permission requirements
+
 ### Admin User Interface Improvements - COMPLETE!
 - [x] **Enhanced Location Display**: Admin user list now shows actual location names for single location users instead of "1 locations"
 - [x] **Intelligent Display Logic**: Maintains count display for multiple locations (e.g., "2 locations", "3 locations") 
@@ -167,4 +184,4 @@ This file tracks active development tasks and future enhancements for the Librar
 
 ---
 
-**Last updated**: June 2025
+**Last updated**: July 2025
