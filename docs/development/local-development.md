@@ -67,8 +67,8 @@ npm run dev
 
 #### Terminal 2: Start Worker API
 ```bash
-cd workers
-wrangler dev
+npm run dev-worker
+# or manually: npx wrangler dev --env local --port 8787
 ```
 
 - Frontend: `http://localhost:3000`
@@ -78,26 +78,55 @@ wrangler dev
 
 ## Database Setup (Local)
 
-### Create Local Database
+⚠️ **Important**: Use the automated setup process documented in [Local Development Setup Guide](./local-development-setup.md) for the complete isolated local environment.
+
+### Quick Setup
+
+The project now includes automated local database setup:
 
 ```bash
-# Create local D1 database
-wrangler d1 create librarycard-dev --local
+# Start local worker (uses local database automatically)
+npm run dev-worker
 
-# Apply schema
-wrangler d1 execute librarycard-dev --local --file=../schema.sql
+# Seed local database with test data
+npm run seed-local
 ```
 
-### Update wrangler.toml for Local Development
+### Test User Accounts
 
-Add local database configuration:
+After seeding, you can log in with these test accounts:
+
+| Email | Password | Role | Name | Purpose |
+|-------|----------|------|------|---------|
+| `developer@localhost` | *(No password - use magic link)* | admin | Dev User | Admin testing and development |
+| `testuser@localhost` | *(No password - use magic link)* | user | Test User | Regular user testing |
+
+**Note**: Local development uses email verification tokens for authentication. Check the worker logs for magic login links when testing authentication.
+
+### Manual Database Setup
+
+If you need to manually create the local database:
+
+```bash
+# Create local D1 database (done automatically in setup)
+npx wrangler d1 create libarycard-db-local
+
+# Apply schema (production-synchronized)
+npx wrangler d1 execute DB --env local --local --file=schema.sql
+```
+
+The local environment configuration is already set up in `wrangler.toml`:
 
 ```toml
-[[d1_databases]]
+[env.local]
+[env.local.vars]
+ENVIRONMENT = "local"
+APP_URL = "http://localhost:3000"
+
+[[env.local.d1_databases]]
 binding = "DB"
-database_name = "librarycard-dev"
-database_id = "local-database-id"
-preview_database_id = "local-database-id"
+database_name = "libarycard-db-local"
+database_id = "5365a633-7869-4993-990a-90aa12e9974e"
 ```
 
 ## Development Workflow
@@ -110,7 +139,7 @@ preview_database_id = "local-database-id"
    npm run dev
    
    # Terminal 2
-   cd workers && wrangler dev
+   npm run dev-worker
    ```
 
 2. **Make changes** to code
@@ -181,10 +210,13 @@ Query local database:
 
 ```bash
 # List all books
-wrangler d1 execute librarycard-dev --local --command="SELECT * FROM books;"
+npx wrangler d1 execute DB --env local --local --command="SELECT * FROM books;"
 
 # Count books
-wrangler d1 execute librarycard-dev --local --command="SELECT COUNT(*) FROM books;"
+npx wrangler d1 execute DB --env local --local --command="SELECT COUNT(*) FROM books;"
+
+# Check seeded data
+npx wrangler d1 execute DB --env local --local --command="SELECT COUNT(*) as count, 'users' as table_name FROM users"
 ```
 
 ## Common Development Tasks
@@ -230,13 +262,15 @@ npm run lint
 When updating schema:
 
 1. **Update** `schema.sql`
-2. **Drop and recreate** local database:
+2. **Apply to local database**:
    ```bash
-   # Remove old database
-   rm -rf .wrangler/state/d1/librarycard-dev.sqlite
+   # Apply schema changes to local database
+   npx wrangler d1 execute DB --env local --local --file=schema.sql
    
-   # Recreate with new schema
-   wrangler d1 execute librarycard-dev --local --file=../schema.sql
+   # Or recreate database completely if needed
+   npx wrangler d1 delete libarycard-db-local
+   npx wrangler d1 create libarycard-db-local
+   # Update database_id in wrangler.toml, then apply schema
    ```
 
 ## File Structure for Development
@@ -299,8 +333,11 @@ npm run dev -- -p 3001
 #### Database Connection Issues
 ```bash
 # Reset local database
-wrangler d1 execute librarycard-dev --local --command="DROP TABLE IF EXISTS books;"
-wrangler d1 execute librarycard-dev --local --file=../schema.sql
+npx wrangler d1 execute DB --env local --local --command="DROP TABLE IF EXISTS books;"
+npx wrangler d1 execute DB --env local --local --file=schema.sql
+
+# Or recreate from scratch
+npm run seed-local
 ```
 
 #### TypeScript Errors

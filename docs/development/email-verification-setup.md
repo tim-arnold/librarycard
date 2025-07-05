@@ -136,8 +136,8 @@ Update your `wrangler.toml` with your actual URLs:
 ```toml
 [env.production.vars]
 ENVIRONMENT = "production"
-APP_URL = "https://librarycard.tim52.io"
-FROM_EMAIL = "LibraryCard <noreply@librarycard.tim52.io>"
+APP_URL = "https://your-app-domain.com"
+FROM_EMAIL = "LibraryCard <noreply@your-app-domain.com>"
 ```
 
 ### 2.2 Add API Key Secret
@@ -164,8 +164,8 @@ In your Netlify dashboard:
 1. **Go to**: Site Settings → Environment Variables
 2. **Add these variables**:
    ```
-   NEXT_PUBLIC_API_URL = https://api.librarycard.tim52.io
-   NEXTAUTH_URL = https://librarycard.tim52.io
+   NEXT_PUBLIC_API_URL = https://api.your-app-domain.com
+   NEXTAUTH_URL = https://your-app-domain.com
    ```
 
 ### 3.2 Deploy Frontend
@@ -209,8 +209,8 @@ Look for:
 ### 5.2 Update Environment Variables
 After custom domain is active:
 ```
-NEXTAUTH_URL = https://librarycard.tim52.io
-APP_URL = https://librarycard.tim52.io
+NEXTAUTH_URL = https://your-app-domain.com
+APP_URL = https://your-app-domain.com
 ```
 
 ## Troubleshooting
@@ -227,7 +227,7 @@ APP_URL = https://librarycard.tim52.io
 3. **Use verified domain**: Don't use `@resend.dev` in production
 
 ### Verification Link Not Working
-1. **Check URL format**: Should be `https://librarycard.tim52.io/auth/signin?verified=true&token=...`
+1. **Check URL format**: Should be `https://your-app-domain.com/auth/signin?verified=true&token=...`
 2. **Check Workers endpoint**: Ensure `/api/auth/verify-email` is working
 3. **Check token expiration**: Tokens expire in 24 hours
 

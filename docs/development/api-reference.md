@@ -5,7 +5,7 @@ This document describes the LibraryCard API endpoints provided by the Cloudflare
 ## Base URL
 
 ```
-https://api.librarycard.tim52.io
+https://your-worker-name.your-subdomain.workers.dev
 ```
 
 ## Authentication
@@ -529,7 +529,7 @@ Access-Control-Allow-Headers: Content-Type, Authorization
 
 ```bash
 # 1. Create a user (called automatically by OAuth)
-curl -X POST https://api.librarycard.tim52.io/api/users \
+curl -X POST https://your-worker-name.your-subdomain.workers.dev/api/users \
   -H "Content-Type: application/json" \
   -d '{
     "id": "user@example.com",
@@ -539,7 +539,7 @@ curl -X POST https://api.librarycard.tim52.io/api/users \
   }'
 
 # 2. Create a location
-curl -X POST https://api.librarycard.tim52.io/api/locations \
+curl -X POST https://your-worker-name.your-subdomain.workers.dev/api/locations \
   -H "Authorization: Bearer user@example.com" \
   -H "Content-Type: application/json" \
   -d '{
@@ -548,7 +548,7 @@ curl -X POST https://api.librarycard.tim52.io/api/locations \
   }'
 
 # 3. Add a shelf to the location
-curl -X POST https://api.librarycard.tim52.io/api/locations/1/shelves \
+curl -X POST https://your-worker-name.your-subdomain.workers.dev/api/locations/1/shelves \
   -H "Authorization: Bearer user@example.com" \
   -H "Content-Type: application/json" \
   -d '{
@@ -556,7 +556,7 @@ curl -X POST https://api.librarycard.tim52.io/api/locations/1/shelves \
   }'
 
 # 4. Add a book to the shelf
-curl -X POST https://api.librarycard.tim52.io/api/books \
+curl -X POST https://your-worker-name.your-subdomain.workers.dev/api/books \
   -H "Authorization: Bearer user@example.com" \
   -H "Content-Type: application/json" \
   -d '{
@@ -571,7 +571,7 @@ curl -X POST https://api.librarycard.tim52.io/api/books \
 
 # 5. Get all books
 curl -H "Authorization: Bearer user@example.com" \
-  https://api.librarycard.tim52.io/api/books
+  https://your-worker-name.your-subdomain.workers.dev/api/books
 ```
 
 ## Security Considerations

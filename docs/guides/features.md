@@ -9,7 +9,6 @@ A comprehensive overview of LibraryCard's capabilities and functionality.
 - **🔧 Admin Permission Fixes**: Regular admins can now invite users to locations they manage
 - **🔐 Super Admin Role System**: Hierarchical permission structure separating global system administration from location-scoped management
 - **🎯 Enhanced Duplicate Detection**: Sophisticated three-tier algorithm with publication date comparison and "Add Anyway" override
-- **🎉 OCR Migration to Cloudflare Workers**: Bookshelf Photo Scanning now 100% functional with 80-90% accuracy in production
 - **Global Footer**: "Contact the Librarian" feature with professional email workflow
 - **Component Architecture Refactoring**: Improved maintainability and token efficiency (32-52% line reduction)
 - **Organized Documentation**: Focused subdirectories (guides/, development/, deployment/, reference/)
@@ -30,8 +29,6 @@ A comprehensive overview of LibraryCard's capabilities and functionality.
 - **Multiple Sources**: Google Books API with OpenLibrary fallback
 - **Enhanced Metadata**: Automatic retrieval of title, authors, description, cover images, publication dates, and categories
 
-#### Bookshelf Photo Scanning
-- **OCR Technology**: Google Vision API integration for bulk book scanning
 - **High Accuracy**: 80-90% success rate in production environments
 - **Batch Processing**: Scan entire bookshelves in a single photo
 - **Smart Recognition**: Identifies book spines and extracts titles/authors
@@ -139,7 +136,6 @@ A comprehensive overview of LibraryCard's capabilities and functionality.
 ### API Integration
 - **Google Books API**: Primary source for book metadata
 - **OpenLibrary API**: Fallback for missing or incomplete data
-- **Google Vision API**: OCR processing for bookshelf photo scanning
 - **Resend Email API**: Professional email delivery for notifications
 
 ### Security Features
