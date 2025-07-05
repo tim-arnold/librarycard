@@ -10,13 +10,14 @@
 const { execSync } = require('child_process');
 
 const seedData = {
-  // Sample user data
+  // Sample user data with default passwords for local development
   users: [
     {
       id: 'dev-user-1',
-      email: 'developer@localhost',
-      first_name: 'Dev',
+      email: 'adminuser@localhost',
+      first_name: 'Admin',
       last_name: 'User',
+      password_hash: '$2b$10$CqyKQ4zGfzcPETorqg1JXe4qhyThrFUwxwH/CDePtcw57YmQ2L0jW', // password: 'Admin123!'
       user_role: 'admin',
       email_verified: true,
       auth_provider: 'email',
@@ -28,7 +29,20 @@ const seedData = {
       email: 'testuser@localhost',
       first_name: 'Test',
       last_name: 'User',
+      password_hash: '$2b$10$9fOwbDBB/GMv.0GXz00Doer/82aMOmds/SbTh6gY/.G0MayylDIwq', // password: 'Test123!'
       user_role: 'user',
+      email_verified: true,
+      auth_provider: 'email',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    },
+    {
+      id: 'dev-user-3',
+      email: 'superadmin@localhost',
+      first_name: 'Super',
+      last_name: 'Admin',
+      password_hash: '$2b$10$7mK9x8L5vZ2aB3cY1dE6fG8hI9jK0lM1nO2pQ3rS4tU5vW6xY7zA8', // password: 'Super123!'
+      user_role: 'superadmin',
       email_verified: true,
       auth_provider: 'email',
       created_at: new Date().toISOString(),
@@ -123,10 +137,19 @@ function seedUsers() {
   console.log('🌱 Seeding users...');
   
   for (const user of seedData.users) {
-    const sql = `INSERT OR REPLACE INTO users (id, email, first_name, last_name, user_role, email_verified, auth_provider, created_at, updated_at) 
-                 VALUES ('${user.id}', '${user.email}', '${user.first_name}', '${user.last_name}', '${user.user_role}', ${user.email_verified}, '${user.auth_provider}', '${user.created_at}', '${user.updated_at}')`;
+    // Use single quotes and escape internal single quotes to avoid shell interpretation of $
+    const sql = `INSERT OR REPLACE INTO users (id, email, first_name, last_name, password_hash, user_role, email_verified, auth_provider, created_at, updated_at) 
+                 VALUES ('${user.id}', '${user.email}', '${user.first_name}', '${user.last_name}', '${user.password_hash}', '${user.user_role}', ${user.email_verified}, '${user.auth_provider}', '${user.created_at}', '${user.updated_at}')`;
     
-    execWrangler(`npx wrangler d1 execute DB --env local --local --command "${sql}"`);
+    // Write SQL to temp file to avoid shell escaping issues
+    const fs = require('fs');
+    const tempFile = `/tmp/seed-user-${user.id}.sql`;
+    fs.writeFileSync(tempFile, sql);
+    
+    execWrangler(`npx wrangler d1 execute DB --env local --local --file="${tempFile}"`);
+    
+    // Clean up temp file
+    fs.unlinkSync(tempFile);
   }
   
   console.log('✅ Users seeded successfully');
@@ -135,9 +158,12 @@ function seedUsers() {
 function seedLocations() {
   console.log('🌱 Seeding locations...');
   
-  for (const location of seedData.locations) {
-    const sql = `INSERT INTO locations (name, description, owner_id, created_at, updated_at) 
-                 VALUES ('${location.name}', '${location.description}', '${location.owner_id}', '${location.created_at}', '${location.updated_at}')`;
+  for (let i = 0; i < seedData.locations.length; i++) {
+    const location = seedData.locations[i];
+    // Use explicit IDs to ensure consistent references
+    const locationId = i + 1;
+    const sql = `INSERT INTO locations (id, name, description, owner_id, created_at, updated_at) 
+                 VALUES (${locationId}, '${location.name}', '${location.description}', '${location.owner_id}', '${location.created_at}', '${location.updated_at}')`;
     
     execWrangler(`npx wrangler d1 execute DB --env local --local --command "${sql}"`);
   }
@@ -148,9 +174,12 @@ function seedLocations() {
 function seedShelves() {
   console.log('🌱 Seeding shelves...');
   
-  for (const shelf of seedData.shelves) {
-    const sql = `INSERT INTO shelves (name, location_id, created_at, updated_at) 
-                 VALUES ('${shelf.name}', ${shelf.location_id}, '${shelf.created_at}', '${shelf.updated_at}')`;
+  for (let i = 0; i < seedData.shelves.length; i++) {
+    const shelf = seedData.shelves[i];
+    // Use explicit IDs to ensure consistent references
+    const shelfId = i + 1;
+    const sql = `INSERT INTO shelves (id, name, location_id, created_at, updated_at) 
+                 VALUES (${shelfId}, '${shelf.name}', ${shelf.location_id}, '${shelf.created_at}', '${shelf.updated_at}')`;
     
     execWrangler(`npx wrangler d1 execute DB --env local --local --command "${sql}"`);
   }
@@ -172,6 +201,20 @@ function seedBooks() {
   console.log('✅ Books seeded successfully');
 }
 
+function clearDatabase() {
+  console.log('🧹 Clearing existing data...');
+  
+  // Clear in reverse order to avoid foreign key constraints
+  const tables = ['books', 'shelves', 'locations'];
+  
+  for (const table of tables) {
+    const sql = `DELETE FROM ${table}`;
+    execWrangler(`npx wrangler d1 execute DB --env local --local --command "${sql}"`);
+  }
+  
+  console.log('✅ Database cleared');
+}
+
 function main() {
   console.log('🚀 Starting local development data seeding...');
   console.log('');
@@ -185,6 +228,7 @@ function main() {
   }
   
   try {
+    clearDatabase();
     seedUsers();
     seedLocations(); 
     seedShelves();
