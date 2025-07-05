@@ -22,9 +22,7 @@ import {
   Add,
   Edit,
   Delete,
-  Email,
   Shelves,
-  PersonAdd,
   Cancel,
   Save,
 } from '@mui/icons-material'
@@ -49,17 +47,6 @@ interface Shelf {
   created_at: string
 }
 
-interface LocationInvitation {
-  id: number
-  location_id: number
-  invited_email: string
-  invitation_token: string
-  invited_by: string
-  expires_at: string
-  used_at?: string
-  created_at: string
-  invited_by_name?: string
-}
 
 
 export default function LocationManager() {
@@ -78,10 +65,6 @@ export default function LocationManager() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [userRole, setUserRole] = useState<string | null>(null)
-  const [invitations, setInvitations] = useState<LocationInvitation[]>([])
-  const [showInviteForm, setShowInviteForm] = useState(false)
-  const [inviteEmail, setInviteEmail] = useState('')
-  const [showInvitations, setShowInvitations] = useState(false)
 
   useEffect(() => {
     if (session?.user) {
@@ -421,116 +404,6 @@ export default function LocationManager() {
     setShowShelfForm(true)
   }
 
-  // Invitation management functions
-  const loadLocationInvitations = async (locationId: number) => {
-    if (!session?.user?.email) return
-    
-    try {
-      const response = await fetch(`${API_BASE}/api/locations/${locationId}/invitations`, {
-        headers: {
-          'Authorization': `Bearer ${session.user.email}`,
-          'Content-Type': 'application/json',
-        },
-      })
-      if (response.ok) {
-        const data = await response.json()
-        setInvitations(data)
-      } else {
-        const errorData = await response.json()
-        setError(errorData.error || 'Failed to load invitations')
-      }
-    } catch (error) {
-      setError('Failed to load invitations')
-    }
-  }
-
-  const sendInvitation = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!selectedLocation || !inviteEmail.trim()) return
-
-    if (!session?.user?.email) return
-    
-    try {
-      const response = await fetch(`${API_BASE}/api/locations/${selectedLocation.id}/invite`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.user.email}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          invited_email: inviteEmail.trim(),
-        }),
-      })
-
-      if (response.ok) {
-        const newInvitation = await response.json()
-        setInvitations([...invitations, newInvitation])
-        setInviteEmail('')
-        setShowInviteForm(false)
-        setError('')
-        // Show success message temporarily
-        setError('✅ Invitation sent successfully!')
-        setTimeout(() => setError(''), 3000)
-      } else {
-        const errorData = await response.json()
-        setError(errorData.error || 'Failed to send invitation')
-      }
-    } catch (error) {
-      setError('Failed to send invitation')
-    }
-  }
-
-  const revokeInvitation = async (invitationId: number, invitedEmail: string) => {
-    const confirmed = await confirmAsync(
-      {
-        title: 'Revoke Invitation',
-        message: `Are you sure you want to revoke the invitation for ${invitedEmail}? This action cannot be undone and they will no longer be able to use their invitation link.`,
-        confirmText: 'Revoke Invitation',
-        variant: 'warning'
-      },
-      async () => {
-        if (!session?.user?.email) throw new Error('Not authenticated')
-        
-        const response = await fetch(`${API_BASE}/api/invitations/${invitationId}/revoke`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${session.user.email}`,
-            'Content-Type': 'application/json',
-          },
-        })
-
-        if (response.ok) {
-          // Remove the revoked invitation from the list
-          setInvitations(invitations.filter(inv => inv.id !== invitationId))
-          setError('')
-          await alert({
-            title: 'Invitation Revoked',
-            message: `Invitation for ${invitedEmail} has been successfully revoked.`,
-            variant: 'success'
-          })
-        } else {
-          const errorData = await response.json()
-          throw new Error(errorData.error || 'Failed to revoke invitation')
-        }
-      }
-    )
-
-    if (!confirmed) {
-      await alert({
-        title: 'Revoke Failed',
-        message: 'Failed to revoke the invitation. Please try again.',
-        variant: 'error'
-      })
-    }
-  }
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    })
-  }
 
   if (loading) {
     return (
@@ -660,20 +533,6 @@ export default function LocationManager() {
                     <>
                       <Button 
                         variant="contained"
-                        color="success"
-                        startIcon={<Email />}
-                        onClick={() => {
-                          setShowInvitations(!showInvitations)
-                          if (!showInvitations) {
-                            loadLocationInvitations(selectedLocation.id)
-                          }
-                        }}
-                        size="small"
-                      >
-                        Invitations
-                      </Button>
-                      <Button 
-                        variant="contained"
                         startIcon={<Shelves />}
                         onClick={() => setShowShelfForm(true)}
                         size="small"
@@ -726,76 +585,6 @@ export default function LocationManager() {
                 ))}
               </div>
 
-              {/* Invitations Section */}
-              {showInvitations && isAdmin(userRole) && (
-                <div style={{ marginTop: '2rem', border: '1px solid #e0e0e0', borderRadius: '0.5rem', padding: '1rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <h4 style={{ margin: 0 }}>📧 Location Invitations</h4>
-                    <Button 
-                      variant="contained"
-                      startIcon={<PersonAdd />}
-                      onClick={() => setShowInviteForm(true)}
-                      size="small"
-                    >
-                      Send Invitation
-                    </Button>
-                  </div>
-                  
-                  {invitations.length === 0 ? (
-                    <p style={{ color: '#666', textAlign: 'center', margin: '1rem 0' }}>
-                      No invitations sent yet. Click &quot;Send Invitation&quot; to invite users to this location.
-                    </p>
-                  ) : (
-                    <div style={{ display: 'grid', gap: '0.5rem' }}>
-                      {invitations.map(invitation => (
-                        <Paper key={invitation.id} sx={{ 
-                          display: 'flex', 
-                          justifyContent: 'space-between', 
-                          alignItems: 'center',
-                          p: 1.5,
-                          borderRadius: 1,
-                          borderLeft: `4px solid ${invitation.used_at ? '#28a745' : '#ffc107'}`
-                        }}>
-                          <div>
-                            <strong>{invitation.invited_email}</strong>
-                            <div style={{ fontSize: '0.8em', color: '#666' }}>
-                              Sent: {formatDate(invitation.created_at)} | 
-                              Expires: {formatDate(invitation.expires_at)}
-                              {invitation.used_at && (
-                                <span style={{ color: '#28a745' }}> | ✅ Accepted</span>
-                              )}
-                            </div>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <div style={{ 
-                              fontSize: '0.8em', 
-                              padding: '0.25rem 0.5rem', 
-                              borderRadius: '0.25rem',
-                              background: invitation.used_at ? '#d4edda' : '#fff3cd',
-                              color: invitation.used_at ? '#155724' : '#856404'
-                            }}>
-                              {invitation.used_at ? 'Accepted' : 'Pending'}
-                            </div>
-                            {!invitation.used_at && (
-                              <Button
-                                variant="contained"
-                                color="error"
-                                size="small"
-                                startIcon={<Cancel />}
-                                onClick={() => revokeInvitation(invitation.id, invitation.invited_email)}
-                                title="Revoke this invitation"
-                                sx={{ fontSize: '0.7em' }}
-                              >
-                                Revoke
-                              </Button>
-                            )}
-                          </div>
-                        </Paper>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           )}
         </div>
@@ -913,56 +702,6 @@ export default function LocationManager() {
         </form>
       </Dialog>
 
-      <Dialog 
-        open={showInviteForm} 
-        onClose={() => {
-          setShowInviteForm(false)
-          setInviteEmail('')
-        }}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Send Location Invitation</DialogTitle>
-        <form onSubmit={sendInvitation}>
-          <DialogContent>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Invite a user to join the <strong>{selectedLocation?.name}</strong> location. 
-              They&apos;ll receive an email with an invitation link.
-            </Typography>
-            
-            <TextField
-              autoFocus
-              label="Email Address"
-              type="email"
-              fullWidth
-              required
-              value={inviteEmail}
-              onChange={(e) => setInviteEmail(e.target.value)}
-              placeholder="user@example.com"
-              helperText="If the user doesn&apos;t have a LibraryCard account, they can create one when accepting the invitation."
-              sx={{ mt: 1 }}
-            />
-          </DialogContent>
-          <DialogActions>
-            <Button 
-              onClick={() => {
-                setShowInviteForm(false)
-                setInviteEmail('')
-              }}
-              startIcon={<Cancel />}
-            >
-              Cancel
-            </Button>
-            <Button 
-              type="submit" 
-              variant="contained"
-              startIcon={<Email />}
-            >
-              Send Invitation
-            </Button>
-          </DialogActions>
-        </form>
-      </Dialog>
         
         {/* Modal Components */}
         {modalState.type === 'confirm' && (
