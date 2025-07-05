@@ -2,6 +2,37 @@
 
 This file documents all completed features, fixes, and improvements to the LibraryCard project.
 
+## July 5, 2025 - Enhanced Filtering System and Permission Fixes
+
+### Enhanced Filtering System with Author Clicks and Multi-Genre Support
+- **IMPLEMENTED**: Clickable author names across all book views (card, compact, list) to enable one-click filtering by author
+- **CREATED**: Author click functionality that automatically clears other filters and focuses on selected author for targeted browsing
+- **ENHANCED**: Genre filtering system from single-select to multi-select with individual dismissible chips for each selected genre
+- **ADDED**: Comprehensive visual filter chips system showing all active filters with color coding (author=primary, shelf=secondary, genre=info, location=success, status=warning)
+- **IMPLEMENTED**: Individual chip removal allowing users to remove specific filters without clearing all filters
+- **CREATED**: OR logic for multiple genre filtering - books matching any selected genre will be displayed for comprehensive discovery
+- **POLISHED**: Genre chips in book cards with text overflow ellipsis and 120px max-width for consistent layout across all view modes
+- **UNIFIED**: Filter state management with dismissible chips providing clear visual feedback about current filter state
+- **ENHANCED**: User experience with shopping-cart-like filter management where users can see and manage all active filters at once
+
+### Admin Location Invitation Permissions Fix
+- **FIXED**: Critical permission issue where regular admins received "permission denied" errors when trying to invite users to locations they manage
+- **RESOLVED**: Overly restrictive permission checks that only allowed location owners to send invitations, preventing regular admins from managing assigned locations
+- **REPLACED**: Location ownership-only checks (`owner_id = ?`) with comprehensive location management checks using existing `canManageLocation()` function
+- **ENHANCED**: Permission system consistency by aligning invitation operations with other location management features throughout the application
+- **UPDATED**: All invitation operations (create, view, revoke) to use consistent permission logic allowing regular admins to fully manage locations they're assigned to
+- **IMPROVED**: Error messages to clearly indicate permission requirements with descriptive feedback about location management capabilities
+- **MAINTAINED**: Backward compatibility ensuring super admins and location owners retain all existing permissions while expanding access appropriately
+- **VALIDATED**: Permission matrix ensuring proper role separation: super admins (global access), regular admins (assigned locations), users (no access)
+
+### Technical Implementation Details
+- **MODIFIED**: `workers/invitations/index.ts` with three key permission updates: createLocationInvitation, getLocationInvitations, and revokeLocationInvitation functions
+- **IMPORTED**: `canManageLocation` function from auth module to provide consistent permission checking across invitation system
+- **UPDATED**: TypeScript interfaces in BookFilters component to support multi-select genre arrays instead of single string values
+- **ENHANCED**: React state management for categoryFilter from `string` to `string[]` with proper filtering logic using `categoryFilter.some()` for OR-based matching
+- **IMPLEMENTED**: Individual chip removal logic using `categoryFilter.filter(g => g !== genre)` for granular filter control
+- **OPTIMIZED**: Component rendering with conditional chip display and responsive chip layout using flexbox with gap and wrap properties
+
 ## July 4, 2025 - Enhanced Overdue Book Management and Admin Workflows
 
 ### Advanced Overdue Book Handling System

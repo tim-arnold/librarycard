@@ -5,6 +5,8 @@ A comprehensive overview of LibraryCard's capabilities and functionality.
 ## Recent Highlights
 
 ### ✅ Recently Completed
+- **🔍 Enhanced Filtering System**: Clickable author names and multi-genre selection with visual filter chips
+- **🔧 Admin Permission Fixes**: Regular admins can now invite users to locations they manage
 - **🔐 Super Admin Role System**: Hierarchical permission structure separating global system administration from location-scoped management
 - **🎯 Enhanced Duplicate Detection**: Sophisticated three-tier algorithm with publication date comparison and "Add Anyway" override
 - **🎉 OCR Migration to Cloudflare Workers**: Bookshelf Photo Scanning now 100% functional with 80-90% accuracy in production
@@ -65,7 +67,9 @@ A comprehensive overview of LibraryCard's capabilities and functionality.
 
 #### Book Organization Features
 - **Advanced Search**: Full-text search across titles, authors, and descriptions
-- **Smart Filtering**: Filter by location, shelf, tags, categories, and checkout status
+- **Enhanced Filtering System**: Filter by location, shelf, multiple genres, checkout status with clickable author names for instant filtering
+- **Visual Filter Management**: Dismissible filter chips showing all active filters with individual removal capability
+- **Multi-Genre Selection**: Select multiple genres simultaneously with OR logic for comprehensive book discovery
 - **Custom Tagging**: User-defined tags for personal organization (fiction, favorites, to-read, etc.)
 - **Enhanced Duplicate Detection**: Sophisticated three-tier system (exact, potential, non-duplicate) with publication date comparison and user override capabilities
 - **Bulk Operations**: Select and manage multiple books simultaneously
