@@ -35,14 +35,36 @@ export async function getAdminAnalytics(userId: string, env: Env, corsHeaders: R
       `).bind(userId, userId).first();
       
       totalUsers = await env.DB.prepare(`
-        SELECT COUNT(DISTINCT u.id) as count 
-        FROM users u
-        LEFT JOIN location_members lm ON u.id = lm.user_id
-        LEFT JOIN locations l ON lm.location_id = l.id OR l.owner_id = u.id
-        WHERE l.owner_id = ? OR lm.location_id IN (
-          SELECT id FROM locations WHERE owner_id = ?
+        SELECT COUNT(DISTINCT user_id) as count FROM (
+          -- Users who are members of locations owned by this admin
+          SELECT lm.user_id 
+          FROM location_members lm
+          INNER JOIN locations l ON lm.location_id = l.id
+          WHERE l.owner_id = ?
+          
+          UNION
+          
+          -- Users who are members of locations this admin is assigned to
+          SELECT lm.user_id 
+          FROM location_members lm
+          WHERE lm.location_id IN (
+            SELECT location_id FROM location_members WHERE user_id = ?
+          )
+          
+          UNION
+          
+          -- Users who own locations this admin is assigned to
+          SELECT l.owner_id as user_id
+          FROM locations l
+          INNER JOIN location_members lm ON l.id = lm.location_id
+          WHERE lm.user_id = ?
+          
+          UNION
+          
+          -- Include the admin themselves
+          SELECT ? as user_id
         )
-      `).bind(userId, userId).first();
+      `).bind(userId, userId, userId, userId).first();
       
       totalLocations = await env.DB.prepare(`
         SELECT COUNT(*) as count 
