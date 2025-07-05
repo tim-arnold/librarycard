@@ -612,3 +612,76 @@ export async function resetPassword(request: Request, env: Env, corsHeaders: Rec
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
 }
+
+export async function changePassword(request: Request, env: Env, corsHeaders: Record<string, string>) {
+  const { currentPassword, newPassword, email }: { 
+    currentPassword: string; 
+    newPassword: string; 
+    email: string;
+  } = await request.json();
+  
+  // Validate new password strength
+  const passwordValidation = validatePasswordStrength(newPassword);
+  if (!passwordValidation.isValid) {
+    return new Response(JSON.stringify({ error: passwordValidation.error }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+  
+  // Get user by email
+  const user = await env.DB.prepare(`
+    SELECT id, password_hash, auth_provider
+    FROM users 
+    WHERE email = ?
+  `).bind(email).first();
+  
+  if (!user) {
+    return new Response(JSON.stringify({ error: 'User not found' }), {
+      status: 404,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+  
+  // Only allow password changes for email/password users
+  if (user.auth_provider !== 'email') {
+    return new Response(JSON.stringify({ error: 'Password changes are only allowed for email/password accounts' }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+  
+  // Verify current password
+  const isCurrentPasswordValid = await verifyPassword(currentPassword, user.password_hash as string);
+  if (!isCurrentPasswordValid) {
+    return new Response(JSON.stringify({ error: 'Current password is incorrect' }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+  
+  // Check if new password is the same as current password
+  const isSamePassword = await verifyPassword(newPassword, user.password_hash as string);
+  if (isSamePassword) {
+    return new Response(JSON.stringify({ error: 'New password cannot be the same as your current password' }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+  
+  // Hash new password
+  const newPasswordHash = await hashPassword(newPassword);
+  
+  // Update user password
+  await env.DB.prepare(`
+    UPDATE users 
+    SET password_hash = ?, updated_at = datetime('now')
+    WHERE id = ?
+  `).bind(newPasswordHash, user.id).run();
+  
+  return new Response(JSON.stringify({ 
+    message: 'Password changed successfully!' 
+  }), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
