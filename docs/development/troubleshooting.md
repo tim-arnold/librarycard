@@ -123,7 +123,7 @@ This guide covers common issues you might encounter while using or deploying Lib
    wrangler deploy
    
    # Check worker status
-   wrangler tail librarycard-api
+   wrangler tail librarycard-api-production
    ```
 
 3. **Schema Issues**
@@ -393,7 +393,7 @@ localStorage.setItem('debug', 'true');
 
 ```bash
 # Check worker logs
-wrangler tail librarycard-api
+wrangler tail librarycard-api-production
 
 # Test database
 wrangler d1 execute librarycard-db --command="SELECT COUNT(*) FROM books;"
