@@ -138,8 +138,9 @@ Local seeding creates these test accounts:
 
 | Email | Password | Role | Purpose |
 |-------|----------|------|---------|
-| `developer@localhost` | `dev123` | admin | Development testing |
-| `testuser@localhost` | `test123` | user | User role testing |
+| `adminuser@localhost` | `Admin123!` | admin | Development testing |
+| `testuser@localhost` | `Test123!` | user | User role testing |
+| `superadmin@localhost` | `Super123!` | superadmin | Super admin testing |
 
 ## Code Quality Standards
 
