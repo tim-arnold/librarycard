@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import {
   Typography,
   Box,
   Card,
   CardContent,
+  Paper,
   CircularProgress,
   Alert,
   Table,
@@ -129,6 +130,9 @@ export default function AdminUserManager() {
   const [bulkEmails, setBulkEmails] = useState('')
   const [bulkInviteResults, setBulkInviteResults] = useState<{email: string, success: boolean, error?: string}[]>([])
   const [bulkInviteLoading, setBulkInviteLoading] = useState(false)
+  
+  // Ref for scrolling to invitations section
+  const invitationsSectionRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (session?.user?.email) {
@@ -979,6 +983,13 @@ export default function AdminUserManager() {
               if (!showInvitations) {
                 await loadInvitations()
                 await loadAvailableLocations()
+                // Scroll to invitations section after state update
+                setTimeout(() => {
+                  invitationsSectionRef.current?.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start' 
+                  })
+                }, 100)
               }
             }}
             size="small"
@@ -1083,7 +1094,7 @@ export default function AdminUserManager() {
 
       {/* Invitations Section */}
       {showInvitations && (
-        <Card sx={{ mt: 3 }}>
+        <Card ref={invitationsSectionRef} sx={{ mt: 3 }}>
           <CardContent>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Typography variant="h6">
@@ -1145,81 +1156,67 @@ export default function AdminUserManager() {
                 No invitations match your search criteria. Try a different search term.
               </Alert>
             ) : (
-              <TableContainer>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Email</TableCell>
-                      <TableCell>Location</TableCell>
-                      <TableCell>Invited By</TableCell>
-                      <TableCell>Sent</TableCell>
-                      <TableCell>Expires</TableCell>
-                      <TableCell>Status</TableCell>
-                      <TableCell align="right">Actions</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {filteredInvitations.map((invitation) => (
-                      <TableRow key={invitation.id} hover>
-                        <TableCell>
-                          <Typography variant="body2" fontWeight="medium">
-                            {invitation.invited_email}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2">
-                            {invitation.location_name || `Location ${invitation.location_id}`}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2">
-                            {invitation.invited_by_name || 'Admin'}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" color="text.secondary">
-                            {formatInvitationDate(invitation.created_at)}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" color="text.secondary">
-                            {formatInvitationDate(invitation.expires_at)}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          {(() => {
-                            const statusInfo = getInvitationStatus(invitation)
-                            return (
-                              <Chip
-                                label={statusInfo.label}
-                                color={statusInfo.color}
-                                size="small"
-                              />
-                            )
-                          })()}
-                        </TableCell>
-                        <TableCell align="right">
-                          {(() => {
-                            const statusInfo = getInvitationStatus(invitation)
-                            const canRevoke = statusInfo.status === 'pending' || statusInfo.status === 'expiring'
-                            
-                            return canRevoke ? (
-                              <IconButton
-                                size="small"
-                                color="error"
-                                onClick={() => revokeInvitation(invitation.id, invitation.invited_email)}
-                                title="Revoke invitation"
-                              >
-                                <Cancel />
-                              </IconButton>
-                            ) : null
-                          })()}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {filteredInvitations.map((invitation) => {
+                  const statusInfo = getInvitationStatus(invitation)
+                  const canRevoke = statusInfo.status === 'pending' || statusInfo.status === 'expiring'
+                  
+                  // Color mapping for border
+                  const borderColors: Record<string, string> = {
+                    'pending': '#2196F3',     // blue
+                    'expiring': '#FF9800',    // orange  
+                    'accepted': '#4CAF50',    // green
+                    'expired': '#f44336'      // red
+                  }
+                  
+                  return (
+                    <Paper key={invitation.id} sx={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      alignItems: 'center',
+                      p: 2,
+                      borderRadius: 1,
+                      borderLeft: `4px solid ${borderColors[statusInfo.status] || '#2196F3'}`
+                    }}>
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="body1" fontWeight="medium">
+                          {invitation.invited_email}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                          📍 {invitation.location_name || `Location ${invitation.location_id}`}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Sent: {formatInvitationDate(invitation.created_at)} by {invitation.invited_by_name || 'Admin'} | 
+                          Expires: {formatInvitationDate(invitation.expires_at)}
+                          {invitation.used_at && (
+                            <Box component="span" sx={{ color: 'success.main' }}> | ✅ Accepted</Box>
+                          )}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Chip
+                          label={statusInfo.label}
+                          color={statusInfo.color}
+                          size="small"
+                        />
+                        {canRevoke && (
+                          <Button
+                            variant="contained"
+                            color="error"
+                            size="small"
+                            startIcon={<Cancel />}
+                            onClick={() => revokeInvitation(invitation.id, invitation.invited_email)}
+                            title="Revoke this invitation"
+                            sx={{ fontSize: '0.75rem' }}
+                          >
+                            Revoke
+                          </Button>
+                        )}
+                      </Box>
+                    </Paper>
+                  )
+                })}
+              </Box>
             )}
           </CardContent>
         </Card>
