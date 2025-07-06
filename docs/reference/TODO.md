@@ -15,6 +15,14 @@ This file tracks active development tasks and future enhancements for the Librar
 - [x] **OR Logic Genre Filtering**: Multiple selected genres show books matching any of the selected genres for comprehensive discovery
 - [x] **UI Polish**: Added text overflow ellipsis to genre chips in book cards (120px max-width) for consistent layout
 
+### Enhanced Book Features - Bulk Operations (Phases 1-3) - COMPLETE!
+- [x] **Multi-Select Capability**: Created comprehensive multi-select functionality in search results for both ISBN scan and search workflows
+- [x] **Bulk Book Addition**: Implemented bulk adding with shared shelf selector and unified action buttons for efficient book management
+- [x] **Shopping Cart UX**: Built shopping cart-style interface with selection mode toggle and bulk review modal for intuitive user experience
+- [x] **Selection State Management**: Added persistent selection state across search pagination and component re-renders
+- [x] **Bulk Review Interface**: Created dedicated bulk review modal showing all selected books with individual removal capability
+- [x] **Unified Workflow**: Integrated bulk operations seamlessly into existing book addition workflow with clear visual feedback
+
 ### Admin Location Invitation Permissions Fix - COMPLETE!
 - [x] **Permission System Fix**: Fixed "permission denied" errors for regular admins trying to invite users to locations they manage
 - [x] **Enhanced Permission Logic**: Replaced restrictive ownership-only checks with comprehensive `canManageLocation()` function
@@ -161,11 +169,6 @@ This file tracks active development tasks and future enhancements for the Librar
 ## Active Development Todos
 
 ### High Priority - Next Session Focus
-
-- [ ] **Enhanced Book Features - Bulk Operations (Phases 1-3)**
-  - [ ] Create "multi-select" capability in search results (ISBN scan and search) so multiple books can be selected and added in bulk.
-  - [ ] Bulk adding books should share a single shelf selector and action buttons
-  - [ ] Implement shopping cart UX approach with selection mode toggle and bulk review modal
 
 - [ ] **Additional Admin Features**
   - [ ] User permission granularity (allow users to delete books, add/delete shelves, etc.)
