@@ -21,7 +21,7 @@ export async function sendPasswordResetEmail(env: Env, email: string, firstName:
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          from: env.FROM_EMAIL || 'LibraryCard <noreply@resend.dev>',
+          from: env.FROM_EMAIL || 'LibraryCard <noreply@tim52.io>',
           to: [email],
           subject: 'Reset Your LibraryCard Password',
           html: `
@@ -252,7 +252,7 @@ export async function sendInvitationEmail(env: Env, email: string, locationName:
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          from: env.FROM_EMAIL || 'LibraryCard <noreply@resend.dev>',
+          from: env.FROM_EMAIL || 'LibraryCard <noreply@tim52.io>',
           to: [email],
           subject: `You're invited to join ${locationName} on LibraryCard`,
           html: `
@@ -328,7 +328,7 @@ export async function sendVerificationEmail(env: Env, email: string, firstName: 
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          from: env.FROM_EMAIL || 'LibraryCard <noreply@resend.dev>',
+          from: env.FROM_EMAIL || 'LibraryCard <noreply@tim52.io>',
           to: [email],
           subject: 'Verify your LibraryCard account',
           html: `
@@ -413,7 +413,7 @@ export async function notifyAdminsOfSignupRequest(env: Env, email: string, first
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            from: env.FROM_EMAIL || 'LibraryCard <noreply@resend.dev>',
+            from: env.FROM_EMAIL || 'LibraryCard <noreply@tim52.io>',
             to: [adminEmail],
             subject: 'LibraryCard: New Signup Request Pending Approval',
             html: `
@@ -634,7 +634,7 @@ This is an automated message from LibraryCard.
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          from: env.FROM_EMAIL || 'LibraryCard <noreply@resend.dev>',
+          from: env.FROM_EMAIL || 'LibraryCard <noreply@tim52.io>',
           to: [email],
           subject: subject,
           html: htmlBody,
