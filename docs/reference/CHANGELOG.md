@@ -2,6 +2,37 @@
 
 This file documents all completed features, fixes, and improvements to the LibraryCard project.
 
+## July 7, 2025 - Email System & GitHub Actions Infrastructure Fixes
+
+### Password Reset Email System Fix - GitHub Issue #18 RESOLVED!
+- **FIXED**: Password reset emails not sending due to domain verification mismatch between email functions
+- **RESOLVED**: Inconsistent FROM_EMAIL fallback addresses across email functions (password reset used @resend.dev while others used @tim52.io)
+- **UPDATED**: All email functions to use consistent verified domain fallback (`noreply@tim52.io`)
+- **DEPLOYED**: Worker with corrected email configuration resolving password reset failures for all users
+- **VERIFIED**: Password reset emails now working for `murphybob66@outlook.com`, `tim.arnold+two@gmail.com`, and all other users
+
+### Google OAuth Email Verification Fix - GitHub Issue #18 RESOLVED!
+- **IDENTIFIED**: Google OAuth users incorrectly showing as "unverified" after admin demotion
+- **FIXED**: Database inconsistency where Google OAuth users had `email_verified: false` despite Google pre-verification
+- **UPDATED**: All Google OAuth users to have proper `email_verified: true` status
+- **CREATED**: Migration script `fix_google_oauth_verification.sql` to prevent future occurrences
+- **RESULT**: Demoted Google OAuth users now correctly show as "User" instead of "Unverified" in admin interface
+
+### GitHub Actions Infrastructure Modernization
+- **UPGRADED**: All backup workflows from Node.js v18 to v20 (required by latest Wrangler CLI)
+- **FIXED**: Deprecated `wrangler auth api-token` command replaced with modern environment variable authentication
+- **RESOLVED**: "Unknown arguments: auth, api-token" errors in Cloudflare backup workflow
+- **ADDED**: Proper `CLOUDFLARE_API_TOKEN` environment variable configuration to all Wrangler steps
+- **IMPLEMENTED**: Correct shell command evaluation in GitHub Actions using environment variables instead of literal `$(date)` commands
+- **FIXED**: 403 permission errors by adding explicit `contents: write` permissions for release creation
+- **VERIFIED**: Both backup workflows now running successfully and creating proper GitHub releases
+
+### Enhanced Backup System Reliability
+- **RESOLVED**: Tag name generation issues causing literal "backup-5-$(date +%Y%m%d)" instead of evaluated dates
+- **IMPROVED**: Release body content with proper timestamp and metadata evaluation
+- **STANDARDIZED**: Environment variable patterns across both Netlify and Cloudflare backup workflows
+- **TESTED**: Complete backup and release creation process now functioning correctly
+
 ## July 5, 2025 - Complete DevOps Implementation and Development Environment Enhancements
 
 ### Complete DevOps Infrastructure Implementation - GitHub Issue #20 RESOLVED!
