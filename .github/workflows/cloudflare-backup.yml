@@ -28,8 +28,8 @@ jobs:
       - name: Install Wrangler CLI
         run: npm install -g wrangler
       
-      - name: Authenticate with Cloudflare
-        run: echo "${{ secrets.CLOUDFLARE_API_TOKEN }}" | wrangler auth api-token
+      - name: Set Cloudflare API Token
+        run: echo "CLOUDFLARE_API_TOKEN is configured"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       
@@ -64,6 +64,8 @@ jobs:
           
           # Get table info for verification
           wrangler d1 execute librarycard-db --command="SELECT name FROM sqlite_master WHERE type='table';" > tables-list.txt || echo "Tables list failed"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       
       - name: Backup D1 database data
         run: |
@@ -108,6 +110,8 @@ jobs:
           
           # Try to get row counts (may fail if DB is busy)
           wrangler d1 execute librarycard-db --command="SELECT 'users' as table_name, COUNT(*) as row_count FROM users UNION ALL SELECT 'locations', COUNT(*) FROM locations UNION ALL SELECT 'shelves', COUNT(*) FROM shelves UNION ALL SELECT 'books', COUNT(*) FROM books UNION ALL SELECT 'location_members', COUNT(*) FROM location_members;" >> database-stats.txt || echo "Row count query failed" >> database-stats.txt
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       
       - name: Get Worker deployment info
         run: |
@@ -123,6 +127,8 @@ jobs:
           # Get current deployment info if possible
           echo "Checking worker deployment status..." > deployment-status.txt
           wrangler status || echo "Status check failed" >> deployment-status.txt
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       
       - name: Create backup metadata
         run: |
