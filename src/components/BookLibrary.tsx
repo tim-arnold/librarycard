@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
+import { useRouter, usePathname } from 'next/navigation'
 import {
   Container,
   Paper,
@@ -361,9 +362,21 @@ function MoreDetailsModal({ book, isOpen, onClose, userRole }: MoreDetailsModalP
   )
 }
 
-export default function BookLibrary() {
+interface BookLibraryProps {
+  initialFilters?: {
+    location?: string
+    shelf?: string
+    status?: string
+    searchTerm?: string
+    category?: string
+  }
+}
+
+export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
   const { data: session } = useSession()
   const { modalState, confirmAsync, alert, closeModal } = useModal()
+  const router = useRouter()
+  const pathname = usePathname()
   const [books, setBooks] = useState<EnhancedBook[]>([])
   const [filteredBooks, setFilteredBooks] = useState<EnhancedBook[]>([])
   const [searchTerm, setSearchTerm] = useState('')
@@ -401,6 +414,52 @@ export default function BookLibrary() {
       setIsLoading(false)
     }
   }, [session])
+
+  // Initialize filters from URL on mount
+  useEffect(() => {
+    if (initialFilters) {
+      if (initialFilters.location) setLocationFilter(initialFilters.location)
+      if (initialFilters.shelf) setShelfFilter(initialFilters.shelf)
+      if (initialFilters.status) setCheckoutFilter(initialFilters.status)
+      if (initialFilters.searchTerm) setSearchTerm(initialFilters.searchTerm)
+      if (initialFilters.category) setCategoryFilter([initialFilters.category])
+    }
+  }, [initialFilters])
+
+  // Generate URL path based on current filters
+  const generateFilterUrl = useCallback(() => {
+    const segments = []
+    
+    // Add location if set
+    if (locationFilter) segments.push(encodeURIComponent(locationFilter))
+    
+    // Add shelf if set
+    if (shelfFilter) segments.push(encodeURIComponent(shelfFilter))
+    
+    // Add status if set
+    if (checkoutFilter) segments.push(encodeURIComponent(checkoutFilter))
+    
+    // Create base path
+    const basePath = segments.length > 0 ? `/library/${segments.join('/')}` : '/library'
+    
+    // Add search params for other filters
+    const searchParams = new URLSearchParams()
+    if (searchTerm) searchParams.set('search', searchTerm)
+    if (categoryFilter.length > 0) searchParams.set('category', categoryFilter[0])
+    
+    return basePath + (searchParams.toString() ? `?${searchParams.toString()}` : '')
+  }, [locationFilter, shelfFilter, checkoutFilter, searchTerm, categoryFilter])
+
+  // Update URL when filters change (only after component is fully loaded)
+  useEffect(() => {
+    // Don't update URL until component is loaded and has data
+    if (isLoading) return
+    
+    const newUrl = generateFilterUrl()
+    if (pathname !== newUrl) {
+      router.push(newUrl, { scroll: false })
+    }
+  }, [generateFilterUrl, pathname, router, isLoading])
 
   // Load saved view mode and books per page from localStorage
   useEffect(() => {
@@ -537,8 +596,10 @@ export default function BookLibrary() {
             // Admin users: store all locations and load all shelves
             setAllLocations(locations)
             
-            // Default to the first location (oldest one)
-            setLocationFilter(locations[0].name)
+            // Only set default location filter if no URL filters are provided
+            if (!initialFilters?.location) {
+              setLocationFilter(locations[0].name)
+            }
             
             // Load shelves from all locations for admin users
             const allShelves: Shelf[] = []

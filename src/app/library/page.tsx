@@ -1,34 +1,22 @@
 'use client'
 
-import { useEffect } from 'react'
 import { useSession } from 'next-auth/react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 import { Container, CircularProgress, Typography, Box } from '@mui/material'
+import BookLibrary from '@/components/BookLibrary'
+import AppLayout from '@/components/AppLayout'
 
-export default function Home() {
+export default function LibraryPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
-  const searchParams = useSearchParams()
 
   useEffect(() => {
     if (status === 'loading') return
-
     if (!session) {
       router.push('/auth/signin')
-      return
     }
-
-    // Check for invitation token from Google OAuth redirect
-    const invitationToken = searchParams.get('invitation')
-    if (invitationToken) {
-      // Redirect to library with invitation token
-      router.push(`/library?invitation=${invitationToken}`)
-      return
-    }
-
-    // Default redirect to library for authenticated users
-    router.push('/library')
-  }, [session, status, router, searchParams])
+  }, [session, status, router])
 
   if (status === 'loading') {
     return (
@@ -41,5 +29,13 @@ export default function Home() {
     )
   }
 
-  return null
+  if (!session) {
+    return null
+  }
+
+  return (
+    <AppLayout currentPage="library">
+      <BookLibrary />
+    </AppLayout>
+  )
 }
