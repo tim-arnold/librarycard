@@ -6,6 +6,9 @@ on:
     - cron: '0 3 * * *'
   workflow_dispatch: # Allow manual trigger
 
+permissions:
+  contents: write
+  
 jobs:
   backup-cloudflare:
     runs-on: ubuntu-latest
