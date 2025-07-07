@@ -65,6 +65,13 @@ const seedData = {
       owner_id: 'dev-user-1',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
+    },
+    {
+      name: 'Test Library',
+      description: 'Test user library for development',
+      owner_id: 'dev-user-2',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     }
   ],
   
@@ -85,6 +92,12 @@ const seedData = {
     {
       name: 'Management Books',
       location_id: 2, // Office Library (will be ID 2)
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    },
+    {
+      name: 'Test Shelf',
+      location_id: 3, // Test Library (will be ID 3)
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     }
@@ -117,6 +130,24 @@ const seedData = {
       description: 'Elements of reusable object-oriented software',
       shelf_id: 2, // Technical References shelf
       added_by: 'dev-user-1',
+      created_at: new Date().toISOString()
+    },
+    {
+      title: 'JavaScript: The Good Parts',
+      authors: '["Douglas Crockford"]',
+      isbn: '9780596517748',
+      description: 'A guide to JavaScript best practices',
+      shelf_id: 4, // Test Shelf
+      added_by: 'dev-user-2',
+      created_at: new Date().toISOString()
+    },
+    {
+      title: 'You Dont Know JS',
+      authors: '["Kyle Simpson"]',
+      isbn: '9781491924464',
+      description: 'Deep dive into JavaScript fundamentals',
+      shelf_id: 4, // Test Shelf
+      added_by: 'dev-user-2',
       created_at: new Date().toISOString()
     }
   ]

@@ -30,13 +30,6 @@ Read: wrangler.toml
 Read: netlify.toml
 ```
 
-## Database and Schema
-```
-Read: schema.sql
-ls migrations/
-Read: migrations/*.sql (latest 3-4 files)
-```
-
 ## Key Application Files
 ```
 Read: src/app/layout.tsx
@@ -51,13 +44,6 @@ Read: workers/types/index.ts
 ls src/components/
 ls src/lib/
 ls workers/
-```
-
-## Development Environment Check
-```bash
-node --version
-npm --version
-cat .env.local 2>/dev/null || echo "No .env.local.example found"
 ```
 
 ## Recent Activity Context
