@@ -83,15 +83,21 @@ jobs:
               --exclude='.git' \
               -czf backup/source-code.tar.gz .
       
+      - name: Set release variables
+        run: |
+          echo "RELEASE_DATE=$(date +%Y%m%d)" >> $GITHUB_ENV
+          echo "RELEASE_DATE_READABLE=$(date +%Y-%m-%d)" >> $GITHUB_ENV
+          echo "BACKUP_DATE=$(date -u)" >> $GITHUB_ENV
+      
       - name: Upload backup to GitHub Releases
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: backup-${{ github.run_number }}-$(date +%Y%m%d)
-          name: "Frontend Backup - $(date +%Y-%m-%d)"
+          tag_name: backup-${{ github.run_number }}-${{ env.RELEASE_DATE }}
+          name: "Frontend Backup - ${{ env.RELEASE_DATE_READABLE }}"
           body: |
             ## Automated Frontend Backup
             
-            **Backup Date:** $(date -u)
+            **Backup Date:** ${{ env.BACKUP_DATE }}
             **Commit:** ${{ github.sha }}
             **Build Status:** ✅ Success
             
@@ -112,8 +118,6 @@ jobs:
             backup/*
           draft: false
           prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Cleanup old backups
         run: |

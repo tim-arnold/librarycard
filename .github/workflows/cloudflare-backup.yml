@@ -227,15 +227,21 @@ jobs:
           cd backup
           tar -czf cloudflare-backup-$(date +%Y%m%d).tar.gz cloudflare/
       
+      - name: Set release variables
+        run: |
+          echo "RELEASE_DATE=$(date +%Y%m%d)" >> $GITHUB_ENV
+          echo "RELEASE_DATE_READABLE=$(date +%Y-%m-%d)" >> $GITHUB_ENV
+          echo "BACKUP_DATE=$(date -u)" >> $GITHUB_ENV
+      
       - name: Upload backup to GitHub Releases
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: cf-backup-${{ github.run_number }}-$(date +%Y%m%d)
-          name: "Cloudflare Backup - $(date +%Y-%m-%d)"
+          tag_name: cf-backup-${{ github.run_number }}-${{ env.RELEASE_DATE }}
+          name: "Cloudflare Backup - ${{ env.RELEASE_DATE_READABLE }}"
           body: |
             ## Automated Cloudflare Workers & D1 Backup
             
-            **Backup Date:** $(date -u)
+            **Backup Date:** ${{ env.BACKUP_DATE }}
             **Commit:** ${{ github.sha }}
             **Type:** Workers + D1 Database
             
@@ -257,8 +263,6 @@ jobs:
             backup/cloudflare-backup-*.tar.gz
           draft: false
           prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Notify on failure
         if: failure()
