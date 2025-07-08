@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { useSession } from 'next-auth/react'
+import { useRouter, usePathname } from 'next/navigation'
 import {
   Container,
   Paper,
@@ -174,13 +175,23 @@ interface GoogleBookItem {
   }
 }
 
+interface AddBooksInternalProps {
+  initialTab?: 'scan' | 'search'
+}
+
 // Internal component that has access to BookSelectionContext
-function AddBooksInternal() {
+function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
   const { data: session } = useSession()
   const { modalState, alert, closeModal } = useModal()
   const { state: selectionState, actions: selectionActions } = useBookSelection()
+  const router = useRouter()
+  const pathname = usePathname()
+  
   const [activeTab, setActiveTab] = useState<'scan' | 'search'>(() => {
-    // Remember user's preferred tab choice
+    // If initialTab is provided (from URL), use that
+    if (initialTab) return initialTab
+    
+    // Otherwise, remember user's preferred tab choice
     const savedTab = getStorageItem('addBooks_preferredTab', 'functional') as 'scan' | 'search'
     return savedTab || 'search'
   })
@@ -513,6 +524,9 @@ function AddBooksInternal() {
   const handleTabChange = (_event: React.SyntheticEvent, newValue: 'scan' | 'search') => {
     setActiveTab(newValue)
     
+    // Navigate to the appropriate URL
+    router.push(`/add-books/${newValue}`)
+    
     // Save user's preferred tab choice
     setStorageItem('addBooks_preferredTab', newValue, 'functional')
     
@@ -761,11 +775,15 @@ function AddBooksInternal() {
   )
 }
 
+interface AddBooksProps {
+  initialTab?: 'scan' | 'search'
+}
+
 // Main component wrapper with provider
-export default function AddBooks() {
+export default function AddBooks({ initialTab }: AddBooksProps = {}) {
   return (
     <BookSelectionProvider>
-      <AddBooksInternal />
+      <AddBooksInternal initialTab={initialTab} />
     </BookSelectionProvider>
   )
 }
