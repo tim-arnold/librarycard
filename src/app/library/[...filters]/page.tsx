@@ -2,16 +2,19 @@
 
 import { useSession } from 'next-auth/react'
 import { useRouter, useParams, useSearchParams } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Container, CircularProgress, Typography, Box } from '@mui/material'
 import BookLibrary from '@/components/BookLibrary'
 import AppLayout from '@/components/AppLayout'
+import { slugToName, createSlugMap } from '@/lib/urlUtils'
 
 export default function FilteredLibraryPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const params = useParams()
   const searchParams = useSearchParams()
+  const [locationNames, setLocationNames] = useState<string[]>([])
+  const [shelfNames, setShelfNames] = useState<string[]>([])
 
   useEffect(() => {
     if (status === 'loading') return
@@ -19,6 +22,49 @@ export default function FilteredLibraryPage() {
       router.push('/auth/signin')
     }
   }, [session, status, router])
+
+  // Load location and shelf names for slug conversion
+  useEffect(() => {
+    if (!session?.user?.email) return
+
+    const loadNamesForSlugConversion = async () => {
+      try {
+        const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
+        const response = await fetch(`${API_BASE}/api/locations`, {
+          headers: {
+            'Authorization': `Bearer ${session.user.email}`,
+            'Content-Type': 'application/json',
+          },
+        })
+        
+        if (response.ok) {
+          const locations = await response.json()
+          const locationNamesList = locations.map((loc: any) => loc.name)
+          setLocationNames(locationNamesList)
+          
+          // Load all shelf names
+          const allShelfNames: string[] = []
+          for (const location of locations) {
+            const shelvesResponse = await fetch(`${API_BASE}/api/locations/${location.id}/shelves`, {
+              headers: {
+                'Authorization': `Bearer ${session.user.email}`,
+                'Content-Type': 'application/json',
+              },
+            })
+            if (shelvesResponse.ok) {
+              const shelves = await shelvesResponse.json()
+              allShelfNames.push(...shelves.map((shelf: any) => shelf.name))
+            }
+          }
+          setShelfNames(allShelfNames)
+        }
+      } catch (error) {
+        console.error('Failed to load location/shelf names for slug conversion:', error)
+      }
+    }
+
+    loadNamesForSlugConversion()
+  }, [session])
 
   if (status === 'loading') {
     return (
@@ -35,18 +81,23 @@ export default function FilteredLibraryPage() {
     return null
   }
 
-  // Parse URL filters: /library/location/shelf/status
+  // Parse URL filters: /library/location/shelf (status moved to query params)
   const filters = Array.isArray(params.filters) ? params.filters : []
-  const [location, shelf, checkoutStatus] = filters
+  const [locationSlug, shelfSlug] = filters
 
-  // Also support search params for search terms and other filters
+  // Convert slugs back to display names using reverse mapping
+  const locationSlugMap = createSlugMap(locationNames)
+  const shelfSlugMap = createSlugMap(shelfNames)
+
+  // Support search params for search terms, status, and other filters
   const searchTerm = searchParams.get('search')
   const category = searchParams.get('category')
+  const statusFilter = searchParams.get('status')
 
   const urlFilters = {
-    location: location ? decodeURIComponent(location) : '',
-    shelf: shelf ? decodeURIComponent(shelf) : '',
-    status: checkoutStatus ? decodeURIComponent(checkoutStatus) : '',
+    location: locationSlug ? (locationSlugMap[locationSlug] || slugToName(locationSlug)) : '',
+    shelf: shelfSlug ? (shelfSlugMap[shelfSlug] || slugToName(shelfSlug)) : '',
+    status: statusFilter || '',
     searchTerm: searchTerm || '',
     category: category || '',
   }
