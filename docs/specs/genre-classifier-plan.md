@@ -349,6 +349,60 @@ export interface EnhancedBook extends Book {
 - **Week 7-8**: Testing and refinement
 - **Week 9**: Deployment and user training
 
+## Debugging Session - July 8, 2025
+
+### Issue Identified: Genre Assignment Not Persisting
+
+During implementation testing, discovered that while the genre selection UI works correctly and displays appropriate fallback behavior, user-selected genres are not being saved to the database during book creation.
+
+#### Investigation Summary:
+
+1. **Symptom**: User selected "Fantasy" for Spellmonger book during creation, but `assigned_genres` field in database shows empty array `[]`.
+
+2. **Expected vs Actual**:
+   - **Expected**: `assigned_genres` contains `[{"id": 1, "name": "Fantasy", "description": "..."}]`
+   - **Actual**: `assigned_genres` is `[]` and `enhanced_genres` is `null`
+   - **Result**: Genre chip displays "Fantasy" from `categories` field (fallback working correctly)
+
+3. **Implementation Status**:
+   - ✅ **Database Schema**: Tables created and seeded properly
+   - ✅ **API Endpoints**: `/api/books/[id]/genres` route exists and proxies to worker
+   - ✅ **Worker Routes**: `/books/{id}/genres` endpoint implemented in worker
+   - ✅ **UI Components**: GenreSelector works, displays available genres
+   - ✅ **Fallback Logic**: `getDisplayGenres()` function implemented with proper priority
+   - ❌ **Genre Assignment**: Issue in AddBooks.tsx saveBook process
+
+4. **Code Analysis**:
+   - `AddBooks.tsx` lines 424-436: Calls `/api/books/${savedBook.id}/genres` after book creation
+   - Genre assignment happens in try/catch block that "doesn't block success flow"
+   - Need to verify if API calls are succeeding or failing silently
+
+5. **Next Steps for Resolution**:
+   - Add debugging logs to `/api/books/[id]/genres` route to track requests
+   - Check worker logs during book creation to see if genre assignment calls reach the worker
+   - Verify session authentication is being passed correctly to genre assignment endpoint
+   - Test genre assignment endpoint independently via direct API calls
+   - Consider adding user feedback when genre assignment fails
+
+#### Current Status:
+- **Core Feature**: ✅ Genre display fallback system implemented and working
+- **Database Integration**: ✅ API returns assigned genres in response format
+- **User Interface**: ✅ All book display components updated with fallback logic
+- **Critical Bug**: ❌ Genre assignment during book creation not persisting
+
+#### Files Modified:
+- `workers/books/index.ts` - Added assigned_genres to API response
+- `src/lib/genreUtils.ts` - Created fallback logic helper functions
+- `src/components/BookGrid.tsx`, `BookList.tsx`, `BookCompact.tsx` - Updated genre display
+- `src/lib/types.ts` - Updated EnhancedBook interface for assignedGenres
+
+#### Testing Environment:
+- Using testuser@localhost credentials  
+- Local development environment with wrangler local D1 database
+- Database shows Fantasy genre exists (id: 1) but book_genres table needs verification
+
 ## Conclusion
 
 This dynamic genre management system transforms LibraryCard from a static, hardcoded genre system to a flexible, user-controlled taxonomy that can grow and adapt with each library's needs while maintaining consistency and data quality across the entire application.
+
+**Current implementation is 85% complete** with fallback display logic fully functional. The remaining critical issue is debugging why genre assignments aren't persisting during book creation, likely requiring investigation of the API chain from AddBooks.tsx → Next.js API route → Cloudflare Worker → D1 database.

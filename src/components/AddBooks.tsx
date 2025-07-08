@@ -423,11 +423,16 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
           if (savedBook) {
             // Assign each selected genre to the book
             for (const genre of selectedGenres) {
-              await fetch(`/api/books/${savedBook.id}/genres`, {
+              const response = await fetch(`/api/books/${savedBook.id}/genres`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ genreId: genre.id, isAutoAssigned: false })
               })
+              
+              if (!response.ok) {
+                const errorText = await response.text()
+                console.error('Failed to assign genre:', genre.name, 'Error:', errorText)
+              }
             }
           }
         } catch (error) {

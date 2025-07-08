@@ -26,8 +26,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const response = await fetch(`${API_BASE}/books/${bookId}/genres`, {
       method: 'GET',
       headers: {
+        'Authorization': `Bearer ${session.user.email}`,
         'Content-Type': 'application/json',
-        'X-User-Email': session.user.email,
       },
     })
 
@@ -73,8 +73,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const response = await fetch(`${API_BASE}/books/${bookId}/genres`, {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${session.user.email}`,
         'Content-Type': 'application/json',
-        'X-User-Email': session.user.email,
       },
       body: JSON.stringify({
         genreId,
