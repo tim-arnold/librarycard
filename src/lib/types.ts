@@ -20,6 +20,8 @@ export interface Book {
 
 export interface EnhancedBook extends Book {
   enhancedGenres?: string[]
+  assignedGenres?: BookGenre[]    // New: Assigned curated genres
+  suggestedGenres?: CuratedGenre[] // New: Auto-suggested genres
   series?: string
   seriesNumber?: string
   openLibraryKey?: string
@@ -63,4 +65,67 @@ export interface BookRatingsResponse {
   ratingCount: number
   locationId: number
   allRatings?: BookRating[]  // For showing all reviews in More Details
+}
+
+// Dynamic Genre Management System Interfaces
+
+export interface CuratedGenre {
+  id: number
+  name: string
+  description?: string
+  createdBy: string
+  createdAt: string
+  updatedAt: string
+  isActive: boolean
+}
+
+export interface BookGenre {
+  id: number
+  bookId: number
+  genreId: number
+  assignedBy: string
+  assignedAt: string
+  isAutoAssigned: boolean
+  genre: CuratedGenre
+}
+
+export interface GenreSuggestion {
+  id: number
+  suggestedName: string
+  description?: string
+  suggestedBy: string
+  bookId?: number
+  status: 'pending' | 'approved' | 'rejected'
+  reviewedBy?: string
+  reviewedAt?: string
+  reviewComment?: string
+  createdAt: string
+}
+
+// API Request/Response interfaces for genre management
+
+export interface CreateGenreRequest {
+  name: string
+  description?: string
+}
+
+export interface AssignGenreRequest {
+  genreId: number
+  isAutoAssigned?: boolean
+}
+
+export interface SuggestGenreRequest {
+  suggestedName: string
+  description?: string
+  bookId?: number
+}
+
+export interface ReviewGenreSuggestionRequest {
+  status: 'approved' | 'rejected'
+  reviewComment?: string
+}
+
+export interface GenreClassificationResult {
+  suggestedGenres: CuratedGenre[]
+  confidence: number
 }

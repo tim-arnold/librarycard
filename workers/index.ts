@@ -80,6 +80,7 @@ import {
 import {
   getUserFromRequest
 } from './auth';
+import { GenreService } from './genres';
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -143,6 +144,23 @@ export default {
       // Contact form endpoint (public)
       if (path === '/api/contact' && request.method === 'POST') {
         return await sendContactEmail(request, env, corsHeaders);
+      }
+
+      // Public genre endpoints (read-only access)
+      if (path === '/genres' && request.method === 'GET') {
+        const genreService = new GenreService(env.DB);
+        try {
+          const genres = await genreService.getAllActiveGenres();
+          return new Response(JSON.stringify(genres), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error) {
+          console.error('Error fetching genres:', error);
+          return new Response(JSON.stringify({ error: 'Failed to fetch genres' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
       }
 
       // Get user from session/token for protected endpoints
@@ -351,6 +369,73 @@ export default {
       // Change password endpoint (authenticated users only)
       if (path === '/api/auth/change-password' && request.method === 'POST') {
         return await changePassword(request, env, corsHeaders);
+      }
+
+      // Book-Genre Management endpoints
+      if (path.match(/^\/books\/\d+\/genres$/) && request.method === 'GET') {
+        const bookId = parseInt(path.split('/')[2]);
+        const genreService = new GenreService(env.DB);
+        try {
+          const bookGenres = await genreService.getBookGenres(bookId);
+          return new Response(JSON.stringify(bookGenres), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error) {
+          console.error('Error fetching book genres:', error);
+          return new Response(JSON.stringify({ error: 'Failed to fetch book genres' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      if (path.match(/^\/books\/\d+\/genres$/) && request.method === 'POST') {
+        const bookId = parseInt(path.split('/')[2]);
+        const genreService = new GenreService(env.DB);
+        try {
+          const body = await request.json() as any;
+          const bookGenre = await genreService.assignGenreToBook(bookId, body, userId);
+          return new Response(JSON.stringify(bookGenre), {
+            status: 201,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error: any) {
+          console.error('Error assigning genre to book:', error);
+          const status = error.message.includes('already assigned') ? 409 : 500;
+          return new Response(JSON.stringify({ error: error.message || 'Failed to assign genre' }), {
+            status,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      // Admin Genre Management endpoints
+      if (path === '/admin/genres' && request.method === 'POST') {
+        const genreService = new GenreService(env.DB);
+        try {
+          // Check if user is super admin
+          const user = await env.DB.prepare('SELECT user_role FROM users WHERE id = ?').bind(userId).first() as any;
+          if (!user || user.user_role !== 'admin') {
+            return new Response(JSON.stringify({ error: 'Super admin access required' }), {
+              status: 403,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          const body = await request.json() as any;
+          const newGenre = await genreService.createGenre(body, userId);
+          return new Response(JSON.stringify(newGenre), {
+            status: 201,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error: any) {
+          console.error('Error creating genre:', error);
+          const status = error.message.includes('UNIQUE constraint') ? 409 : 500;
+          return new Response(JSON.stringify({ error: error.message || 'Failed to create genre' }), {
+            status,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
       }
 
       // Admin-only cleanup endpoint
