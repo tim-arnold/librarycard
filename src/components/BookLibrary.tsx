@@ -39,6 +39,7 @@ import { useModal } from '@/hooks/useModal'
 import { CURATED_GENRES } from '@/lib/genreClassifier'
 import { getStorageItem, setStorageItem } from '@/lib/storage'
 import { isAdmin } from '@/lib/permissions'
+import { nameToSlug } from '@/lib/urlUtils'
 import {
   Dialog,
   DialogTitle,
@@ -430,14 +431,11 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
   const generateFilterUrl = useCallback(() => {
     const segments = []
     
-    // Add location if set
-    if (locationFilter) segments.push(encodeURIComponent(locationFilter))
+    // Add location if set (convert to slug)
+    if (locationFilter) segments.push(nameToSlug(locationFilter))
     
-    // Add shelf if set
-    if (shelfFilter) segments.push(encodeURIComponent(shelfFilter))
-    
-    // Add status if set
-    if (checkoutFilter) segments.push(encodeURIComponent(checkoutFilter))
+    // Add shelf if set (only if location is also set, convert to slug)
+    if (shelfFilter && locationFilter) segments.push(nameToSlug(shelfFilter))
     
     // Create base path
     const basePath = segments.length > 0 ? `/library/${segments.join('/')}` : '/library'
@@ -446,6 +444,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
     const searchParams = new URLSearchParams()
     if (searchTerm) searchParams.set('search', searchTerm)
     if (categoryFilter.length > 0) searchParams.set('category', categoryFilter[0])
+    if (checkoutFilter) searchParams.set('status', checkoutFilter)
     
     return basePath + (searchParams.toString() ? `?${searchParams.toString()}` : '')
   }, [locationFilter, shelfFilter, checkoutFilter, searchTerm, categoryFilter])
