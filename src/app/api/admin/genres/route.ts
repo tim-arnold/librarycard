@@ -3,13 +3,12 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-import { authOptions } from '../../auth/[...nextauth]/route'
 
 const API_BASE = process.env.CLOUDFLARE_WORKER_URL || 'http://localhost:8787'
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession()
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
