@@ -12,6 +12,7 @@ import {
 import { Info, Star } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
 import { isAdmin } from '@/lib/permissions'
+import { getDisplayGenres } from '@/lib/genreUtils'
 import BookActions from './BookActions'
 import StarRating from './StarRating'
 
@@ -163,23 +164,26 @@ export default function BookGrid({
                   )}
                   
                   {/* Genre chip - only show for regular users and when there's space */}
-                  {!isAdmin(userRole) && (book.enhancedGenres || book.categories) && (book.enhancedGenres?.[0] || book.categories?.[0]) && (
-                    <Chip 
-                      label={book.enhancedGenres?.[0] || book.categories?.[0]} 
-                      size="small" 
-                      color={book.enhancedGenres ? 'primary' : 'default'}
-                      sx={{ 
-                        fontSize: '0.7rem', 
-                        height: 20,
-                        maxWidth: '120px',
-                        '& .MuiChip-label': {
-                          textOverflow: 'ellipsis',
-                          overflow: 'hidden',
-                          whiteSpace: 'nowrap'
-                        }
-                      }} 
-                    />
-                  )}
+                  {!isAdmin(userRole) && (() => {
+                    const { genres, source } = getDisplayGenres(book)
+                    return genres.length > 0 && (
+                      <Chip 
+                        label={genres[0]} 
+                        size="small" 
+                        color={source === 'assigned' ? 'secondary' : source === 'enhanced' ? 'primary' : 'default'}
+                        sx={{ 
+                          fontSize: '0.7rem', 
+                          height: 20,
+                          maxWidth: '120px',
+                          '& .MuiChip-label': {
+                            textOverflow: 'ellipsis',
+                            overflow: 'hidden',
+                            whiteSpace: 'nowrap'
+                          }
+                        }} 
+                      />
+                    )
+                  })()}
                 </Box>
                 {book.description && (
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>

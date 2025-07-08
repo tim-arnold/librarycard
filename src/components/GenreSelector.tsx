@@ -39,16 +39,18 @@ export default function GenreSelector({
 
   // Load available genres from database
   useEffect(() => {
+    console.log('GenreSelector mounted with book:', book.title, 'enhancedGenres:', book.enhancedGenres)
     const loadGenres = async () => {
       try {
         setIsLoading(true)
-        const response = await fetch('/api/genres')
+        const response = await fetch('http://localhost:8787/genres')
         
         if (!response.ok) {
           throw new Error('Failed to load genres')
         }
         
         const genres = await response.json()
+        console.log('Loaded genres:', genres.length, genres.slice(0, 3))
         setAvailableGenres(genres)
         
         // Get suggested genres based on book's current enhanced genres
@@ -102,6 +104,8 @@ export default function GenreSelector({
   const availableForAutocomplete = availableGenres.filter(genre =>
     !selectedGenres.find(selected => selected.id === genre.id)
   )
+  
+  console.log('Available for autocomplete:', availableForAutocomplete.length)
 
   if (isLoading) {
     return (
