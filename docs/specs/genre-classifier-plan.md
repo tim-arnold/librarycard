@@ -149,8 +149,69 @@ Based on the existing role system:
 
 #### Phase 1: Database Setup
 1. Create new tables with proper indexes
-2. Seed `curated_genres` table with existing 47 genres from `CURATED_GENRES`
+2. Seed `curated_genres` table with enhanced genre list (see below)
 3. Create system user for auto-assignments
+
+#### Enhanced Curated Genres List
+
+Based on analysis of current `CURATED_GENRES` (37 genres) and comparison with industry-standard genre lists, here's the recommended starting set of **45 main genres**:
+
+**Fiction Genres (25)**
+- Action & Adventure
+- Children's Literature
+- Classics
+- Comedy & Humor
+- Contemporary Fiction
+- Crime & Mystery
+- Dystopian & Post-Apocalyptic
+- Fantasy
+- Gothic & Horror
+- Graphic Novel & Comics
+- Historical Fiction
+- Literary Fiction
+- Magical Realism
+- Paranormal & Supernatural
+- Poetry
+- Psychological Thriller
+- Romance
+- Science Fiction
+- Short Stories
+- Thriller & Suspense
+- Urban Fantasy
+- War Fiction
+- Western
+- Young Adult
+- LGBTQ+ Fiction
+
+**Non-Fiction Genres (20)**
+- Art & Design
+- Biography & Memoir
+- Business & Economics
+- Cooking & Food
+- Education & Academia
+- Essays & Literature
+- Health & Fitness
+- History
+- Philosophy
+- Politics & Social Issues
+- Psychology
+- Reference & How-To
+- Religion & Spirituality
+- Science & Nature
+- Self-Help & Personal Development
+- Sports & Recreation
+- Technology & Computing
+- Travel & Adventure
+- True Crime
+- Current Events & Journalism
+
+**Key Changes from Current List:**
+- **Consolidated sub-genres**: Combined "Mystery & Crime" and similar overlapping categories
+- **Added missing classics**: "Classics", "Poetry", "Western", "War Fiction", "Comedy & Humor"
+- **Enhanced non-fiction**: Added "Sports", "Psychology", "Education", "Current Events"
+- **Simplified specificity**: Removed very specific sub-genres like "Space Opera", "Cozy Mystery", "Paranormal Romance"
+- **Modern inclusivity**: Added "LGBTQ+ Fiction" and "Current Events & Journalism"
+- **Better organization**: Grouped related genres for easier navigation
 
 #### Phase 2: Data Migration
 1. Process all existing `books.enhanced_genres` data
