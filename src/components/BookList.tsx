@@ -13,6 +13,7 @@ import type { EnhancedBook } from '@/lib/types'
 import BookActions from './BookActions'
 import StarRating from './StarRating'
 import { isAdmin } from '@/lib/permissions'
+import { getDisplayGenres } from '@/lib/genreUtils'
 
 interface BookTextProps {
   books: EnhancedBook[]
@@ -164,23 +165,26 @@ export default function BookText({
               )}
               
               {/* Genre - only show for regular users */}
-              {!isAdmin(userRole) && (book.enhancedGenres?.[0] || book.categories?.[0]) && (
-                <Chip 
-                  label={book.enhancedGenres?.[0] || book.categories?.[0]} 
-                  size="small" 
-                  color={book.enhancedGenres ? 'primary' : 'default'}
-                  sx={{ 
-                    fontSize: '0.7rem', 
-                    height: 20,
-                    maxWidth: '120px',
-                    '& .MuiChip-label': {
-                      textOverflow: 'ellipsis',
-                      overflow: 'hidden',
-                      whiteSpace: 'nowrap'
-                    }
-                  }}
-                />
-              )}
+              {!isAdmin(userRole) && (() => {
+                const { genres, source } = getDisplayGenres(book)
+                return genres.length > 0 && (
+                  <Chip 
+                    label={genres[0]} 
+                    size="small" 
+                    color={source === 'assigned' ? 'secondary' : source === 'enhanced' ? 'primary' : 'default'}
+                    sx={{ 
+                      fontSize: '0.7rem', 
+                      height: 20,
+                      maxWidth: '120px',
+                      '& .MuiChip-label': {
+                        textOverflow: 'ellipsis',
+                        overflow: 'hidden',
+                        whiteSpace: 'nowrap'
+                      }
+                    }}
+                  />
+                )
+              })()}
               
               {/* Shelf info */}
               <Typography 

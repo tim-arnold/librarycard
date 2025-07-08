@@ -12,6 +12,7 @@ import { Info, Star } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
 import BookActions from './BookActions'
 import { isAdmin } from '@/lib/permissions'
+import { getDisplayGenres } from '@/lib/genreUtils'
 import StarRating from './StarRating'
 
 interface BookListProps {
@@ -198,7 +199,7 @@ export default function BookList({
               )}
 
               {/* Rating and Genre area - mini star chips alongside genre */}
-              {(!isAdmin(userRole) && (book.enhancedGenres || book.categories) && (book.enhancedGenres?.[0] || book.categories?.[0])) || (book.userRating || book.averageRating) || onRateBook ? (
+              {(!isAdmin(userRole) && getDisplayGenres(book).genres.length > 0) || (book.userRating || book.averageRating) || onRateBook ? (
                 <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                   {/* Star rating - mini variant for compact space */}
                   <StarRating
@@ -231,23 +232,26 @@ export default function BookList({
                   )}
                   
                   {/* Genre chip - only show for regular users */}
-                  {!isAdmin(userRole) && (book.enhancedGenres || book.categories) && (book.enhancedGenres?.[0] || book.categories?.[0]) && (
-                    <Chip 
-                      label={book.enhancedGenres?.[0] || book.categories?.[0]} 
-                      size="small" 
-                      color={book.enhancedGenres ? 'primary' : 'default'}
-                      sx={{ 
-                        fontSize: { xs: '0.7rem', sm: '0.75rem', md: '0.8125rem' },
-                        height: { xs: 20, sm: 24, md: 28 },
-                        maxWidth: '120px',
-                        '& .MuiChip-label': {
-                          textOverflow: 'ellipsis',
-                          overflow: 'hidden',
-                          whiteSpace: 'nowrap'
-                        }
-                      }} 
-                    />
-                  )}
+                  {!isAdmin(userRole) && (() => {
+                    const { genres, source } = getDisplayGenres(book)
+                    return genres.length > 0 && (
+                      <Chip 
+                        label={genres[0]} 
+                        size="small" 
+                        color={source === 'assigned' ? 'secondary' : source === 'enhanced' ? 'primary' : 'default'}
+                        sx={{ 
+                          fontSize: { xs: '0.7rem', sm: '0.75rem', md: '0.8125rem' },
+                          height: { xs: 20, sm: 24, md: 28 },
+                          maxWidth: '120px',
+                          '& .MuiChip-label': {
+                            textOverflow: 'ellipsis',
+                            overflow: 'hidden',
+                            whiteSpace: 'nowrap'
+                          }
+                        }} 
+                      />
+                    )
+                  })()}
                   
                   {/* More Details button moved to right of genre and rating */}
                   {(book.extendedDescription || book.subjects || book.pageCount || book.averageRating || book.publisherInfo || book.openLibraryKey) && (
@@ -271,7 +275,7 @@ export default function BookList({
               ) : null}
 
               {/* More Details button for when no genre or rating is shown */}
-              {(isAdmin(userRole) || (!book.enhancedGenres?.[0] && !book.categories?.[0])) && !(book.userRating || book.averageRating) && (book.extendedDescription || book.subjects || book.pageCount || book.googleAverageRating || book.publisherInfo || book.openLibraryKey) && (
+              {(isAdmin(userRole) || getDisplayGenres(book).genres.length === 0) && !(book.userRating || book.averageRating) && (book.extendedDescription || book.subjects || book.pageCount || book.googleAverageRating || book.publisherInfo || book.openLibraryKey) && (
                 <Box sx={{ mb: 1.5 }}>
                   <Button
                     size="small"

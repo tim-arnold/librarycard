@@ -20,7 +20,7 @@ export interface Book {
 
 export interface EnhancedBook extends Book {
   enhancedGenres?: string[]
-  assignedGenres?: BookGenre[]    // New: Assigned curated genres
+  assignedGenres?: CuratedGenre[]  // New: Assigned curated genres (simplified for display)
   suggestedGenres?: CuratedGenre[] // New: Auto-suggested genres
   series?: string
   seriesNumber?: string

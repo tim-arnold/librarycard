@@ -19,6 +19,12 @@ export async function getUserBooks(userId: string, env: Env, corsHeaders: Record
              b.publisher_info, b.open_library_key, b.enhanced_genres, b.series, b.series_number,
              s.name as shelf_name, l.name as location_name,
              br.rating as user_rating, br.review_text as user_review,
+             -- Get assigned genres as JSON array
+             (SELECT json_group_array(json_object('id', cg.id, 'name', cg.name, 'description', cg.description))
+              FROM book_genres bg 
+              JOIN curated_genres cg ON bg.genre_id = cg.id 
+              WHERE bg.book_id = b.id AND cg.is_active = 1
+             ) as assigned_genres,
              -- Calculate library-specific average rating from book_ratings table
              (SELECT AVG(CAST(rating AS REAL)) FROM book_ratings 
               WHERE book_id = b.id AND user_id IN (
@@ -59,6 +65,12 @@ export async function getUserBooks(userId: string, env: Env, corsHeaders: Record
              b.publisher_info, b.open_library_key, b.enhanced_genres, b.series, b.series_number,
              s.name as shelf_name, l.name as location_name,
              br.rating as user_rating, br.review_text as user_review,
+             -- Get assigned genres as JSON array
+             (SELECT json_group_array(json_object('id', cg.id, 'name', cg.name, 'description', cg.description))
+              FROM book_genres bg 
+              JOIN curated_genres cg ON bg.genre_id = cg.id 
+              WHERE bg.book_id = b.id AND cg.is_active = 1
+             ) as assigned_genres,
              -- Calculate library-specific average rating from book_ratings table
              (SELECT AVG(CAST(rating AS REAL)) FROM book_ratings 
               WHERE book_id = b.id AND user_id IN (
@@ -100,6 +112,7 @@ export async function getUserBooks(userId: string, env: Env, corsHeaders: Record
     tags: book.tags ? JSON.parse(book.tags) : [],
     subjects: book.subjects ? JSON.parse(book.subjects) : [],
     enhancedGenres: book.enhanced_genres ? JSON.parse(book.enhanced_genres) : [],
+    assignedGenres: book.assigned_genres ? JSON.parse(book.assigned_genres).filter((g: any) => g.id !== null) : [],
     // Map database field names to frontend field names
     publishedDate: book.published_date,
     extendedDescription: book.extended_description,

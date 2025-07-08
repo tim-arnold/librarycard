@@ -148,9 +148,11 @@ export default {
 
       // Public genre endpoints (read-only access)
       if (path === '/genres' && request.method === 'GET') {
+        console.log('Worker: handling /genres request');
         const genreService = new GenreService(env.DB);
         try {
           const genres = await genreService.getAllActiveGenres();
+          console.log('Worker: returning', genres.length, 'genres');
           return new Response(JSON.stringify(genres), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });

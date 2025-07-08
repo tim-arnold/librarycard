@@ -8,6 +8,7 @@ const API_BASE = process.env.CLOUDFLARE_WORKER_URL || 'http://localhost:8787'
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('Fetching genres from:', `${API_BASE}/genres`)
     const response = await fetch(`${API_BASE}/genres`, {
       method: 'GET',
       headers: {
@@ -25,6 +26,7 @@ export async function GET(request: NextRequest) {
     }
 
     const genres = await response.json()
+    console.log('Received genres from worker:', genres.length)
     return NextResponse.json(genres)
 
   } catch (error) {
