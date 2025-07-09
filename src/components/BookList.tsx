@@ -8,7 +8,7 @@ import {
   Chip,
   IconButton,
 } from '@mui/material'
-import { Info, Star } from '@mui/icons-material'
+import { Info, Star, Edit } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
 import BookActions from './BookActions'
 import StarRating from './StarRating'
@@ -31,6 +31,7 @@ interface BookTextProps {
   onAuthorClick: (authorName: string) => void
   onSeriesClick: (seriesName: string) => void
   onRateBook?: (book: EnhancedBook) => void
+  onGenreEdit?: (book: EnhancedBook) => void
 }
 
 export default function BookText({
@@ -49,6 +50,7 @@ export default function BookText({
   onAuthorClick,
   onSeriesClick,
   onRateBook,
+  onGenreEdit,
 }: BookTextProps) {
   return (
     <List sx={{ width: '100%', p: 0 }}>
@@ -214,6 +216,24 @@ export default function BookText({
                   title="More Details"
                 >
                   <Info sx={{ fontSize: '1rem' }} />
+                </IconButton>
+              )}
+              
+              {/* Edit Genres button */}
+              {onGenreEdit && (
+                <IconButton
+                  size="small"
+                  onClick={() => onGenreEdit(book)}
+                  sx={{ 
+                    p: 0.5,
+                    color: 'secondary.main',
+                    '&:hover': {
+                      backgroundColor: 'secondary.50'
+                    }
+                  }}
+                  title="Edit Genres"
+                >
+                  <Edit sx={{ fontSize: '1rem' }} />
                 </IconButton>
               )}
 
