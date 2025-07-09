@@ -37,7 +37,7 @@ import RemovalReasonModal from './RemovalReasonModal'
 import RatingModal from './RatingModal'
 import GenreEditModal from './GenreEditModal'
 import { useModal } from '@/hooks/useModal'
-import { CURATED_GENRES } from '@/lib/genreClassifier'
+// import { CURATED_GENRES } from '@/lib/genreClassifier' // TODO: Remove after genre API integration
 import { getStorageItem, setStorageItem } from '@/lib/storage'
 import { isAdmin } from '@/lib/permissions'
 import { nameToSlug } from '@/lib/urlUtils'
@@ -1493,8 +1493,9 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
       }
     })
     
-    // Combine curated genres with assigned genres, using Set to remove duplicates
-    const allPossibleGenres = new Set([...CURATED_GENRES, ...Array.from(assignedGenres)])
+    // TODO: Replace with API call to get active genres from database
+    // For now, combine assigned genres with a fallback empty set
+    const allPossibleGenres = new Set([...Array.from(assignedGenres)])
     
     return Array.from(allPossibleGenres).filter(curatedGenre => {
       return books.some(book => bookHasGenreForDropdown(book, curatedGenre))
