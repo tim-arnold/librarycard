@@ -25,7 +25,7 @@ import {
   ViewList,
   FormatListBulleted,
 } from '@mui/icons-material'
-import type { EnhancedBook } from '@/lib/types'
+import type { EnhancedBook, CuratedGenre } from '@/lib/types'
 import { getBooks, updateBook, deleteBook as deleteBookAPI } from '@/lib/api'
 import ConfirmationModal from './ConfirmationModal'
 import AlertModal from './AlertModal'
@@ -35,6 +35,7 @@ import BookCompact from './BookCompact'
 import BookList from './BookList'
 import RemovalReasonModal from './RemovalReasonModal'
 import RatingModal from './RatingModal'
+import GenreEditModal from './GenreEditModal'
 import { useModal } from '@/hooks/useModal'
 import { CURATED_GENRES } from '@/lib/genreClassifier'
 import { getStorageItem, setStorageItem } from '@/lib/storage'
@@ -138,6 +139,26 @@ function MoreDetailsModal({ book, isOpen, onClose, userRole }: MoreDetailsModalP
             </Typography>
           </Box>
           
+          {/* Assigned Genres (User-selected) */}
+          {book.assignedGenres && book.assignedGenres.length > 0 && (
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Assigned Genres
+              </Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                {book.assignedGenres.map((genre, index) => (
+                  <Chip 
+                    key={index} 
+                    label={genre.name} 
+                    size="small" 
+                    color="success"
+                    variant="filled"
+                  />
+                ))}
+              </Box>
+            </Box>
+          )}
+
           {/* Curated Genres (Enhanced) */}
           {book.enhancedGenres && book.enhancedGenres.length > 0 && (
             <Box sx={{ mb: 3 }}>
@@ -406,6 +427,9 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
   const [isLoading, setIsLoading] = useState(true)
   const [showRatingModal, setShowRatingModal] = useState(false)
   const [selectedBookForRating, setSelectedBookForRating] = useState<EnhancedBook | null>(null)
+  const [showGenreEditModal, setShowGenreEditModal] = useState(false)
+  const [selectedBookForGenreEdit, setSelectedBookForGenreEdit] = useState<EnhancedBook | null>(null)
+  const [genreUpdateSuccessful, setGenreUpdateSuccessful] = useState(false)
 
   useEffect(() => {
     if (session?.user) {
@@ -740,7 +764,16 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
 
   // Helper function for dropdown generation - only check enhanced genres and categories
   const bookHasGenreForDropdown = (book: EnhancedBook, curatedGenre: string): boolean => {
-    // Check enhanced genres first (these are already curated) - use case-insensitive matching
+    // Check assigned genres first (these are user-selected and highest priority)
+    if (book.assignedGenres) {
+      const curatedLower = curatedGenre.toLowerCase()
+      const hasMatch = book.assignedGenres.some(genre => genre.name.toLowerCase() === curatedLower)
+      if (hasMatch) {
+        return true
+      }
+    }
+    
+    // Check enhanced genres (these are already curated) - use case-insensitive matching
     if (book.enhancedGenres) {
       const curatedLower = curatedGenre.toLowerCase()
       const hasMatch = book.enhancedGenres.some(genre => genre.toLowerCase() === curatedLower)
@@ -779,27 +812,39 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
                (rawLower.includes('young') && rawLower.includes('adult'))
       }
       
-      // Direct substring matching for single-word genres
+      // For multi-word genres, require ALL words to be present (not just any single word)
+      // This prevents "Science Fiction" from matching books that only have "Fiction"
+      if (curatedGenre.includes(' ')) {
+        const curatedWords = curatedLower.split(/\s+/).filter(word => word.length > 2)
+        const rawWords = rawLower.split(/\s+|[,&-]+/).filter(word => word.length > 2)
+        
+        // Require ALL words from the curated genre to be present in the raw text
+        return curatedWords.every(curatedWord => rawWords.includes(curatedWord))
+      }
+      
+      // Single-word genre matching - check both exact substring and word boundaries
       if (rawLower.includes(curatedLower) || curatedLower.includes(rawLower)) {
         return true
       }
       
-      // Word-based matching for partial matches (e.g., "Horror" matches "American horror tales")
-      const rawWords = rawLower.split(/\s+|[,&-]+/).filter(word => word.length > 0)
-      const curatedWords = curatedLower.split(/\s+/).filter(word => word.length > 0)
-      
-      // Check if all words from the curated genre appear in the raw genre
-      const allWordsMatch = curatedWords.every(curatedWord => 
-        rawWords.some(rawWord => rawWord.includes(curatedWord) || curatedWord.includes(rawWord))
-      )
-      
-      return allWordsMatch
+      // Fallback: exact word match in word boundaries for single words
+      const rawWords = rawLower.split(/\s+|[,&-]+/).filter(word => word.length > 2)
+      return rawWords.includes(curatedLower)
     })
   }
 
   // Helper function to check if a book matches a curated genre filter - includes subjects for comprehensive filtering
   const bookMatchesGenreFilter = (book: EnhancedBook, curatedGenre: string): boolean => {
-    // Check enhanced genres first (these are already curated) - use case-insensitive matching
+    // Check assigned genres first (these are user-selected and highest priority)
+    if (book.assignedGenres) {
+      const curatedLower = curatedGenre.toLowerCase()
+      const hasMatch = book.assignedGenres.some(genre => genre.name.toLowerCase() === curatedLower)
+      if (hasMatch) {
+        return true
+      }
+    }
+    
+    // Check enhanced genres (these are already curated) - use case-insensitive matching
     if (book.enhancedGenres) {
       const curatedLower = curatedGenre.toLowerCase()
       const hasMatch = book.enhancedGenres.some(genre => genre.toLowerCase() === curatedLower)
@@ -838,21 +883,24 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
                (rawLower.includes('young') && rawLower.includes('adult'))
       }
       
-      // Direct substring matching for single-word genres
+      // For multi-word genres, require ALL words to be present (not just any single word)
+      // This prevents "Science Fiction" from matching books that only have "Fiction"
+      if (curatedGenre.includes(' ')) {
+        const curatedWords = curatedLower.split(/\s+/).filter(word => word.length > 2)
+        const rawWords = rawLower.split(/\s+|[,&-]+/).filter(word => word.length > 2)
+        
+        // Require ALL words from the curated genre to be present in the raw text
+        return curatedWords.every(curatedWord => rawWords.includes(curatedWord))
+      }
+      
+      // Single-word genre matching - check both exact substring and word boundaries
       if (rawLower.includes(curatedLower) || curatedLower.includes(rawLower)) {
         return true
       }
       
-      // Word-based matching for partial matches (e.g., "Horror" matches "American horror tales")
-      const rawWords = rawLower.split(/\s+|[,&-]+/).filter(word => word.length > 0)
-      const curatedWords = curatedLower.split(/\s+/).filter(word => word.length > 0)
-      
-      // Check if all words from the curated genre appear in the raw genre
-      const allWordsMatch = curatedWords.every(curatedWord => 
-        rawWords.some(rawWord => rawWord.includes(curatedWord) || curatedWord.includes(rawWord))
-      )
-      
-      return allWordsMatch
+      // Fallback: exact word match in word boundaries for single words
+      const rawWords = rawLower.split(/\s+|[,&-]+/).filter(word => word.length > 2)
+      return rawWords.includes(curatedLower)
     })
   }
 
@@ -1378,12 +1426,77 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
     setSelectedBookForRating(null)
   }
 
+  const handleGenreEdit = (book: EnhancedBook) => {
+    setSelectedBookForGenreEdit(book)
+    setShowGenreEditModal(true)
+  }
+
+  const handleGenreEditModalClose = () => {
+    setShowGenreEditModal(false)
+    setSelectedBookForGenreEdit(null)
+    
+    // Only show success alert if update was successful
+    if (genreUpdateSuccessful) {
+      alert({
+        title: 'Genres Updated',
+        message: 'Book genres have been updated successfully.',
+        variant: 'success'
+      })
+      setGenreUpdateSuccessful(false)
+    }
+  }
+
+  const handleGenreUpdate = async (bookId: string, genres: CuratedGenre[]) => {
+    try {
+      const response = await fetch(`/api/books/${bookId}/genres`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ genres }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+
+      // Update local state
+      const updatedBooks = books.map(book => {
+        if (book.id === bookId) {
+          return {
+            ...book,
+            assignedGenres: genres
+          }
+        }
+        return book
+      })
+      setBooks(updatedBooks)
+      setGenreUpdateSuccessful(true)
+    } catch (error) {
+      console.error('Error updating genres:', error)
+      throw error
+    }
+  }
+
 
 
   // Use curated genres that actually have books mapped to them in the user's library (categories only for dropdown)
-  const allCategories = CURATED_GENRES.filter(curatedGenre => {
-    return books.some(book => bookHasGenreForDropdown(book, curatedGenre))
-  }).sort()
+  const allCategories = useMemo(() => {
+    // Get all assigned genres from books in the library
+    const assignedGenres = new Set<string>()
+    books.forEach(book => {
+      if (book.assignedGenres) {
+        book.assignedGenres.forEach(genre => assignedGenres.add(genre.name))
+      }
+    })
+    
+    // Combine curated genres with assigned genres, then filter to only those with books
+    const allPossibleGenres = [...CURATED_GENRES, ...Array.from(assignedGenres)]
+    
+    return allPossibleGenres.filter(curatedGenre => {
+      return books.some(book => bookHasGenreForDropdown(book, curatedGenre))
+    }).sort()
+  }, [books])
 
   const booksByShelf = shelves.reduce((acc: Record<string, number>, shelf) => {
     acc[shelf.name] = books.filter(book => book.shelf_name === shelf.name).length
@@ -1775,6 +1888,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
                       onAuthorClick={handleAuthorClick}
                       onSeriesClick={handleSeriesClick}
                       onRateBook={handleRateBook}
+                      onGenreEdit={handleGenreEdit}
                     />
                   </div>
                 ))}
@@ -1797,6 +1911,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
                 onAuthorClick={handleAuthorClick}
                 onSeriesClick={handleSeriesClick}
                 onRateBook={handleRateBook}
+                onGenreEdit={handleGenreEdit}
               />
             )
           ) : viewMode === 'compact' ? (
@@ -1846,6 +1961,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
                       onAuthorClick={handleAuthorClick}
                       onSeriesClick={handleSeriesClick}
                       onRateBook={handleRateBook}
+                      onGenreEdit={handleGenreEdit}
                     />
                   </div>
                 ))}
@@ -1868,6 +1984,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
                 onAuthorClick={handleAuthorClick}
                 onSeriesClick={handleSeriesClick}
                 onRateBook={handleRateBook}
+                onGenreEdit={handleGenreEdit}
               />
             )
           ) : (
@@ -1916,6 +2033,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
                       onAuthorClick={handleAuthorClick}
                       onSeriesClick={handleSeriesClick}
                       onRateBook={handleRateBook}
+                      onGenreEdit={handleGenreEdit}
                     />
                   </div>
                 ))}
@@ -1937,6 +2055,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
                 onAuthorClick={handleAuthorClick}
                 onSeriesClick={handleSeriesClick}
                 onRateBook={handleRateBook}
+                onGenreEdit={handleGenreEdit}
               />
             )
           )}
@@ -2051,6 +2170,16 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
           onRatingSubmit={handleRatingSubmit}
           currentRating={selectedBookForRating.userRating}
           currentReview={selectedBookForRating.userReview}
+        />
+      )}
+
+      {/* Genre Edit Modal */}
+      {showGenreEditModal && selectedBookForGenreEdit && (
+        <GenreEditModal
+          book={selectedBookForGenreEdit}
+          isOpen={showGenreEditModal}
+          onClose={handleGenreEditModalClose}
+          onGenreUpdate={handleGenreUpdate}
         />
       )}
       </Paper>
