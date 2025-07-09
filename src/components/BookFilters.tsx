@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import {
   Box,
   TextField,
@@ -56,6 +57,8 @@ export default function BookFilters({
   allLocations,
   allCategories,
 }: BookFiltersProps) {
+  const [genreSelectOpen, setGenreSelectOpen] = useState(false)
+  
   return (
     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
       <Box sx={{ flex: '1 1 200px', minWidth: 200 }}>
@@ -139,9 +142,14 @@ export default function BookFilters({
             multiple
             value={categoryFilter}
             label="Genre"
+            open={genreSelectOpen}
+            onOpen={() => setGenreSelectOpen(true)}
+            onClose={() => setGenreSelectOpen(false)}
             onChange={(e) => {
               const value = e.target.value
               setCategoryFilter(typeof value === 'string' ? value.split(',') : value)
+              // Close the dropdown after selection
+              setGenreSelectOpen(false)
             }}
             renderValue={(selected) => 
               selected.length === 0 ? 'All genres' : `${selected.length} selected`

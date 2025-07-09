@@ -20,7 +20,7 @@ import {
   Cancel,
 } from '@mui/icons-material'
 import { fetchEnhancedBookData, fetchEnhancedBookFromSearch } from '@/lib/bookApi'
-import type { EnhancedBook } from '@/lib/types'
+import type { EnhancedBook, CuratedGenre } from '@/lib/types'
 import { saveBook as saveBookAPI, getBooks } from '@/lib/api'
 import ConfirmationModal from './ConfirmationModal'
 import AlertModal from './AlertModal'
@@ -33,6 +33,7 @@ import { getStorageItem, setStorageItem } from '@/lib/storage'
 import { BookSelectionProvider, useBookSelection } from '@/contexts/BookSelectionContext'
 import CartIndicator from './CartIndicator'
 import BulkReviewModal from './BulkReviewModal'
+import GenreSelector from './GenreSelector'
 import {
   Dialog,
   DialogTitle,
@@ -212,6 +213,7 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
   const [allShelves, setAllShelves] = useState<Shelf[]>([])
   const [selectedShelfId, setSelectedShelfId] = useState<number | null>(null)
   const [customTags, setCustomTags] = useState<string>('')
+  const [selectedGenres, setSelectedGenres] = useState<CuratedGenre[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [loadingData, setLoadingData] = useState(true)
   const [existingBooks, setExistingBooks] = useState<EnhancedBook[]>([])
@@ -332,6 +334,7 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
       const bookData = await fetchEnhancedBookData(isbn)
       if (bookData) {
         setSelectedBook(bookData)
+        setSelectedGenres([])
       } else {
         await alert({
           title: 'Book Not Found',
@@ -358,6 +361,7 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
       const enhancedBook = await fetchEnhancedBookFromSearch(item)
       if (enhancedBook) {
         setSelectedBook(enhancedBook)
+        setSelectedGenres([])
         // Keep search results populated - don't clear them
       } else {
         await alert({
@@ -409,8 +413,37 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
     const success = await saveBookAPI(bookToSave)
     
     if (success) {
+      // Save selected genres if any
+      if (selectedGenres.length > 0) {
+        try {
+          // Get the saved book ID from the API response or find it by ISBN
+          const updatedBooks = await getBooks()
+          const savedBook = updatedBooks.find(book => book.isbn === selectedBook.isbn)
+          
+          if (savedBook) {
+            // Assign each selected genre to the book
+            for (const genre of selectedGenres) {
+              const response = await fetch(`/api/books/${savedBook.id}/genres`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ genreId: genre.id, isAutoAssigned: false })
+              })
+              
+              if (!response.ok) {
+                const errorText = await response.text()
+                console.error('Failed to assign genre:', genre.name, 'Error:', errorText)
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Failed to save genre assignments:', error)
+          // Don't block the success flow if genre assignment fails
+        }
+      }
+      
       const bookTitle = selectedBook.title
       setSelectedBook(null)
+      setSelectedGenres([])
       setCustomTags('')
       
       // Persist the selected shelf for future use, but don't clear it
@@ -517,6 +550,14 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
     alert({
       title: 'Series Search', 
       message: `This feature will search your library for other books in the ${seriesName} series. Feature coming soon!`,
+      variant: 'info'
+    })
+  }
+
+  const handleGenreClick = (genreName: string) => {
+    alert({
+      title: 'Genre Search',
+      message: `This feature will search your library for other books in the ${genreName} genre. Feature coming soon!`,
       variant: 'info'
     })
   }
@@ -667,6 +708,7 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
               onCancel={() => {
                 const bookKey = selectedBook?.isbn || selectedBook?.title || null
                 setSelectedBook(null)
+                setSelectedGenres([])
                 setPreserveSearchState(true)
                 setAutoSearchAfterAdd(false)
                 setCancelledBookKey(bookKey)
@@ -674,11 +716,20 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
               onMoreDetails={() => setShowMoreDetailsModal(true)}
               onAuthorClick={handleAuthorClick}
               onSeriesClick={handleSeriesClick}
+              onGenreClick={handleGenreClick}
               isDuplicate={isSelectedBookDuplicate()}
               isLoading={isLoading}
               isSaveDisabled={!selectedShelfId}
               saveButtonText={allShelves.length === 1 ? 'Add to Library' : 'Save to Library'}
               showActionButtons={false}
+            />
+            
+            {/* Genre Selector */}
+            <GenreSelector
+              book={selectedBook}
+              selectedGenres={selectedGenres}
+              onGenresChange={setSelectedGenres}
+              onError={(message) => alert({ title: 'Genre Error', message, variant: 'error' })}
             />
             
             {/* Shelf selector */}
