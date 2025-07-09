@@ -1493,10 +1493,10 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
       }
     })
     
-    // Combine curated genres with assigned genres, then filter to only those with books
-    const allPossibleGenres = [...CURATED_GENRES, ...Array.from(assignedGenres)]
+    // Combine curated genres with assigned genres, using Set to remove duplicates
+    const allPossibleGenres = new Set([...CURATED_GENRES, ...Array.from(assignedGenres)])
     
-    return allPossibleGenres.filter(curatedGenre => {
+    return Array.from(allPossibleGenres).filter(curatedGenre => {
       return books.some(book => bookHasGenreForDropdown(book, curatedGenre))
     }).sort()
   }, [books])
