@@ -241,6 +241,7 @@ export default function BookList({
                         label={genres[0]} 
                         size="small" 
                         color={source === 'assigned' ? 'secondary' : source === 'enhanced' ? 'primary' : 'default'}
+                        onClick={undefined}
                         sx={{ 
                           fontSize: { xs: '0.7rem', sm: '0.75rem', md: '0.8125rem' },
                           height: { xs: 20, sm: 24, md: 28 },
