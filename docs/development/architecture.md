@@ -275,6 +275,44 @@ books (
   FOREIGN KEY (added_by) REFERENCES users(id)
 )
 
+-- Dynamic Genre Management System
+curated_genres (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  name            TEXT NOT NULL UNIQUE,
+  description     TEXT,
+  category        TEXT NOT NULL,    -- 'fiction' or 'non-fiction'
+  is_active       BOOLEAN DEFAULT TRUE,
+  created_at      DATETIME DEFAULT CURRENT_TIMESTAMP
+)
+
+-- Many-to-many relationship between books and genres
+book_genres (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  book_id         INTEGER NOT NULL,
+  genre_id        INTEGER NOT NULL,
+  is_auto_assigned BOOLEAN DEFAULT FALSE,
+  assigned_at     DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
+  FOREIGN KEY (genre_id) REFERENCES curated_genres(id) ON DELETE CASCADE,
+  UNIQUE(book_id, genre_id)
+)
+
+-- User-suggested genres for admin review
+genre_suggestions (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  name            TEXT NOT NULL,
+  description     TEXT,
+  category        TEXT NOT NULL,    -- 'fiction' or 'non-fiction'
+  suggested_by    TEXT NOT NULL,
+  status          TEXT DEFAULT 'pending',  -- 'pending', 'approved', 'rejected'
+  reviewed_by     TEXT,
+  reviewed_at     DATETIME,
+  review_comment  TEXT,
+  created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (suggested_by) REFERENCES users(id),
+  FOREIGN KEY (reviewed_by) REFERENCES users(id)
+)
+
 -- Signup approval requests for uninvited users
 signup_approval_requests (
   id              INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -296,6 +334,8 @@ signup_approval_requests (
 ### Design Decisions
 - **Role-based access**: Admin users control locations/shelves, all users can manage books
 - **Hierarchical structure**: Users → Locations → Shelves → Books
+- **Dynamic genre system**: Replaced static hardcoded genres with database-driven curated genres
+- **Many-to-many relationships**: Books can have multiple genres, genres can belong to multiple books
 - **Dual registration workflow**: Users with valid invitations proceed directly, uninvited users require admin approval
 - **JSON columns**: SQLite supports JSON for arrays (authors, categories, tags)
 - **Text storage**: ISBN as text to preserve leading zeros
@@ -346,6 +386,11 @@ signup_approval_requests (
 - `POST /api/books` - Add new book
 - `PUT /api/books/:id` - Update book location/tags
 - `DELETE /api/books/:id` - Remove book
+
+#### Genre Management (All Users)
+- `GET /api/genres` - List active curated genres
+- `POST /api/books/:id/genres` - Assign genre to book
+- `DELETE /api/books/:id/genres/:genreId` - Remove genre from book
 
 
 ### Design Decisions
