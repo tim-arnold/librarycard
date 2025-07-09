@@ -1,5 +1,6 @@
 export interface Env {
   DB: D1Database;
+  DATABASE: D1Database; // Alias for DB
   NEXTAUTH_SECRET: string;
   SMTP_HOST: string;
   SMTP_PORT: string;
@@ -113,3 +114,61 @@ export interface SignupApprovalRequest {
 export const DEFAULT_SHELVES = [
   'my first shelf'
 ];
+
+// Dynamic Genre Management System Interfaces
+
+export interface CuratedGenre {
+  id: number
+  name: string
+  description?: string
+  createdBy: string
+  createdAt: string
+  updatedAt: string
+  isActive: boolean
+}
+
+export interface BookGenre {
+  id: number
+  bookId: number
+  genreId: number
+  assignedBy: string
+  assignedAt: string
+  isAutoAssigned: boolean
+  genre: CuratedGenre
+}
+
+export interface GenreSuggestion {
+  id: number
+  suggestedName: string
+  description?: string
+  suggestedBy: string
+  bookId?: number
+  status: 'pending' | 'approved' | 'rejected'
+  reviewedBy?: string
+  reviewedAt?: string
+  reviewComment?: string
+  createdAt: string
+}
+
+// API Request/Response interfaces for genre management
+
+export interface CreateGenreRequest {
+  name: string
+  description?: string
+}
+
+export interface AssignGenreRequest {
+  genreId: number
+  isAutoAssigned?: boolean
+}
+
+export interface SuggestGenreRequest {
+  suggestedName: string
+  description?: string
+  bookId?: number
+}
+
+export interface ReviewGenreSuggestionRequest {
+  status: 'approved' | 'rejected'
+  reviewComment?: string
+}

@@ -29,6 +29,7 @@ interface BookPreviewProps {
   onMoreDetails: () => void
   onAuthorClick: (authorName: string) => void
   onSeriesClick: (seriesName: string) => void
+  onGenreClick: (genreName: string) => void
   isDuplicate?: boolean
   isLoading?: boolean
   isSaveDisabled?: boolean
@@ -45,6 +46,7 @@ export default function BookPreview({
   onMoreDetails,
   onAuthorClick,
   onSeriesClick,
+  onGenreClick,
   isDuplicate = false,
   isLoading = false,
   isSaveDisabled = false,
@@ -168,7 +170,15 @@ export default function BookPreview({
                       label={genre} 
                       size="small" 
                       color={book.enhancedGenres ? 'primary' : 'default'}
-                      sx={{ mr: 0.5, mb: 0.5 }} 
+                      onClick={() => onGenreClick(genre)}
+                      sx={{ 
+                        mr: 0.5, 
+                        mb: 0.5,
+                        cursor: 'pointer',
+                        '&:hover': {
+                          backgroundColor: book.enhancedGenres ? 'primary.100' : 'grey.100'
+                        }
+                      }} 
                     />
                   ))}
                   {book.enhancedGenres && book.enhancedGenres.length > 4 && (

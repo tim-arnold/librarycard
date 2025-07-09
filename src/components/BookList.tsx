@@ -8,11 +8,12 @@ import {
   Chip,
   IconButton,
 } from '@mui/material'
-import { Info, Star } from '@mui/icons-material'
+import { Info, Star, Edit } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
 import BookActions from './BookActions'
 import StarRating from './StarRating'
 import { isAdmin } from '@/lib/permissions'
+import { getDisplayGenres } from '@/lib/genreUtils'
 
 interface BookTextProps {
   books: EnhancedBook[]
@@ -30,6 +31,7 @@ interface BookTextProps {
   onAuthorClick: (authorName: string) => void
   onSeriesClick: (seriesName: string) => void
   onRateBook?: (book: EnhancedBook) => void
+  onGenreEdit?: (book: EnhancedBook) => void
 }
 
 export default function BookText({
@@ -48,6 +50,7 @@ export default function BookText({
   onAuthorClick,
   onSeriesClick,
   onRateBook,
+  onGenreEdit,
 }: BookTextProps) {
   return (
     <List sx={{ width: '100%', p: 0 }}>
@@ -164,23 +167,27 @@ export default function BookText({
               )}
               
               {/* Genre - only show for regular users */}
-              {!isAdmin(userRole) && (book.enhancedGenres?.[0] || book.categories?.[0]) && (
-                <Chip 
-                  label={book.enhancedGenres?.[0] || book.categories?.[0]} 
-                  size="small" 
-                  color={book.enhancedGenres ? 'primary' : 'default'}
-                  sx={{ 
-                    fontSize: '0.7rem', 
-                    height: 20,
-                    maxWidth: '120px',
-                    '& .MuiChip-label': {
-                      textOverflow: 'ellipsis',
-                      overflow: 'hidden',
-                      whiteSpace: 'nowrap'
-                    }
-                  }}
-                />
-              )}
+              {!isAdmin(userRole) && (() => {
+                const { genres, source } = getDisplayGenres(book)
+                return genres.length > 0 && (
+                  <Chip 
+                    label={genres[0]} 
+                    size="small" 
+                    color={source === 'assigned' ? 'secondary' : source === 'enhanced' ? 'primary' : 'default'}
+                    onClick={undefined}
+                    sx={{ 
+                      fontSize: '0.7rem', 
+                      height: 20,
+                      maxWidth: '120px',
+                      '& .MuiChip-label': {
+                        textOverflow: 'ellipsis',
+                        overflow: 'hidden',
+                        whiteSpace: 'nowrap'
+                      }
+                    }}
+                  />
+                )
+              })()}
               
               {/* Shelf info */}
               <Typography 
@@ -210,6 +217,24 @@ export default function BookText({
                   title="More Details"
                 >
                   <Info sx={{ fontSize: '1rem' }} />
+                </IconButton>
+              )}
+              
+              {/* Edit Genres button */}
+              {onGenreEdit && (
+                <IconButton
+                  size="small"
+                  onClick={() => onGenreEdit(book)}
+                  sx={{ 
+                    p: 0.5,
+                    color: 'secondary.main',
+                    '&:hover': {
+                      backgroundColor: 'secondary.50'
+                    }
+                  }}
+                  title="Edit Genres"
+                >
+                  <Edit sx={{ fontSize: '1rem' }} />
                 </IconButton>
               )}
 

@@ -9,9 +9,10 @@ import {
   Chip,
   Button,
 } from '@mui/material'
-import { Info, Star } from '@mui/icons-material'
+import { Info, Star, Edit } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
 import { isAdmin } from '@/lib/permissions'
+import { getDisplayGenres } from '@/lib/genreUtils'
 import BookActions from './BookActions'
 import StarRating from './StarRating'
 
@@ -30,6 +31,7 @@ interface BookGridProps {
   onAuthorClick: (authorName: string) => void
   onSeriesClick: (seriesName: string) => void
   onRateBook?: (book: EnhancedBook) => void
+  onGenreEdit?: (book: EnhancedBook) => void
 }
 
 export default function BookGrid({
@@ -47,6 +49,7 @@ export default function BookGrid({
   onAuthorClick,
   onSeriesClick,
   onRateBook,
+  onGenreEdit,
 }: BookGridProps) {
   return (
     <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 2 }}>
@@ -163,31 +166,35 @@ export default function BookGrid({
                   )}
                   
                   {/* Genre chip - only show for regular users and when there's space */}
-                  {!isAdmin(userRole) && (book.enhancedGenres || book.categories) && (book.enhancedGenres?.[0] || book.categories?.[0]) && (
-                    <Chip 
-                      label={book.enhancedGenres?.[0] || book.categories?.[0]} 
-                      size="small" 
-                      color={book.enhancedGenres ? 'primary' : 'default'}
-                      sx={{ 
-                        fontSize: '0.7rem', 
-                        height: 20,
-                        maxWidth: '120px',
-                        '& .MuiChip-label': {
-                          textOverflow: 'ellipsis',
-                          overflow: 'hidden',
-                          whiteSpace: 'nowrap'
-                        }
-                      }} 
-                    />
-                  )}
+                  {!isAdmin(userRole) && (() => {
+                    const { genres, source } = getDisplayGenres(book)
+                    return genres.length > 0 && (
+                      <Chip 
+                        label={genres[0]} 
+                        size="small" 
+                        color={source === 'assigned' ? 'secondary' : source === 'enhanced' ? 'primary' : 'default'}
+                        onClick={undefined}
+                        sx={{ 
+                          fontSize: '0.7rem', 
+                          height: 20,
+                          maxWidth: '120px',
+                          '& .MuiChip-label': {
+                            textOverflow: 'ellipsis',
+                            overflow: 'hidden',
+                            whiteSpace: 'nowrap'
+                          }
+                        }} 
+                      />
+                    )
+                  })()}
                 </Box>
                 {book.description && (
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                     {book.description.substring(0, 200)}...
                   </Typography>
                 )}
-                {(book.extendedDescription || book.subjects || book.pageCount || book.averageRating || book.publisherInfo || book.openLibraryKey) && (
-                  <Box sx={{ mt: 1 }}>
+                <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  {(book.extendedDescription || book.subjects || book.pageCount || book.averageRating || book.publisherInfo || book.openLibraryKey) && (
                     <Button
                       size="small"
                       startIcon={<Info />}
@@ -196,8 +203,18 @@ export default function BookGrid({
                     >
                       More Details
                     </Button>
-                  </Box>
-                )}
+                  )}
+                  {onGenreEdit && (
+                    <Button
+                      size="small"
+                      startIcon={<Edit />}
+                      onClick={() => onGenreEdit(book)}
+                      sx={{ textTransform: 'none' }}
+                    >
+                      Edit Genres
+                    </Button>
+                  )}
+                </Box>
                 
                 {/* Show shelf info for all users */}
                 <Box sx={{ mt: 2 }}>
