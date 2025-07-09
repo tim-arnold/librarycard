@@ -173,6 +173,7 @@ export default function BookGrid({
                         label={genres[0]} 
                         size="small" 
                         color={source === 'assigned' ? 'secondary' : source === 'enhanced' ? 'primary' : 'default'}
+                        onClick={undefined}
                         sx={{ 
                           fontSize: '0.7rem', 
                           height: 20,

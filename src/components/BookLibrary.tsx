@@ -153,6 +153,7 @@ function MoreDetailsModal({ book, isOpen, onClose, userRole }: MoreDetailsModalP
                     size="small" 
                     color="success"
                     variant="filled"
+                    onClick={undefined}
                   />
                 ))}
               </Box>
@@ -172,6 +173,7 @@ function MoreDetailsModal({ book, isOpen, onClose, userRole }: MoreDetailsModalP
                     label={genre} 
                     size="small" 
                     color="primary"
+                    onClick={undefined}
                   />
                 ))}
               </Box>
@@ -191,6 +193,7 @@ function MoreDetailsModal({ book, isOpen, onClose, userRole }: MoreDetailsModalP
                     label={category} 
                     size="small" 
                     variant="outlined"
+                    onClick={undefined}
                   />
                 ))}
               </Box>
@@ -205,10 +208,10 @@ function MoreDetailsModal({ book, isOpen, onClose, userRole }: MoreDetailsModalP
               </Typography>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                 {book.subjects.slice(0, 10).map((subject, index) => (
-                  <Chip key={index} label={subject} size="small" variant="outlined" />
+                  <Chip key={index} label={subject} size="small" variant="outlined" onClick={undefined} />
                 ))}
                 {book.subjects.length > 10 && (
-                  <Chip label={`+${book.subjects.length - 10} more`} size="small" variant="outlined" />
+                  <Chip label={`+${book.subjects.length - 10} more`} size="small" variant="outlined" onClick={undefined} />
                 )}
               </Box>
             </Box>
