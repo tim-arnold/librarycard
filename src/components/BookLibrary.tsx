@@ -1775,7 +1775,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
                 }}
               />
             ))}
-            {locationFilter && (
+            {locationFilter && allLocations.length > 1 && (
               <Chip
                 label={`Location: ${locationFilter}`}
                 onDelete={() => setLocationFilter('')}
