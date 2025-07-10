@@ -22,7 +22,6 @@ import {
   LibraryBooks,
   AccountCircle,
   ExitToApp,
-  Build,
   DarkMode,
   LightMode,
   Help,
@@ -165,7 +164,6 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
           
           <Typography variant="body2" sx={{ mr: 2 }}>
             Hello, {userFirstName || session?.user?.name?.split(' ')[0] || 'User'}!
-            {isAdmin(userRole) && <Build sx={{ ml: 0.5, fontSize: '1rem' }} />}
           </Typography>
           
           <IconButton
