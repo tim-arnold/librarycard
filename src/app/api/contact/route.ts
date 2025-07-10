@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? process.env.NEXT_PUBLIC_API_URL
-  : 'http://localhost:8787'
+import { API_BASE_URL } from '@/lib/apiConfig'
 
 async function verifyTurnstile(token: string): Promise<boolean> {
   try {
