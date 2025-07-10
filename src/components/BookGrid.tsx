@@ -165,8 +165,8 @@ export default function BookGrid({
                     </Button>
                   )}
                   
-                  {/* Genre chip - only show for regular users and when there's space */}
-                  {!isAdmin(userRole) && (() => {
+                  {/* Genre chip */}
+                  {(() => {
                     const { genres, source } = getDisplayGenres(book)
                     return genres.length > 0 && (
                       <Chip 

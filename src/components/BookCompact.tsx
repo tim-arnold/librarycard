@@ -201,7 +201,7 @@ export default function BookList({
               )}
 
               {/* Rating and Genre area - mini star chips alongside genre */}
-              {(!isAdmin(userRole) && getDisplayGenres(book).genres.length > 0) || (book.userRating || book.averageRating) || onRateBook ? (
+              {getDisplayGenres(book).genres.length > 0 || (book.userRating || book.averageRating) || onRateBook ? (
                 <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                   {/* Star rating - mini variant for compact space */}
                   <StarRating
@@ -233,8 +233,8 @@ export default function BookList({
                     </Button>
                   )}
                   
-                  {/* Genre chip - only show for regular users */}
-                  {!isAdmin(userRole) && (() => {
+                  {/* Genre chip */}
+                  {(() => {
                     const { genres, source } = getDisplayGenres(book)
                     return genres.length > 0 && (
                       <Chip 
@@ -297,7 +297,7 @@ export default function BookList({
               ) : null}
 
               {/* More Details and Edit Genres buttons for when no genre or rating is shown */}
-              {(isAdmin(userRole) || getDisplayGenres(book).genres.length === 0) && !(book.userRating || book.averageRating) && (
+              {getDisplayGenres(book).genres.length === 0 && !(book.userRating || book.averageRating) && (
                 <Box sx={{ mb: 1.5, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                   {(book.extendedDescription || book.subjects || book.pageCount || book.googleAverageRating || book.publisherInfo || book.openLibraryKey) && (
                     <Button
