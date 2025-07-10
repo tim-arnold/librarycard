@@ -450,7 +450,10 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
       if (initialFilters.shelf) setShelfFilter(initialFilters.shelf)
       if (initialFilters.status) setCheckoutFilter(initialFilters.status)
       if (initialFilters.searchTerm) setSearchTerm(initialFilters.searchTerm)
-      if (initialFilters.category) setCategoryFilter([initialFilters.category])
+      if (initialFilters.category) {
+        const categories = initialFilters.category.split(',').filter(Boolean)
+        setCategoryFilter(categories)
+      }
     }
   }, [initialFilters])
 
@@ -470,7 +473,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
     // Add search params for other filters
     const searchParams = new URLSearchParams()
     if (searchTerm) searchParams.set('search', searchTerm)
-    if (categoryFilter.length > 0) searchParams.set('category', categoryFilter[0])
+    if (categoryFilter.length > 0) searchParams.set('category', categoryFilter.join(','))
     if (checkoutFilter) searchParams.set('status', checkoutFilter)
     
     return basePath + (searchParams.toString() ? `?${searchParams.toString()}` : '')
