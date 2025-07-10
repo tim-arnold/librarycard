@@ -1451,7 +1451,6 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
 
   const handleGenreUpdate = async (bookId: string, genres: CuratedGenre[]) => {
     try {
-      console.log('🎭 Frontend: Updating genres for book', bookId, genres)
       const response = await fetch(`/api/books/${bookId}/genres`, {
         method: 'PUT',
         headers: {
@@ -1460,12 +1459,8 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
         body: JSON.stringify({ genres }),
       })
 
-      console.log('🎭 Frontend: Response status', response.status, response.statusText)
-      
       if (!response.ok) {
-        const errorBody = await response.text()
-        console.error('🎭 Frontend: Error response body:', errorBody)
-        throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorBody}`)
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
 
       // Update local state
