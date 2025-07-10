@@ -6,10 +6,9 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
+import { API_BASE_URL } from '@/lib/apiConfig'
 
-const API_BASE = process.env.NODE_ENV === 'production' 
-  ? process.env.NEXT_PUBLIC_API_URL
-  : 'http://localhost:8787'
+const API_BASE = API_BASE_URL
 
 interface RouteParams {
   params: {

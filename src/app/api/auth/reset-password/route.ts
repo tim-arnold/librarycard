@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? process.env.NEXT_PUBLIC_API_URL
-  : 'http://localhost:8787'
+import { API_BASE_URL } from '@/lib/apiConfig'
 
 function validatePasswordStrength(password: string): { isValid: boolean; error?: string } {
   const minLength = 8;
