@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, usePathname } from 'next/navigation'
 import {
@@ -450,10 +450,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
       if (initialFilters.shelf) setShelfFilter(initialFilters.shelf)
       if (initialFilters.status) setCheckoutFilter(initialFilters.status)
       if (initialFilters.searchTerm) setSearchTerm(initialFilters.searchTerm)
-      if (initialFilters.category) {
-        const categories = initialFilters.category.split(',').filter(Boolean)
-        setCategoryFilter(categories)
-      }
+      // Note: categoryFilter is not restored from URL to avoid race conditions
     }
   }, [initialFilters])
 
@@ -473,11 +470,11 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
     // Add search params for other filters
     const searchParams = new URLSearchParams()
     if (searchTerm) searchParams.set('search', searchTerm)
-    if (categoryFilter.length > 0) searchParams.set('category', categoryFilter.join(','))
+    // Note: categoryFilter is not included in URL to avoid race conditions
     if (checkoutFilter) searchParams.set('status', checkoutFilter)
     
     return basePath + (searchParams.toString() ? `?${searchParams.toString()}` : '')
-  }, [locationFilter, shelfFilter, checkoutFilter, searchTerm, categoryFilter])
+  }, [locationFilter, shelfFilter, checkoutFilter, searchTerm])
 
   // Update URL when filters change (only after component is fully loaded)
   useEffect(() => {
@@ -1055,6 +1052,10 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
         variant: 'error'
       })
     }
+  }
+
+  const handleGenreRemove = (genreToRemove: string) => {
+    setCategoryFilter(categoryFilter.filter(g => g !== genreToRemove))
   }
 
   const handleAuthorClick = (authorName: string) => {
@@ -1766,7 +1767,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
               <Chip
                 key={genre}
                 label={`Genre: ${genre}`}
-                onDelete={() => setCategoryFilter(categoryFilter.filter(g => g !== genre))}
+                onDelete={() => handleGenreRemove(genre)}
                 color="info"
                 variant="filled"
                 sx={{ 
