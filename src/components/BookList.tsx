@@ -166,8 +166,8 @@ export default function BookText({
                 />
               )}
               
-              {/* Genre - only show for regular users */}
-              {!isAdmin(userRole) && (() => {
+              {/* Genre */}
+              {(() => {
                 const { genres, source } = getDisplayGenres(book)
                 return genres.length > 0 && (
                   <Chip 
