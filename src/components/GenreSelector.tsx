@@ -43,7 +43,7 @@ export default function GenreSelector({
     const loadGenres = async () => {
       try {
         setIsLoading(true)
-        const response = await fetch('http://localhost:8787/genres')
+        const response = await fetch('/api/genres')
         
         if (!response.ok) {
           throw new Error('Failed to load genres')
