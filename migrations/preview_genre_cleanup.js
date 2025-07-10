@@ -14,7 +14,7 @@ async function getBooks() {
     console.log('📚 Fetching books from API...')
     const response = await fetch(`${API_BASE}/api/books`, {
       headers: {
-        'Authorization': 'Bearer YOUR_ADMIN_EMAIL_HERE', // Update this with your personal admin email
+        'Authorization': 'Bearer librarian@tim52.io', // Admin email for migration
       }
     })
     
