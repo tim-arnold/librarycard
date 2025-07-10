@@ -99,10 +99,10 @@ export async function getUserBooks(userId: string, env: Env, corsHeaders: Record
       LEFT JOIN locations l ON s.location_id = l.id
       LEFT JOIN location_members lm ON l.id = lm.location_id
       LEFT JOIN book_ratings br ON b.id = br.book_id AND br.user_id = ?
-      WHERE b.added_by = ? OR l.owner_id = ? OR lm.user_id = ?
+      WHERE l.owner_id = ? OR lm.user_id = ?
       ORDER BY b.created_at DESC
     `);
-    result = await stmt.bind(userId, userId, userId, userId).all();
+    result = await stmt.bind(userId, userId, userId).all();
   }
   
   const books = result.results.map((book: any) => ({
