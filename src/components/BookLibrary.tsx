@@ -1493,20 +1493,12 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
       }
     })
     
-    // Get all existing genres from books (enhanced genres, categories, subjects)
+    // Get enhanced genres (curated genres from classification)
     const existingGenres = new Set<string>()
     books.forEach(book => {
       // Add enhanced genres (curated genres from classification)
       if (book.enhancedGenres) {
         book.enhancedGenres.forEach(genre => existingGenres.add(genre))
-      }
-      // Add raw categories from Google Books/OpenLibrary
-      if (book.categories) {
-        book.categories.forEach(category => existingGenres.add(category))
-      }
-      // Add subjects from OpenLibrary
-      if (book.subjects) {
-        book.subjects.forEach(subject => existingGenres.add(subject))
       }
     })
     
