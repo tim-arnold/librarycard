@@ -4,7 +4,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 
-const API_BASE = process.env.CLOUDFLARE_WORKER_URL || 'http://localhost:8787'
+const API_BASE = process.env.NODE_ENV === 'production' 
+  ? process.env.NEXT_PUBLIC_API_URL
+  : 'http://localhost:8787'
 
 export async function POST(request: NextRequest) {
   try {
