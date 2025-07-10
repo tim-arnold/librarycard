@@ -131,12 +131,20 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const body = await request.json()
     const { genres } = body
 
+    console.log('🎭 API Route: PUT /books/' + bookId + '/genres')
+    console.log('🎭 API Route: Request body:', body)
+    console.log('🎭 API Route: Genres array:', genres)
+
     if (!Array.isArray(genres)) {
       return NextResponse.json(
         { error: 'Genres must be an array' },
         { status: 400 }
       )
     }
+
+    const genreIds = genres.map(genre => genre.id)
+    console.log('🎭 API Route: Genre IDs:', genreIds)
+    console.log('🎭 API Route: Calling worker URL:', `${API_BASE}/books/${bookId}/genres`)
 
     const response = await fetch(`${API_BASE}/books/${bookId}/genres`, {
       method: 'PUT',
