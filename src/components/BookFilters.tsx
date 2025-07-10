@@ -9,6 +9,8 @@ import {
   Select,
   MenuItem,
   IconButton,
+  Checkbox,
+  ListItemText,
 } from '@mui/material'
 import { Search, Sort, ArrowUpward, ArrowDownward } from '@mui/icons-material'
 import { isAdmin } from '@/lib/permissions'
@@ -148,15 +150,16 @@ export default function BookFilters({
             onChange={(e) => {
               const value = e.target.value
               setCategoryFilter(typeof value === 'string' ? value.split(',') : value)
-              // Close the dropdown after selection
-              setGenreSelectOpen(false)
             }}
             renderValue={(selected) => 
               selected.length === 0 ? 'All genres' : `${selected.length} selected`
             }
           >
             {allCategories.map(genre => (
-              <MenuItem key={genre} value={genre}>{genre}</MenuItem>
+              <MenuItem key={genre} value={genre}>
+                <Checkbox checked={categoryFilter.includes(genre)} />
+                <ListItemText primary={genre} />
+              </MenuItem>
             ))}
           </Select>
         </FormControl>
