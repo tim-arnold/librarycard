@@ -452,7 +452,6 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
       if (initialFilters.searchTerm) setSearchTerm(initialFilters.searchTerm)
       if (initialFilters.category) {
         const categories = initialFilters.category.split(',').filter(Boolean)
-        console.log('🎭 Setting category filter from URL:', categories)
         setCategoryFilter(categories)
       }
     }
