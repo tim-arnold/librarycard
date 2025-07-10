@@ -1493,9 +1493,25 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
       }
     })
     
-    // TODO: Replace with API call to get active genres from database
-    // For now, combine assigned genres with a fallback empty set
-    const allPossibleGenres = new Set([...Array.from(assignedGenres)])
+    // Get all existing genres from books (enhanced genres, categories, subjects)
+    const existingGenres = new Set<string>()
+    books.forEach(book => {
+      // Add enhanced genres (curated genres from classification)
+      if (book.enhancedGenres) {
+        book.enhancedGenres.forEach(genre => existingGenres.add(genre))
+      }
+      // Add raw categories from Google Books/OpenLibrary
+      if (book.categories) {
+        book.categories.forEach(category => existingGenres.add(category))
+      }
+      // Add subjects from OpenLibrary
+      if (book.subjects) {
+        book.subjects.forEach(subject => existingGenres.add(subject))
+      }
+    })
+    
+    // Combine all possible genres
+    const allPossibleGenres = new Set([...Array.from(assignedGenres), ...Array.from(existingGenres)])
     
     return Array.from(allPossibleGenres).filter(curatedGenre => {
       return books.some(book => bookHasGenreForDropdown(book, curatedGenre))
