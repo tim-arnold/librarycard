@@ -49,3 +49,6 @@ als
 /testing/screenshots
 /set-librarian-password.js
 /testing/node_modules/.mf/cf.json
+
+# Local Netlify folder
+.netlify
