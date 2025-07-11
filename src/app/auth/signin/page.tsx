@@ -410,7 +410,7 @@ function SignInForm() {
           </Alert>
         )}
 
-        {!showEmailForm && !showRegisterForm && !message.includes('verification') && (
+        {!showEmailForm && !showRegisterForm && !showForgotPasswordForm && !message.includes('verification') && (
           <Box sx={{ width: '100%' }}>
             <Button
               onClick={handleGoogleSignIn}
