@@ -622,7 +622,10 @@ function SignInForm() {
                 startIcon={emailLoading ? <CircularProgress size={16} color="inherit" /> : <PersonAdd />}
                 sx={{ py: 1.5, mb: 2 }}
               >
-                {emailLoading ? 'Requesting Access...' : 'Request Access'}
+                {emailLoading 
+                  ? (invitationToken ? 'Creating Account...' : 'Requesting Access...') 
+                  : (invitationToken ? 'Create Account' : 'Request Access')
+                }
               </Button>
             </Box>
 
