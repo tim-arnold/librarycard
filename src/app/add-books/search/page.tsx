@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { Container, CircularProgress, Typography, Box } from '@mui/material'
 import AddBooks from '@/components/AddBooks'
-import AppLayout from '@/components/AppLayout'
 
 export default function AddBooksSearchPage() {
   const { data: session, status } = useSession()
@@ -33,9 +32,5 @@ export default function AddBooksSearchPage() {
     return null
   }
 
-  return (
-    <AppLayout currentPage="add-books">
-      <AddBooks initialTab="search" />
-    </AppLayout>
-  )
+  return <AddBooks initialTab="search" />
 }

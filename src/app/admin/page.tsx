@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Container, CircularProgress, Typography, Box } from '@mui/material'
 import AdminDashboard from '@/components/AdminDashboard'
-import AppLayout from '@/components/AppLayout'
 import { isAdmin } from '@/lib/permissions'
 
 export default function AdminPage() {
@@ -56,9 +55,5 @@ export default function AdminPage() {
     return null
   }
 
-  return (
-    <AppLayout currentPage="admin">
-      <AdminDashboard />
-    </AppLayout>
-  )
+  return <AdminDashboard />
 }

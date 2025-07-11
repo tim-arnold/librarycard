@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import { Providers } from './providers'
 import CookieNotice from '@/components/CookieNotice'
+import ConditionalAppLayout from '@/components/ConditionalAppLayout'
 
 export const metadata: Metadata = {
   title: 'LibraryCard - Personal Book Collection',
@@ -17,7 +18,9 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <Providers>
-          {children}
+          <ConditionalAppLayout>
+            {children}
+          </ConditionalAppLayout>
           <CookieNotice />
         </Providers>
       </body>

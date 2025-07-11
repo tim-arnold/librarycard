@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { isAdmin } from '@/lib/permissions'
@@ -44,47 +44,74 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
   const [userRole, setUserRole] = useState<string | null>(null)
   const [userFirstName, setUserFirstName] = useState<string | null>(null)
   const [userLocation, setUserLocation] = useState<string | null>(null)
+  const [userDataLoaded, setUserDataLoaded] = useState(false)
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [helpModalOpen, setHelpModalOpen] = useState(false)
+  const dataLoadedRef = useRef(false)
 
   useEffect(() => {
-    if (session) {
+    if (session && !dataLoadedRef.current) {
+      dataLoadedRef.current = true // Prevent multiple loads
+      
       // Check for invitation token from Google OAuth redirect
       const invitationToken = searchParams.get('invitation')
       if (invitationToken) {
         handleInvitationAcceptance(invitationToken)
+        return
       }
 
-      // Fetch user profile data
-      fetch('/api/profile')
-        .then(res => res.json())
-        .then(data => {
-          if (data.user_role) {
-            setUserRole(data.user_role)
-          }
-          if (data.first_name) {
-            setUserFirstName(data.first_name)
-          }
-        })
-        .catch(err => console.error('Failed to fetch user role:', err))
-
-      // Fetch user's locations to get the location name for regular users
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
-      fetch(`${API_BASE}/api/locations`, {
-        headers: {
-          'Authorization': `Bearer ${session.user?.email}`,
-          'Content-Type': 'application/json',
-        },
-      })
-        .then(res => res.json())
-        .then(locations => {
-          if (locations && locations.length > 0) {
-            setUserLocation(locations[0].name)
-          }
-        })
-        .catch(err => console.error('Failed to fetch user locations:', err))
+      // Load user data only once
+      loadUserData()
     }
-  }, [session, searchParams])
+  }, [session]) // Only depend on session
+  
+  // Reset data loaded flag when session changes
+  useEffect(() => {
+    if (!session) {
+      dataLoadedRef.current = false
+      setUserDataLoaded(false)
+      setUserRole(null)
+      setUserFirstName(null)
+      setUserLocation(null)
+    }
+  }, [session])
+
+  const loadUserData = async () => {
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
+    
+    try {
+      // Fetch both user profile and locations in parallel to avoid race condition
+      const [profileData, locations] = await Promise.all([
+        fetch('/api/profile').then(res => res.json()),
+        fetch(`${API_BASE}/api/locations`, {
+          headers: {
+            'Authorization': `Bearer ${session?.user?.email}`,
+            'Content-Type': 'application/json',
+          },
+        }).then(res => res.json())
+      ])
+
+      // Set user role and name from profile
+      if (profileData.user_role) {
+        setUserRole(profileData.user_role)
+      }
+      if (profileData.first_name) {
+        setUserFirstName(profileData.first_name)
+      }
+      
+      // Set user location from locations
+      if (locations && locations.length > 0) {
+        setUserLocation(locations[0].name)
+      }
+      
+      // Mark data as loaded to prevent flicker
+      setUserDataLoaded(true)
+    } catch (err) {
+      console.error('Failed to fetch user data:', err)
+      // Still mark as loaded even on error to prevent infinite loading
+      setUserDataLoaded(true)
+    }
+  }
 
   const handleInvitationAcceptance = async (token: string) => {
     const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
@@ -110,16 +137,8 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
         
         console.log(`Successfully joined ${data.location_name}!`)
         
-        const locationsResponse = await fetch(`${API_BASE}/api/locations`, {
-          headers: {
-            'Authorization': `Bearer ${session?.user?.email}`,
-            'Content-Type': 'application/json',
-          },
-        })
-        const locations = await locationsResponse.json()
-        if (locations && locations.length > 0) {
-          setUserLocation(locations[0].name)
-        }
+        // Reload user data after successful invitation acceptance
+        await loadUserData()
       } else {
         console.error('Failed to accept invitation:', data.error)
       }
@@ -222,7 +241,7 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
           >
             <Tab 
               value="library" 
-              label={isAdmin(userRole) ? "Libraries" : (userLocation ? `${userLocation} Library` : "My Library")}
+              label={!userDataLoaded ? "..." : (isAdmin(userRole) ? "Libraries" : (userLocation ? `${userLocation}` : "My Library"))}
               icon={<LibraryBooks />}
               iconPosition="start"
               onClick={() => handleTabChange('/library')}

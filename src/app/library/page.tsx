@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { Container, CircularProgress, Typography, Box } from '@mui/material'
 import BookLibrary from '@/components/BookLibrary'
-import AppLayout from '@/components/AppLayout'
 
 export default function LibraryPage() {
   const { data: session, status } = useSession()
@@ -33,9 +32,5 @@ export default function LibraryPage() {
     return null
   }
 
-  return (
-    <AppLayout currentPage="library">
-      <BookLibrary />
-    </AppLayout>
-  )
+  return <BookLibrary />
 }
