@@ -2,6 +2,27 @@
 
 This file documents all completed features, fixes, and improvements to the LibraryCard project.
 
+## July 11, 2025 - UI/UX Improvements and Component Architecture
+
+### Tab Title Flickering Fix
+- **RESOLVED**: Fixed tab title flickering issue where navigation tabs would briefly show different values during navigation
+- **IDENTIFIED**: Root cause was AppLayout component being re-mounted on every page change, causing state reset and API re-calls
+- **IMPLEMENTED**: ConditionalAppLayout wrapper in root layout to persist AppLayout across navigation, eliminating re-mounting
+- **REFACTORED**: Removed individual AppLayout wrappers from all pages (/library, /admin, /add-books/*) to use centralized layout
+- **ENHANCED**: User data loading with consolidated useEffect hooks and dataLoadedRef to prevent race conditions
+- **IMPROVED**: Tab label rendering with loading placeholder ("...") until user data is fully loaded
+
+### Authentication UI Improvements
+- **FIXED**: Forgot password form UI to show only the reset form without confusing login options above it
+- **ENHANCED**: Registration button text to properly reflect user context: "Create Account" for invited users vs "Request Access" for regular signups
+- **IMPROVED**: User experience with contextual messaging that matches the actual action being performed
+
+### Component Architecture Improvements
+- **CREATED**: ConditionalAppLayout component for intelligent layout rendering based on authentication status and current path
+- **OPTIMIZED**: Layout persistence across navigation eliminating unnecessary re-renders and API calls
+- **STREAMLINED**: Page components by removing redundant AppLayout wrappers and auth checks
+- **ENHANCED**: Path-based page detection for automatic currentPage determination
+
 ## July 9, 2025 - Dynamic Genre Management System Implementation
 
 ### Complete Dynamic Genre Management System - GitHub Issue #32 RESOLVED!
