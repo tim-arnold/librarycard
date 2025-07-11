@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { Container, CircularProgress, Typography, Box } from '@mui/material'
 import AddBooks from '@/components/AddBooks'
-import AppLayout from '@/components/AppLayout'
 
 export default function AddBooksScanPage() {
   const { data: session, status } = useSession()
@@ -33,9 +32,5 @@ export default function AddBooksScanPage() {
     return null
   }
 
-  return (
-    <AppLayout currentPage="add-books">
-      <AddBooks initialTab="scan" />
-    </AppLayout>
-  )
+  return <AddBooks initialTab="scan" />
 }

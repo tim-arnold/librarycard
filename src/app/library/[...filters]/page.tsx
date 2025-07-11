@@ -5,7 +5,6 @@ import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Container, CircularProgress, Typography, Box } from '@mui/material'
 import BookLibrary from '@/components/BookLibrary'
-import AppLayout from '@/components/AppLayout'
 import { slugToName, createSlugMap } from '@/lib/urlUtils'
 
 export default function FilteredLibraryPage() {
@@ -102,9 +101,5 @@ export default function FilteredLibraryPage() {
     category: category || '',
   }
 
-  return (
-    <AppLayout currentPage="library">
-      <BookLibrary initialFilters={urlFilters} />
-    </AppLayout>
-  )
+  return <BookLibrary initialFilters={urlFilters} />
 }
