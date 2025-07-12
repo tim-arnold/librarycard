@@ -81,6 +81,17 @@ import {
   getUserFromRequest
 } from './auth';
 import { GenreService } from './genres';
+import {
+  getLocationAdminCapabilities,
+  grantAdminCapability,
+  revokeAdminCapability,
+  getLocationUserPermissions,
+  grantUserPermission,
+  revokeUserPermission,
+  checkUserPermission,
+  checkLocationPermissionManagement,
+  getUserPermissions
+} from './permissions';
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -597,6 +608,41 @@ export default {
         const targetUserId = path.split('/')[4];
         const locationId = path.split('/')[6];
         return await unassignLocationFromUser(targetUserId, locationId, userId, env, corsHeaders);
+      }
+
+      // Handle permission management endpoints directly (already authenticated)
+      if (path === '/api/admin/location-admin-capabilities') {
+        switch (request.method) {
+          case 'GET':
+            return await getLocationAdminCapabilities(request, userId, env, corsHeaders);
+          case 'POST':
+            return await grantAdminCapability(request, userId, env, corsHeaders);
+          case 'DELETE':
+            return await revokeAdminCapability(request, userId, env, corsHeaders);
+        }
+      }
+
+      if (path === '/api/admin/location-user-permissions') {
+        switch (request.method) {
+          case 'GET':
+            return await getLocationUserPermissions(request, userId, env, corsHeaders);
+          case 'POST':
+            return await grantUserPermission(request, userId, env, corsHeaders);
+          case 'DELETE':
+            return await revokeUserPermission(request, userId, env, corsHeaders);
+        }
+      }
+
+      if (path === '/api/permissions/check' && request.method === 'GET') {
+        return await checkUserPermission(request, userId, env, corsHeaders);
+      }
+
+      if (path === '/api/permissions/can-manage' && request.method === 'GET') {
+        return await checkLocationPermissionManagement(request, userId, env, corsHeaders);
+      }
+
+      if (path === '/api/permissions/user' && request.method === 'GET') {
+        return await getUserPermissions(request, userId, env, corsHeaders);
       }
 
       return new Response('Not Found', { 

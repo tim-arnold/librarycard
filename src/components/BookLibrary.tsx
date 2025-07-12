@@ -19,6 +19,10 @@ import {
   Select,
   MenuItem,
   CircularProgress,
+  TextField,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
 } from '@mui/material'
 import { 
   GridView,
@@ -40,6 +44,7 @@ import { useModal } from '@/hooks/useModal'
 // import { CURATED_GENRES } from '@/lib/genreClassifier' // TODO: Remove after genre API integration
 import { getStorageItem, setStorageItem } from '@/lib/storage'
 import { isAdmin } from '@/lib/permissions'
+import { authenticatedFetch } from '@/lib/auth-utils'
 import { nameToSlug } from '@/lib/urlUtils'
 import {
   Dialog,
@@ -423,6 +428,9 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
   const [booksPerPage, setBooksPerPage] = useState(25)
   const [showRelocateModal, setShowRelocateModal] = useState(false)
   const [selectedBookForRelocate, setSelectedBookForRelocate] = useState<EnhancedBook | null>(null)
+  const [showCreateShelfOption, setShowCreateShelfOption] = useState(false)
+  const [newShelfName, setNewShelfName] = useState('')
+  const [isCreatingShelf, setIsCreatingShelf] = useState(false)
   const [showRemovalReasonModal, setShowRemovalReasonModal] = useState(false)
   const [removalReasonCallback, setRemovalReasonCallback] = useState<((result: { value: string; label: string; details?: string } | null) => void) | null>(null)
   const [sortField, setSortField] = useState<SortField>('title')
@@ -433,6 +441,8 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
   const [showGenreEditModal, setShowGenreEditModal] = useState(false)
   const [selectedBookForGenreEdit, setSelectedBookForGenreEdit] = useState<EnhancedBook | null>(null)
   const [genreUpdateSuccessful, setGenreUpdateSuccessful] = useState(false)
+  const [userPermissions, setUserPermissions] = useState<string[]>([])
+  const [permissionsChecked, setPermissionsChecked] = useState(false)
 
   useEffect(() => {
     if (session?.user) {
@@ -582,6 +592,47 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
     }
   }
 
+  const loadUserPermissions = async (locationId?: number) => {
+    if (!session?.user?.email) {
+      setPermissionsChecked(true)
+      return
+    }
+
+    // For regular users, use the currentLocation or first location
+    // For admins, we need to determine which location we're viewing
+    let targetLocationId = locationId
+    if (!targetLocationId) {
+      if (currentLocation) {
+        targetLocationId = currentLocation.id
+      } else if (allLocations.length > 0) {
+        targetLocationId = allLocations[0].id
+      } else {
+        setPermissionsChecked(true)
+        return
+      }
+    }
+
+    try {
+      const result = await authenticatedFetch<{ permissions: string[] }>(
+        session,
+        `/api/permissions/user?locationId=${targetLocationId}`,
+        { method: 'GET' }
+      )
+
+      if (result.success && result.data) {
+        setUserPermissions(result.data.permissions || [])
+      } else {
+        console.warn('Failed to load user permissions:', result.error)
+        setUserPermissions([])
+      }
+    } catch (error) {
+      console.error('Error loading user permissions:', error)
+      setUserPermissions([])
+    } finally {
+      setPermissionsChecked(true)
+    }
+  }
+
   const loadUserData = async () => {
     if (!session?.user?.email) return
     
@@ -642,6 +693,9 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
               }
             }
             setShelves(allShelves)
+            
+            // Load user permissions for the first location (admins can see all locations)
+            await loadUserPermissions(locations[0].id)
           } else {
             // Regular users: store first location and its shelves only
             setCurrentLocation(locations[0])
@@ -656,6 +710,9 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
               const shelvesData = await shelvesResponse.json()
               setShelves(shelvesData)
             }
+            
+            // Load user permissions for the current location
+            await loadUserPermissions(locations[0].id)
           }
         }
       }
@@ -1185,6 +1242,78 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
   const openRelocateModal = (book: EnhancedBook) => {
     setSelectedBookForRelocate(book)
     setShowRelocateModal(true)
+    setShowCreateShelfOption(false)
+    setNewShelfName('')
+  }
+
+  const handleCreateShelfAndMove = async () => {
+    if (!selectedBookForRelocate || !newShelfName.trim() || !session?.user?.email) return
+
+    setIsCreatingShelf(true)
+
+    try {
+      // Determine the location ID for the new shelf
+      let locationId = currentLocation?.id
+      if (!locationId && allLocations.length > 0) {
+        locationId = allLocations[0].id
+      }
+
+      if (!locationId) {
+        throw new Error('No location available for shelf creation')
+      }
+
+      // Create the new shelf
+      const response = await fetch(`${API_BASE}/api/locations/${locationId}/shelves`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.user.email}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: newShelfName.trim() }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to create shelf')
+      }
+
+      const newShelf = await response.json()
+      
+      // Update shelves list
+      setShelves(prevShelves => [...prevShelves, newShelf])
+
+      // Move the book to the new shelf
+      const success = await updateBook(selectedBookForRelocate.id, { shelf_id: newShelf.id })
+      
+      if (success) {
+        const updatedBooks = books.map(book =>
+          book.id === selectedBookForRelocate.id 
+            ? { ...book, shelf_id: newShelf.id, shelf_name: newShelf.name } 
+            : book
+        )
+        setBooks(updatedBooks)
+        setShowRelocateModal(false)
+        setSelectedBookForRelocate(null)
+        setShowCreateShelfOption(false)
+        setNewShelfName('')
+        
+        await alert({
+          title: 'Book Relocated',
+          message: `"${selectedBookForRelocate.title}" has been moved to the new shelf "${newShelf.name}".`,
+          variant: 'success'
+        })
+      } else {
+        throw new Error('Failed to move book to new shelf')
+      }
+    } catch (error) {
+      console.error('Error creating shelf and moving book:', error)
+      await alert({
+        title: 'Creation Failed',
+        message: error instanceof Error ? error.message : 'Failed to create shelf and move book. Please try again.',
+        variant: 'error'
+      })
+    } finally {
+      setIsCreatingShelf(false)
+    }
   }
 
   const handleRelocateBook = async (newShelfId: number) => {
@@ -1434,6 +1563,16 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
   }
 
   const handleGenreEdit = (book: EnhancedBook) => {
+    // Check if user has permission to edit genres
+    if (!userPermissions.includes('can_edit_genres')) {
+      alert({
+        title: 'Permission Required',
+        message: 'You do not have permission to edit genres. Please contact your location administrator.',
+        variant: 'warning'
+      })
+      return
+    }
+
     setSelectedBookForGenreEdit(book)
     setShowGenreEditModal(true)
   }
@@ -1454,6 +1593,11 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
   }
 
   const handleGenreUpdate = async (bookId: string, genres: CuratedGenre[]) => {
+    // Double-check permissions before making the API call
+    if (!userPermissions.includes('can_edit_genres')) {
+      throw new Error('You do not have permission to edit genres')
+    }
+
     try {
       const response = await fetch(`/api/books/${bookId}/genres`, {
         method: 'PUT',
@@ -1903,6 +2047,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
                     <BookList
                       books={location.books}
                       userRole={userRole}
+                      userPermissions={userPermissions}
                       currentUserId={currentUserId}
                       shelves={shelves}
                       pendingRemovalRequests={pendingRemovalRequests}
@@ -1916,7 +2061,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
                       onAuthorClick={handleAuthorClick}
                       onSeriesClick={handleSeriesClick}
                       onRateBook={handleRateBook}
-                      onGenreEdit={handleGenreEdit}
+                      onGenreEdit={userPermissions.includes('can_edit_genres') ? handleGenreEdit : undefined}
                     />
                   </div>
                 ))}
@@ -1926,6 +2071,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
               <BookList
                 books={paginatedBooks}
                 userRole={userRole}
+                userPermissions={userPermissions}
                 currentUserId={currentUserId}
                 shelves={shelves}
                 pendingRemovalRequests={pendingRemovalRequests}
@@ -1939,7 +2085,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
                 onAuthorClick={handleAuthorClick}
                 onSeriesClick={handleSeriesClick}
                 onRateBook={handleRateBook}
-                onGenreEdit={handleGenreEdit}
+                onGenreEdit={userPermissions.includes('can_edit_genres') ? handleGenreEdit : undefined}
               />
             )
           ) : viewMode === 'compact' ? (
@@ -1976,6 +2122,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
                     <BookCompact
                       books={location.books || []}
                       userRole={userRole}
+                      userPermissions={userPermissions}
                       currentUserId={currentUserId}
                       shelves={shelves}
                       pendingRemovalRequests={pendingRemovalRequests}
@@ -1989,7 +2136,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
                       onAuthorClick={handleAuthorClick}
                       onSeriesClick={handleSeriesClick}
                       onRateBook={handleRateBook}
-                      onGenreEdit={handleGenreEdit}
+                      onGenreEdit={userPermissions.includes('can_edit_genres') ? handleGenreEdit : undefined}
                     />
                   </div>
                 ))}
@@ -1999,6 +2146,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
               <BookCompact
                 books={paginatedBooks}
                 userRole={userRole}
+                userPermissions={userPermissions}
                 currentUserId={currentUserId}
                 shelves={shelves}
                 pendingRemovalRequests={pendingRemovalRequests}
@@ -2012,7 +2160,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
                 onAuthorClick={handleAuthorClick}
                 onSeriesClick={handleSeriesClick}
                 onRateBook={handleRateBook}
-                onGenreEdit={handleGenreEdit}
+                onGenreEdit={userPermissions.includes('can_edit_genres') ? handleGenreEdit : undefined}
               />
             )
           ) : (
@@ -2049,6 +2197,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
                     <BookGrid
                       books={location.books || []}
                       userRole={userRole}
+                      userPermissions={userPermissions}
                       shelves={shelves}
                       pendingRemovalRequests={pendingRemovalRequests}
                       onCheckout={checkoutBook}
@@ -2061,7 +2210,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
                       onAuthorClick={handleAuthorClick}
                       onSeriesClick={handleSeriesClick}
                       onRateBook={handleRateBook}
-                      onGenreEdit={handleGenreEdit}
+                      onGenreEdit={userPermissions.includes('can_edit_genres') ? handleGenreEdit : undefined}
                     />
                   </div>
                 ))}
@@ -2071,6 +2220,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
               <BookGrid
                 books={paginatedBooks}
                 userRole={userRole}
+                userPermissions={userPermissions}
                 shelves={shelves}
                 pendingRemovalRequests={pendingRemovalRequests}
                 onCheckout={checkoutBook}
@@ -2083,7 +2233,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
                 onAuthorClick={handleAuthorClick}
                 onSeriesClick={handleSeriesClick}
                 onRateBook={handleRateBook}
-                onGenreEdit={handleGenreEdit}
+                onGenreEdit={userPermissions.includes('can_edit_genres') ? handleGenreEdit : undefined}
               />
             )
           )}
@@ -2153,32 +2303,81 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
           <DialogContent>
             <Box sx={{ pt: 2 }}>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Current shelf: <strong>{selectedBookForRelocate.shelf_name || 'No shelf assigned'}</strong><br />
-                Select a new shelf for this book:
+                Current shelf: <strong>{selectedBookForRelocate.shelf_name || 'No shelf assigned'}</strong>
               </Typography>
-              <FormControl fullWidth>
-                <InputLabel>Select Shelf</InputLabel>
-                <Select
-                  value={selectedBookForRelocate.shelf_id || ""}
-                  label="Select Shelf"
-                  onChange={(e) => {
-                    const newShelfId = parseInt(String(e.target.value))
-                    handleRelocateBook(newShelfId)
-                  }}
-                >
-                  {shelves.map(shelf => (
-                    <MenuItem key={shelf.id} value={shelf.id}>
-                      {shelf.name} {shelf.id === selectedBookForRelocate.shelf_id ? '(current)' : ''}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              
+              <RadioGroup
+                value={showCreateShelfOption ? 'create' : 'existing'}
+                onChange={(e) => setShowCreateShelfOption(e.target.value === 'create')}
+                sx={{ mb: 2 }}
+              >
+                <FormControlLabel 
+                  value="existing" 
+                  control={<Radio />} 
+                  label="Move to existing shelf" 
+                />
+                {userPermissions.includes('can_create_shelves') && (
+                  <FormControlLabel 
+                    value="create" 
+                    control={<Radio />} 
+                    label="Create new shelf and move book there" 
+                  />
+                )}
+              </RadioGroup>
+
+              {showCreateShelfOption ? (
+                <Box>
+                  <TextField
+                    fullWidth
+                    label="New Shelf Name"
+                    value={newShelfName}
+                    onChange={(e) => setNewShelfName(e.target.value)}
+                    placeholder="Enter name for new shelf..."
+                    sx={{ mb: 2 }}
+                    disabled={isCreatingShelf}
+                  />
+                </Box>
+              ) : (
+                <FormControl fullWidth>
+                  <InputLabel>Select Shelf</InputLabel>
+                  <Select
+                    value=""
+                    label="Select Shelf"
+                    onChange={(e) => {
+                      const newShelfId = parseInt(String(e.target.value))
+                      handleRelocateBook(newShelfId)
+                    }}
+                  >
+                    {shelves
+                      .filter(shelf => shelf.id !== selectedBookForRelocate.shelf_id)
+                      .map(shelf => (
+                        <MenuItem key={shelf.id} value={shelf.id}>
+                          {shelf.name}
+                        </MenuItem>
+                      ))}
+                  </Select>
+                </FormControl>
+              )}
             </Box>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setShowRelocateModal(false)} variant="outlined">
+            <Button 
+              onClick={() => setShowRelocateModal(false)} 
+              variant="outlined"
+              disabled={isCreatingShelf}
+            >
               Cancel
             </Button>
+            {showCreateShelfOption && (
+              <Button 
+                onClick={handleCreateShelfAndMove}
+                variant="contained"
+                disabled={!newShelfName.trim() || isCreatingShelf}
+                startIcon={isCreatingShelf ? <CircularProgress size={16} /> : undefined}
+              >
+                {isCreatingShelf ? 'Creating...' : 'Create Shelf & Move Book'}
+              </Button>
+            )}
           </DialogActions>
         </Dialog>
       )}

@@ -1,6 +1,7 @@
 import { Env, Location, Shelf, DEFAULT_SHELVES } from '../types';
 
 import { isUserAdmin, isUserSuperAdmin, canManageLocation } from '../auth';
+import { hasUserPermission } from '../permissions';
 
 // Permission checking function
 export async function checkLocationPermission(
@@ -32,14 +33,27 @@ export async function checkLocationPermission(
 
 // Location functions
 export async function getUserLocations(userId: string, env: Env, corsHeaders: Record<string, string>) {
-  const stmt = env.DB.prepare(`
-    SELECT DISTINCT l.* FROM locations l
-    LEFT JOIN location_members lm ON l.id = lm.location_id
-    WHERE l.owner_id = ? OR lm.user_id = ?
-    ORDER BY l.created_at DESC
-  `);
+  // Check if user is super admin first
+  const isSuperAdmin = await isUserSuperAdmin(userId, env);
+  
+  let stmt;
+  if (isSuperAdmin) {
+    // Super admins can see all locations
+    stmt = env.DB.prepare(`
+      SELECT * FROM locations l
+      ORDER BY l.created_at DESC
+    `);
+  } else {
+    // Regular users see only locations they own or are members of
+    stmt = env.DB.prepare(`
+      SELECT DISTINCT l.* FROM locations l
+      LEFT JOIN location_members lm ON l.id = lm.location_id
+      WHERE l.owner_id = ? OR lm.user_id = ?
+      ORDER BY l.created_at DESC
+    `);
+  }
 
-  const result = await stmt.bind(userId, userId).all();
+  const result = isSuperAdmin ? await stmt.all() : await stmt.bind(userId, userId).all();
   
   return new Response(JSON.stringify(result.results), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -240,9 +254,10 @@ export async function getLocationShelves(locationId: number, userId: string, env
 export async function createShelf(request: Request, locationId: number, userId: string, env: Env, corsHeaders: Record<string, string>) {
   const shelf: Shelf = await request.json();
   
-  // Check if user can manage this location
-  if (!(await canManageLocation(userId, locationId, env))) {
-    return new Response(JSON.stringify({ error: 'Admin privileges required to create shelves' }), {
+  // Check if user has permission to create shelves in this location
+  const hasPermission = await hasUserPermission(userId, locationId, 'can_create_shelves', env);
+  if (!hasPermission) {
+    return new Response(JSON.stringify({ error: 'You do not have permission to create shelves in this location' }), {
       status: 403,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
