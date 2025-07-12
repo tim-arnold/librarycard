@@ -2,6 +2,39 @@
 
 This file documents all completed features, fixes, and improvements to the LibraryCard project.
 
+## July 12, 2025 - Granular Permission Control System Implementation
+
+### Complete Location-Based Permission Control System - GitHub Issue #31 RESOLVED!
+- **IMPLEMENTED**: Comprehensive granular permission system allowing location administrators to grant specific permissions to users
+- **CREATED**: Database-driven permission architecture with new tables: `location_user_permissions` for fine-grained access control
+- **ENHANCED**: User interface with LocationPermissionManager component for administrators to manage user permissions per location
+- **BUILT**: Permission checking infrastructure with `hasUserPermission()` function for API endpoint validation
+- **IMPLEMENTED**: Five core permissions: `can_add_books`, `can_delete_books`, `can_move_books`, `can_create_shelves`, `can_edit_genres`
+- **INTEGRATED**: Frontend permission-aware UI components showing appropriate action buttons based on user permissions
+- **ENHANCED**: Book relocation functionality with inline shelf creation for users with `can_create_shelves` permission
+
+### Permission System Technical Implementation
+- **DATABASE SCHEMA**: Created `location_user_permissions` table with user_id, location_id, permission columns and proper constraints
+- **API ENDPOINTS**: Built `/api/permissions/user` and `/api/permissions/manage` endpoints for permission retrieval and management
+- **WORKER INTEGRATION**: Updated Cloudflare Workers with granular permission validation replacing admin-only checks
+- **FRONTEND COMPONENTS**: Enhanced BookActions, BookLibrary, and view components to respect user-specific permissions
+- **SHELF CREATION**: Fixed API permission checks in `createShelf` and `updateBook` functions to use granular permissions
+- **UI ENHANCEMENT**: Added radio button selection in relocate modal for creating new shelves during book moves
+
+### Permission Control Features
+- **ROLE HIERARCHY**: Super Admin → Location Admin → User with specific permissions, maintaining backward compatibility
+- **LOCATION ISOLATION**: Permissions are location-specific, allowing different access levels across multiple libraries
+- **ADMIN INTERFACE**: Intuitive permission management UI with checkbox selection and real-time validation
+- **PERMISSION INHERITANCE**: Admins automatically have all permissions; regular users need explicit grants
+- **API VALIDATION**: All book operations (add, delete, move) now validate specific permissions rather than admin status
+- **ERROR HANDLING**: Clear permission-denied messages with actionable guidance for users
+
+### Bug Fixes and Improvements
+- **IMPORT FIX**: Added missing `getLocationIdFromBookId` import in books worker for proper permission validation
+- **PERMISSION CHECKS**: Updated shelf creation and book moving APIs to use `hasUserPermission()` instead of `canManageLocation()`
+- **UI CONSISTENCY**: Fixed book action buttons appearing consistently across all view modes (card, compact, list)
+- **MODAL ENHANCEMENT**: Enhanced relocate modal with shelf creation option when user has appropriate permissions
+
 ## July 11, 2025 - UI/UX Improvements and Component Architecture
 
 ### Tab Title Flickering Fix
