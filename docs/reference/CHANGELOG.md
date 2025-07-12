@@ -29,6 +29,12 @@ This file documents all completed features, fixes, and improvements to the Libra
 - **API VALIDATION**: All book operations (add, delete, move) now validate specific permissions rather than admin status
 - **ERROR HANDLING**: Clear permission-denied messages with actionable guidance for users
 
+### Bulk Permission Control Enhancement
+- **BULK TOGGLES**: Added bulk permission controls allowing admins to grant/revoke permissions for all users simultaneously
+- **SMART UI**: Permission buttons show current state (X/Y users) and disable appropriately when all users already have/lack permission
+- **BATCH PROCESSING**: Efficiently processes multiple users with Promise.all() and only makes API calls when permission state changes
+- **VISUAL FEEDBACK**: Real-time loading indicators and status display for bulk operations
+
 ### Bug Fixes and Improvements
 - **IMPORT FIX**: Added missing `getLocationIdFromBookId` import in books worker for proper permission validation
 - **PERMISSION CHECKS**: Updated shelf creation and book moving APIs to use `hasUserPermission()` instead of `canManageLocation()`

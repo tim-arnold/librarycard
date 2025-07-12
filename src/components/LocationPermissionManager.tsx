@@ -85,6 +85,7 @@ export default function LocationPermissionManager({ locationId, locationName, us
   const [admins, setAdmins] = useState<LocationAdmin[]>([])
   const [updatingPermissions, setUpdatingPermissions] = useState<string>('')
   const [canManagePermissions, setCanManagePermissions] = useState<boolean>(false)
+  const [bulkUpdating, setBulkUpdating] = useState<string>('')
 
   const isSuperAdmin = userRole === 'super_admin'
 
@@ -178,6 +179,47 @@ export default function LocationPermissionManager({ locationId, locationName, us
       setError(err instanceof Error ? err.message : 'Failed to update permission')
     } finally {
       setUpdatingPermissions('')
+    }
+  }
+
+  const bulkTogglePermission = async (permission: string, grantToAll: boolean) => {
+    try {
+      setBulkUpdating(permission)
+      
+      // Process all regular users (non-admin members)
+      const promises = members.map(member => {
+        const currentlyHas = member.permissions.includes(permission)
+        
+        // Only make API call if the permission state needs to change
+        if ((grantToAll && !currentlyHas) || (!grantToAll && currentlyHas)) {
+          const method = grantToAll ? 'POST' : 'DELETE'
+          return authenticatedFetch(session, '/api/admin/location-user-permissions', {
+            method,
+            body: {
+              locationId,
+              targetUserId: member.userId,
+              permission,
+            }
+          })
+        }
+        return Promise.resolve({ success: true }) // No change needed
+      })
+
+      const results = await Promise.all(promises)
+      
+      // Check if any requests failed
+      const failures = results.filter(result => !result.success)
+      if (failures.length > 0) {
+        throw new Error(`Failed to update ${failures.length} user(s)`)
+      }
+
+      // Reload permissions to reflect changes
+      await loadPermissions()
+    } catch (err) {
+      console.error('Error bulk updating permission:', err)
+      setError(err instanceof Error ? err.message : 'Failed to bulk update permission')
+    } finally {
+      setBulkUpdating('')
     }
   }
 
@@ -348,6 +390,65 @@ export default function LocationPermissionManager({ locationId, locationName, us
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             Control what actions regular users can perform in this location. Location admins inherit all these permissions automatically.
           </Typography>
+
+          {/* Bulk Permission Controls */}
+          {members.length > 0 && (
+            <Paper sx={{ p: 2, mb: 2, bgcolor: 'action.hover' }}>
+              <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Settings fontSize="small" />
+                Bulk Permission Controls
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+                Apply permissions to all {members.length} users at once. Existing permissions will be updated accordingly.
+              </Typography>
+              
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                {USER_PERMISSIONS.map(perm => {
+                  const usersWithPermission = members.filter(m => m.permissions.includes(perm.key)).length
+                  const allHavePermission = usersWithPermission === members.length
+                  const someHavePermission = usersWithPermission > 0 && usersWithPermission < members.length
+                  const isUpdating = bulkUpdating === perm.key
+                  
+                  return (
+                    <Box key={perm.key} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box sx={{ minWidth: 120 }}>
+                        <Typography variant="caption" fontWeight="medium">
+                          {perm.label}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          {usersWithPermission}/{members.length} users
+                        </Typography>
+                      </Box>
+                      
+                      <Box sx={{ display: 'flex', gap: 0.5 }}>
+                        <Button
+                          size="small"
+                          variant={allHavePermission ? "contained" : "outlined"}
+                          color={allHavePermission ? "success" : "primary"}
+                          onClick={() => bulkTogglePermission(perm.key, true)}
+                          disabled={isUpdating || allHavePermission}
+                          sx={{ minWidth: 'auto', px: 1, py: 0.5, fontSize: '0.7rem' }}
+                        >
+                          {isUpdating ? <CircularProgress size={12} /> : 'Grant All'}
+                        </Button>
+                        
+                        <Button
+                          size="small"
+                          variant={!someHavePermission && !allHavePermission ? "contained" : "outlined"}
+                          color={!someHavePermission && !allHavePermission ? "error" : "secondary"}
+                          onClick={() => bulkTogglePermission(perm.key, false)}
+                          disabled={isUpdating || (!someHavePermission && !allHavePermission)}
+                          sx={{ minWidth: 'auto', px: 1, py: 0.5, fontSize: '0.7rem' }}
+                        >
+                          {isUpdating ? <CircularProgress size={12} /> : 'Revoke All'}
+                        </Button>
+                      </Box>
+                    </Box>
+                  )
+                })}
+              </Box>
+            </Paper>
+          )}
           
           {members.length === 0 ? (
             <Alert severity="info">
