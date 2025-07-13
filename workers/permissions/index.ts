@@ -72,7 +72,7 @@ export async function getLocationAdminCapabilities(request: Request, userId: str
       LEFT JOIN locations l ON l.owner_id = u.id AND l.id = ?
       LEFT JOIN location_members lm ON lm.user_id = u.id AND lm.location_id = ?
       WHERE (l.owner_id = u.id OR lm.user_id = u.id)
-        AND u.user_role IN ('admin', 'super_admin')
+        AND u.user_role = 'admin'
       ORDER BY u.first_name
     `).bind(locationId, locationId).all();
 
