@@ -42,7 +42,7 @@ const seedData = {
       first_name: 'Super',
       last_name: 'Admin',
       password_hash: '$2b$10$7mK9x8L5vZ2aB3cY1dE6fG8hI9jK0lM1nO2pQ3rS4tU5vW6xY7zA8', // password: 'Super123!'
-      user_role: 'superadmin',
+      user_role: 'super_admin',
       email_verified: true,
       auth_provider: 'email',
       created_at: new Date().toISOString(),

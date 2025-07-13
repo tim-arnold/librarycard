@@ -1,5 +1,6 @@
 import { Env, Book } from '../types';
 import { isUserAdmin, isUserSuperAdmin } from '../auth';
+import { hasUserPermission, getLocationIdFromShelfId, getLocationIdFromBookId } from '../permissions';
 
 // Core Book Management Functions
 export async function getUserBooks(userId: string, env: Env, corsHeaders: Record<string, string>) {
@@ -140,6 +141,25 @@ export async function getUserBooks(userId: string, env: Env, corsHeaders: Record
 export async function createBook(request: Request, userId: string, env: Env, corsHeaders: Record<string, string>) {
   const book: Book = await request.json();
   
+  // Check if user has permission to add books to this location
+  if (book.shelf_id) {
+    const locationId = await getLocationIdFromShelfId(book.shelf_id, env);
+    if (!locationId) {
+      return new Response(JSON.stringify({ error: 'Invalid shelf specified' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const hasPermission = await hasUserPermission(userId, locationId, 'can_add_books', env);
+    if (!hasPermission) {
+      return new Response(JSON.stringify({ error: 'You do not have permission to add books to this location' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+  }
+  
   const stmt = env.DB.prepare(`
     INSERT INTO books (
       isbn, title, authors, description, thumbnail, published_date, categories, 
@@ -181,22 +201,44 @@ export async function createBook(request: Request, userId: string, env: Env, cor
 export async function updateBook(request: Request, userId: string, env: Env, corsHeaders: Record<string, string>, id: number) {
   const book: Partial<Book> = await request.json();
   
-  // Check if user has access to this book
-  const accessStmt = env.DB.prepare(`
-    SELECT b.id FROM books b
-    LEFT JOIN shelves s ON b.shelf_id = s.id
-    LEFT JOIN locations l ON s.location_id = l.id
-    LEFT JOIN location_members lm ON l.id = lm.location_id
-    WHERE b.id = ? AND (b.added_by = ? OR l.owner_id = ? OR lm.user_id = ?)
-  `);
-
-  const accessResult = await accessStmt.bind(id, userId, userId, userId).first();
-  
-  if (!accessResult) {
-    return new Response(JSON.stringify({ error: 'Access denied' }), {
-      status: 403,
+  // Get current book's location
+  const currentLocationId = await getLocationIdFromBookId(id, env);
+  if (!currentLocationId) {
+    return new Response(JSON.stringify({ error: 'Book not found' }), {
+      status: 404,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
+  }
+
+  // If changing shelf_id, check move permissions
+  if (book.shelf_id !== undefined) {
+    const newLocationId = await getLocationIdFromShelfId(book.shelf_id, env);
+    if (!newLocationId) {
+      return new Response(JSON.stringify({ error: 'Invalid shelf specified' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Check if user has permission to move books in current location
+    const canMoveFromCurrent = await hasUserPermission(userId, currentLocationId, 'can_move_books', env);
+    if (!canMoveFromCurrent) {
+      return new Response(JSON.stringify({ error: 'You do not have permission to move books from this location' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // If moving to different location, check add permission in target location
+    if (currentLocationId !== newLocationId) {
+      const canAddToNew = await hasUserPermission(userId, newLocationId, 'can_add_books', env);
+      if (!canAddToNew) {
+        return new Response(JSON.stringify({ error: 'You do not have permission to add books to the target location' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
   }
 
   const stmt = env.DB.prepare(`
@@ -217,19 +259,19 @@ export async function updateBook(request: Request, userId: string, env: Env, cor
 }
 
 export async function deleteBook(userId: string, env: Env, corsHeaders: Record<string, string>, id: number) {
-  // Check if user has access to this book
-  const accessStmt = env.DB.prepare(`
-    SELECT b.id FROM books b
-    LEFT JOIN shelves s ON b.shelf_id = s.id
-    LEFT JOIN locations l ON s.location_id = l.id
-    LEFT JOIN location_members lm ON l.id = lm.location_id
-    WHERE b.id = ? AND (b.added_by = ? OR l.owner_id = ? OR lm.user_id = ?)
-  `);
+  // Get the location ID for this book
+  const locationId = await getLocationIdFromBookId(id, env);
+  if (!locationId) {
+    return new Response(JSON.stringify({ error: 'Book not found or invalid location' }), {
+      status: 404,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
 
-  const accessResult = await accessStmt.bind(id, userId, userId, userId).first();
-  
-  if (!accessResult) {
-    return new Response(JSON.stringify({ error: 'Access denied' }), {
+  // Check if user has permission to delete books in this location
+  const hasPermission = await hasUserPermission(userId, locationId, 'can_delete_books', env);
+  if (!hasPermission) {
+    return new Response(JSON.stringify({ error: 'You do not have permission to delete books in this location' }), {
       status: 403,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

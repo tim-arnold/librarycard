@@ -15,6 +15,7 @@ import { isAdmin } from '@/lib/permissions'
 export interface BookActionsProps {
   book: EnhancedBook
   userRole: string | null
+  userPermissions: string[]
   shelves: Array<{ id: number; name: string; location_id: number; created_at: string }>
   pendingRemovalRequests: Record<string, number>
   viewMode: 'card' | 'compact' | 'list'
@@ -29,6 +30,7 @@ export interface BookActionsProps {
 export default function BookActions({
   book,
   userRole,
+  userPermissions,
   shelves,
   pendingRemovalRequests,
   viewMode,
@@ -43,17 +45,23 @@ export default function BookActions({
   const hasPendingRemovalRequest = pendingRemovalRequests[book.id]
   const hasMultipleShelves = shelves.length > 1
   
+  // Permission checks - admins have all permissions, regular users need specific grants
+  const canDelete = isAdmin(userRole) || userPermissions.includes('can_delete_books')
+  const canMove = isAdmin(userRole) || userPermissions.includes('can_move_books')
+  const canCreateShelves = isAdmin(userRole) || userPermissions.includes('can_create_shelves')
+  
   // Allow any user to return any checked out book (trusting community approach)
   const canReturn = isCheckedOut
   
-  // Don't show relocate button if book is checked out
-  const canRelocate = !isCheckedOut && hasMultipleShelves
+  // Show relocate button if: book is not checked out AND user has move permission AND (multiple shelves exist OR user can create shelves)
+  const canRelocate = !isCheckedOut && canMove && (hasMultipleShelves || canCreateShelves)
 
   if (viewMode === 'list') {
     // Ultra-compact list view - icon-only buttons in horizontal layout
     return (
       <Box sx={{ display: 'flex', gap: 0.5 }}>
-        {isAdmin(userRole) ? (
+        {/* Always show available action buttons */}
+        {canDelete && (
           <Button
             size="small"
             variant="outlined"
@@ -63,7 +71,21 @@ export default function BookActions({
           >
             <Delete fontSize="small" />
           </Button>
-        ) : (
+        )}
+        
+        {canRelocate && (
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={() => onRelocate(book)}
+            sx={{ minWidth: 'auto', p: 0.5 }}
+          >
+            <SwapHoriz fontSize="small" />
+          </Button>
+        )}
+        
+        {/* Show checkout/checkin buttons for users without delete permission */}
+        {!canDelete && (
           <>
             {!isCheckedOut ? (
               <Button
@@ -86,17 +108,6 @@ export default function BookActions({
                 <Undo fontSize="small" />
               </Button>
             ) : null}
-            
-            {canRelocate && (
-              <Button
-                size="small"
-                variant="outlined"
-                onClick={() => onRelocate(book)}
-                sx={{ minWidth: 'auto', p: 0.5 }}
-              >
-                <SwapHoriz fontSize="small" />
-              </Button>
-            )}
             
             {!hasPendingRemovalRequest ? (
               <Button
@@ -128,36 +139,36 @@ export default function BookActions({
   if (viewMode === 'compact') {
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          {!isAdmin(userRole) && (
-            <>
-              {!isCheckedOut ? (
-                <Button
-                  size="small"
-                  variant="contained"
-                  color="primary"
-                  startIcon={<CheckCircle />}
-                  onClick={() => onCheckout(book.id, book.title)}
-                >
-                  Check Out
-                </Button>
-              ) : canReturn ? (
-                <Button
-                  size="small"
-                  variant="contained"
-                  color="secondary"
-                  startIcon={<Undo />}
-                  onClick={() => onCheckin(book.id, book.title)}
-                >
-                  Return
-                </Button>
-              ) : null}
-            </>
-          )}
-        </Box>
+        {/* Show checkout/checkin buttons for users without delete permission */}
+        {!canDelete && (
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            {!isCheckedOut ? (
+              <Button
+                size="small"
+                variant="contained"
+                color="primary"
+                startIcon={<CheckCircle />}
+                onClick={() => onCheckout(book.id, book.title)}
+              >
+                Check Out
+              </Button>
+            ) : canReturn ? (
+              <Button
+                size="small"
+                variant="contained"
+                color="secondary"
+                startIcon={<Undo />}
+                onClick={() => onCheckin(book.id, book.title)}
+              >
+                Return
+              </Button>
+            ) : null}
+          </Box>
+        )}
         
         <Box sx={{ display: 'flex', gap: 1 }}>
-          {isAdmin(userRole) ? (
+          {/* Always show available action buttons */}
+          {canDelete && (
             <Button
               size="small"
               variant="outlined"
@@ -167,19 +178,22 @@ export default function BookActions({
             >
               Remove
             </Button>
-          ) : (
+          )}
+          
+          {canRelocate && (
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<SwapHoriz />}
+              onClick={() => onRelocate(book)}
+            >
+              Relocate
+            </Button>
+          )}
+          
+          {/* Show request removal buttons for users without delete permission */}
+          {!canDelete && (
             <>
-              {canRelocate && (
-                <Button
-                  size="small"
-                  variant="outlined"
-                  startIcon={<SwapHoriz />}
-                  onClick={() => onRelocate(book)}
-                >
-                  Relocate
-                </Button>
-              )}
-              
               {!hasPendingRemovalRequest ? (
                 <Button
                   size="small"
@@ -210,7 +224,8 @@ export default function BookActions({
   return (
     <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
       <Box sx={{ display: 'flex', gap: 1 }}>
-        {isAdmin(userRole) ? (
+        {/* Always show available action buttons */}
+        {canDelete && (
           <Button
             size="small"
             variant="outlined"
@@ -220,7 +235,21 @@ export default function BookActions({
           >
             Remove
           </Button>
-        ) : (
+        )}
+        
+        {canRelocate && (
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<SwapHoriz />}
+            onClick={() => onRelocate(book)}
+          >
+            Relocate
+          </Button>
+        )}
+        
+        {/* Show checkout/checkin buttons for users without delete permission */}
+        {!canDelete && (
           <>
             {!isCheckedOut ? (
               <Button
@@ -243,22 +272,12 @@ export default function BookActions({
                 Return
               </Button>
             ) : null}
-            
-            {canRelocate && (
-              <Button
-                size="small"
-                variant="outlined"
-                startIcon={<SwapHoriz />}
-                onClick={() => onRelocate(book)}
-              >
-                Relocate
-              </Button>
-            )}
           </>
         )}
       </Box>
 
-      {!isAdmin(userRole) && (
+      {/* Show request removal buttons for users without delete permission */}
+      {!canDelete && (
         <Box sx={{ ml: 1 }}>
           {!hasPendingRemovalRequest ? (
             <Button

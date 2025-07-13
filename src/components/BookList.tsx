@@ -18,6 +18,7 @@ import { getDisplayGenres } from '@/lib/genreUtils'
 interface BookTextProps {
   books: EnhancedBook[]
   userRole: string | null
+  userPermissions: string[]
   currentUserId: string | null
   shelves: Array<{ id: number; name: string; location_id: number; created_at: string }>
   pendingRemovalRequests: Record<string, number>
@@ -37,6 +38,7 @@ interface BookTextProps {
 export default function BookText({
   books,
   userRole,
+  userPermissions,
   currentUserId,
   shelves,
   pendingRemovalRequests,
@@ -246,6 +248,7 @@ export default function BookText({
             <BookActions
               book={book}
               userRole={userRole}
+              userPermissions={userPermissions}
               shelves={shelves}
               pendingRemovalRequests={pendingRemovalRequests}
               viewMode="list"
