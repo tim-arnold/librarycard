@@ -57,7 +57,8 @@ export async function getLocationAdminCapabilities(request: Request, userId: str
       });
     }
 
-    // First, get all location admins (owners + admin members)
+    // First, get all location admins (owners + admin members)  
+    // For super admins viewing capabilities, show all admins associated with the location
     const locationAdmins = await env.DB.prepare(`
       SELECT DISTINCT
         u.id as user_id,
@@ -160,13 +161,22 @@ export async function grantAdminCapability(request: Request, userId: string, env
       });
     }
 
-    // Verify target user is a location admin for this location
+    // Verify target user is a location admin for this location (either owner or member with admin role)
     const isLocationAdmin = await env.DB.prepare(`
-      SELECT 1 FROM location_members lm
-      JOIN users u ON lm.user_id = u.id
-      WHERE lm.location_id = ? AND lm.user_id = ? 
-      AND (u.user_role = 'admin' OR u.user_role = 'super_admin')
-    `).bind(locationId, targetUserId).first();
+      SELECT 1 FROM (
+        SELECT user_id FROM location_members lm
+        JOIN users u ON lm.user_id = u.id
+        WHERE lm.location_id = ? AND lm.user_id = ? 
+        AND (u.user_role = 'admin' OR u.user_role = 'super_admin')
+        
+        UNION
+        
+        SELECT owner_id as user_id FROM locations l
+        JOIN users u ON l.owner_id = u.id
+        WHERE l.id = ? AND l.owner_id = ?
+        AND (u.user_role = 'admin' OR u.user_role = 'super_admin')
+      )
+    `).bind(locationId, targetUserId, locationId, targetUserId).first();
 
     if (!isLocationAdmin) {
       return new Response(JSON.stringify({ error: 'Target user must be a location admin' }), {
@@ -248,27 +258,66 @@ export async function getLocationUserPermissions(request: Request, userId: strin
       });
     }
 
-    // Check if user can manage permissions for this location
-    if (!await canUserManageLocationPermissions(userId, parseInt(locationId), env)) {
-      return new Response(JSON.stringify({ error: 'Permission management access required' }), {
-        status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    // Check if user has access to view permissions for this location
+    // Super admins can view all, location admins can view their locations
+    if (!(await isUserSuperAdmin(userId, env))) {
+      // Check if user is a location admin (either owner or member with admin role)
+      const isLocationAdmin = await env.DB.prepare(`
+        SELECT 1 FROM (
+          SELECT user_id FROM location_members lm
+          JOIN users u ON lm.user_id = u.id
+          WHERE lm.location_id = ? AND lm.user_id = ? 
+          AND (u.user_role = 'admin' OR u.user_role = 'super_admin')
+          
+          UNION
+          
+          SELECT owner_id as user_id FROM locations l
+          JOIN users u ON l.owner_id = u.id
+          WHERE l.id = ? AND l.owner_id = ?
+          AND (u.user_role = 'admin' OR u.user_role = 'super_admin')
+        )
+      `).bind(locationId, userId, locationId, userId).first();
+
+      if (!isLocationAdmin) {
+        return new Response(JSON.stringify({ error: 'Location admin access required' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     }
 
     // First, get all location members (excluding admins since they inherit all permissions)
-    const locationMembers = await env.DB.prepare(`
-      SELECT DISTINCT
-        u.id as user_id,
-        u.first_name || ' ' || COALESCE(u.last_name, '') as userName,
-        u.email as userEmail
-      FROM users u
-      LEFT JOIN location_members lm ON lm.user_id = u.id AND lm.location_id = ?
-      LEFT JOIN locations l ON l.owner_id = u.id AND l.id = ?
-      WHERE (lm.user_id = u.id OR l.owner_id = u.id)
-        AND u.user_role = 'user'
-      ORDER BY u.first_name
-    `).bind(locationId, locationId).all();
+    // Super admins can see users in any location, others need location membership
+    let locationMembers;
+    if (await isUserSuperAdmin(userId, env)) {
+      // Super admins can see all users in any location (don't need to be members themselves)
+      locationMembers = await env.DB.prepare(`
+        SELECT DISTINCT
+          u.id as user_id,
+          u.first_name || ' ' || COALESCE(u.last_name, '') as userName,
+          u.email as userEmail
+        FROM users u
+        LEFT JOIN location_members lm ON lm.user_id = u.id AND lm.location_id = ?
+        LEFT JOIN locations l ON l.owner_id = u.id AND l.id = ?
+        WHERE (lm.user_id = u.id OR l.owner_id = u.id)
+          AND u.user_role = 'user'
+        ORDER BY u.first_name
+      `).bind(locationId, locationId).all();
+    } else {
+      // Regular location admins only see users in locations they have permission management access to
+      locationMembers = await env.DB.prepare(`
+        SELECT DISTINCT
+          u.id as user_id,
+          u.first_name || ' ' || COALESCE(u.last_name, '') as userName,
+          u.email as userEmail
+        FROM users u
+        LEFT JOIN location_members lm ON lm.user_id = u.id AND lm.location_id = ?
+        LEFT JOIN locations l ON l.owner_id = u.id AND l.id = ?
+        WHERE (lm.user_id = u.id OR l.owner_id = u.id)
+          AND u.user_role = 'user'
+        ORDER BY u.first_name
+      `).bind(locationId, locationId).all();
+    }
 
     // Then get their specific permissions
     const permissions = await env.DB.prepare(`

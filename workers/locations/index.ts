@@ -222,20 +222,23 @@ export async function leaveLocation(locationId: number, userId: string, env: Env
 
 // Shelf functions
 export async function getLocationShelves(locationId: number, userId: string, env: Env, corsHeaders: Record<string, string>) {
-  // Check if user has access to this location
-  const accessStmt = env.DB.prepare(`
-    SELECT 1 FROM locations l
-    LEFT JOIN location_members lm ON l.id = lm.location_id
-    WHERE l.id = ? AND (l.owner_id = ? OR lm.user_id = ?)
-  `);
+  // Super admins can access all locations
+  if (!(await isUserSuperAdmin(userId, env))) {
+    // Check if user has access to this location
+    const accessStmt = env.DB.prepare(`
+      SELECT 1 FROM locations l
+      LEFT JOIN location_members lm ON l.id = lm.location_id
+      WHERE l.id = ? AND (l.owner_id = ? OR lm.user_id = ?)
+    `);
 
-  const accessResult = await accessStmt.bind(locationId, userId, userId).first();
-  
-  if (!accessResult) {
-    return new Response(JSON.stringify({ error: 'Access denied' }), {
-      status: 403,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    const accessResult = await accessStmt.bind(locationId, userId, userId).first();
+    
+    if (!accessResult) {
+      return new Response(JSON.stringify({ error: 'Access denied' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
   }
 
   const stmt = env.DB.prepare(`

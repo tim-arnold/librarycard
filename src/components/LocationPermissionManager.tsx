@@ -90,14 +90,12 @@ export default function LocationPermissionManager({ locationId, locationName, us
   const isSuperAdmin = userRole === 'super_admin'
 
   useEffect(() => {
-    checkPermissionAccess()
+    if (session && locationId) {
+      checkPermissionAccess()
+    }
   }, [locationId, session])
 
-  useEffect(() => {
-    if (canManagePermissions) {
-      loadPermissions()
-    }
-  }, [canManagePermissions])
+  // Removed duplicate useEffect - loadPermissions is now called directly in checkPermissionAccess
 
   const checkPermissionAccess = async () => {
     try {
@@ -105,17 +103,25 @@ export default function LocationPermissionManager({ locationId, locationName, us
       const result = await authenticatedFetch(session, `/api/permissions/can-manage?location_id=${locationId}`)
       
       if (result.success) {
-        setCanManagePermissions(result.data?.canManagePermissions || false)
+        const hasManagePermission = result.data?.canManagePermissions || false
+        setCanManagePermissions(hasManagePermission)
       } else {
         setCanManagePermissions(false)
       }
+      
+      // Always try to load permissions - location admins can view even without manage capability
+      await loadPermissions()
     } catch (err) {
       console.error('Error checking permission access:', err)
       setCanManagePermissions(false)
-    } finally {
-      if (!canManagePermissions) {
-        setLoading(false)
+      // Still try to load permissions in case user can view but not manage
+      try {
+        await loadPermissions()
+      } catch (loadErr) {
+        console.error('Error loading permissions:', loadErr)
       }
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -251,13 +257,7 @@ export default function LocationPermissionManager({ locationId, locationName, us
     }
   }
 
-  if (!canManagePermissions) {
-    return (
-      <Alert severity="info" sx={{ mt: 2 }}>
-        Permission management is only available to super administrators.
-      </Alert>
-    )
-  }
+  // Don't return early - allow viewing even without manage capability
 
   if (loading) {
     return (
@@ -284,6 +284,12 @@ export default function LocationPermissionManager({ locationId, locationName, us
         <Security />
         Permission Management - {locationName}
       </Typography>
+
+      {!canManagePermissions && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          You can view permissions but cannot modify them. Only super administrators or location admins with "Control User Permissions" capability can make changes.
+        </Alert>
+      )}
 
       {/* Location Admin Capabilities - Only for Super Admins */}
       {isSuperAdmin && (
@@ -359,6 +365,7 @@ export default function LocationPermissionManager({ locationId, locationName, us
                               <Switch
                                 checked={hasCapability}
                                 onChange={() => toggleAdminCapability(admin.userId, cap.key, hasCapability)}
+                                disabled={!canManagePermissions}
                                 size="small"
                                 color={hasCapability ? "success" : "default"}
                               />
@@ -426,7 +433,7 @@ export default function LocationPermissionManager({ locationId, locationName, us
                           variant={allHavePermission ? "contained" : "outlined"}
                           color={allHavePermission ? "success" : "primary"}
                           onClick={() => bulkTogglePermission(perm.key, true)}
-                          disabled={isUpdating || allHavePermission}
+                          disabled={!canManagePermissions || isUpdating || allHavePermission}
                           sx={{ minWidth: 'auto', px: 1, py: 0.5, fontSize: '0.7rem' }}
                         >
                           {isUpdating ? <CircularProgress size={12} /> : 'Grant All'}
@@ -437,7 +444,7 @@ export default function LocationPermissionManager({ locationId, locationName, us
                           variant={!someHavePermission && !allHavePermission ? "contained" : "outlined"}
                           color={!someHavePermission && !allHavePermission ? "error" : "secondary"}
                           onClick={() => bulkTogglePermission(perm.key, false)}
-                          disabled={isUpdating || (!someHavePermission && !allHavePermission)}
+                          disabled={!canManagePermissions || isUpdating || (!someHavePermission && !allHavePermission)}
                           sx={{ minWidth: 'auto', px: 1, py: 0.5, fontSize: '0.7rem' }}
                         >
                           {isUpdating ? <CircularProgress size={12} /> : 'Revoke All'}
@@ -499,6 +506,7 @@ export default function LocationPermissionManager({ locationId, locationName, us
                               <Switch
                                 checked={hasPermission}
                                 onChange={() => toggleUserPermission(member.userId, perm.key, hasPermission)}
+                                disabled={!canManagePermissions}
                                 size="small"
                                 color={hasPermission ? "success" : "default"}
                               />
