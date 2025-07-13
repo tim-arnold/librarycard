@@ -29,7 +29,11 @@ This file contains AI-specific context and working preferences for Claude Code w
 - **Branch-based development**: ALL work must be done on feature/fix/enhancement branches
 - **Never work directly on main**: Direct commits to main branch are prohibited
 - **Pull request required**: All changes must be submitted via pull request for review
-- **Branch naming**: Use descriptive names like `feature/user-metrics`, `fix/auth-bug`, `enhancement/ui-improvements`
+- **Branch naming conventions**:
+  - **For GitHub issues**: `feature/gh{issue-number}-{feature-name}` (e.g., `feature/gh39-worker-deployment-strategy`)
+  - **For bugs from issues**: `fix/gh{issue-number}-{bug-description}` (e.g., `fix/gh42-user-login-error`)
+  - **For non-issue work**: `feature/{feature-name}`, `fix/{bug-description}`, `enhancement/{improvement-name}`
+  - Always use kebab-case for branch names and keep descriptions concise but descriptive
 
 ### Commit Guidelines
 - **Commit messages**: Use clear, descriptive messages without AI tool attribution
@@ -44,8 +48,9 @@ This file contains AI-specific context and working preferences for Claude Code w
 
 ### Development Commands
 ```bash
-# Development server
-npm run dev
+# Local development
+npm run dev                    # Frontend development server
+npx wrangler dev              # Local worker development
 
 # Screenshot testing  
 cd testing && node screenshot.js
@@ -54,8 +59,13 @@ cd testing && node screenshot.js
 npm run build
 npm run lint
 
-# Worker development
-npx wrangler dev
+# Worker deployment
+npx wrangler deploy --env=staging     # Deploy to staging
+npx wrangler deploy --env=production  # Deploy to production
+
+# Database migrations
+npx wrangler d1 execute librarycard-db-staging --file=migrations/migration.sql --env=staging --remote
+npx wrangler d1 execute librarycard-db --file=migrations/migration.sql --env=production --remote
 ```
 
 ## Current Technical State
