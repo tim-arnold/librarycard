@@ -34,6 +34,8 @@ import {
   CheckCircle,
   Cancel,
   AdminPanelSettings,
+  Lock,
+  LockOpen,
 } from '@mui/icons-material'
 import { authenticatedFetch } from '../lib/auth-utils'
 
@@ -86,6 +88,7 @@ export default function LocationPermissionManager({ locationId, locationName, us
   const [updatingPermissions, setUpdatingPermissions] = useState<string>('')
   const [canManagePermissions, setCanManagePermissions] = useState<boolean>(false)
   const [bulkUpdating, setBulkUpdating] = useState<string>('')
+  const [bulkControlsLocked, setBulkControlsLocked] = useState<boolean>(true)
 
   const isSuperAdmin = userRole === 'super_admin'
 
@@ -398,65 +401,6 @@ export default function LocationPermissionManager({ locationId, locationName, us
             Control what actions regular users can perform in this location. Location admins inherit all these permissions automatically.
           </Typography>
 
-          {/* Bulk Permission Controls */}
-          {members.length > 0 && (
-            <Paper sx={{ p: 2, mb: 2, bgcolor: 'action.hover' }}>
-              <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Settings fontSize="small" />
-                Bulk Permission Controls
-              </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
-                Apply permissions to all {members.length} users at once. Existing permissions will be updated accordingly.
-              </Typography>
-              
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                {USER_PERMISSIONS.map(perm => {
-                  const usersWithPermission = members.filter(m => m.permissions.includes(perm.key)).length
-                  const allHavePermission = usersWithPermission === members.length
-                  const someHavePermission = usersWithPermission > 0 && usersWithPermission < members.length
-                  const isUpdating = bulkUpdating === perm.key
-                  
-                  return (
-                    <Box key={perm.key} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Box sx={{ minWidth: 120 }}>
-                        <Typography variant="caption" fontWeight="medium">
-                          {perm.label}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" display="block">
-                          {usersWithPermission}/{members.length} users
-                        </Typography>
-                      </Box>
-                      
-                      <Box sx={{ display: 'flex', gap: 0.5 }}>
-                        <Button
-                          size="small"
-                          variant={allHavePermission ? "contained" : "outlined"}
-                          color={allHavePermission ? "success" : "primary"}
-                          onClick={() => bulkTogglePermission(perm.key, true)}
-                          disabled={!canManagePermissions || isUpdating || allHavePermission}
-                          sx={{ minWidth: 'auto', px: 1, py: 0.5, fontSize: '0.7rem' }}
-                        >
-                          {isUpdating ? <CircularProgress size={12} /> : 'Grant All'}
-                        </Button>
-                        
-                        <Button
-                          size="small"
-                          variant={!someHavePermission && !allHavePermission ? "contained" : "outlined"}
-                          color={!someHavePermission && !allHavePermission ? "error" : "secondary"}
-                          onClick={() => bulkTogglePermission(perm.key, false)}
-                          disabled={!canManagePermissions || isUpdating || (!someHavePermission && !allHavePermission)}
-                          sx={{ minWidth: 'auto', px: 1, py: 0.5, fontSize: '0.7rem' }}
-                        >
-                          {isUpdating ? <CircularProgress size={12} /> : 'Revoke All'}
-                        </Button>
-                      </Box>
-                    </Box>
-                  )
-                })}
-              </Box>
-            </Paper>
-          )}
-          
           {members.length === 0 ? (
             <Alert severity="info">
               No regular users found with specific permissions. Users without permissions can view books but cannot modify them.
@@ -482,6 +426,68 @@ export default function LocationPermissionManager({ locationId, locationName, us
                   </TableRow>
                 </TableHead>
                 <TableBody>
+                  {/* Bulk Permission Controls Row */}
+                  <TableRow sx={{ bgcolor: 'action.hover' }}>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box
+                          component="button"
+                          onClick={() => setBulkControlsLocked(!bulkControlsLocked)}
+                          sx={{
+                            border: 'none',
+                            background: 'none',
+                            cursor: 'pointer',
+                            padding: 0,
+                            display: 'flex',
+                            alignItems: 'center',
+                            color: bulkControlsLocked ? 'text.secondary' : 'primary.main',
+                            '&:hover': {
+                              color: bulkControlsLocked ? 'text.primary' : 'primary.dark',
+                            }
+                          }}
+                          disabled={!canManagePermissions}
+                        >
+                          {bulkControlsLocked ? <Lock fontSize="small" /> : <LockOpen fontSize="small" />}
+                        </Box>
+                        <Box>
+                          <Typography variant="body2" fontWeight="medium">
+                            Bulk Controls {bulkControlsLocked ? '(Locked)' : '(Unlocked)'}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {bulkControlsLocked ? 'Click lock to enable' : `Apply to all ${members.length} users`}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </TableCell>
+                    {USER_PERMISSIONS.map(perm => {
+                      const usersWithPermission = members.filter(m => m.permissions.includes(perm.key)).length
+                      const allHavePermission = usersWithPermission === members.length
+                      const isUpdating = bulkUpdating === perm.key
+                      
+                      return (
+                        <TableCell key={perm.key} align="center">
+                          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+                            {isUpdating ? (
+                              <CircularProgress size={20} />
+                            ) : (
+                              <Switch
+                                checked={allHavePermission}
+                                onChange={() => bulkTogglePermission(perm.key, !allHavePermission)}
+                                disabled={!canManagePermissions || bulkControlsLocked}
+                                size="small"
+                                color={allHavePermission ? "success" : "default"}
+                              />
+                            )}
+                            <Typography variant="caption" color="text.secondary">
+                              {usersWithPermission}/{members.length}
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                      )
+                    })}
+                  </TableRow>
+                  
+                  {/* Individual User Rows */}
                   {members.map(member => (
                     <TableRow key={member.userId}>
                       <TableCell>
