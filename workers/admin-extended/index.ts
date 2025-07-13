@@ -275,7 +275,7 @@ export async function getAdminUsers(userId: string, env: Env, corsHeaders: Recor
     let users;
     
     if (isSuperAdmin) {
-      // Super admins can see all users globally
+      // Super admins can see all users globally, except other super admins
       users = await env.DB.prepare(`
         SELECT u.id, u.email, u.first_name, u.last_name, u.auth_provider, 
                u.email_verified, u.user_role, u.created_at,
@@ -288,9 +288,10 @@ export async function getAdminUsers(userId: string, env: Env, corsHeaders: Recor
         LEFT JOIN location_members lm ON u.id = lm.user_id
         LEFT JOIN locations l ON u.id = l.owner_id
         LEFT JOIN locations loc ON (loc.id = lm.location_id OR loc.id = l.id)
+        WHERE u.user_role != 'super_admin' OR u.id = ?
         GROUP BY u.id
         ORDER BY u.created_at DESC
-      `).all();
+      `).bind(userId).all();
     } else {
       // Regular admins can only see users from their assigned locations
       users = await env.DB.prepare(`
@@ -427,11 +428,11 @@ export async function getAvailableAdmins(userId: string, env: Env, corsHeaders: 
   }
 
   try {
-    // Get all admin users (for ownership transfer)
+    // Get all admin users (for ownership transfer) - exclude super admins
     const admins = await env.DB.prepare(`
       SELECT id, email, first_name, last_name
       FROM users 
-      WHERE user_role IN ('admin', 'super_admin')
+      WHERE user_role = 'admin'
       ORDER BY first_name, last_name, email
     `).all();
 
