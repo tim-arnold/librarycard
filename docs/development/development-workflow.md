@@ -43,11 +43,12 @@ gh pr create --title "feat: your feature" --body "Description"
 ## Branch Management
 
 ### Branch Naming Conventions
-- **Features**: `feature/description` or `feat/description`
-- **Bug fixes**: `fix/description` or `bugfix/description`
-- **Documentation**: `docs/description`
-- **Refactoring**: `refactor/description`
-- **Performance**: `perf/description`
+- **Features**: `feature/gh[issue#]-description` (e.g., `feature/gh31-user-metrics`, `feature/gh45-book-ratings`)
+- **Bug fixes**: `fix/gh[issue#]-description` (e.g., `fix/gh12-auth-bug`, `fix/gh23-isbn-scanner`)
+- **Enhancements**: `enhancement/gh[issue#]-description` (e.g., `enhancement/gh56-ui-improvements`)
+- **Documentation**: `docs/gh[issue#]-description`
+- **Refactoring**: `refactor/gh[issue#]-description`
+- **Performance**: `perf/gh[issue#]-description`
 
 ### Branch Protection Rules
 🚨 **IMPORTANT**: Never work directly on the `main` branch!
@@ -64,8 +65,8 @@ gh pr create --title "feat: your feature" --body "Description"
 git checkout main
 git pull origin main
 
-# Create feature branch
-git checkout -b feat/add-book-ratings
+# Create feature branch with GitHub issue number
+git checkout -b feature/gh42-add-book-ratings
 
 # Work on feature
 # ... make changes ...
@@ -84,14 +85,14 @@ git commit -m "feat: add book rating system
 - Add rating display in book cards"
 
 # Push and create PR
-git push -u origin feat/add-book-ratings
+git push -u origin feature/gh42-add-book-ratings
 gh pr create --title "feat: add book rating system" \
              --body "Implements 5-star rating system for books"
 
 # After PR approval and merge
 git checkout main
 git pull origin main
-git branch -d feat/add-book-ratings
+git branch -d feature/gh42-add-book-ratings
 ```
 
 ## Local Development Environment
@@ -174,22 +175,64 @@ git commit -m "docs: update API reference for new endpoints"
 
 ## Deployment Process
 
+### Staging-First Development Workflow
+
+**Recommended branch workflow**:
+```
+feature/gh31-my-feature → staging (for testing)
+feature/gh31-my-feature → main (after testing passes)
+```
+
+#### Why NOT merge staging → main:
+- **Staging pollution** - Staging may accumulate test data, experimental configs, or temporary fixes
+- **Merge conflicts** - If multiple features are tested in staging simultaneously  
+- **History clarity** - Feature commits should come directly from feature branches to main
+- **Staging-specific changes** - Like seed scripts, which are staging infrastructure
+
+#### Best Practice Workflow:
+1. **Create feature branch** from `main`
+2. **Deploy to staging** for testing (merge or push to staging branch)
+3. **After testing passes** → merge feature branch directly to `main`
+4. **Auto-deploy main** to production
+5. **Keep staging** as a persistent testing environment
+
 ### Development Deployment
 1. **Local Testing**: Test thoroughly in local environment
 2. **Build Verification**: Ensure `npm run build` succeeds
 3. **Push to Feature Branch**: Push changes to feature branch
-4. **Create Pull Request**: Use GitHub PR for code review
-5. **Merge to Main**: After approval, merge via GitHub
+4. **Deploy to Staging**: Test in staging environment first
+5. **Create Pull Request**: Use GitHub PR for code review
+6. **Merge to Main**: After approval, merge feature branch directly to main
+
+### Staging Environment
+**Purpose**: Integration testing and staging-specific tooling
+- **Frontend**: `https://staging--libarycard.netlify.app/`
+- **Worker**: `https://librarycard-api-staging.tim-arnold.workers.dev`
+- **Database**: `librarycard-db-staging`
+- **Auto-deployment**: Triggered by pushes to `staging` branch
+
+**Test Accounts**:
+| Email | Password | Role |
+|-------|----------|------|
+| `superadmin@staging.localhost` | `Super123!` | super_admin |
+| `adminuser@staging.localhost` | `Admin123!` | admin |
+| `testuser@staging.localhost` | `Test123!` | user |
+
+**Staging Data Management**:
+```bash
+# Reset staging environment with fresh test data
+node scripts/seed-staging-data.js
+```
 
 ### Production Deployment
 Production deployment is automatic via:
 - **Netlify**: Automatically deploys from `main` branch
-- **Cloudflare Workers**: Deploy manually with `wrangler deploy`
+- **Cloudflare Workers**: Auto-deployed via GitHub Actions on push to `main`
 
+**Manual deployment** (if needed):
 ```bash
-# Manual worker deployment
-cd workers
-wrangler deploy --env production
+# Manual worker deployment to production
+npx wrangler deploy --env production
 ```
 
 ## Backup Procedures

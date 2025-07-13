@@ -15,8 +15,9 @@ We use a clean two-environment deployment strategy:
 ### Staging
 - **Worker**: `librarycard-api-staging`
 - **Database**: `librarycard-db-staging`
-- **Frontend**: `https://librarycard-staging.tim52.io/`
+- **Frontend**: `https://staging--libarycard.netlify.app/`
 - **Usage**: Pre-production testing and validation
+- **Auto-deployment**: Triggered by pushes to `staging` branch
 
 ### Production
 - **Worker**: `librarycard-api-production`
