@@ -15,6 +15,21 @@ binding = "DB"
 database_name = "libarycard-db-local"
 database_id = "5365a633-7869-4993-990a-90aa12e9974e"
 
+# Local environment (explicit)
+# Use: npx wrangler dev --env=local
+[env.local]
+name = "librarycard-api-local"
+
+[env.local.vars]
+ENVIRONMENT = "local"
+APP_URL = "http://localhost:3000"
+FROM_EMAIL = "LibraryCard <noreply@localhost>"
+
+[[env.local.d1_databases]]
+binding = "DB"
+database_name = "libarycard-db-local"
+database_id = "5365a633-7869-4993-990a-90aa12e9974e"
+
 # Staging environment
 # Use: npx wrangler deploy --env=staging
 [env.staging]
