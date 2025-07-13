@@ -29,6 +29,7 @@ import {
 import ConfirmationModal from './ConfirmationModal'
 import AlertModal from './AlertModal'
 import { useModal } from '@/hooks/useModal'
+import LocationPermissionManager from './LocationPermissionManager'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
 
@@ -584,6 +585,15 @@ export default function LocationManager() {
                   </Paper>
                 ))}
               </div>
+
+              {/* Permission Management Section */}
+              {selectedLocation && userRole && (
+                <LocationPermissionManager 
+                  locationId={selectedLocation.id}
+                  locationName={selectedLocation.name}
+                  userRole={userRole}
+                />
+              )}
 
             </div>
           )}

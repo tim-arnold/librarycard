@@ -12,6 +12,7 @@ import {
   Tabs,
   Tab,
   CircularProgress,
+  Alert,
 } from '@mui/material'
 import {
   QrCodeScanner,
@@ -22,6 +23,7 @@ import {
 import { fetchEnhancedBookData, fetchEnhancedBookFromSearch } from '@/lib/bookApi'
 import type { EnhancedBook, CuratedGenre } from '@/lib/types'
 import { saveBook as saveBookAPI, getBooks } from '@/lib/api'
+import { authenticatedFetch } from '@/lib/auth-utils'
 import ConfirmationModal from './ConfirmationModal'
 import AlertModal from './AlertModal'
 import ShelfSelector from './ShelfSelector'
@@ -219,6 +221,8 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
   const [existingBooks, setExistingBooks] = useState<EnhancedBook[]>([])
   const [justAddedBooks, setJustAddedBooks] = useState<Set<string>>(new Set())
   const [showBulkReviewModal, setShowBulkReviewModal] = useState(false)
+  const [canAddBooks, setCanAddBooks] = useState<boolean>(true) // Assume true initially to avoid flash
+  const [permissionChecked, setPermissionChecked] = useState<boolean>(false)
 
   // Refs for scroll targets
   const bookSelectedRef = useRef<HTMLDivElement>(null)
@@ -264,9 +268,10 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
   }, [selectedBook])
 
   useEffect(() => {
-    // Load locations and shelves when session is available
+    // Load locations, shelves, and check permissions when session is available
     if (session?.user?.email) {
       loadLocationsAndShelves()
+      checkAddBooksPermission()
     }
   }, [session])
 
@@ -324,6 +329,42 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
       // Handle error silently
     } finally {
       setLoadingData(false)
+    }
+  }
+
+  const checkAddBooksPermission = async () => {
+    if (!session?.user?.email) return
+    
+    try {
+      // Get user's current location for permission checking
+      // We'll use the first location they have access to
+      const locationsResponse = await authenticatedFetch(session, '/api/locations')
+      
+      if (locationsResponse.success && locationsResponse.data?.length > 0) {
+        const firstLocation = locationsResponse.data[0]
+        
+        // Check if user has can_add_books permission for this location
+        const permissionResult = await authenticatedFetch(
+          session, 
+          `/api/permissions/check?locationId=${firstLocation.id}&permission=can_add_books`
+        )
+        
+        if (permissionResult.success) {
+          setCanAddBooks(permissionResult.data?.hasPermission || false)
+        } else {
+          // If permission check fails, assume they can add books (default behavior)
+          setCanAddBooks(true)
+        }
+      } else {
+        // If no locations, they can't add books
+        setCanAddBooks(false)
+      }
+    } catch (err) {
+      console.error('Error checking add books permission:', err)
+      // On error, assume they can add books (fail open for better UX)
+      setCanAddBooks(true)
+    } finally {
+      setPermissionChecked(true)
     }
   }
 
@@ -403,6 +444,10 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
   // Common functions
   const saveBook = async () => {
     if (!selectedBook || !selectedShelfId) return
+    if (!canAddBooks) {
+      handleError('Permission Denied', 'You don\'t have permission to add books to this location.')
+      return
+    }
 
     const bookToSave = {
       ...selectedBook,
@@ -482,6 +527,10 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
   const handleBulkSave = async () => {
     const selectedBooks = selectionActions.getSelectedBooks()
     if (selectedBooks.length === 0 || !selectedShelfId) return
+    if (!canAddBooks) {
+      handleError('Permission Denied', 'You don\'t have permission to add books to this location.')
+      return
+    }
 
     setIsLoading(true)
     
@@ -628,6 +677,14 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
             📚  Add Books
           </Typography>
 
+          {/* Permission Warning */}
+          {permissionChecked && !canAddBooks && (
+            <Alert severity="warning" sx={{ mb: 3 }}>
+              <Typography variant="body2">
+                You don't have permission to add books to this location. You can search for books to view their details, but the add and select buttons will be disabled. Contact a location administrator to request permission.
+              </Typography>
+            </Alert>
+          )}
 
         {/* Tab Navigation */}
         <Paper sx={{ mb: 3 }}>
@@ -679,6 +736,7 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
             existingBooks={existingBooks}
             justAddedBooks={justAddedBooks}
             disabled={loadingData || isLoading}
+            actionsDisabled={!canAddBooks}
             shouldAutoSearch={autoSearchAfterAdd && !preserveSearchState}
             onSearchComplete={() => {
               setAutoSearchAfterAdd(false)

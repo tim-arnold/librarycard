@@ -332,7 +332,7 @@ signup_approval_requests (
 ```
 
 ### Design Decisions
-- **Role-based access**: Admin users control locations/shelves, all users can manage books
+- **Granular permission system**: Dual-tier hierarchical access control with super admin → location admin capabilities → user permissions
 - **Hierarchical structure**: Users → Locations → Shelves → Books
 - **Dynamic genre system**: Replaced static hardcoded genres with database-driven curated genres
 - **Many-to-many relationships**: Books can have multiple genres, genres can belong to multiple books
@@ -392,9 +392,19 @@ signup_approval_requests (
 - `POST /api/books/:id/genres` - Assign genre to book
 - `DELETE /api/books/:id/genres/:genreId` - Remove genre from book
 
+#### Permission Management (Super Admins & Location Admins)
+- `GET /api/admin/location-admin-capabilities` - View admin capabilities for location
+- `POST /api/admin/location-admin-capabilities` - Grant admin capability
+- `DELETE /api/admin/location-admin-capabilities` - Revoke admin capability
+- `GET /api/admin/location-user-permissions` - View user permissions for location
+- `POST /api/admin/location-user-permissions` - Grant user permission
+- `DELETE /api/admin/location-user-permissions` - Revoke user permission
+- `GET /api/permissions/can-manage` - Check permission management access
+- `GET /api/permissions/check` - Check specific permission
+- `GET /api/permissions/user` - Get all user permissions for location
 
 ### Design Decisions
-- **Role-based access**: Admin/user roles with permission enforcement
+- **Hierarchical permission system**: Three-tier access control (super admin → location admin capabilities → user permissions)
 - **Authentication**: NextAuth.js with Google OAuth and email/password
 - **CORS enabled**: Allows browser requests from any origin
 - **Error handling**: Consistent JSON error responses

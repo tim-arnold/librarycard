@@ -58,6 +58,7 @@ interface BookSearchProps {
   existingBooks: EnhancedBook[]
   justAddedBooks: Set<string>
   disabled?: boolean
+  actionsDisabled?: boolean // New prop to disable only action buttons, not search
   shouldAutoSearch?: boolean
   onSearchComplete?: () => void
   displayedResults?: number
@@ -79,6 +80,7 @@ export default function BookSearch({
   existingBooks,
   justAddedBooks,
   disabled = false,
+  actionsDisabled = false,
   shouldAutoSearch = false,
   onSearchComplete,
   displayedResults: parentDisplayedResults,
@@ -518,7 +520,7 @@ export default function BookSearch({
                             size="small"
                             startIcon={<Warning />}
                             onClick={() => handleAddAnyway(item)}
-                            disabled={disabled}
+                            disabled={disabled || actionsDisabled}
                             fullWidth
                             sx={{ 
                               color: 'warning.main',
@@ -542,7 +544,7 @@ export default function BookSearch({
                             size="small"
                             startIcon={<Add />}
                             onClick={() => handleBookSelect(item)}
-                            disabled={disabled}
+                            disabled={disabled || actionsDisabled}
                             fullWidth
                           >
                             Add This Book
@@ -552,7 +554,7 @@ export default function BookSearch({
                             size="small"
                             startIcon={isInCart ? <CheckBox /> : <CheckBoxOutlineBlank />}
                             onClick={() => isInCart ? handleRemoveFromCart(item) : handleAddToCart(item)}
-                            disabled={disabled}
+                            disabled={disabled || actionsDisabled}
                             sx={{ 
                               minWidth: '100px',
                               color: isInCart ? 'success.main' : 'primary.main',
