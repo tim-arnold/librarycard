@@ -37,6 +37,9 @@ export interface EnhancedBook extends Book {
   googleAverageRating?: number | null  // Google Books average rating (for More Details)
   googleRatingCount?: number           // Google Books rating count (for More Details)
   ratingUpdatedAt?: string        // Last rating update timestamp
+  // Cover selection fields
+  alternative_covers?: any[]      // JSON array of cover options
+  selected_cover_source?: any     // JSON metadata about selected cover
 }
 
 // Rating-specific interfaces

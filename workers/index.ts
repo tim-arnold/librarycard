@@ -29,7 +29,8 @@ import {
   deleteBookRemovalRequest,
   rateBook,
   getBookRating,
-  emailOverdueUser
+  emailOverdueUser,
+  getBookEditions
 } from './books';
 import {
   sendInvitationEmail,
@@ -270,6 +271,21 @@ export default {
 
       if (path === '/api/books' && request.method === 'POST') {
         return await createBook(request, userId, env, corsHeaders);
+      }
+
+      // Book editions endpoint for cover selection
+      if (path === '/api/books/editions' && request.method === 'GET') {
+        const title = url.searchParams.get('title');
+        const author = url.searchParams.get('author');
+        
+        if (!title || !author) {
+          return new Response(JSON.stringify({ error: 'Title and author parameters are required' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        
+        return await getBookEditions(title, author, env, corsHeaders);
       }
 
       // Book checkout endpoints (must come before general /api/books/* routes)
