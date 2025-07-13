@@ -1,44 +1,46 @@
-name = "librarycard-api-production"
+# Default environment - Local development
+# Use: npm run dev (frontend) + npx wrangler dev (worker)
+name = "librarycard-api-local"
 main = "workers/index.ts"
 compatibility_date = "2024-01-01"
 account_id = "4bef1453ad78da6e3bb7e83b421e26df"
 
-# Local development environment
-[env.local]
-[env.local.vars]
+[vars]
 ENVIRONMENT = "local"
 APP_URL = "http://localhost:3000"
 FROM_EMAIL = "LibraryCard <noreply@localhost>"
 
-[[env.local.d1_databases]]
+[[d1_databases]]
 binding = "DB"
 database_name = "libarycard-db-local"
 database_id = "5365a633-7869-4993-990a-90aa12e9974e"
 
-# Default environment (for backward compatibility)
-[[d1_databases]]
-binding = "DB"
-database_name = "librarycard-db"
-database_id = "368ab7bc-fb42-4607-a4cf-761dc7795284"
+# Staging environment
+# Use: npx wrangler deploy --env=staging
+[env.staging]
+name = "librarycard-api-staging"
 
+[env.staging.vars]
+ENVIRONMENT = "staging"
+APP_URL = "https://librarycard-staging.tim52.io/"
+FROM_EMAIL = "LibraryCard <librarian@tim52.io>"
+
+[[env.staging.d1_databases]]
+binding = "DB"
+database_name = "librarycard-db-staging"
+database_id = "eb3d7f44-754e-4354-a3ce-8077c2572946"
+
+# Production environment  
+# Use: npx wrangler deploy --env=production
 [env.production]
+name = "librarycard-api-production"
+
 [env.production.vars]
 ENVIRONMENT = "production"
 APP_URL = "https://librarycard.tim52.io/"
 FROM_EMAIL = "LibraryCard <librarian@tim52.io>"
 
 [[env.production.d1_databases]]
-binding = "DB"
-database_name = "librarycard-db"
-database_id = "368ab7bc-fb42-4607-a4cf-761dc7795284"
-
-[env.staging]
-[env.staging.vars]
-ENVIRONMENT = "staging"
-APP_URL = "https://librarycard.tim52.io/"
-FROM_EMAIL = "LibraryCard <librarian@tim52.io>"
-
-[[env.staging.d1_databases]]
 binding = "DB"
 database_name = "librarycard-db"
 database_id = "368ab7bc-fb42-4607-a4cf-761dc7795284"
