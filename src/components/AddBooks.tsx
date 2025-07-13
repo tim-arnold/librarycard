@@ -324,7 +324,7 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
       }
       
       // Load existing books for duplicate detection
-      const savedBooks = await getBooks(session?.user?.email || undefined)
+      const savedBooks = await getBooks()
       setExistingBooks(savedBooks)
     } catch {
       // Handle error silently
@@ -474,7 +474,7 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
       })
     }
 
-    const success = await saveBookAPI(bookToSave, session?.user?.email || undefined)
+    const success = await saveBookAPI(bookToSave)
     
     if (success) {
       // Save selected genres if any
@@ -520,7 +520,7 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
       
       // Update existing books list to include the newly added book for accurate duplicate detection
       try {
-        const updatedBooks = await getBooks(session?.user?.email || undefined)
+        const updatedBooks = await getBooks()
         setExistingBooks(updatedBooks)
         
         // Mark this book as just added for display purposes
@@ -567,7 +567,7 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
           tags: selectionState.bulkTags.split(',').map(tag => tag.trim()).filter(Boolean)
         }
 
-        const success = await saveBookAPI(bookToSave, session?.user?.email || undefined)
+        const success = await saveBookAPI(bookToSave)
         results.push({ book: selectedBook.book, success })
         
         if (success) {
@@ -585,7 +585,7 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
       
       // Update existing books list
       try {
-        const updatedBooks = await getBooks(session?.user?.email || undefined)
+        const updatedBooks = await getBooks()
         setExistingBooks(updatedBooks)
       } catch (error) {
         console.error('Failed to refresh books list:', error)
