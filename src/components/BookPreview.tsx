@@ -17,8 +17,10 @@ import {
   Save,
   Cancel,
   Info,
+  Image,
 } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
+import CoverSelectionModal from './CoverSelectionModal'
 
 interface BookPreviewProps {
   book: EnhancedBook
@@ -30,11 +32,13 @@ interface BookPreviewProps {
   onAuthorClick: (authorName: string) => void
   onSeriesClick: (seriesName: string) => void
   onGenreClick: (genreName: string) => void
+  onCoverChange?: (coverUrl: string, coverData: any) => void
   isDuplicate?: boolean
   isLoading?: boolean
   isSaveDisabled?: boolean
   saveButtonText?: string
   showActionButtons?: boolean
+  canSelectCover?: boolean
 }
 
 export default function BookPreview({
@@ -47,13 +51,16 @@ export default function BookPreview({
   onAuthorClick,
   onSeriesClick,
   onGenreClick,
+  onCoverChange,
   isDuplicate = false,
   isLoading = false,
   isSaveDisabled = false,
   saveButtonText = 'Add to Library',
-  showActionButtons = true
+  showActionButtons = true,
+  canSelectCover = false
 }: BookPreviewProps) {
   const [tagsError, setTagsError] = useState<string>('')
+  const [showCoverSelection, setShowCoverSelection] = useState(false)
 
   const handleTagsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
@@ -70,6 +77,13 @@ export default function BookPreview({
   const handleSave = () => {
     if (tagsError) return
     onSave()
+  }
+
+  const handleCoverSelect = (coverOption: any) => {
+    if (onCoverChange) {
+      const coverUrl = coverOption.covers.medium || coverOption.covers.small || coverOption.covers.thumbnail
+      onCoverChange(coverUrl, coverOption)
+    }
   }
 
   return (
@@ -95,14 +109,32 @@ export default function BookPreview({
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Box sx={{ display: 'flex', gap: 2 }}>
-            {book.thumbnail && (
-              <CardMedia
-                component="img"
-                src={book.thumbnail}
-                alt={book.title}
-                sx={{ width: 120, height: 'auto', objectFit: 'contain' }}
-              />
-            )}
+            <Box sx={{ position: 'relative' }}>
+              {book.thumbnail && (
+                <CardMedia
+                  component="img"
+                  src={book.thumbnail}
+                  alt={book.title}
+                  sx={{ width: 120, height: 'auto', objectFit: 'contain' }}
+                />
+              )}
+              {canSelectCover && (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<Image />}
+                  onClick={() => setShowCoverSelection(true)}
+                  sx={{ 
+                    mt: 1, 
+                    width: 120,
+                    fontSize: '0.75rem',
+                    py: 0.5
+                  }}
+                >
+                  Choose Cover
+                </Button>
+              )}
+            </Box>
             <Box sx={{ flex: 1 }}>
               <Typography variant="h6" gutterBottom>
                 {book.title}
@@ -254,6 +286,16 @@ export default function BookPreview({
           </Button>
         </Box>
       )}
+
+      {/* Cover Selection Modal */}
+      <CoverSelectionModal
+        title={book.title}
+        author={book.authors.join(', ')}
+        currentCover={book.thumbnail}
+        onCoverSelect={handleCoverSelect}
+        onClose={() => setShowCoverSelection(false)}
+        open={showCoverSelection}
+      />
     </Box>
   )
 }

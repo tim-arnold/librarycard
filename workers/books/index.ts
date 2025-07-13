@@ -165,9 +165,10 @@ export async function createBook(request: Request, userId: string, env: Env, cor
       isbn, title, authors, description, thumbnail, published_date, categories, 
       shelf_id, tags, added_by, created_at,
       extended_description, subjects, page_count, average_rating, ratings_count,
-      publisher_info, open_library_key, enhanced_genres, series, series_number
+      publisher_info, open_library_key, enhanced_genres, series, series_number,
+      alternative_covers, selected_cover_source, cover_selection_date
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   await stmt.bind(
@@ -190,7 +191,10 @@ export async function createBook(request: Request, userId: string, env: Env, cor
     book.open_library_key || book.openLibraryKey || null,  // Accept both formats
     typeof book.enhanced_genres === 'string' ? book.enhanced_genres : (book.enhanced_genres ? JSON.stringify(book.enhanced_genres) : book.enhancedGenres ? JSON.stringify(book.enhancedGenres) : null),  // Accept both formats
     book.series || null,
-    book.series_number || book.seriesNumber || null  // Accept both formats
+    book.series_number || book.seriesNumber || null,  // Accept both formats
+    book.alternative_covers ? JSON.stringify(book.alternative_covers) : null,
+    book.selected_cover_source ? JSON.stringify(book.selected_cover_source) : null,
+    book.selected_cover_source ? new Date().toISOString() : null
   ).run();
 
   return new Response(JSON.stringify({ success: true }), {
@@ -243,13 +247,17 @@ export async function updateBook(request: Request, userId: string, env: Env, cor
 
   const stmt = env.DB.prepare(`
     UPDATE books 
-    SET shelf_id = ?, tags = ?
+    SET shelf_id = ?, tags = ?, thumbnail = ?, alternative_covers = ?, selected_cover_source = ?, cover_selection_date = ?
     WHERE id = ?
   `);
 
   await stmt.bind(
     book.shelf_id || null,
     JSON.stringify(book.tags || []),
+    book.thumbnail || null,
+    book.alternative_covers ? JSON.stringify(book.alternative_covers) : null,
+    book.selected_cover_source ? JSON.stringify(book.selected_cover_source) : null,
+    book.selected_cover_source ? new Date().toISOString() : null,
     id
   ).run();
 
@@ -1059,6 +1067,72 @@ export async function getBookCheckoutHistory(bookId: number, userId: string, env
 }
 
 // Email overdue user for a specific book - admin only
+// Book Cover Selection Functions
+export async function getBookEditions(title: string, author: string, env: Env, corsHeaders: Record<string, string>) {
+  try {
+    const query = `intitle:"${title}"+inauthor:${author}`;
+    const response = await fetch(
+      `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=20`
+    );
+    
+    if (!response.ok) {
+      throw new Error(`Google Books API error: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (!data.items || data.items.length === 0) {
+      return new Response(JSON.stringify({ editions: [] }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    const editions = data.items
+      .map((item: any) => {
+        const volumeInfo = item.volumeInfo;
+        const isbn = volumeInfo.industryIdentifiers?.find(
+          (id: any) => id.type === 'ISBN_13' || id.type === 'ISBN_10'
+        )?.identifier;
+        
+        const covers: any = {};
+        if (volumeInfo.imageLinks) {
+          Object.keys(volumeInfo.imageLinks).forEach(size => {
+            covers[size] = volumeInfo.imageLinks[size];
+          });
+        }
+        
+        return {
+          id: item.id,
+          isbn: isbn || item.id,
+          title: volumeInfo.title || 'Unknown Title',
+          authors: volumeInfo.authors || ['Unknown Author'],
+          publisher: volumeInfo.publisher,
+          publishedDate: volumeInfo.publishedDate,
+          covers,
+          pageCount: volumeInfo.pageCount,
+          description: volumeInfo.description,
+          averageRating: volumeInfo.averageRating,
+          ratingsCount: volumeInfo.ratingsCount
+        };
+      })
+      .filter((edition: any) => {
+        // Only include editions that have at least one valid cover image
+        return edition.covers && Object.keys(edition.covers).length > 0;
+      });
+    
+    return new Response(JSON.stringify({ editions }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+    
+  } catch (error) {
+    console.error('Error fetching book editions:', error);
+    return new Response(JSON.stringify({ error: 'Failed to fetch book editions' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+}
+
 export async function emailOverdueUser(bookId: number, userId: string, env: Env, corsHeaders: Record<string, string>) {
   try {
     // Check if user is admin - only admins can send overdue emails
