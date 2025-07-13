@@ -135,7 +135,7 @@ export async function getLocationAdminCapabilities(request: Request, userId: str
 // Grant admin capability
 export async function grantAdminCapability(request: Request, userId: string, env: Env, corsHeaders: any) {
   try {
-    const { locationId, targetUserId, capability } = await request.json();
+    const { locationId, targetUserId, capability } = await request.json() as { locationId: number; targetUserId: string; capability: string };
 
     if (!locationId || !targetUserId || !capability) {
       return new Response(JSON.stringify({ error: 'locationId, targetUserId, and capability required' }), {
@@ -209,7 +209,7 @@ export async function grantAdminCapability(request: Request, userId: string, env
 // Revoke admin capability
 export async function revokeAdminCapability(request: Request, userId: string, env: Env, corsHeaders: any) {
   try {
-    const { locationId, targetUserId, capability } = await request.json();
+    const { locationId, targetUserId, capability } = await request.json() as { locationId: number; targetUserId: string; capability: string };
 
     if (!locationId || !targetUserId || !capability) {
       return new Response(JSON.stringify({ error: 'locationId, targetUserId, and capability required' }), {
@@ -377,7 +377,7 @@ export async function getLocationUserPermissions(request: Request, userId: strin
 // Grant user permission
 export async function grantUserPermission(request: Request, userId: string, env: Env, corsHeaders: any) {
   try {
-    const { locationId, targetUserId, permission } = await request.json();
+    const { locationId, targetUserId, permission } = await request.json() as { locationId: number; targetUserId: string; permission: string };
 
     if (!locationId || !targetUserId || !permission) {
       return new Response(JSON.stringify({ error: 'locationId, targetUserId, and permission required' }), {
@@ -443,7 +443,7 @@ export async function grantUserPermission(request: Request, userId: string, env:
 // Revoke user permission
 export async function revokeUserPermission(request: Request, userId: string, env: Env, corsHeaders: any) {
   try {
-    const { locationId, targetUserId, permission } = await request.json();
+    const { locationId, targetUserId, permission } = await request.json() as { locationId: number; targetUserId: string; permission: string };
 
     if (!locationId || !targetUserId || !permission) {
       return new Response(JSON.stringify({ error: 'locationId, targetUserId, and permission required' }), {
