@@ -4,6 +4,11 @@ on:
   push:
     branches: [ main ]
   workflow_dispatch:
+    inputs:
+      migration_file:
+        description: 'Migration file to apply (e.g., 20250712_add_permission_tables.sql)'
+        required: false
+        type: string
 
 jobs:
   deploy-worker:
@@ -57,12 +62,3 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           command: d1 execute librarycard-db --file=migrations/${{ github.event.inputs.migration_file }} --env=production --remote
         if: github.event.inputs.migration_file != ''
-
-# Manual trigger with migration file input
-on:
-  workflow_dispatch:
-    inputs:
-      migration_file:
-        description: 'Migration file to apply (e.g., 20250712_add_permission_tables.sql)'
-        required: false
-        type: string
