@@ -63,12 +63,14 @@ export default function AdminAnalytics() {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [dataLoaded, setDataLoaded] = useState(false)
 
   useEffect(() => {
-    if (session?.user?.email) {
+    if (session?.user?.email && !dataLoaded) {
       loadAnalytics()
+      setDataLoaded(true)
     }
-  }, [session])
+  }, [session?.user?.email, dataLoaded])
 
   const loadAnalytics = async () => {
     if (!session?.user?.email) return
@@ -96,6 +98,11 @@ export default function AdminAnalytics() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleRefresh = () => {
+    setDataLoaded(false)
+    loadAnalytics()
   }
 
   const formatDate = (dateString: string) => {

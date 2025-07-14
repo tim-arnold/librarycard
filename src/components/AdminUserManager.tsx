@@ -133,13 +133,15 @@ export default function AdminUserManager() {
   
   // Ref for scrolling to invitations section
   const invitationsSectionRef = useRef<HTMLDivElement>(null)
+  const [dataLoaded, setDataLoaded] = useState(false)
 
   useEffect(() => {
-    if (session?.user?.email) {
+    if (session?.user?.email && !dataLoaded) {
       loadUsers()
       loadCurrentUserRole()
+      setDataLoaded(true)
     }
-  }, [session])
+  }, [session?.user?.email, dataLoaded])
 
   const loadCurrentUserRole = async () => {
     try {
