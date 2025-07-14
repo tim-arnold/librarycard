@@ -28,6 +28,7 @@ import {
   GridView,
   ViewList,
   FormatListBulleted,
+  Refresh,
 } from '@mui/icons-material'
 import type { EnhancedBook, CuratedGenre } from '@/lib/types'
 import { getBooks, updateBook, deleteBook as deleteBookAPI } from '@/lib/api'
@@ -446,15 +447,42 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
   const [genreUpdateSuccessful, setGenreUpdateSuccessful] = useState(false)
   const [userPermissions, setUserPermissions] = useState<string[]>([])
   const [permissionsChecked, setPermissionsChecked] = useState(false)
+  const [dataLoaded, setDataLoaded] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   useEffect(() => {
-    if (session?.user) {
+    if (session?.user && !dataLoaded) {
       loadUserData()
+      setDataLoaded(true)
     } else if (session === null) {
       // Session loading is complete but user is not logged in
       setIsLoading(false)
+      setDataLoaded(false)
     }
-  }, [session])
+  }, [session, dataLoaded])
+
+  const handleManualRefresh = async () => {
+    if (isRefreshing) return // Prevent multiple simultaneous refreshes
+    
+    setIsRefreshing(true)
+    try {
+      await loadUserData()
+      await alert({
+        title: 'Library Refreshed',
+        message: 'Your library has been refreshed with the latest data.',
+        variant: 'success'
+      })
+    } catch (error) {
+      console.error('Error refreshing library:', error)
+      await alert({
+        title: 'Refresh Failed',
+        message: 'Failed to refresh library. Please try again.',
+        variant: 'error'
+      })
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
 
   // Initialize filters from URL on mount
   useEffect(() => {
@@ -1830,10 +1858,20 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
   return (
     <Container maxWidth="xl" sx={{ py: 2 }}>
       <Paper sx={{ p: 3 }}>
-        <Box sx={{ mb: 3 }}>
+        <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="h4" component="h2">
             {getLibraryTitle()}
           </Typography>
+          <Button
+            variant="outlined"
+            startIcon={isRefreshing ? <CircularProgress size={20} /> : <Refresh />}
+            onClick={handleManualRefresh}
+            disabled={isRefreshing}
+            size="small"
+            sx={{ minWidth: 110 }}
+          >
+            {isRefreshing ? 'Refreshing...' : 'Refresh'}
+          </Button>
         </Box>
 
 
