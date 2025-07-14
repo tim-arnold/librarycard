@@ -22,10 +22,11 @@ import {
   LibraryBooks,
   AccountCircle,
   ExitToApp,
-  DarkMode,
-  LightMode,
   Help,
   Dashboard,
+  LocationOn,
+  History,
+  Settings,
 } from '@mui/icons-material'
 import Footer from '@/components/Footer'
 import HelpModal from '@/components/HelpModal'
@@ -164,6 +165,21 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
     handleMenuClose()
   }
 
+  const handleLocationsClick = () => {
+    router.push('/locations')
+    handleMenuClose()
+  }
+
+  const handleCheckoutHistoryClick = () => {
+    router.push('/checkout-history')
+    handleMenuClose()
+  }
+
+  const handleSettingsClick = () => {
+    router.push('/settings')
+    handleMenuClose()
+  }
+
   const handleHelpClick = () => {
     setHelpModalOpen(true)
     handleMenuClose()
@@ -184,16 +200,6 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
           <Typography variant="body2" sx={{ mr: 2 }}>
             Hello, {userFirstName || session?.user?.name?.split(' ')[0] || 'User'}!
           </Typography>
-          
-          <IconButton
-            color="inherit"
-            onClick={toggleTheme}
-            size="small"
-            sx={{ mr: 1 }}
-            title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-          >
-            {isDarkMode ? <LightMode /> : <DarkMode />}
-          </IconButton>
           
           <IconButton
             color="inherit"
@@ -219,6 +225,18 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
             <MenuItem onClick={handleProfileClick}>
               <AccountCircle sx={{ mr: 1 }} />
               Profile
+            </MenuItem>
+            <MenuItem onClick={handleLocationsClick}>
+              <LocationOn sx={{ mr: 1 }} />
+              Locations
+            </MenuItem>
+            <MenuItem onClick={handleCheckoutHistoryClick}>
+              <History sx={{ mr: 1 }} />
+              Checkout History
+            </MenuItem>
+            <MenuItem onClick={handleSettingsClick}>
+              <Settings sx={{ mr: 1 }} />
+              Settings
             </MenuItem>
             <MenuItem onClick={handleHelpClick}>
               <Help sx={{ mr: 1 }} />
