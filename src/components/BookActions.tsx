@@ -84,31 +84,32 @@ export default function BookActions({
           </Button>
         )}
         
-        {/* Show checkout/checkin buttons for users without delete permission */}
+        {/* Show checkout/checkin buttons for all users */}
+        {!isCheckedOut ? (
+          <Button
+            size="small"
+            variant="contained"
+            color="primary"
+            onClick={() => onCheckout(book.id, book.title)}
+            sx={{ minWidth: 'auto', p: 0.5 }}
+          >
+            <CheckCircle fontSize="small" />
+          </Button>
+        ) : canReturn ? (
+          <Button
+            size="small"
+            variant="contained"
+            color="secondary"
+            onClick={() => onCheckin(book.id, book.title)}
+            sx={{ minWidth: 'auto', p: 0.5 }}
+          >
+            <Undo fontSize="small" />
+          </Button>
+        ) : null}
+        
+        {/* Show removal request buttons for users without delete permission */}
         {!canDelete && (
           <>
-            {!isCheckedOut ? (
-              <Button
-                size="small"
-                variant="contained"
-                color="primary"
-                onClick={() => onCheckout(book.id, book.title)}
-                sx={{ minWidth: 'auto', p: 0.5 }}
-              >
-                <CheckCircle fontSize="small" />
-              </Button>
-            ) : canReturn ? (
-              <Button
-                size="small"
-                variant="contained"
-                color="secondary"
-                onClick={() => onCheckin(book.id, book.title)}
-                sx={{ minWidth: 'auto', p: 0.5 }}
-              >
-                <Undo fontSize="small" />
-              </Button>
-            ) : null}
-            
             {!hasPendingRemovalRequest ? (
               <Button
                 size="small"
@@ -139,32 +140,30 @@ export default function BookActions({
   if (viewMode === 'compact') {
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-        {/* Show checkout/checkin buttons for users without delete permission */}
-        {!canDelete && (
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            {!isCheckedOut ? (
-              <Button
-                size="small"
-                variant="contained"
-                color="primary"
-                startIcon={<CheckCircle />}
-                onClick={() => onCheckout(book.id, book.title)}
-              >
-                Check Out
-              </Button>
-            ) : canReturn ? (
-              <Button
-                size="small"
-                variant="contained"
-                color="secondary"
-                startIcon={<Undo />}
-                onClick={() => onCheckin(book.id, book.title)}
-              >
-                Return
-              </Button>
-            ) : null}
-          </Box>
-        )}
+        {/* Show checkout/checkin buttons for all users */}
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          {!isCheckedOut ? (
+            <Button
+              size="small"
+              variant="contained"
+              color="primary"
+              startIcon={<CheckCircle />}
+              onClick={() => onCheckout(book.id, book.title)}
+            >
+              Check Out
+            </Button>
+          ) : canReturn ? (
+            <Button
+              size="small"
+              variant="contained"
+              color="secondary"
+              startIcon={<Undo />}
+              onClick={() => onCheckin(book.id, book.title)}
+            >
+              Return
+            </Button>
+          ) : null}
+        </Box>
         
         <Box sx={{ display: 'flex', gap: 1 }}>
           {/* Always show available action buttons */}
@@ -248,32 +247,28 @@ export default function BookActions({
           </Button>
         )}
         
-        {/* Show checkout/checkin buttons for users without delete permission */}
-        {!canDelete && (
-          <>
-            {!isCheckedOut ? (
-              <Button
-                size="small"
-                variant="contained"
-                color="primary"
-                startIcon={<CheckCircle />}
-                onClick={() => onCheckout(book.id, book.title)}
-              >
-                Check Out
-              </Button>
-            ) : canReturn ? (
-              <Button
-                size="small"
-                variant="contained"
-                color="secondary"
-                startIcon={<Undo />}
-                onClick={() => onCheckin(book.id, book.title)}
-              >
-                Return
-              </Button>
-            ) : null}
-          </>
-        )}
+        {/* Show checkout/checkin buttons for all users */}
+        {!isCheckedOut ? (
+          <Button
+            size="small"
+            variant="contained"
+            color="primary"
+            startIcon={<CheckCircle />}
+            onClick={() => onCheckout(book.id, book.title)}
+          >
+            Check Out
+          </Button>
+        ) : canReturn ? (
+          <Button
+            size="small"
+            variant="contained"
+            color="secondary"
+            startIcon={<Undo />}
+            onClick={() => onCheckin(book.id, book.title)}
+          >
+            Return
+          </Button>
+        ) : null}
       </Box>
 
       {/* Show request removal buttons for users without delete permission */}

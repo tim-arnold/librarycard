@@ -33,6 +33,7 @@ interface BookListProps {
   onSeriesClick: (seriesName: string) => void
   onRateBook?: (book: EnhancedBook) => void
   onGenreEdit?: (book: EnhancedBook) => void
+  onCoverEdit?: (book: EnhancedBook) => void
 }
 
 export default function BookList({
@@ -53,6 +54,7 @@ export default function BookList({
   onSeriesClick,
   onRateBook,
   onGenreEdit,
+  onCoverEdit,
 }: BookListProps) {
   return (
     <List sx={{ width: '100%' }}>
@@ -98,8 +100,10 @@ export default function BookList({
                   objectFit: 'cover',
                   borderRadius: 1,
                   boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                  flexShrink: 0
+                  flexShrink: 0,
+                  cursor: onCoverEdit && userPermissions.includes('can_add_books') ? 'pointer' : 'default'
                 }}
+                onClick={() => onCoverEdit && userPermissions.includes('can_add_books') && onCoverEdit(book)}
               />
             ) : (
               <Box sx={{ 
@@ -112,8 +116,11 @@ export default function BookList({
                 alignItems: 'center',
                 justifyContent: 'center',
                 flexShrink: 0,
-                fontSize: '1.5rem'
-              }}>
+                fontSize: '1.5rem',
+                cursor: onCoverEdit && userPermissions.includes('can_add_books') ? 'pointer' : 'default'
+              }}
+              onClick={() => onCoverEdit && userPermissions.includes('can_add_books') && onCoverEdit(book)}
+              >
                 📖
               </Box>
             )}

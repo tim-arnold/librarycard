@@ -210,6 +210,7 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
   
   // Common state
   const [selectedBook, setSelectedBook] = useState<EnhancedBook | null>(null)
+  const [selectedCoverData, setSelectedCoverData] = useState<any>(null)
   const [showMoreDetailsModal, setShowMoreDetailsModal] = useState(false)
   const [locations, setLocations] = useState<Location[]>([])
   const [allShelves, setAllShelves] = useState<Shelf[]>([])
@@ -442,6 +443,16 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
   }
 
   // Common functions
+  const handleCoverChange = (coverUrl: string, coverData: any) => {
+    if (selectedBook) {
+      setSelectedBook({
+        ...selectedBook,
+        thumbnail: coverUrl
+      })
+      setSelectedCoverData(coverData)
+    }
+  }
+
   const saveBook = async () => {
     if (!selectedBook || !selectedShelfId) return
     if (!canAddBooks) {
@@ -452,7 +463,15 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
     const bookToSave = {
       ...selectedBook,
       shelf_id: selectedShelfId,
-      tags: customTags.split(',').map(tag => tag.trim()).filter(Boolean)
+      tags: customTags.split(',').map(tag => tag.trim()).filter(Boolean),
+      ...(selectedCoverData && {
+        alternative_covers: [selectedCoverData],
+        selected_cover_source: {
+          source: 'google_books',
+          google_id: selectedCoverData.id,
+          selection_reason: 'user_selected'
+        }
+      })
     }
 
     const success = await saveBookAPI(bookToSave)
@@ -468,9 +487,12 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
           if (savedBook) {
             // Assign each selected genre to the book
             for (const genre of selectedGenres) {
-              const response = await fetch(`/api/books/${savedBook.id}/genres`, {
+              const response = await fetch(`${API_BASE}/books/${savedBook.id}/genres`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${session?.user?.email}`
+                },
                 body: JSON.stringify({ genreId: genre.id, isAutoAssigned: false })
               })
               
@@ -770,16 +792,19 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
                 setPreserveSearchState(true)
                 setAutoSearchAfterAdd(false)
                 setCancelledBookKey(bookKey)
+                setSelectedCoverData(null)
               }}
               onMoreDetails={() => setShowMoreDetailsModal(true)}
               onAuthorClick={handleAuthorClick}
               onSeriesClick={handleSeriesClick}
               onGenreClick={handleGenreClick}
+              onCoverChange={handleCoverChange}
               isDuplicate={isSelectedBookDuplicate()}
               isLoading={isLoading}
               isSaveDisabled={!selectedShelfId}
               saveButtonText={allShelves.length === 1 ? 'Add to Library' : 'Save to Library'}
               showActionButtons={false}
+              canSelectCover={canAddBooks}
             />
             
             {/* Genre Selector */}

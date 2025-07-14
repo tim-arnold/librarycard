@@ -9,7 +9,7 @@ import {
   Chip,
   Button,
 } from '@mui/material'
-import { Info, Star, Edit } from '@mui/icons-material'
+import { Info, Star, Edit, Image } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
 import { isAdmin } from '@/lib/permissions'
 import { getDisplayGenres } from '@/lib/genreUtils'
@@ -33,6 +33,7 @@ interface BookGridProps {
   onSeriesClick: (seriesName: string) => void
   onRateBook?: (book: EnhancedBook) => void
   onGenreEdit?: (book: EnhancedBook) => void
+  onCoverEdit?: (book: EnhancedBook) => void
 }
 
 export default function BookGrid({
@@ -52,6 +53,7 @@ export default function BookGrid({
   onSeriesClick,
   onRateBook,
   onGenreEdit,
+  onCoverEdit,
 }: BookGridProps) {
   return (
     <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 2 }}>
@@ -59,34 +61,61 @@ export default function BookGrid({
         <Card key={book.id} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           <CardContent sx={{ flex: 1 }}>
             <Box sx={{ display: 'flex', gap: 2 }}>
-              {book.thumbnail ? (
-                <Box
-                  component="img"
-                  src={book.thumbnail}
-                  alt={book.title}
-                  sx={{ 
+              <Box sx={{ position: 'relative' }}>
+                {book.thumbnail ? (
+                  <Box
+                    component="img"
+                    src={book.thumbnail}
+                    alt={book.title}
+                    sx={{ 
+                      width: 80, 
+                      height: 120, 
+                      objectFit: 'cover', 
+                      flexShrink: 0,
+                      borderRadius: 1,
+                      cursor: onCoverEdit && userPermissions.includes('can_add_books') ? 'pointer' : 'default'
+                    }}
+                    onClick={() => onCoverEdit && userPermissions.includes('can_add_books') && onCoverEdit(book)}
+                  />
+                ) : (
+                  <Box sx={{ 
                     width: 80, 
                     height: 120, 
-                    objectFit: 'cover', 
+                    borderRadius: 1, 
+                    bgcolor: 'grey.300',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                     flexShrink: 0,
-                    borderRadius: 1
+                    fontSize: '2rem',
+                    cursor: onCoverEdit && userPermissions.includes('can_add_books') ? 'pointer' : 'default'
                   }}
-                />
-              ) : (
-                <Box sx={{ 
-                  width: 80, 
-                  height: 120, 
-                  borderRadius: 1, 
-                  bgcolor: 'grey.300',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  fontSize: '2rem'
-                }}>
-                  📖
-                </Box>
-              )}
+                  onClick={() => onCoverEdit && userPermissions.includes('can_add_books') && onCoverEdit(book)}
+                  >
+                    📖
+                  </Box>
+                )}
+                {onCoverEdit && userPermissions.includes('can_add_books') && (
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      top: 2,
+                      right: 2,
+                      bgcolor: 'primary.main',
+                      borderRadius: '50%',
+                      width: 20,
+                      height: 20,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      opacity: 0.8,
+                      '&:hover': { opacity: 1 }
+                    }}
+                  >
+                    <Image sx={{ color: 'white', fontSize: 12 }} />
+                  </Box>
+                )}
+              </Box>
               <Box sx={{ flex: 1 }}>
                 <Typography variant="h6" gutterBottom>
                   {book.title}
