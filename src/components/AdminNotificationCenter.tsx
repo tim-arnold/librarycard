@@ -39,12 +39,14 @@ export default function AdminNotificationCenter() {
     monthlyReminders: 0,
     pendingInvitations: 0
   })
+  const [dataLoaded, setDataLoaded] = useState(false)
 
   useEffect(() => {
-    if (session?.user?.email) {
+    if (session?.user?.email && !dataLoaded) {
       loadNotificationCounts()
+      setDataLoaded(true)
     }
-  }, [session])
+  }, [session?.user?.email, dataLoaded])
 
   const loadNotificationCounts = async () => {
     if (!session?.user?.email) return

@@ -46,12 +46,14 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [activeTab, setActiveTab] = useState(0)
+  const [dataLoaded, setDataLoaded] = useState(false)
 
   useEffect(() => {
-    if (session?.user?.email) {
+    if (session?.user?.email && !dataLoaded) {
       loadOverview()
+      setDataLoaded(true)
     }
-  }, [session])
+  }, [session?.user?.email, dataLoaded])
 
   const loadOverview = async () => {
     if (!session?.user?.email) return
@@ -81,6 +83,11 @@ export default function AdminDashboard() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleRefresh = () => {
+    setDataLoaded(false)
+    loadOverview()
   }
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {

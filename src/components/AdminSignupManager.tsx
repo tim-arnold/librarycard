@@ -61,12 +61,14 @@ export default function AdminSignupManager() {
   const [reviewRequest, setReviewRequest] = useState<SignupRequest | null>(null)
   const [reviewAction, setReviewAction] = useState<'approve' | 'deny' | null>(null)
   const [reviewComment, setReviewComment] = useState('')
+  const [dataLoaded, setDataLoaded] = useState(false)
 
   useEffect(() => {
-    if (session?.user?.email) {
+    if (session?.user?.email && !dataLoaded) {
       loadRequests()
+      setDataLoaded(true)
     }
-  }, [session])
+  }, [session?.user?.email, dataLoaded])
 
   const loadRequests = async () => {
     if (!session?.user?.email) return
