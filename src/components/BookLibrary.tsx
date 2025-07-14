@@ -40,6 +40,7 @@ import BookList from './BookList'
 import RemovalReasonModal from './RemovalReasonModal'
 import RatingModal from './RatingModal'
 import GenreEditModal from './GenreEditModal'
+import CoverSelectionModal from './CoverSelectionModal'
 import { useModal } from '@/hooks/useModal'
 // import { CURATED_GENRES } from '@/lib/genreClassifier' // TODO: Remove after genre API integration
 import { getStorageItem, setStorageItem } from '@/lib/storage'
@@ -439,6 +440,8 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
   const [showRatingModal, setShowRatingModal] = useState(false)
   const [selectedBookForRating, setSelectedBookForRating] = useState<EnhancedBook | null>(null)
   const [showGenreEditModal, setShowGenreEditModal] = useState(false)
+  const [showCoverEditModal, setShowCoverEditModal] = useState(false)
+  const [selectedBookForCoverEdit, setSelectedBookForCoverEdit] = useState<EnhancedBook | null>(null)
   const [selectedBookForGenreEdit, setSelectedBookForGenreEdit] = useState<EnhancedBook | null>(null)
   const [genreUpdateSuccessful, setGenreUpdateSuccessful] = useState(false)
   const [userPermissions, setUserPermissions] = useState<string[]>([])
@@ -1592,6 +1595,76 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
     }
   }
 
+  const handleCoverEdit = (book: EnhancedBook) => {
+    // Check if user has permission to add books (which includes cover editing)
+    if (!userPermissions.includes('can_add_books')) {
+      alert({
+        title: 'Permission Required',
+        message: 'You do not have permission to edit book covers. Please contact your location administrator.',
+        variant: 'warning'
+      })
+      return
+    }
+
+    setSelectedBookForCoverEdit(book)
+    setShowCoverEditModal(true)
+  }
+
+  const handleCoverEditModalClose = () => {
+    setShowCoverEditModal(false)
+    setSelectedBookForCoverEdit(null)
+  }
+
+  const handleCoverSelect = async (coverOption: any) => {
+    if (!selectedBookForCoverEdit) return
+
+    try {
+      const coverUrl = coverOption.covers.medium || coverOption.covers.small || coverOption.covers.thumbnail
+      
+      const success = await updateBook(selectedBookForCoverEdit.id, {
+        thumbnail: coverUrl,
+        alternative_covers: [coverOption],
+        selected_cover_source: {
+          source: 'google_books',
+          google_id: coverOption.id,
+          selection_reason: 'user_selected'
+        }
+      })
+
+      if (success) {
+        // Update the book in local state
+        setBooks(prevBooks => 
+          prevBooks.map(book => 
+            book.id === selectedBookForCoverEdit.id 
+              ? { ...book, thumbnail: coverUrl }
+              : book
+          )
+        )
+        
+        alert({
+          title: 'Cover Updated',
+          message: 'Book cover has been updated successfully.',
+          variant: 'success'
+        })
+        
+        handleCoverEditModalClose()
+      } else {
+        alert({
+          title: 'Update Failed',
+          message: 'Failed to update book cover. Please try again.',
+          variant: 'error'
+        })
+      }
+    } catch (error) {
+      console.error('Error updating book cover:', error)
+      alert({
+        title: 'Update Failed',
+        message: 'Failed to update book cover. Please try again.',
+        variant: 'error'
+      })
+    }
+  }
+
   const handleGenreUpdate = async (bookId: string, genres: CuratedGenre[]) => {
     // Double-check permissions before making the API call
     if (!userPermissions.includes('can_edit_genres')) {
@@ -2137,6 +2210,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
                       onSeriesClick={handleSeriesClick}
                       onRateBook={handleRateBook}
                       onGenreEdit={userPermissions.includes('can_edit_genres') ? handleGenreEdit : undefined}
+                      onCoverEdit={userPermissions.includes('can_add_books') ? handleCoverEdit : undefined}
                     />
                   </div>
                 ))}
@@ -2161,6 +2235,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
                 onSeriesClick={handleSeriesClick}
                 onRateBook={handleRateBook}
                 onGenreEdit={userPermissions.includes('can_edit_genres') ? handleGenreEdit : undefined}
+                onCoverEdit={userPermissions.includes('can_add_books') ? handleCoverEdit : undefined}
               />
             )
           ) : (
@@ -2211,6 +2286,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
                       onSeriesClick={handleSeriesClick}
                       onRateBook={handleRateBook}
                       onGenreEdit={userPermissions.includes('can_edit_genres') ? handleGenreEdit : undefined}
+                      onCoverEdit={userPermissions.includes('can_add_books') ? handleCoverEdit : undefined}
                     />
                   </div>
                 ))}
@@ -2234,6 +2310,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
                 onSeriesClick={handleSeriesClick}
                 onRateBook={handleRateBook}
                 onGenreEdit={userPermissions.includes('can_edit_genres') ? handleGenreEdit : undefined}
+                onCoverEdit={userPermissions.includes('can_add_books') ? handleCoverEdit : undefined}
               />
             )
           )}
@@ -2407,6 +2484,18 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
           isOpen={showGenreEditModal}
           onClose={handleGenreEditModalClose}
           onGenreUpdate={handleGenreUpdate}
+        />
+      )}
+
+      {/* Cover Edit Modal */}
+      {showCoverEditModal && selectedBookForCoverEdit && (
+        <CoverSelectionModal
+          title={selectedBookForCoverEdit.title}
+          author={selectedBookForCoverEdit.authors.join(', ')}
+          currentCover={selectedBookForCoverEdit.thumbnail}
+          onCoverSelect={handleCoverSelect}
+          onClose={handleCoverEditModalClose}
+          open={showCoverEditModal}
         />
       )}
       </Paper>
