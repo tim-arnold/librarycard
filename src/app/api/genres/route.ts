@@ -5,10 +5,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { API_BASE_URL } from '@/lib/apiConfig'
 
-const API_BASE = API_BASE_URL
-
 export async function GET(request: NextRequest) {
   try {
+    const API_BASE = API_BASE_URL()
     console.log('Fetching genres from:', `${API_BASE}/genres`)
     const response = await fetch(`${API_BASE}/genres`, {
       method: 'GET',

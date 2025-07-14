@@ -5,10 +5,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { API_BASE_URL } from '@/lib/apiConfig'
 
-const API_BASE = API_BASE_URL
-
 export async function POST(request: NextRequest) {
   try {
+    const API_BASE = API_BASE_URL()
     const session = await getServerSession()
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
