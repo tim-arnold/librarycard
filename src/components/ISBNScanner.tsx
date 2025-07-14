@@ -120,12 +120,14 @@ export default function ISBNScanner({
       
     } catch (error: unknown) {
       let message = 'Unknown camera error. Please try again.'
-      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-        message = 'Camera permission denied. Please allow camera access in your browser settings and try again.'
-      } else if (error.name === 'NotFoundError') {
-        message = 'No camera found on this device. Please use manual ISBN entry.'
-      } else if (error.message) {
-        message = `Camera error: ${error.message}. Please allow camera access and try again.`
+      if (error && typeof error === 'object' && 'name' in error) {
+        if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+          message = 'Camera permission denied. Please allow camera access in your browser settings and try again.'
+        } else if (error.name === 'NotFoundError') {
+          message = 'No camera found on this device. Please use manual ISBN entry.'
+        } else if ('message' in error && typeof error.message === 'string') {
+          message = `Camera error: ${error.message}. Please allow camera access and try again.`
+        }
       }
       
       onError('Camera Error', message, 'error')
@@ -187,7 +189,7 @@ export default function ISBNScanner({
       
     } catch (_error) {
       setIsScannerLoading(false)
-      throw error
+      throw _error
     }
   }
 
