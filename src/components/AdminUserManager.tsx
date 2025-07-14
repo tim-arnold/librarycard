@@ -327,7 +327,7 @@ export default function AdminUserManager() {
             : 'This will remove their administrative privileges.'
         }`,
         confirmText: `Change to ${newRole}`,
-        variant: newRole === 'admin' ? 'warning' : 'primary'
+        variant: newRole === 'admin' ? 'warning' : 'info'
       },
       async () => {
         const response = await fetch(`${API_BASE}/api/admin/users/${userId}/role`, {
@@ -441,7 +441,7 @@ export default function AdminUserManager() {
         title: 'Delete User Account',
         message: `Are you sure you want to permanently delete ${userName} (${user.email})?\n\nThis will:\n• Delete the user account\n• Preserve all books they added (but remove author reference)\n• Remove them from all locations\n\nThis action cannot be undone!`,
         confirmText: 'Delete User',
-        variant: 'danger'
+        variant: 'error'
       },
       async () => {
         // The actual deletion logic moved to here
@@ -560,7 +560,7 @@ export default function AdminUserManager() {
         title: 'Transfer Ownership & Delete User',
         message: `This will:\n\n• Transfer ownership of ${ownedLocations.length} location(s) to selected admins\n• Preserve all books and shelves\n• Delete the user "${userToDelete}"\n\nBooks added by this user will remain but no longer show the original author. This action cannot be undone!`,
         confirmText: 'Transfer & Delete User',
-        variant: 'danger'
+        variant: 'error'
       },
       async () => {
         const response = await fetch(`${API_BASE}/api/admin/cleanup-user`, {

@@ -229,7 +229,7 @@ export default function LocationManager() {
         title: 'Delete Location',
         message: `Are you sure you want to delete &quot;${locationName}&quot;? This will permanently delete all shelves and books in this location. This action cannot be undone.`,
         confirmText: 'Delete Location',
-        variant: 'danger'
+        variant: 'error'
       },
       async () => {
         if (!session?.user?.email) throw new Error('Not authenticated')
@@ -351,7 +351,7 @@ export default function LocationManager() {
         title: 'Delete Shelf',
         message: `Are you sure you want to delete "${shelfName}"? If this shelf contains books, you'll need to move them first or choose to delete them as well.`,
         confirmText: 'Delete Shelf',
-        variant: 'danger'
+        variant: 'error'
       },
       async () => {
         if (!selectedLocation || !session?.user?.email) throw new Error('Invalid state')

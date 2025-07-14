@@ -19,7 +19,7 @@ interface ConfirmationModalProps {
   message: string
   confirmText?: string
   cancelText?: string
-  variant?: 'danger' | 'warning' | 'primary'
+  variant?: 'error' | 'warning' | 'info' | 'success'
   loading?: boolean
 }
 
@@ -31,15 +31,17 @@ export default function ConfirmationModal({
   message,
   confirmText = 'Confirm',
   cancelText = 'Cancel',
-  variant = 'primary',
+  variant = 'info',
   loading = false
 }: ConfirmationModalProps) {
   const getButtonColor = () => {
     switch (variant) {
-      case 'danger':
+      case 'error':
         return 'error'
       case 'warning':
         return 'warning'
+      case 'success':
+        return 'success'
       default:
         return 'primary'
     }
