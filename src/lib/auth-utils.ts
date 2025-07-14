@@ -8,13 +8,13 @@ export interface AuthenticatedFetchOptions {
   additionalHeaders?: Record<string, string>
 }
 
-export interface AuthenticatedApiResult<T = any> {
+export interface AuthenticatedApiResult<T = unknown> {
   success: boolean
   data?: T
   error?: string
 }
 
-export async function authenticatedFetch<T = any>(
+export async function authenticatedFetch<T = unknown>(
   session: Session | null,
   endpoint: string,
   options: AuthenticatedFetchOptions = {}

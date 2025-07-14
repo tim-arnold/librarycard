@@ -1,7 +1,7 @@
 'use client'
 
 import { signIn, getSession } from 'next-auth/react'
-import { useEffect, useState, Suspense, useRef } from 'react'
+import { useEffect, useState, Suspense, useRef, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
   Container,
@@ -43,69 +43,7 @@ function SignInForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  useEffect(() => {
-    // Check if already signed in
-    getSession().then((session) => {
-      if (session) {
-        // If signed in and has invitation token, accept it
-        const invitationParam = searchParams.get('invitation')
-        if (invitationParam) {
-          handleInvitationAcceptance(invitationParam)
-        } else {
-          router.push('/')
-        }
-      }
-    })
-
-    // Check for invitation token in URL
-    const invitationParam = searchParams.get('invitation')
-    if (invitationParam) {
-      setInvitationToken(invitationParam)
-      fetchInvitationDetails(invitationParam)
-    }
-
-    // Check for verification success
-    if (searchParams.get('verified') === 'true') {
-      setMessage('Email verified successfully! You can now sign in.')
-    }
-
-    // Check for general message parameter (e.g., from password reset)
-    const messageParam = searchParams.get('message')
-    if (messageParam) {
-      setMessage(decodeURIComponent(messageParam))
-    }
-
-    // Check for verification errors
-    const errorParam = searchParams.get('error')
-    if (errorParam) {
-      setError(decodeURIComponent(errorParam))
-    }
-  }, [router, searchParams])
-
-
-  const fetchInvitationDetails = async (token: string) => {
-    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
-    
-    try {
-      const response = await fetch(`${API_BASE}/api/invitations/details?token=${token}`)
-      const data = await response.json()
-      
-      if (response.ok) {
-        setInvitationDetails(data)
-        setEmail(data.invited_email)
-        
-        // Show invitation message but keep all sign-in options available
-        setMessage(`You have been invited to join "${data.location_name}"! Sign in with Google or create an account to accept the invitation.`)
-      } else {
-        setError('Invalid or expired invitation link')
-      }
-    } catch (error) {
-      console.error('Failed to fetch invitation details:', error)
-      setError('Failed to load invitation details')
-    }
-  }
-
-  const handleInvitationAcceptance = async (token: string) => {
+  const handleInvitationAcceptance = useCallback(async (token: string) => {
     setError('')
     
     const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
@@ -146,7 +84,70 @@ function SignInForm() {
       console.error('Invitation acceptance error:', error)
       setError('Failed to accept invitation. Please try again.')
     }
+  }, [router])
+
+  useEffect(() => {
+    // Check if already signed in
+    getSession().then((session) => {
+      if (session) {
+        // If signed in and has invitation token, accept it
+        const invitationParam = searchParams.get('invitation')
+        if (invitationParam) {
+          handleInvitationAcceptance(invitationParam)
+        } else {
+          router.push('/')
+        }
+      }
+    })
+
+    // Check for invitation token in URL
+    const invitationParam = searchParams.get('invitation')
+    if (invitationParam) {
+      setInvitationToken(invitationParam)
+      fetchInvitationDetails(invitationParam)
+    }
+
+    // Check for verification success
+    if (searchParams.get('verified') === 'true') {
+      setMessage('Email verified successfully! You can now sign in.')
+    }
+
+    // Check for general message parameter (e.g., from password reset)
+    const messageParam = searchParams.get('message')
+    if (messageParam) {
+      setMessage(decodeURIComponent(messageParam))
+    }
+
+    // Check for verification errors
+    const errorParam = searchParams.get('error')
+    if (errorParam) {
+      setError(decodeURIComponent(errorParam))
+    }
+  }, [router, searchParams, handleInvitationAcceptance])
+
+
+  const fetchInvitationDetails = async (token: string) => {
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
+    
+    try {
+      const response = await fetch(`${API_BASE}/api/invitations/details?token=${token}`)
+      const data = await response.json()
+      
+      if (response.ok) {
+        setInvitationDetails(data)
+        setEmail(data.invited_email)
+        
+        // Show invitation message but keep all sign-in options available
+        setMessage(`You have been invited to join "${data.location_name}"! Sign in with Google or create an account to accept the invitation.`)
+      } else {
+        setError('Invalid or expired invitation link')
+      }
+    } catch (error) {
+      console.error('Failed to fetch invitation details:', error)
+      setError('Failed to load invitation details')
+    }
   }
+
 
   const handleGoogleSignIn = async () => {
     setLoading(true)

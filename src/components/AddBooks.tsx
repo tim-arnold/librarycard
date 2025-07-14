@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { useSession } from 'next-auth/react'
-import { useRouter, usePathname } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import {
   Container,
   Paper,
@@ -188,7 +188,6 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
   const { modalState, alert, closeModal } = useModal()
   const { state: selectionState, actions: selectionActions } = useBookSelection()
   const router = useRouter()
-  const pathname = usePathname()
   
   const [activeTab, setActiveTab] = useState<'scan' | 'search'>(() => {
     // If initialTab is provided (from URL), use that
@@ -210,7 +209,7 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
   
   // Common state
   const [selectedBook, setSelectedBook] = useState<EnhancedBook | null>(null)
-  const [selectedCoverData, setSelectedCoverData] = useState<any>(null)
+  const [selectedCoverData, setSelectedCoverData] = useState<{ source: string; url: string; width?: number; height?: number } | null>(null)
   const [showMoreDetailsModal, setShowMoreDetailsModal] = useState(false)
   const [locations, setLocations] = useState<Location[]>([])
   const [allShelves, setAllShelves] = useState<Shelf[]>([])

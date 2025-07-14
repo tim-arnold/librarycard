@@ -2,10 +2,10 @@
 // GET /api/genres - Get all active curated genres
 // This is a public endpoint used by all users for genre selection
 
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { API_BASE_URL } from '@/lib/apiConfig'
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const API_BASE = API_BASE_URL()
     console.log('Fetching genres from:', `${API_BASE}/genres`)
