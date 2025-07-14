@@ -60,7 +60,7 @@ export function useModal() {
           try {
             await asyncAction()
             resolve(true)
-          } catch (error) {
+          } catch (_error) {
             resolve(false)
           } finally {
             setModalState(prev => ({ ...prev, isOpen: false, loading: false }))
