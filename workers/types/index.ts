@@ -1,3 +1,6 @@
+// Cloudflare D1 Database type
+type D1Database = any;
+
 export interface Env {
   DB: D1Database;
   DATABASE: D1Database; // Alias for DB
@@ -70,6 +73,20 @@ export interface Book {
   enhanced_genres?: string | string[]; // Can be string or array
   series?: string;
   series_number?: string;
+  // Cover selection fields
+  alternative_covers?: string | any[]; // JSON string or array
+  selected_cover_source?: string | any; // JSON string or object
+  cover_selection_date?: string;
+  // Frontend camelCase aliases
+  publishedDate?: string;
+  extendedDescription?: string;
+  pageCount?: number;
+  averageRating?: number;
+  ratingsCount?: number;
+  publisherInfo?: string;
+  openLibraryKey?: string;
+  enhancedGenres?: string | string[];
+  seriesNumber?: string;
 }
 
 export interface LocationInvitation {
@@ -171,4 +188,31 @@ export interface SuggestGenreRequest {
 export interface ReviewGenreSuggestionRequest {
   status: 'approved' | 'rejected'
   reviewComment?: string
+}
+
+// Google Books API response types
+export interface GoogleBooksVolumeInfo {
+  title?: string;
+  authors?: string[];
+  publisher?: string;
+  publishedDate?: string;
+  industryIdentifiers?: Array<{
+    type: string;
+    identifier: string;
+  }>;
+  pageCount?: number;
+  description?: string;
+  imageLinks?: Record<string, string>;
+  averageRating?: number;
+  ratingsCount?: number;
+}
+
+export interface GoogleBooksItem {
+  id: string;
+  volumeInfo: GoogleBooksVolumeInfo;
+}
+
+export interface GoogleBooksResponse {
+  items?: GoogleBooksItem[];
+  totalItems?: number;
 }
