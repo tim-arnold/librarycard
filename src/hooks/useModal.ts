@@ -21,13 +21,13 @@ export function useModal() {
   const [modalState, setModalState] = useState<{
     type: 'confirm' | 'alert' | null
     isOpen: boolean
-    options: ConfirmOptions | AlertOptions
+    options: ConfirmOptions & AlertOptions
     onConfirm?: () => void
     loading?: boolean
   }>({
     type: null,
     isOpen: false,
-    options: {} as ConfirmOptions | AlertOptions,
+    options: {} as ConfirmOptions & AlertOptions,
     loading: false
   })
 

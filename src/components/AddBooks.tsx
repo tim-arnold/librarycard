@@ -340,8 +340,8 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
       // We'll use the first location they have access to
       const locationsResponse = await authenticatedFetch(session, '/api/locations')
       
-      if (locationsResponse.success && locationsResponse.data?.length > 0) {
-        const firstLocation = locationsResponse.data[0]
+      if (locationsResponse.success && Array.isArray(locationsResponse.data) && locationsResponse.data.length > 0) {
+        const firstLocation = locationsResponse.data[0] as { id: number; name: string }
         
         // Check if user has can_add_books permission for this location
         const permissionResult = await authenticatedFetch(
@@ -350,7 +350,8 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
         )
         
         if (permissionResult.success) {
-          setCanAddBooks(permissionResult.data?.hasPermission || false)
+          const permissionData = permissionResult.data as { hasPermission: boolean }
+          setCanAddBooks(permissionData?.hasPermission || false)
         } else {
           // If permission check fails, assume they can add books (default behavior)
           setCanAddBooks(true)
@@ -467,8 +468,9 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
         alternative_covers: [selectedCoverData],
         selected_cover_source: {
           source: 'google_books',
-          google_id: selectedCoverData.id,
-          selection_reason: 'user_selected'
+          url: selectedCoverData.url,
+          selectedAt: new Date().toISOString(),
+          selectedBy: session?.user?.email || 'unknown'
         }
       })
     }
