@@ -1,4 +1,4 @@
-import { Env, Book } from '../types';
+import { Env, Book, GoogleBooksResponse } from '../types';
 import { isUserAdmin, isUserSuperAdmin } from '../auth';
 import { hasUserPermission, getLocationIdFromShelfId, getLocationIdFromBookId } from '../permissions';
 
@@ -1079,7 +1079,7 @@ export async function getBookEditions(title: string, author: string, env: Env, c
       throw new Error(`Google Books API error: ${response.status}`);
     }
     
-    const data = await response.json();
+    const data = await response.json() as GoogleBooksResponse;
     
     if (!data.items || data.items.length === 0) {
       return new Response(JSON.stringify({ editions: [] }), {
