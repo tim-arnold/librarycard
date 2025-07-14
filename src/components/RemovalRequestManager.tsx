@@ -102,7 +102,7 @@ export default function RemovalRequestManager() {
         title,
         message,
         confirmText,
-        variant: 'danger'
+        variant: 'error'
       },
       async () => {
         const response = await fetch(`${API_BASE}/api/book-removal-requests/${requestId}/approve`, {
@@ -189,7 +189,7 @@ export default function RemovalRequestManager() {
         title: 'Email Current Book Holder',
         message: `Send an email notification to the person who currently has "${bookTitle}" checked out? They will receive a reminder that the book is overdue and should be returned.`,
         confirmText: 'Send Email',
-        variant: 'primary'
+        variant: 'info'
       },
       async () => {
         const response = await fetch(`${API_BASE}/api/books/${bookId}/email-overdue-user`, {

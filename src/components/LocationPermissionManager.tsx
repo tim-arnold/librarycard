@@ -39,6 +39,18 @@ import {
 } from '@mui/icons-material'
 import { authenticatedFetch } from '../lib/auth-utils'
 
+interface CanManagePermissionsResponse {
+  canManagePermissions: boolean
+}
+
+interface LocationUserPermissionsResponse {
+  permissions: LocationMember[]
+}
+
+interface LocationAdminCapabilitiesResponse {
+  capabilities: LocationAdmin[]
+}
+
 interface LocationMember {
   userId: string
   userName: string
@@ -103,7 +115,7 @@ export default function LocationPermissionManager({ locationId, locationName, us
   const checkPermissionAccess = async () => {
     try {
       setLoading(true)
-      const result = await authenticatedFetch(session, `/api/permissions/can-manage?location_id=${locationId}`)
+      const result = await authenticatedFetch<CanManagePermissionsResponse>(session, `/api/permissions/can-manage?location_id=${locationId}`)
       
       if (result.success) {
         const hasManagePermission = result.data?.canManagePermissions || false
@@ -134,7 +146,7 @@ export default function LocationPermissionManager({ locationId, locationName, us
       setError('')
 
       // Always load user permissions
-      const membersResult = await authenticatedFetch(session, `/api/admin/location-user-permissions?location_id=${locationId}`)
+      const membersResult = await authenticatedFetch<LocationUserPermissionsResponse>(session, `/api/admin/location-user-permissions?location_id=${locationId}`)
       
       if (!membersResult.success) {
         throw new Error(membersResult.error || 'Failed to load user permissions')
@@ -144,7 +156,7 @@ export default function LocationPermissionManager({ locationId, locationName, us
 
       // Only load admin capabilities for super admins
       if (isSuperAdmin) {
-        const adminsResult = await authenticatedFetch(session, `/api/admin/location-admin-capabilities?location_id=${locationId}`)
+        const adminsResult = await authenticatedFetch<LocationAdminCapabilitiesResponse>(session, `/api/admin/location-admin-capabilities?location_id=${locationId}`)
         
         if (adminsResult.success) {
           setAdmins(adminsResult.data?.capabilities || [])

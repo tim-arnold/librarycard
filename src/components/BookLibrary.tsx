@@ -1115,7 +1115,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
         title: 'Remove Book',
         message: `Are you sure you want to remove "${bookTitle}" from your library? This action cannot be undone.`,
         confirmText: 'Remove Book',
-        variant: 'danger'
+        variant: 'error'
       },
       async () => {
         const success = await deleteBookAPI(bookId)
@@ -1384,7 +1384,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
         title: 'Check Out Book',
         message: `Check out "${bookTitle}"? You'll be marked as the current reader.`,
         confirmText: 'Check Out',
-        variant: 'primary'
+        variant: 'info'
       },
       async () => {
         try {
@@ -1464,7 +1464,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
         title: 'Return Book',
         message,
         confirmText: 'Return Book',
-        variant: 'primary'
+        variant: 'info'
       },
       async () => {
         try {
@@ -1654,6 +1654,9 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
         alternative_covers: [coverOption],
         selected_cover_source: {
           source: 'google_books',
+          url: coverUrl,
+          selectedAt: new Date().toISOString(),
+          selectedBy: session?.user?.email || 'unknown',
           google_id: coverOption.id,
           selection_reason: 'user_selected'
         }
@@ -2170,7 +2173,6 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
                       onCancelRemovalRequest={cancelRemovalRequest}
                       onMoreDetailsClick={handleMoreDetailsClick}
                       onAuthorClick={handleAuthorClick}
-                      onSeriesClick={handleSeriesClick}
                       onRateBook={handleRateBook}
                       onGenreEdit={userPermissions.includes('can_edit_genres') ? handleGenreEdit : undefined}
                     />
@@ -2194,7 +2196,6 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
                 onCancelRemovalRequest={cancelRemovalRequest}
                 onMoreDetailsClick={handleMoreDetailsClick}
                 onAuthorClick={handleAuthorClick}
-                onSeriesClick={handleSeriesClick}
                 onRateBook={handleRateBook}
                 onGenreEdit={userPermissions.includes('can_edit_genres') ? handleGenreEdit : undefined}
               />

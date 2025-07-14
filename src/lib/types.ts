@@ -146,4 +146,6 @@ export interface CoverMetadata {
   url: string
   selectedAt: string
   selectedBy: string
+  google_id?: string
+  selection_reason?: string
 }

@@ -97,7 +97,7 @@ export default function LocationsPage() {
         title: 'Leave Location',
         message: `Are you sure you want to leave "${locationName}"? This will remove all your books from this location and cannot be undone.`,
         confirmText: 'Leave Location',
-        variant: 'danger'
+        variant: 'error'
       },
       async () => {
         const response = await fetch(`${API_BASE}/api/locations/${locationId}/leave`, {
