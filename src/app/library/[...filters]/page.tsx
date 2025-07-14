@@ -38,7 +38,7 @@ export default function FilteredLibraryPage() {
         
         if (response.ok) {
           const locations = await response.json()
-          const locationNamesList = locations.map((loc: any) => loc.name)
+          const locationNamesList = locations.map((loc: { name: string }) => loc.name)
           setLocationNames(locationNamesList)
           
           // Load all shelf names
@@ -52,7 +52,7 @@ export default function FilteredLibraryPage() {
             })
             if (shelvesResponse.ok) {
               const shelves = await shelvesResponse.json()
-              allShelfNames.push(...shelves.map((shelf: any) => shelf.name))
+              allShelfNames.push(...shelves.map((shelf: { name: string }) => shelf.name))
             }
           }
           setShelfNames(allShelfNames)

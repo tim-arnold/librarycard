@@ -12,7 +12,6 @@ import { Info, Star, Edit } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
 import BookActions from './BookActions'
 import StarRating from './StarRating'
-import { isAdmin } from '@/lib/permissions'
 import { getDisplayGenres } from '@/lib/genreUtils'
 
 interface BookTextProps {
@@ -30,7 +29,6 @@ interface BookTextProps {
   onCancelRemovalRequest: (bookId: string, bookTitle: string) => Promise<void>
   onMoreDetailsClick: (book: EnhancedBook) => void
   onAuthorClick: (authorName: string) => void
-  onSeriesClick: (seriesName: string) => void
   onRateBook?: (book: EnhancedBook) => void
   onGenreEdit?: (book: EnhancedBook) => void
 }
@@ -50,7 +48,6 @@ export default function BookText({
   onCancelRemovalRequest,
   onMoreDetailsClick,
   onAuthorClick,
-  onSeriesClick,
   onRateBook,
   onGenreEdit,
 }: BookTextProps) {

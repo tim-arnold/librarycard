@@ -11,7 +11,6 @@ import {
 } from '@mui/material'
 import { Info, Star, Edit, Image } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
-import { isAdmin } from '@/lib/permissions'
 import { getDisplayGenres } from '@/lib/genreUtils'
 import BookActions from './BookActions'
 import StarRating from './StarRating'

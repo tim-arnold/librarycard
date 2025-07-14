@@ -38,7 +38,7 @@ export async function fetchBookData(isbn: string): Promise<Book | null> {
           id: `${isbn}-${Date.now()}`,
           isbn,
           title: openLibraryData.title,
-          authors: openLibraryData.authors?.map((author: any) => author.name) || ['Unknown Author'],
+          authors: openLibraryData.authors?.map((author: { name: string }) => author.name) || ['Unknown Author'],
           description: openLibraryData.description?.value || openLibraryData.description,
           publishedDate: openLibraryData.publish_date,
           categories: openLibraryData.subjects?.slice(0, 3)
@@ -164,9 +164,9 @@ export async function fetchEnhancedBookData(isbn: string): Promise<EnhancedBook 
   }
 }
 
-export async function fetchEnhancedBookFromSearch(googleBookItem: any): Promise<EnhancedBook | null> {
+export async function fetchEnhancedBookFromSearch(googleBookItem: { id: string; volumeInfo: { title: string; authors?: string[]; description?: string; industryIdentifiers?: { type: string; identifier: string }[]; imageLinks?: { thumbnail?: string }; publishedDate?: string; categories?: string[]; publisher?: string; pageCount?: number; averageRating?: number; ratingsCount?: number } }): Promise<EnhancedBook | null> {
   const isbn = googleBookItem.volumeInfo.industryIdentifiers?.find(
-    (id: any) => id.type === 'ISBN_13' || id.type === 'ISBN_10'
+    (id: { type: string; identifier: string }) => id.type === 'ISBN_13' || id.type === 'ISBN_10'
   )?.identifier
 
   if (isbn) {

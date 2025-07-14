@@ -38,8 +38,8 @@ export interface EnhancedBook extends Book {
   googleRatingCount?: number           // Google Books rating count (for More Details)
   ratingUpdatedAt?: string        // Last rating update timestamp
   // Cover selection fields
-  alternative_covers?: any[]      // JSON array of cover options
-  selected_cover_source?: any     // JSON metadata about selected cover
+  alternative_covers?: CoverOption[]      // JSON array of cover options
+  selected_cover_source?: CoverMetadata     // JSON metadata about selected cover
 }
 
 // Rating-specific interfaces
@@ -131,4 +131,19 @@ export interface ReviewGenreSuggestionRequest {
 export interface GenreClassificationResult {
   suggestedGenres: CuratedGenre[]
   confidence: number
+}
+
+// Cover selection interfaces
+export interface CoverOption {
+  source: string
+  url: string
+  width?: number
+  height?: number
+}
+
+export interface CoverMetadata {
+  source: string
+  url: string
+  selectedAt: string
+  selectedBy: string
 }

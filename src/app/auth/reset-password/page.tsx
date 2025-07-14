@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, Suspense, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
   Container,
@@ -33,18 +33,7 @@ function ResetPasswordForm() {
 
   const token = searchParams.get('token')
 
-  useEffect(() => {
-    if (!token) {
-      setError('Invalid reset link. Please request a new password reset.')
-      setVerifying(false)
-      return
-    }
-
-    // Verify the token when the page loads
-    verifyToken()
-  }, [token])
-
-  const verifyToken = async () => {
+  const verifyToken = useCallback(async () => {
     try {
       const response = await fetch(`/api/auth/verify-reset-token?token=${token}`)
       const data = await response.json()
@@ -61,7 +50,19 @@ function ResetPasswordForm() {
     } finally {
       setVerifying(false)
     }
-  }
+  }, [token])
+
+  useEffect(() => {
+    if (!token) {
+      setError('Invalid reset link. Please request a new password reset.')
+      setVerifying(false)
+      return
+    }
+
+    // Verify the token when the page loads
+    verifyToken()
+  }, [token, verifyToken])
+
 
   const validatePassword = (password: string) => {
     const minLength = 8

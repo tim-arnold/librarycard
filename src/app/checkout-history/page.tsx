@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import {
@@ -9,7 +9,6 @@ import {
   Typography,
   Button,
   Box,
-  Alert,
   CircularProgress,
   Card,
   CardContent,
@@ -42,18 +41,7 @@ export default function CheckoutHistoryPage() {
   const [checkoutHistory, setCheckoutHistory] = useState<CheckoutHistoryItem[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin')
-      return
-    }
-
-    if (status === 'authenticated') {
-      fetchCheckoutHistory()
-    }
-  }, [status, router])
-
-  const fetchCheckoutHistory = async () => {
+  const fetchCheckoutHistory = useCallback(async () => {
     try {
       if (!session?.user?.email) return
       
@@ -72,7 +60,18 @@ export default function CheckoutHistoryPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [session])
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin')
+      return
+    }
+
+    if (status === 'authenticated') {
+      fetchCheckoutHistory()
+    }
+  }, [status, router, fetchCheckoutHistory])
 
   if (status === 'loading' || loading) {
     return (

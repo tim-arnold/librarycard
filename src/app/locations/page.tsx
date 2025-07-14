@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import {
@@ -46,19 +46,7 @@ export default function LocationsPage() {
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin')
-      return
-    }
-
-    if (status === 'authenticated') {
-      fetchProfile()
-      fetchLocations()
-    }
-  }, [status, router])
-
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     try {
       const response = await fetch('/api/profile')
       if (response.ok) {
@@ -68,9 +56,9 @@ export default function LocationsPage() {
     } catch (error) {
       console.error('Failed to load profile:', error)
     }
-  }
+  }, [])
 
-  const fetchLocations = async () => {
+  const fetchLocations = useCallback(async () => {
     try {
       if (!session?.user?.email) return
       
@@ -89,7 +77,19 @@ export default function LocationsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [session])
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin')
+      return
+    }
+
+    if (status === 'authenticated') {
+      fetchProfile()
+      fetchLocations()
+    }
+  }, [status, router, fetchProfile, fetchLocations])
 
   const leaveLocation = async (locationId: number, locationName: string) => {
     const confirmed = await confirmAsync(
