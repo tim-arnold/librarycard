@@ -210,7 +210,7 @@ export default function BookSearch({
           'Failed to search books. Please try again.'
         )
       }
-    } catch (error) {
+    } catch (_error) {
       onError(
         'Search Error',
         'Failed to search books. Please check your internet connection and try again.'

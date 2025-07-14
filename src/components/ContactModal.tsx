@@ -84,7 +84,7 @@ export default function ContactModal({ open, onClose }: ContactModalProps) {
         setSubmitStatus('error')
         setErrorMessage(errorData.error || 'Failed to send message')
       }
-    } catch (error) {
+    } catch (_error) {
       setSubmitStatus('error')
       setErrorMessage('Failed to send message. Please try again.')
     } finally {

@@ -446,7 +446,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
   const [selectedBookForGenreEdit, setSelectedBookForGenreEdit] = useState<EnhancedBook | null>(null)
   const [genreUpdateSuccessful, setGenreUpdateSuccessful] = useState(false)
   const [userPermissions, setUserPermissions] = useState<string[]>([])
-  const [permissionsChecked, setPermissionsChecked] = useState(false)
+  const [_permissionsChecked, setPermissionsChecked] = useState(false)
   const [dataLoaded, setDataLoaded] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
 

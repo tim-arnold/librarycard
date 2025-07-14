@@ -828,7 +828,7 @@ export default function AdminUserManager() {
           const errorData = await response.json()
           results.push({ email, success: false, error: errorData.error || 'Failed to send' })
         }
-      } catch (error) {
+      } catch (_error) {
         results.push({ email, success: false, error: 'Network error' })
       }
     }

@@ -41,7 +41,7 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
   const { data: session } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { isDarkMode, toggleTheme } = useTheme()
+  const { isDarkMode: _isDarkMode, toggleTheme: _toggleTheme } = useTheme()
   const [userRole, setUserRole] = useState<string | null>(null)
   const [userFirstName, setUserFirstName] = useState<string | null>(null)
   const [userLocation, setUserLocation] = useState<string | null>(null)

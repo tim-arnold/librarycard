@@ -41,7 +41,7 @@ export default function ISBNScanner({
     try {
       const reader = new BrowserMultiFormatReader()
       setCodeReader(reader)
-    } catch (error) {
+    } catch (_error) {
       onError(
         'Scanner Error',
         'Failed to initialize barcode scanner. Please refresh the page.',
@@ -118,7 +118,7 @@ export default function ISBNScanner({
       // Start ZXing scanner
       await startZXingScanner()
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       let message = 'Unknown camera error. Please try again.'
       if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
         message = 'Camera permission denied. Please allow camera access in your browser settings and try again.'
@@ -148,7 +148,7 @@ export default function ISBNScanner({
       stream.getTracks().forEach(track => {
         track.stop()
       })
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw error
     }
   }
@@ -185,7 +185,7 @@ export default function ISBNScanner({
       
       setIsScannerLoading(false)
       
-    } catch (error) {
+    } catch (_error) {
       setIsScannerLoading(false)
       throw error
     }

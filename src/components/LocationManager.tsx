@@ -111,7 +111,7 @@ export default function LocationManager() {
         const errorData = await response.json()
         setError(errorData.error || 'Failed to load locations')
       }
-    } catch (error) {
+    } catch (_error) {
       setError('Failed to load locations')
     } finally {
       setLoading(false)
@@ -135,7 +135,7 @@ export default function LocationManager() {
         const errorData = await response.json()
         setError(errorData.error || 'Failed to load shelves')
       }
-    } catch (error) {
+    } catch (_error) {
       setError('Failed to load shelves')
     }
   }
@@ -178,7 +178,7 @@ export default function LocationManager() {
         const errorData = await response.json()
         setError(errorData.error || 'Failed to create location')
       }
-    } catch (error) {
+    } catch (_error) {
       setError('Failed to create location')
     }
   }
@@ -218,7 +218,7 @@ export default function LocationManager() {
         const errorData = await response.json()
         setError(errorData.error || 'Failed to update location')
       }
-    } catch (error) {
+    } catch (_error) {
       setError('Failed to update location')
     }
   }
@@ -305,7 +305,7 @@ export default function LocationManager() {
         const errorData = await response.json()
         setError(errorData.error || 'Failed to create shelf')
       }
-    } catch (error) {
+    } catch (_error) {
       setError('Failed to create shelf')
     }
   }
@@ -340,7 +340,7 @@ export default function LocationManager() {
         const errorData = await response.json()
         setError(errorData.error || 'Failed to update shelf')
       }
-    } catch (error) {
+    } catch (_error) {
       setError('Failed to update shelf')
     }
   }

@@ -507,7 +507,7 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
         }
       }
       
-      const bookTitle = selectedBook.title
+      const _bookTitle = selectedBook.title
       setSelectedBook(null)
       setSelectedGenres([])
       setCustomTags('')
@@ -598,7 +598,7 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
         setAutoSearchAfterAdd(true)
       }
 
-    } catch (error) {
+    } catch (_error) {
       setIsLoading(false)
       await alert({
         title: 'Bulk Save Failed',
