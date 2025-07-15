@@ -1,18 +1,19 @@
 import { Env } from '../types';
 import { isUserAdmin, isUserSuperAdmin } from '../auth';
+import { getCachedIsUserAdmin, getCachedIsUserSuperAdmin, getCachedUserPermissions } from '../auth/cached';
 
 // Extended admin functions extracted from main worker
 
 export async function getAdminAnalytics(userId: string, env: Env, corsHeaders: Record<string, string>) {
-  // Check if user is at least admin
-  if (!(await isUserAdmin(userId, env))) {
+  // Check if user is at least admin (with caching)
+  if (!(await getCachedIsUserAdmin(userId, env))) {
     return new Response(JSON.stringify({ error: 'Admin privileges required' }), {
       status: 403,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
-  const isSuperAdmin = await isUserSuperAdmin(userId, env);
+  const isSuperAdmin = await getCachedIsUserSuperAdmin(userId, env);
 
   try {
     let totalBooks, totalUsers, totalLocations, pendingRequests;
@@ -262,14 +263,14 @@ export async function getAdminAnalytics(userId: string, env: Env, corsHeaders: R
 
 export async function getAdminUsers(userId: string, env: Env, corsHeaders: Record<string, string>) {
   // Check if user is at least admin
-  if (!(await isUserAdmin(userId, env))) {
+  if (!(await getCachedIsUserAdmin(userId, env))) {
     return new Response(JSON.stringify({ error: 'Admin privileges required' }), {
       status: 403,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
-  const isSuperAdmin = await isUserSuperAdmin(userId, env);
+  const isSuperAdmin = await getCachedIsUserSuperAdmin(userId, env);
 
   try {
     let users;
@@ -357,7 +358,7 @@ export async function getAdminUsers(userId: string, env: Env, corsHeaders: Recor
 
 export async function updateUserRole(request: Request, targetUserId: string, adminUserId: string, env: Env, corsHeaders: Record<string, string>) {
   // Check if user is super admin (role management is super admin only)
-  if (!(await isUserSuperAdmin(adminUserId, env))) {
+  if (!(await getCachedIsUserSuperAdmin(adminUserId, env))) {
     return new Response(JSON.stringify({ error: 'Super admin privileges required' }), {
       status: 403,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -420,7 +421,7 @@ export async function updateUserRole(request: Request, targetUserId: string, adm
 
 export async function getAvailableAdmins(userId: string, env: Env, corsHeaders: Record<string, string>) {
   // Check if user is admin
-  if (!(await isUserAdmin(userId, env))) {
+  if (!(await getCachedIsUserAdmin(userId, env))) {
     return new Response(JSON.stringify({ error: 'Admin privileges required' }), {
       status: 403,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -451,14 +452,14 @@ export async function getAvailableAdmins(userId: string, env: Env, corsHeaders: 
 
 export async function getUserLocationAssignments(targetUserId: string, adminUserId: string, env: Env, corsHeaders: Record<string, string>) {
   // Check if user is at least admin
-  if (!(await isUserAdmin(adminUserId, env))) {
+  if (!(await getCachedIsUserAdmin(adminUserId, env))) {
     return new Response(JSON.stringify({ error: 'Admin privileges required' }), {
       status: 403,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
-  const isSuperAdmin = await isUserSuperAdmin(adminUserId, env);
+  const isSuperAdmin = await getCachedIsUserSuperAdmin(adminUserId, env);
 
   try {
     // Check if target user exists
@@ -573,14 +574,14 @@ export async function getUserLocationAssignments(targetUserId: string, adminUser
 
 export async function assignLocationToUser(targetUserId: string, locationId: string, adminUserId: string, env: Env, corsHeaders: Record<string, string>) {
   // Check if user is at least admin
-  if (!(await isUserAdmin(adminUserId, env))) {
+  if (!(await getCachedIsUserAdmin(adminUserId, env))) {
     return new Response(JSON.stringify({ error: 'Admin privileges required' }), {
       status: 403,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
-  const isSuperAdmin = await isUserSuperAdmin(adminUserId, env);
+  const isSuperAdmin = await getCachedIsUserSuperAdmin(adminUserId, env);
 
   try {
     // Check if target user exists
@@ -662,14 +663,14 @@ export async function assignLocationToUser(targetUserId: string, locationId: str
 
 export async function unassignLocationFromUser(targetUserId: string, locationId: string, adminUserId: string, env: Env, corsHeaders: Record<string, string>) {
   // Check if user is at least admin
-  if (!(await isUserAdmin(adminUserId, env))) {
+  if (!(await getCachedIsUserAdmin(adminUserId, env))) {
     return new Response(JSON.stringify({ error: 'Admin privileges required' }), {
       status: 403,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
-  const isSuperAdmin = await isUserSuperAdmin(adminUserId, env);
+  const isSuperAdmin = await getCachedIsUserSuperAdmin(adminUserId, env);
 
   try {
     // Check if target user exists
