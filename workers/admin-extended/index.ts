@@ -450,16 +450,18 @@ export async function getAvailableAdmins(userId: string, env: Env, corsHeaders: 
 }
 
 export async function getUserLocationAssignments(targetUserId: string, adminUserId: string, env: Env, corsHeaders: Record<string, string>) {
-  // Check if user is super admin (location assignment is super admin only)
-  if (!(await isUserSuperAdmin(adminUserId, env))) {
-    return new Response(JSON.stringify({ error: 'Super admin privileges required' }), {
+  // Check if user is at least admin
+  if (!(await isUserAdmin(adminUserId, env))) {
+    return new Response(JSON.stringify({ error: 'Admin privileges required' }), {
       status: 403,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
+  const isSuperAdmin = await isUserSuperAdmin(adminUserId, env);
+
   try {
-    // Check if target user exists and is an admin
+    // Check if target user exists
     const targetUser = await env.DB.prepare(`
       SELECT id, email, user_role FROM users WHERE id = ?
     `).bind(targetUserId).first();
@@ -482,34 +484,76 @@ export async function getUserLocationAssignments(targetUserId: string, adminUser
       });
     }
 
-    if ((targetUser as any).user_role !== 'admin') {
-      return new Response(JSON.stringify({ error: 'Location assignment is only available for admin users' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    let assignedLocations, availableLocations;
+
+    if (isSuperAdmin) {
+      // Super admin can see all locations the target user is assigned to
+      assignedLocations = await env.DB.prepare(`
+        SELECT l.id, l.name, l.description
+        FROM locations l
+        LEFT JOIN location_members lm ON l.id = lm.location_id
+        WHERE l.owner_id = ? OR lm.user_id = ?
+        ORDER BY l.name
+      `).bind(targetUserId, targetUserId).all();
+
+      // Get all locations that could be assigned (not currently assigned)
+      availableLocations = await env.DB.prepare(`
+        SELECT l.id, l.name, l.description
+        FROM locations l
+        WHERE l.id NOT IN (
+          SELECT DISTINCT l2.id
+          FROM locations l2
+          LEFT JOIN location_members lm2 ON l2.id = lm2.location_id
+          WHERE l2.owner_id = ? OR lm2.user_id = ?
+        )
+        ORDER BY l.name
+      `).bind(targetUserId, targetUserId).all();
+    } else {
+      // Regular admin can only see/manage locations they are assigned to
+      const adminManagedLocations = await env.DB.prepare(`
+        SELECT l.id, l.name, l.description
+        FROM locations l
+        LEFT JOIN location_members lm ON l.id = lm.location_id
+        WHERE l.owner_id = ? OR lm.user_id = ?
+        ORDER BY l.name
+      `).bind(adminUserId, adminUserId).all();
+
+      const adminLocationIds = (adminManagedLocations.results as any[]).map(loc => loc.id);
+
+      if (adminLocationIds.length === 0) {
+        return new Response(JSON.stringify({
+          assigned_locations: [],
+          available_locations: [],
+          message: 'You are not assigned to any locations and cannot manage user assignments'
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Get target user's locations that the admin can manage
+      assignedLocations = await env.DB.prepare(`
+        SELECT l.id, l.name, l.description
+        FROM locations l
+        LEFT JOIN location_members lm ON l.id = lm.location_id
+        WHERE (l.owner_id = ? OR lm.user_id = ?) 
+        AND l.id IN (${adminLocationIds.map(() => '?').join(',')})
+        ORDER BY l.name
+      `).bind(targetUserId, targetUserId, ...adminLocationIds).all();
+
+      // Get admin's managed locations that target user is NOT assigned to
+      availableLocations = await env.DB.prepare(`
+        SELECT l.id, l.name, l.description
+        FROM locations l
+        WHERE l.id IN (${adminLocationIds.map(() => '?').join(',')})
+        AND l.id NOT IN (
+          SELECT DISTINCT l2.id
+          FROM locations l2
+          LEFT JOIN location_members lm2 ON l2.id = lm2.location_id
+          WHERE l2.owner_id = ? OR lm2.user_id = ?
+        )
+        ORDER BY l.name
+      `).bind(...adminLocationIds, targetUserId, targetUserId).all();
     }
-
-    // Get locations assigned to this admin
-    const assignedLocations = await env.DB.prepare(`
-      SELECT l.id, l.name, l.description
-      FROM locations l
-      LEFT JOIN location_members lm ON l.id = lm.location_id
-      WHERE l.owner_id = ? OR lm.user_id = ?
-      ORDER BY l.name
-    `).bind(targetUserId, targetUserId).all();
-
-    // Get all locations that could be assigned (not currently assigned)
-    const availableLocations = await env.DB.prepare(`
-      SELECT l.id, l.name, l.description
-      FROM locations l
-      WHERE l.id NOT IN (
-        SELECT DISTINCT l2.id
-        FROM locations l2
-        LEFT JOIN location_members lm2 ON l2.id = lm2.location_id
-        WHERE l2.owner_id = ? OR lm2.user_id = ?
-      )
-      ORDER BY l.name
-    `).bind(targetUserId, targetUserId).all();
 
     return new Response(JSON.stringify({
       assigned_locations: assignedLocations.results,
@@ -528,16 +572,18 @@ export async function getUserLocationAssignments(targetUserId: string, adminUser
 }
 
 export async function assignLocationToUser(targetUserId: string, locationId: string, adminUserId: string, env: Env, corsHeaders: Record<string, string>) {
-  // Check if user is super admin (location assignment is super admin only)
-  if (!(await isUserSuperAdmin(adminUserId, env))) {
-    return new Response(JSON.stringify({ error: 'Super admin privileges required' }), {
+  // Check if user is at least admin
+  if (!(await isUserAdmin(adminUserId, env))) {
+    return new Response(JSON.stringify({ error: 'Admin privileges required' }), {
       status: 403,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
+  const isSuperAdmin = await isUserSuperAdmin(adminUserId, env);
+
   try {
-    // Check if target user exists and is an admin
+    // Check if target user exists
     const targetUser = await env.DB.prepare(`
       SELECT id, email, user_role FROM users WHERE id = ?
     `).bind(targetUserId).first();
@@ -545,13 +591,6 @@ export async function assignLocationToUser(targetUserId: string, locationId: str
     if (!targetUser) {
       return new Response(JSON.stringify({ error: 'User not found' }), {
         status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    if ((targetUser as any).user_role !== 'admin') {
-      return new Response(JSON.stringify({ error: 'Location assignment is only available for admin users' }), {
-        status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -566,6 +605,22 @@ export async function assignLocationToUser(targetUserId: string, locationId: str
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    // For regular admins, check if they can manage this location
+    if (!isSuperAdmin) {
+      const canManageLocation = await env.DB.prepare(`
+        SELECT 1 FROM locations l
+        LEFT JOIN location_members lm ON l.id = lm.location_id
+        WHERE l.id = ? AND (l.owner_id = ? OR lm.user_id = ?)
+      `).bind(locationId, adminUserId, adminUserId).first();
+
+      if (!canManageLocation) {
+        return new Response(JSON.stringify({ error: 'You can only assign users to locations you manage' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     }
 
     // Check if user already has access to this location
@@ -606,16 +661,18 @@ export async function assignLocationToUser(targetUserId: string, locationId: str
 }
 
 export async function unassignLocationFromUser(targetUserId: string, locationId: string, adminUserId: string, env: Env, corsHeaders: Record<string, string>) {
-  // Check if user is super admin (location assignment is super admin only)
-  if (!(await isUserSuperAdmin(adminUserId, env))) {
-    return new Response(JSON.stringify({ error: 'Super admin privileges required' }), {
+  // Check if user is at least admin
+  if (!(await isUserAdmin(adminUserId, env))) {
+    return new Response(JSON.stringify({ error: 'Admin privileges required' }), {
       status: 403,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
+  const isSuperAdmin = await isUserSuperAdmin(adminUserId, env);
+
   try {
-    // Check if target user exists and is an admin
+    // Check if target user exists
     const targetUser = await env.DB.prepare(`
       SELECT id, email, user_role FROM users WHERE id = ?
     `).bind(targetUserId).first();
@@ -623,13 +680,6 @@ export async function unassignLocationFromUser(targetUserId: string, locationId:
     if (!targetUser) {
       return new Response(JSON.stringify({ error: 'User not found' }), {
         status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    if ((targetUser as any).user_role !== 'admin') {
-      return new Response(JSON.stringify({ error: 'Location assignment is only available for admin users' }), {
-        status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -644,6 +694,22 @@ export async function unassignLocationFromUser(targetUserId: string, locationId:
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    // For regular admins, check if they can manage this location
+    if (!isSuperAdmin) {
+      const canManageLocation = await env.DB.prepare(`
+        SELECT 1 FROM locations l
+        LEFT JOIN location_members lm ON l.id = lm.location_id
+        WHERE l.id = ? AND (l.owner_id = ? OR lm.user_id = ?)
+      `).bind(locationId, adminUserId, adminUserId).first();
+
+      if (!canManageLocation) {
+        return new Response(JSON.stringify({ error: 'You can only unassign users from locations you manage' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     }
 
     // Check if there are other admins assigned to this location
