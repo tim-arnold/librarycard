@@ -225,11 +225,7 @@ export default function BookText({
                   size="small"
                   onClick={() => onGenreEdit(book)}
                   sx={{ 
-                    p: 0.5,
-                    color: 'secondary.main',
-                    '&:hover': {
-                      backgroundColor: 'secondary.50'
-                    }
+                    p: 0.5
                   }}
                   title="Edit Genres"
                 >
