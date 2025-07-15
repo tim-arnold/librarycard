@@ -291,11 +291,7 @@ export default function BookList({
                       onClick={() => onGenreEdit(book)}
                       sx={{ 
                         textTransform: 'none',
-                        fontSize: { xs: '0.75rem', sm: '0.8125rem' },
-                        color: 'secondary.main',
-                        '&:hover': {
-                          backgroundColor: 'secondary.50'
-                        }
+                        fontSize: { xs: '0.75rem', sm: '0.8125rem' }
                       }}
                     >
                       Edit Genres
@@ -331,11 +327,7 @@ export default function BookList({
                       onClick={() => onGenreEdit(book)}
                       sx={{ 
                         textTransform: 'none',
-                        fontSize: { xs: '0.75rem', sm: '0.8125rem' },
-                        color: 'secondary.main',
-                        '&:hover': {
-                          backgroundColor: 'secondary.50'
-                        }
+                        fontSize: { xs: '0.75rem', sm: '0.8125rem' }
                       }}
                     >
                       Edit Genres
