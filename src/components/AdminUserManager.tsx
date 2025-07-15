@@ -48,7 +48,7 @@ import {
 import ConfirmationModal from './ConfirmationModal'
 import AlertModal from './AlertModal'
 import { useModal } from '@/hooks/useModal'
-import { isSuperAdmin } from '@/lib/permissions'
+import { isAdmin, isSuperAdmin } from '@/lib/permissions'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
 
@@ -1286,7 +1286,7 @@ export default function AdminUserManager() {
               </MenuItem>
             )}
             
-            {isSuperAdmin(currentUserRole) && selectedUser && selectedUser.user_role === 'admin' && (
+            {isAdmin(currentUserRole) && selectedUser && (
               <MenuItem 
                 onClick={() => {
                   handleMenuClose()
