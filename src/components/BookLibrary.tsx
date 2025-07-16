@@ -1754,22 +1754,12 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
       }
     })
     
-    // Debug logging
-    console.log('🎭 Genre Filter Debug:', {
-      totalBooks: books.length,
-      booksWithAssignedGenres: books.filter(b => b.assignedGenres && b.assignedGenres.length > 0).length,
-      assignedGenresList: Array.from(assignedGenres),
-      enhancedGenresList: Array.from(existingGenres)
-    })
-    
     // Combine all possible genres
     const allPossibleGenres = new Set([...Array.from(assignedGenres), ...Array.from(existingGenres)])
     
     const finalGenres = Array.from(allPossibleGenres).filter(curatedGenre => {
       return books.some(book => bookHasGenreForDropdown(book, curatedGenre))
     }).sort()
-    
-    console.log('🎭 Final genre filter options:', finalGenres)
     
     return finalGenres
   }, [books])
