@@ -1,6 +1,7 @@
 import { Env } from '../types';
 import { isUserAdmin, isUserSuperAdmin } from '../auth';
 import { getCachedIsUserAdmin, getCachedIsUserSuperAdmin, getCachedUserPermissions } from '../auth/cached';
+import { invalidateAllAdminAnalytics } from '../admin/cached';
 
 // Extended admin functions extracted from main worker
 
@@ -401,6 +402,9 @@ export async function updateUserRole(request: Request, targetUserId: string, adm
       SET user_role = ?, updated_at = datetime('now')
       WHERE id = ?
     `).bind(role, targetUserId).run();
+
+    // Invalidate admin analytics cache on role change
+    await invalidateAllAdminAnalytics(env);
 
     return new Response(JSON.stringify({ 
       message: `User role updated to ${role}`,
