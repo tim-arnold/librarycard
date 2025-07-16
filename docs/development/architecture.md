@@ -38,11 +38,13 @@ LibraryCard is built as a modern, serverless web application using a hybrid arch
 - **Language**: TypeScript
 - **Database**: Cloudflare D1 (SQLite)
 - **API Framework**: Native Fetch API handlers
+- **Caching**: Cloudflare KV for performance optimization
 
 ### Infrastructure
 - **Frontend Hosting**: Netlify
 - **Backend API**: Cloudflare Workers
 - **Database**: Cloudflare D1 (distributed SQLite)
+- **Caching**: Cloudflare KV (key-value store)
 - **CDN**: Netlify Edge Network
 - **SSL**: Automatic HTTPS via Netlify
 - **Email**: Resend for verification emails
@@ -195,20 +197,24 @@ workers/
 ├── index.ts                # Main worker entry point and routing (366 lines)
 ├── types/
 │   └── index.ts           # Shared TypeScript interfaces (77 lines)
+├── cache/
+│   ├── kv.ts              # KV cache manager and utilities
+│   └── genres.ts          # Cached genre service
 ├── email/
 │   └── index.ts           # Email and notification system (544 lines)
 ├── admin/
 │   └── index.ts           # Admin operations and signup approval (373 lines)
 ├── auth-core/
 │   └── index.ts           # Core authentication functions (372 lines)
+├── auth/
+│   ├── index.ts           # Authentication utilities and permissions (37 lines)
+│   └── cached.ts          # Cached authentication functions
 ├── invitations/
 │   └── index.ts           # Location invitation system (271 lines)
 ├── admin-extended/
 │   └── index.ts           # Advanced admin analytics and user management (154 lines)
 ├── profile/
 │   └── index.ts           # User profile management (75 lines)
-├── auth/
-│   └── index.ts           # Authentication utilities and permissions (37 lines)
 ├── auth-utils/
 │   └── index.ts           # Additional auth helper functions (35 lines)
 ├── locations/
@@ -437,6 +443,7 @@ signup_approval_requests (
 - **Edge computing**: Workers run close to users globally
 - **Database indexes**: Optimized queries for common operations
 - **Connection pooling**: D1 handles database connections
+- **KV caching**: Authentication and genre data cached in Cloudflare KV
 - **Caching**: Static assets cached via Cloudflare CDN
 
 ### Network
