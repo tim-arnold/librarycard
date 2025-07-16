@@ -15,6 +15,10 @@ binding = "DB"
 database_name = "libarycard-db-local"
 database_id = "5365a633-7869-4993-990a-90aa12e9974e"
 
+[[kv_namespaces]]
+binding = "CACHE"
+id = "9f569f411f764d83a6c87e1bda2494ae"
+
 # Local environment (explicit)
 # Use: npx wrangler dev --env=local
 [env.local]
@@ -29,6 +33,10 @@ FROM_EMAIL = "LibraryCard <noreply@localhost>"
 binding = "DB"
 database_name = "libarycard-db-local"
 database_id = "5365a633-7869-4993-990a-90aa12e9974e"
+
+[[env.local.kv_namespaces]]
+binding = "CACHE"
+id = "9f569f411f764d83a6c87e1bda2494ae"
 
 # Staging environment
 # Use: npx wrangler deploy --env=staging
@@ -45,6 +53,10 @@ binding = "DB"
 database_name = "librarycard-db-staging"
 database_id = "eb3d7f44-754e-4354-a3ce-8077c2572946"
 
+[[env.staging.kv_namespaces]]
+binding = "CACHE"
+id = "22522f1582fc4b45b8b59446fca5c791"
+
 # Production environment  
 # Use: npx wrangler deploy --env=production
 [env.production]
@@ -59,3 +71,7 @@ FROM_EMAIL = "LibraryCard <librarian@tim52.io>"
 binding = "DB"
 database_name = "librarycard-db"
 database_id = "368ab7bc-fb42-4607-a4cf-761dc7795284"
+
+[[env.production.kv_namespaces]]
+binding = "CACHE"
+id = "8f5a86fc82a64b10ba946d749f2dc8f4"
