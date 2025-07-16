@@ -17,7 +17,7 @@ const seedData = {
       email: 'adminuser@localhost',
       first_name: 'Admin',
       last_name: 'User',
-      password_hash: '$2b$10$CqyKQ4zGfzcPETorqg1JXe4qhyThrFUwxwH/CDePtcw57YmQ2L0jW', // password: 'Admin123!'
+      password_hash: 'x3aF/PK1W5ANXtugiB5xLq+Pv0N513m0HHlrQNo5XoQo5a6SVNcAXMEoMA+JbOR/', // password: 'Admin123!'
       user_role: 'admin',
       email_verified: true,
       auth_provider: 'email',
@@ -29,7 +29,7 @@ const seedData = {
       email: 'testuser@localhost',
       first_name: 'Test',
       last_name: 'User',
-      password_hash: '$2b$10$9fOwbDBB/GMv.0GXz00Doer/82aMOmds/SbTh6gY/.G0MayylDIwq', // password: 'Test123!'
+      password_hash: '6nnxDALNKlHJASH1dCNGfHobYqggqagufRpeOAFQoVXrrHSK9bjyaCTrH/jHkLsX', // password: 'Test123!'
       user_role: 'user',
       email_verified: true,
       auth_provider: 'email',
@@ -41,7 +41,7 @@ const seedData = {
       email: 'superadmin@localhost',
       first_name: 'Super',
       last_name: 'Admin',
-      password_hash: '$2b$10$7mK9x8L5vZ2aB3cY1dE6fG8hI9jK0lM1nO2pQ3rS4tU5vW6xY7zA8', // password: 'Super123!'
+      password_hash: 'YGDVg0BPOSTqA9YsMxeBBbBcOZxchgzRr2/tdpQ4auz6IJzVz1KWOS1J4W3Pr/3x', // password: 'Super123!'
       user_role: 'super_admin',
       email_verified: true,
       auth_provider: 'email',

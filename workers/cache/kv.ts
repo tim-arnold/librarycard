@@ -166,6 +166,7 @@ export const CacheKeys = {
   
   // Admin analytics
   adminAnalytics: (adminId: string) => `analytics:${adminId}:dashboard`,
+  adminUsers: (adminId: string) => `analytics:${adminId}:users`,
   adminStats: (adminId: string) => `analytics:${adminId}:stats`,
   
   // External API responses
@@ -274,6 +275,7 @@ export class CacheInvalidator {
   async invalidateAdminAnalytics(adminId?: string): Promise<void> {
     if (adminId) {
       await this.cache.del(CacheKeys.adminAnalytics(adminId));
+      await this.cache.del(CacheKeys.adminUsers(adminId));
       await this.cache.del(CacheKeys.adminStats(adminId));
     } else {
       // Invalidate all admin analytics
