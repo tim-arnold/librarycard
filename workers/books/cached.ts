@@ -14,28 +14,55 @@ export async function getCachedUserBooks(userId: string, env: Env, corsHeaders: 
   const cache = new CacheManager(env);
   const cacheKey = CacheKeys.userBooks(userId);
   
+  if (env.ENVIRONMENT === 'local') {
+    console.log('🔍 CachedBooks Debug: Cache key', cacheKey);
+  }
+  
   // Try to get from cache first
   const cachedBooks = await cache.get<any[]>(cacheKey);
   if (cachedBooks) {
+    if (env.ENVIRONMENT === 'local') {
+      console.log('🔍 CachedBooks Debug: Found cached books', cachedBooks.length);
+    }
     return new Response(JSON.stringify(cachedBooks), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
   
-  // Fallback to database
-  const response = await getUserBooks(userId, env, corsHeaders);
-  
-  // Cache the result if successful
-  if (response.ok) {
-    const books = await response.json();
-    await cache.set(cacheKey, books, CacheTTL.USER_BOOKS);
-    
-    return new Response(JSON.stringify(books), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+  if (env.ENVIRONMENT === 'local') {
+    console.log('🔍 CachedBooks Debug: No cache, falling back to database');
   }
   
-  return response;
+  // Fallback to database
+  try {
+    const response = await getUserBooks(userId, env, corsHeaders);
+    
+    if (env.ENVIRONMENT === 'local') {
+      console.log('🔍 CachedBooks Debug: Database response status', response.status);
+    }
+    
+    // Cache the result if successful
+    if (response.ok) {
+      const books = await response.json();
+      
+      if (env.ENVIRONMENT === 'local') {
+        console.log('🔍 CachedBooks Debug: Got books from database', books.length);
+      }
+      
+      await cache.set(cacheKey, books, CacheTTL.USER_BOOKS);
+      
+      return new Response(JSON.stringify(books), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    return response;
+  } catch (error) {
+    if (env.ENVIRONMENT === 'local') {
+      console.error('🔍 CachedBooks Debug: Database error', error);
+    }
+    throw error;
+  }
 }
 
 /**

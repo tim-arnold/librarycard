@@ -148,7 +148,20 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
     }
   }
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
+    try {
+      // Clear user cache on the worker before signing out
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+    } catch (error) {
+      console.error('Error clearing user cache on logout:', error)
+      // Continue with logout even if cache clearing fails
+    }
+    
     signOut({ callbackUrl: '/auth/signin' })
   }
 
