@@ -33,6 +33,14 @@ import {
   getBookEditions
 } from './books';
 import {
+  getCachedUserBooks,
+  invalidateBookCache,
+  invalidateUserBookCache
+} from './books/cached';
+import {
+  getCachedBookEditions
+} from './books/google-cached';
+import {
   sendInvitationEmail,
   sendVerificationEmail,
   notifyAdminsOfSignupRequest,
@@ -266,11 +274,18 @@ export default {
 
       // Book endpoints
       if (path === '/api/books' && request.method === 'GET') {
-        return await getUserBooks(userId, env, corsHeaders);
+        return await getCachedUserBooks(userId, env, corsHeaders);
       }
 
       if (path === '/api/books' && request.method === 'POST') {
-        return await createBook(request, userId, env, corsHeaders);
+        const response = await createBook(request, userId, env, corsHeaders);
+        
+        // Invalidate user book cache after creating a book
+        if (response.ok) {
+          await invalidateUserBookCache(userId, env);
+        }
+        
+        return response;
       }
 
       // Book editions endpoint for cover selection
@@ -285,7 +300,10 @@ export default {
           });
         }
         
-        return await getBookEditions(title, author, env, corsHeaders);
+        const editions = await getCachedBookEditions(title, author, env);
+        return new Response(JSON.stringify({ editions }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
 
       // Book checkout endpoints (must come before general /api/books/* routes)
@@ -317,12 +335,26 @@ export default {
 
       if (path.startsWith('/api/books/') && request.method === 'PUT') {
         const id = parseInt(path.split('/')[3]);
-        return await updateBook(request, userId, env, corsHeaders, id);
+        const response = await updateBook(request, userId, env, corsHeaders, id);
+        
+        // Invalidate book cache after updating
+        if (response.ok) {
+          await invalidateBookCache(id.toString(), userId, env);
+        }
+        
+        return response;
       }
 
       if (path.startsWith('/api/books/') && request.method === 'DELETE') {
         const id = parseInt(path.split('/')[3]);
-        return await deleteBook(userId, env, corsHeaders, id);
+        const response = await deleteBook(userId, env, corsHeaders, id);
+        
+        // Invalidate book cache after deleting
+        if (response.ok) {
+          await invalidateBookCache(id.toString(), userId, env);
+        }
+        
+        return response;
       }
 
       // Invitation endpoints
