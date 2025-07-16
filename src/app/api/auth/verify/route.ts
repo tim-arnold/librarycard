@@ -35,29 +35,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email and password required' }, { status: 400 })
     }
 
-    // For development - simulate user verification
-    if (process.env.NODE_ENV === 'development') {
-      // Simulate some processing time
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // For demo purposes, accept any valid email format with a strong password
-      // (In real implementation, this would check against stored hashed passwords)
-      const passwordValidation = validatePasswordStrength(password);
-      if (email.includes('@') && passwordValidation.isValid) {
-        return NextResponse.json({
-          id: 'dev-user-123',
-          email: email,
-          first_name: 'Test',
-          last_name: 'User',
-          auth_provider: 'email'
-        });
-      } else {
-        if (!passwordValidation.isValid) {
-          return NextResponse.json({ error: 'Please verify your email first or check your password strength' }, { status: 401 });
-        }
-        return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
-      }
-    }
+    // For development - call the worker instead of using mock
+    // (Development mock disabled to use real worker authentication)
 
     // Call the workers API to verify credentials
     const response = await fetch(`${API_BASE}/api/auth/verify`, {

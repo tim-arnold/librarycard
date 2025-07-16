@@ -83,12 +83,24 @@ import {
   unassignLocationFromUser
 } from './admin-extended';
 import {
+  getCachedAdminAnalytics,
+  getCachedAdminUsers,
+  invalidateAdminAnalytics,
+  invalidateAllAdminAnalytics,
+  warmAdminCache,
+  getAdminCacheMetrics
+} from './admin/cached';
+import {
   getUserProfile,
   updateUserProfile
 } from './profile';
 import {
   getUserFromRequest
 } from './auth';
+import {
+  getCachedIsUserAdmin,
+  invalidateUserCache
+} from './auth/cached';
 import { GenreService } from './genres';
 import {
   getLocationAdminCapabilities,
@@ -188,6 +200,17 @@ export default {
       // Get user from session/token for protected endpoints
       const userId = await getUserFromRequest(request, env);
       
+      // Debug logging for authentication in local environment
+      if (env.ENVIRONMENT === 'local') {
+        console.log('🔍 Auth Debug:', {
+          path,
+          method: request.method,
+          hasAuth: !!request.headers.get('Authorization'),
+          userId,
+          userAgent: request.headers.get('User-Agent')
+        });
+      }
+      
       // All other endpoints require authentication
       if (!userId) {
         return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -274,7 +297,28 @@ export default {
 
       // Book endpoints
       if (path === '/api/books' && request.method === 'GET') {
-        return await getCachedUserBooks(userId, env, corsHeaders);
+        if (env.ENVIRONMENT === 'local') {
+          console.log('🔍 Books Debug: Fetching books for user', userId);
+        }
+        
+        try {
+          const result = await getCachedUserBooks(userId, env, corsHeaders);
+          
+          if (env.ENVIRONMENT === 'local') {
+            console.log('🔍 Books Debug: Result status', result.status);
+            if (!result.ok) {
+              const errorText = await result.text();
+              console.log('🔍 Books Debug: Error response', errorText);
+            }
+          }
+          
+          return result;
+        } catch (error) {
+          if (env.ENVIRONMENT === 'local') {
+            console.error('🔍 Books Debug: Exception caught', error);
+          }
+          throw error;
+        }
       }
 
       if (path === '/api/books' && request.method === 'POST') {
@@ -431,6 +475,21 @@ export default {
       if (path === '/api/auth/change-password' && request.method === 'POST') {
         return await changePassword(request, env, corsHeaders);
       }
+      
+      // Logout endpoint (authenticated users only) - clears user cache
+      if (path === '/api/auth/logout' && request.method === 'POST') {
+        try {
+          await invalidateUserCache(userId, env);
+          return new Response(JSON.stringify({ message: 'Logged out successfully' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error) {
+          console.error('Logout cache invalidation error:', error);
+          return new Response(JSON.stringify({ message: 'Logged out successfully' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
 
       // Book-Genre Management endpoints
       if (path.match(/^\/books\/\d+\/genres$/) && request.method === 'GET') {
@@ -484,21 +543,26 @@ export default {
             });
           }
 
-          // Check if user has access to this book
-          const bookAccessStmt = env.DB.prepare(`
-            SELECT b.id FROM books b
-            LEFT JOIN shelves s ON b.shelf_id = s.id
-            LEFT JOIN locations l ON s.location_id = l.id
-            LEFT JOIN location_members lm ON l.id = lm.location_id
-            WHERE b.id = ? AND (b.added_by = ? OR l.owner_id = ? OR lm.user_id = ?)
-          `);
+          // Check if user has access to this book (super admins have access to all books)
+          const userRole = await env.DB.prepare('SELECT user_role FROM users WHERE id = ?').bind(userId).first() as any;
+          const isSuperAdmin = userRole?.user_role === 'super_admin';
           
-          const bookAccess = await bookAccessStmt.bind(bookId, userId, userId, userId).first();
-          if (!bookAccess) {
-            return new Response(JSON.stringify({ error: 'Book not found or access denied' }), {
-              status: 403,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
+          if (!isSuperAdmin) {
+            const bookAccessStmt = env.DB.prepare(`
+              SELECT b.id FROM books b
+              LEFT JOIN shelves s ON b.shelf_id = s.id
+              LEFT JOIN locations l ON s.location_id = l.id
+              LEFT JOIN location_members lm ON l.id = lm.location_id
+              WHERE b.id = ? AND (b.added_by = ? OR l.owner_id = ? OR lm.user_id = ?)
+            `);
+            
+            const bookAccess = await bookAccessStmt.bind(bookId, userId, userId, userId).first();
+            if (!bookAccess) {
+              return new Response(JSON.stringify({ error: 'Book not found or access denied' }), {
+                status: 403,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              });
+            }
           }
 
           // Get current genres for this book
@@ -524,6 +588,10 @@ export default {
             }
           }
           
+          // Invalidate caches after genre changes
+          await invalidateBookCache(bookId.toString(), userId, env);
+          await invalidateAllAdminAnalytics(env);
+          
           // Return updated book genres
           const updatedBookGenres = await genreService.getBookGenres(bookId);
           return new Response(JSON.stringify(updatedBookGenres), {
@@ -543,21 +611,26 @@ export default {
         const genreId = parseInt(path.split('/')[4]);
         const genreService = new GenreService(env.DB);
         try {
-          // Check if user has access to this book
-          const bookAccessStmt = env.DB.prepare(`
-            SELECT b.id FROM books b
-            LEFT JOIN shelves s ON b.shelf_id = s.id
-            LEFT JOIN locations l ON s.location_id = l.id
-            LEFT JOIN location_members lm ON l.id = lm.location_id
-            WHERE b.id = ? AND (b.added_by = ? OR l.owner_id = ? OR lm.user_id = ?)
-          `);
+          // Check if user has access to this book (super admins have access to all books)
+          const userRole = await env.DB.prepare('SELECT user_role FROM users WHERE id = ?').bind(userId).first() as any;
+          const isSuperAdmin = userRole?.user_role === 'super_admin';
           
-          const bookAccess = await bookAccessStmt.bind(bookId, userId, userId, userId).first();
-          if (!bookAccess) {
-            return new Response(JSON.stringify({ error: 'Book not found or access denied' }), {
-              status: 403,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
+          if (!isSuperAdmin) {
+            const bookAccessStmt = env.DB.prepare(`
+              SELECT b.id FROM books b
+              LEFT JOIN shelves s ON b.shelf_id = s.id
+              LEFT JOIN locations l ON s.location_id = l.id
+              LEFT JOIN location_members lm ON l.id = lm.location_id
+              WHERE b.id = ? AND (b.added_by = ? OR l.owner_id = ? OR lm.user_id = ?)
+            `);
+            
+            const bookAccess = await bookAccessStmt.bind(bookId, userId, userId, userId).first();
+            if (!bookAccess) {
+              return new Response(JSON.stringify({ error: 'Book not found or access denied' }), {
+                status: 403,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              });
+            }
           }
 
           const success = await genreService.removeGenreFromBook(bookId, genreId);
@@ -567,6 +640,10 @@ export default {
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             });
           }
+          
+          // Invalidate caches after genre removal
+          await invalidateBookCache(bookId.toString(), userId, env);
+          await invalidateAllAdminAnalytics(env);
           
           return new Response(JSON.stringify({ message: 'Genre removed successfully' }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -621,12 +698,12 @@ export default {
 
       // Admin-only analytics endpoint
       if (path === '/api/admin/analytics' && request.method === 'GET') {
-        return await getAdminAnalytics(userId, env, corsHeaders);
+        return await getCachedAdminAnalytics(userId, env, corsHeaders);
       }
 
       // Admin-only enhanced users endpoint
       if (path === '/api/admin/users' && request.method === 'GET') {
-        return await getAdminUsers(userId, env, corsHeaders);
+        return await getCachedAdminUsers(userId, env, corsHeaders);
       }
 
       // Admin-only user role management endpoint
@@ -691,6 +768,49 @@ export default {
 
       if (path === '/api/permissions/user' && request.method === 'GET') {
         return await getUserPermissions(request, userId, env, corsHeaders);
+      }
+
+      // Admin cache management endpoints
+      if (path === '/api/admin/cache/warm' && request.method === 'POST') {
+        if (!(await getCachedIsUserAdmin(userId, env))) {
+          return new Response(JSON.stringify({ error: 'Admin privileges required' }), {
+            status: 403,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        
+        try {
+          await warmAdminCache(userId, env);
+          return new Response(JSON.stringify({ message: 'Cache warmed successfully' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error) {
+          return new Response(JSON.stringify({ error: 'Failed to warm cache' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      if (path === '/api/admin/cache/metrics' && request.method === 'GET') {
+        if (!(await getCachedIsUserAdmin(userId, env))) {
+          return new Response(JSON.stringify({ error: 'Admin privileges required' }), {
+            status: 403,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        
+        try {
+          const metrics = await getAdminCacheMetrics(userId, env);
+          return new Response(JSON.stringify(metrics), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error) {
+          return new Response(JSON.stringify({ error: 'Failed to get cache metrics' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
       }
 
       return new Response('Not Found', { 
