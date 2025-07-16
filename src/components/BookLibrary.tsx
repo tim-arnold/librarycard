@@ -2454,13 +2454,54 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
                       handleRelocateBook(newShelfId)
                     }}
                   >
-                    {shelves
-                      .filter(shelf => shelf.id !== selectedBookForRelocate.shelf_id)
-                      .map(shelf => (
-                        <MenuItem key={shelf.id} value={shelf.id}>
-                          {shelf.name}
-                        </MenuItem>
-                      ))}
+                    {(() => {
+                      const availableShelves = shelves.filter(shelf => shelf.id !== selectedBookForRelocate.shelf_id)
+                      
+                      if (allLocations.length === 1) {
+                        // Single location - simple list without grouping
+                        return availableShelves.map(shelf => (
+                          <MenuItem key={shelf.id} value={shelf.id}>
+                            {shelf.name}
+                          </MenuItem>
+                        ))
+                      } else {
+                        // Multiple locations - group by location
+                        return allLocations.map(location => {
+                          const locationShelves = availableShelves.filter(shelf => shelf.location_id === location.id)
+                          
+                          // Skip locations with no available shelves
+                          if (locationShelves.length === 0) {
+                            return null
+                          }
+
+                          return [
+                            <MenuItem 
+                              key={`${location.id}-header`} 
+                              disabled 
+                              sx={{ 
+                                fontWeight: 'bold',
+                                backgroundColor: 'action.hover',
+                                '&.Mui-disabled': {
+                                  opacity: 1,
+                                  color: 'text.primary'
+                                }
+                              }}
+                            >
+                              📍 {location.name}
+                            </MenuItem>,
+                            ...locationShelves.map(shelf => (
+                              <MenuItem 
+                                key={shelf.id} 
+                                value={shelf.id} 
+                                sx={{ pl: 3 }}
+                              >
+                                📚 {shelf.name}
+                              </MenuItem>
+                            ))
+                          ]
+                        }).filter(Boolean).flat()
+                      }
+                    })()}
                   </Select>
                 </FormControl>
               )}
