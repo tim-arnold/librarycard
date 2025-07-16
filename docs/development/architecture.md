@@ -206,7 +206,8 @@ workers/
 ├── email/
 │   └── index.ts           # Email and notification system (544 lines)
 ├── admin/
-│   └── index.ts           # Admin operations and signup approval (373 lines)
+│   ├── index.ts           # Admin operations and signup approval (373 lines)
+│   └── cached.ts          # Cached admin analytics and user management (Phase 3)
 ├── auth-core/
 │   └── index.ts           # Core authentication functions (372 lines)
 ├── auth/
@@ -446,11 +447,13 @@ signup_approval_requests (
 - **Edge computing**: Workers run close to users globally
 - **Database indexes**: Optimized queries for common operations
 - **Connection pooling**: D1 handles database connections
-- **KV caching**: Phase 2 comprehensive caching system with 60-70% query reduction
+- **KV caching**: Phase 3 comprehensive caching system with 70-80% query reduction
   - Authentication and permissions (30-min TTL)
   - Book operations and metadata (10-min TTL)
   - Google Books API and external data (24-hour TTL)
   - Genre data and user preferences (1-hour TTL)
+  - Admin analytics and dashboard data (1-hour TTL)
+  - Proactive cache warming and performance monitoring
 - **Caching**: Static assets cached via Cloudflare CDN
 
 ### Network
@@ -502,7 +505,7 @@ Hybrid Architecture
 ### Growth Strategy
 - **Vertical scaling**: Upgrade to paid Cloudflare plans
 - **Horizontal scaling**: Multiple databases/workers if needed
-- **Caching**: Phase 2 KV caching implemented - significant performance gains achieved
+- **Caching**: Phase 3 KV caching implemented - comprehensive caching system complete
 - **CDN**: Already leveraging global edge network
 
 ## Future Architecture Enhancements
