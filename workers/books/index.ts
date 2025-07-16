@@ -1,6 +1,7 @@
 import { Env, Book, GoogleBooksResponse } from '../types';
 import { isUserAdmin, isUserSuperAdmin } from '../auth';
 import { hasUserPermission, getLocationIdFromShelfId, getLocationIdFromBookId } from '../permissions';
+import { invalidateAllAdminAnalytics } from '../admin/cached';
 
 // Core Book Management Functions
 export async function getUserBooks(userId: string, env: Env, corsHeaders: Record<string, string>) {
@@ -197,6 +198,9 @@ export async function createBook(request: Request, userId: string, env: Env, cor
     book.selected_cover_source ? new Date().toISOString() : null
   ).run();
 
+  // Invalidate admin analytics cache on book creation
+  await invalidateAllAdminAnalytics(env);
+
   return new Response(JSON.stringify({ success: true }), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
@@ -261,6 +265,9 @@ export async function updateBook(request: Request, userId: string, env: Env, cor
     id
   ).run();
 
+  // Invalidate admin analytics cache on book update
+  await invalidateAllAdminAnalytics(env);
+
   return new Response(JSON.stringify({ success: true }), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
@@ -287,6 +294,9 @@ export async function deleteBook(userId: string, env: Env, corsHeaders: Record<s
 
   const stmt = env.DB.prepare('DELETE FROM books WHERE id = ?');
   await stmt.bind(id).run();
+
+  // Invalidate admin analytics cache on book deletion
+  await invalidateAllAdminAnalytics(env);
 
   return new Response(JSON.stringify({ success: true }), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },

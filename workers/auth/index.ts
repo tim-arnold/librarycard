@@ -4,6 +4,9 @@ import { Env } from '../types';
 export async function getUserFromRequest(request: Request, env: Env): Promise<string | null> {
   const authHeader = request.headers.get('Authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (env.ENVIRONMENT === 'local') {
+      console.log('🔍 Auth: No valid Authorization header found');
+    }
     return null;
   }
   
@@ -11,14 +14,28 @@ export async function getUserFromRequest(request: Request, env: Env): Promise<st
   
   // If token looks like an email, look up the user ID
   if (token.includes('@')) {
-    const user = await env.DB.prepare(`
-      SELECT id FROM users WHERE email = ?
-    `).bind(token).first();
-    
-    return user ? user.id as string : null;
+    try {
+      const user = await env.DB.prepare(`
+        SELECT id FROM users WHERE email = ?
+      `).bind(token).first();
+      
+      if (env.ENVIRONMENT === 'local') {
+        console.log('🔍 Auth: Email lookup result:', { email: token, found: !!user });
+      }
+      
+      return user ? user.id as string : null;
+    } catch (error) {
+      if (env.ENVIRONMENT === 'local') {
+        console.error('🔍 Auth: Database error:', error);
+      }
+      return null;
+    }
   }
   
   // Otherwise, assume it's already a user ID
+  if (env.ENVIRONMENT === 'local') {
+    console.log('🔍 Auth: Using token as user ID:', token);
+  }
   return token;
 }
 

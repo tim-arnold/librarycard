@@ -236,6 +236,15 @@ export async function verifyCredentials(request: Request, env: Env, corsHeaders:
     });
   }
   
+  // Clear user cache on successful login to ensure fresh data
+  try {
+    const { invalidateUserCache } = await import('../auth/cached');
+    await invalidateUserCache(user.id as string, env);
+  } catch (error) {
+    console.error('Error clearing user cache on login:', error);
+    // Continue with login even if cache clearing fails
+  }
+  
   return new Response(JSON.stringify({
     id: user.id,
     email: user.email,
