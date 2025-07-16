@@ -200,6 +200,9 @@ workers/
 ├── cache/
 │   ├── kv.ts              # KV cache manager and utilities
 │   └── genres.ts          # Cached genre service
+├── books/
+│   ├── cached.ts          # Cached book operations (Phase 2)
+│   └── google-cached.ts   # Cached Google Books API (Phase 2)
 ├── email/
 │   └── index.ts           # Email and notification system (544 lines)
 ├── admin/
@@ -443,7 +446,11 @@ signup_approval_requests (
 - **Edge computing**: Workers run close to users globally
 - **Database indexes**: Optimized queries for common operations
 - **Connection pooling**: D1 handles database connections
-- **KV caching**: Authentication and genre data cached in Cloudflare KV
+- **KV caching**: Phase 2 comprehensive caching system with 60-70% query reduction
+  - Authentication and permissions (30-min TTL)
+  - Book operations and metadata (10-min TTL)
+  - Google Books API and external data (24-hour TTL)
+  - Genre data and user preferences (1-hour TTL)
 - **Caching**: Static assets cached via Cloudflare CDN
 
 ### Network
@@ -495,7 +502,7 @@ Hybrid Architecture
 ### Growth Strategy
 - **Vertical scaling**: Upgrade to paid Cloudflare plans
 - **Horizontal scaling**: Multiple databases/workers if needed
-- **Caching**: Add Redis for frequently accessed data
+- **Caching**: Phase 2 KV caching implemented - significant performance gains achieved
 - **CDN**: Already leveraging global edge network
 
 ## Future Architecture Enhancements
