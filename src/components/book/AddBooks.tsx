@@ -26,7 +26,7 @@ import { saveBook as saveBookAPI, getBooks } from '@/lib/api'
 import { authenticatedFetch } from '@/lib/auth-utils'
 import ConfirmationModal from '../modals/ConfirmationModal'
 import AlertModal from '../modals/AlertModal'
-import ShelfSelector from '../ShelfSelector'
+import ShelfSelector from '../library/ShelfSelector'
 import ISBNScanner from '@/components/library/ISBNScanner'
 import BookSearch from './BookSearch'
 import BookPreview from './BookPreview'
@@ -35,7 +35,7 @@ import { getStorageItem, setStorageItem } from '@/lib/storage'
 import { BookSelectionProvider, useBookSelection } from '@/contexts/BookSelectionContext'
 import CartIndicator from '@/components/library/CartIndicator'
 import BulkReviewModal from '../modals/BulkReviewModal'
-import GenreSelector from '../GenreSelector'
+import GenreSelector from './GenreSelector'
 import {
   Dialog,
   DialogTitle,
