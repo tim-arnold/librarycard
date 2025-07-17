@@ -704,7 +704,7 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
           {permissionChecked && !canAddBooks && (
             <Alert severity="warning" sx={{ mb: 3 }}>
               <Typography variant="body2">
-                You don't have permission to add books to this location. You can search for books to view their details, but the add and select buttons will be disabled. Contact a location administrator to request permission.
+                You don&apos;t have permission to add books to this location. You can search for books to view their details, but the add and select buttons will be disabled. Contact a location administrator to request permission.
               </Typography>
             </Alert>
           )}
