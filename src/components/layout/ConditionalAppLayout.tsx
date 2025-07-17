@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react'
 import { usePathname } from 'next/navigation'
-import AppLayout from '@/components/AppLayout'
+import AppLayout from '@/components/layout/AppLayout'
 
 interface ConditionalAppLayoutProps {
   children: React.ReactNode
