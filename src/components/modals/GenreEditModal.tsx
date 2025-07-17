@@ -15,7 +15,7 @@ import {
 } from '@mui/material'
 import { Close, Edit } from '@mui/icons-material'
 import type { EnhancedBook, CuratedGenre } from '@/lib/types'
-import GenreSelector from '../GenreSelector'
+import GenreSelector from '../book/GenreSelector'
 
 interface GenreEditModalProps {
   book: EnhancedBook
