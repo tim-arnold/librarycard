@@ -12,7 +12,7 @@ import { Info, Star, Edit } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
 import BookActions from './BookActions'
 import { getDisplayGenres } from '@/lib/genreUtils'
-import StarRating from './StarRating'
+import StarRating from '../StarRating'
 
 interface BookListProps {
   books: EnhancedBook[]
