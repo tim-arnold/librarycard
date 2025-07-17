@@ -11,7 +11,7 @@ import {
 import { Info, Star, Edit } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
 import BookActions from './BookActions'
-import StarRating from './StarRating'
+import StarRating from '../StarRating'
 import { getDisplayGenres } from '@/lib/genreUtils'
 
 interface BookTextProps {

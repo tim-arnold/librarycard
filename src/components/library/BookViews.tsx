@@ -1,9 +1,9 @@
 'use client'
 
 import { Box, Typography, Pagination } from '@mui/material'
-import BookGrid from '@/components/BookGrid'
-import BookCompact from '@/components/BookCompact'
-import BookList from '@/components/BookList'
+import BookGrid from '@/components/book/BookGrid'
+import BookCompact from '@/components/book/BookCompact'
+import BookList from '@/components/book/BookList'
 import type { EnhancedBook } from '@/lib/types'
 import { isAdmin } from '@/lib/permissions'
 

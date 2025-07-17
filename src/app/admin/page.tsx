@@ -4,7 +4,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Container, CircularProgress, Typography, Box } from '@mui/material'
-import AdminDashboard from '@/components/AdminDashboard'
+import AdminDashboard from '@/components/admin/AdminDashboard'
 import { isAdmin } from '@/lib/permissions'
 
 export default function AdminPage() {
