@@ -45,8 +45,8 @@ import {
   Refresh,
   LocationOn,
 } from '@mui/icons-material'
-import ConfirmationModal from './ConfirmationModal'
-import AlertModal from './AlertModal'
+import ConfirmationModal from './modals/ConfirmationModal'
+import AlertModal from './modals/AlertModal'
 import { useModal } from '@/hooks/useModal'
 import { isAdmin, isSuperAdmin } from '@/lib/permissions'
 

@@ -28,7 +28,7 @@ import {
   Save,
 } from '@mui/icons-material'
 import { useBookSelection } from '@/contexts/BookSelectionContext'
-import ShelfSelector from './ShelfSelector'
+import ShelfSelector from '../ShelfSelector'
 import type { SelectedBook } from '@/contexts/BookSelectionContext'
 
 interface Location {
