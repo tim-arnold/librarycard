@@ -358,7 +358,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
           >
             {shelves.length <= 1 ? (
               <Typography variant="body2">
-                📖 <strong>Your Library:</strong> Use search and category filters to find what you&apos;re looking for.{!isAdmin(userRole) && ' Click "Request Removal" to submit requests to an administrator.'}
+                📖 <strong>Your Library:</strong> Use search and category filters to find what you&apos;re looking for.{!isAdmin(userRole) && ' Click &quot;Request Removal&quot; to submit requests to an administrator.'}
               </Typography>
             ) : isAdmin(userRole) ? (
               <Typography variant="body2">
@@ -366,7 +366,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
               </Typography>
             ) : (
               <Typography variant="body2">
-                📚 <strong>Your Collection:</strong> Browse your {books.length} books across {shelves.length} shelves. Click shelf tiles to filter, or use the search bar to find specific titles. Click "Request Removal" to submit requests to an administrator.
+                📚 <strong>Your Collection:</strong> Browse your {books.length} books across {shelves.length} shelves. Click shelf tiles to filter, or use the search bar to find specific titles. Click &quot;Request Removal&quot; to submit requests to an administrator.
               </Typography>
             )}
           </Alert>
