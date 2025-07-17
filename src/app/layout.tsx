@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { Providers } from './providers'
-import CookieNotice from '@/components/CookieNotice'
-import ConditionalAppLayout from '@/components/ConditionalAppLayout'
+import CookieNotice from '@/components/layout/CookieNotice'
+import ConditionalAppLayout from '@/components/layout/ConditionalAppLayout'
 
 export const metadata: Metadata = {
   title: 'LibraryCard - Personal Book Collection',

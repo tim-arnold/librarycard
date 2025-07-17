@@ -28,8 +28,8 @@ import {
   History,
   Settings,
 } from '@mui/icons-material'
-import Footer from '@/components/Footer'
-import HelpModal from '@/components/HelpModal'
+import Footer from './Footer'
+import HelpModal from '@/components/modals/HelpModal'
 import { useTheme } from '@/lib/ThemeContext'
 
 interface AppLayoutProps {
