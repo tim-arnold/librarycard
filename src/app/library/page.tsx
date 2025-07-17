@@ -4,7 +4,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { Container, CircularProgress, Typography, Box } from '@mui/material'
-import BookLibrary from '@/components/BookLibrary'
+import BookLibrary from '@/components/library/BookLibrary'
 
 export default function LibraryPage() {
   const { data: session, status } = useSession()

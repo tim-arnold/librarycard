@@ -21,7 +21,7 @@ import {
 } from '@mui/icons-material'
 import ConfirmationModal from '@/components/modals/ConfirmationModal'
 import AlertModal from '@/components/modals/AlertModal'
-import Footer from '@/components/Footer'
+import Footer from '@/components/layout/Footer'
 import { useModal } from '@/hooks/useModal'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'

@@ -28,7 +28,7 @@ import {
   History,
   Settings,
 } from '@mui/icons-material'
-import Footer from '@/components/Footer'
+import Footer from './Footer'
 import HelpModal from '@/components/modals/HelpModal'
 import { useTheme } from '@/lib/ThemeContext'
 

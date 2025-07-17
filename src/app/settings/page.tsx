@@ -23,7 +23,7 @@ import {
   LightMode,
   Palette,
 } from '@mui/icons-material'
-import Footer from '@/components/Footer'
+import Footer from '@/components/layout/Footer'
 import { useTheme } from '@/lib/ThemeContext'
 
 export default function SettingsPage() {
