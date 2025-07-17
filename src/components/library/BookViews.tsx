@@ -35,12 +35,12 @@ interface BookViewsProps {
   locationFilter: string
   currentPage: number
   booksPerPage: number
-  onCheckout: (bookId: string, bookTitle: string) => void
-  onCheckin: (bookId: string, bookTitle: string) => void
-  onDelete: (bookId: string, bookTitle: string) => void
+  onCheckout: (bookId: string, bookTitle: string) => Promise<void>
+  onCheckin: (bookId: string, bookTitle: string) => Promise<void>
+  onDelete: (bookId: string, bookTitle: string) => Promise<void>
   onRelocate: (book: EnhancedBook) => void
-  onRequestRemoval: (bookId: string, bookTitle: string) => void
-  onCancelRemovalRequest: (bookId: string, bookTitle: string) => void
+  onRequestRemoval: (bookId: string, bookTitle: string) => Promise<void>
+  onCancelRemovalRequest: (bookId: string, bookTitle: string) => Promise<void>
   onMoreDetailsClick: (book: EnhancedBook) => void
   onAuthorClick: (authorName: string) => void
   onSeriesClick: (seriesName: string) => void

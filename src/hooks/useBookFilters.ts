@@ -6,7 +6,6 @@ import type { EnhancedBook } from '@/lib/types'
 import { getStorageItem, setStorageItem } from '@/lib/storage'
 import { nameToSlug } from '@/lib/urlUtils'
 import { isAdmin } from '@/lib/permissions'
-import { BookFilters } from '@/components/BookFilters'
 
 interface Shelf {
   id: number
