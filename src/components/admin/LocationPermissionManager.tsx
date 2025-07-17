@@ -302,7 +302,7 @@ export default function LocationPermissionManager({ locationId, locationName, us
 
       {!canManagePermissions && (
         <Alert severity="info" sx={{ mb: 2 }}>
-          You can view permissions but cannot modify them. Only super administrators or location admins with "Control User Permissions" capability can make changes.
+          You can view permissions but cannot modify them. Only super administrators or location admins with &quot;Control User Permissions&quot; capability can make changes.
         </Alert>
       )}
 
