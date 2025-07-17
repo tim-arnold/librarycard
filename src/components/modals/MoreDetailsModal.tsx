@@ -36,7 +36,7 @@ interface CheckoutHistoryItem {
 }
 
 interface MoreDetailsModalProps {
-  book: EnhancedBook
+  book: EnhancedBook | null
   isOpen: boolean
   onClose: () => void
   userRole: string | null
@@ -46,6 +46,8 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole }: Mo
   const [checkoutHistory, setCheckoutHistory] = useState<CheckoutHistoryItem[]>([])
   const [showCheckoutHistory, setShowCheckoutHistory] = useState(false)
   const [loadingHistory, setLoadingHistory] = useState(false)
+
+  if (!book) return null
 
   const fetchCheckoutHistory = async () => {
     if (!isAdmin(userRole)) return

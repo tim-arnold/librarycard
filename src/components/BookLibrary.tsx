@@ -481,7 +481,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
         )}
 
         <MoreDetailsModal
-          book={selectedBookForDetails!}
+          book={selectedBookForDetails}
           isOpen={!!selectedBookForDetails}
           onClose={() => setSelectedBookForDetails(null)}
           userRole={userRole}
