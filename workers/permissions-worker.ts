@@ -34,15 +34,13 @@ export default {
       const path = url.pathname;
 
       // Authentication check
-      const userResult = await getUserFromRequest(request, env);
-      if (!userResult.success || !userResult.user) {
+      const userId = await getUserFromRequest(request, env);
+      if (!userId) {
         return new Response(JSON.stringify({ error: 'Authentication required' }), {
           status: 401,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-
-      const userId = userResult.user.id;
 
       // Permission Management Endpoints
 
