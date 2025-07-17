@@ -15,7 +15,7 @@ import {
 } from '@mui/material'
 import { Close, Star } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
-import StarRatingInput from '../StarRatingInput'
+import StarRatingInput from '../book/StarRatingInput'
 
 interface RatingModalProps {
   book: EnhancedBook
