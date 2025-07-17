@@ -20,7 +20,7 @@ import {
   Image,
 } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
-import CoverSelectionModal from './CoverSelectionModal'
+import CoverSelectionModal from '../modals/CoverSelectionModal'
 
 interface BookPreviewProps {
   book: EnhancedBook

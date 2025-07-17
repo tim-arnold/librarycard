@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Box, Typography, Link, Divider } from '@mui/material'
 import { Email } from '@mui/icons-material'
-import ContactModal from './ContactModal'
+import ContactModal from '../modals/ContactModal'
 
 export default function Footer() {
   const [contactModalOpen, setContactModalOpen] = useState(false)

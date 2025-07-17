@@ -21,7 +21,7 @@ import {
   PersonAdd,
   Login,
 } from '@mui/icons-material'
-import Footer from '@/components/Footer'
+import Footer from '@/components/layout/Footer'
 import { Turnstile, TurnstileInstance } from '@marsidev/react-turnstile'
 
 function SignInForm() {

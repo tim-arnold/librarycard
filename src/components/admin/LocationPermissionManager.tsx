@@ -37,7 +37,7 @@ import {
   Lock,
   LockOpen,
 } from '@mui/icons-material'
-import { authenticatedFetch } from '../lib/auth-utils'
+import { authenticatedFetch } from '../../lib/auth-utils'
 
 interface CanManagePermissionsResponse {
   canManagePermissions: boolean

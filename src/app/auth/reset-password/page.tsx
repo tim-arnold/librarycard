@@ -17,7 +17,7 @@ import {
   CheckCircle,
   Error as ErrorIcon,
 } from '@mui/icons-material'
-import Footer from '@/components/Footer'
+import Footer from '@/components/layout/Footer'
 
 function ResetPasswordForm() {
   const [password, setPassword] = useState('')

@@ -18,7 +18,7 @@ import {
   History,
   Book,
 } from '@mui/icons-material'
-import Footer from '@/components/Footer'
+import Footer from '@/components/layout/Footer'
 
 interface CheckoutHistoryItem {
   id: number

@@ -24,9 +24,9 @@ import {
   Visibility,
   VisibilityOff,
 } from '@mui/icons-material'
-import ConfirmationModal from '@/components/ConfirmationModal'
-import AlertModal from '@/components/AlertModal'
-import Footer from '@/components/Footer'
+import ConfirmationModal from '@/components/modals/ConfirmationModal'
+import AlertModal from '@/components/modals/AlertModal'
+import Footer from '@/components/layout/Footer'
 import { useModal } from '@/hooks/useModal'
 
 interface ProfileData {

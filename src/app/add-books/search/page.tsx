@@ -4,7 +4,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { Container, CircularProgress, Typography, Box } from '@mui/material'
-import AddBooks from '@/components/AddBooks'
+import AddBooks from '@/components/book/AddBooks'
 
 export default function AddBooksSearchPage() {
   const { data: session, status } = useSession()
