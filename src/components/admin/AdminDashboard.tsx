@@ -26,7 +26,7 @@ import AdminAnalytics from './AdminAnalytics'
 import AdminUserManager from './AdminUserManager'
 import AdminNotificationCenter from './AdminNotificationCenter'
 import AdminSignupManager from './AdminSignupManager'
-import LocationManager from '../LocationManager'
+import LocationManager from './LocationManager'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
 
