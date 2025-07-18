@@ -65,6 +65,7 @@ export default function StarRating({
           color: rating >= starValue - 0.4 ? 'warning.main' : 'action.disabled',
           transition: 'color 0.2s ease'
         }}
+        aria-label={`${starValue} out of 5 stars`}
       />
     )
   }
@@ -75,7 +76,7 @@ export default function StarRating({
     
     return (
       <Chip
-        icon={<Star sx={{ fontSize: `${config.starSize - 2}px !important` }} />}
+        icon={<Star sx={{ fontSize: `${config.starSize - 2}px !important` }} aria-label={`${displayRating.toFixed(1)} out of 5 stars`} />}
         label={`${displayRating.toFixed(1)}${showCount && ratingCount > 0 ? ` (${ratingCount})` : ''}`}
         size={size === 'large' ? 'medium' : size as 'small' | 'medium'}
         color={hasUserRating ? 'primary' : 'default'}
@@ -109,7 +110,7 @@ export default function StarRating({
         onClick={onClick}
         className={className}
       >
-        <Star sx={{ fontSize: config.starSize, color: 'warning.main' }} />
+        <Star sx={{ fontSize: config.starSize, color: 'warning.main' }} aria-label={`${displayRating.toFixed(1)} out of 5 stars`} />
         <Typography 
           variant="caption" 
           sx={{ 
