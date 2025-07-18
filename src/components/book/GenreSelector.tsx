@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
 import { getApiBaseUrl } from '@/lib/apiConfig'
 import {
   Box,
@@ -33,6 +34,7 @@ export default function GenreSelector({
   onGenresChange,
   onError
 }: GenreSelectorProps) {
+  const { data: session } = useSession()
   const [availableGenres, setAvailableGenres] = useState<CuratedGenre[]>([])
   const [suggestedGenres, setSuggestedGenres] = useState<CuratedGenre[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -40,11 +42,18 @@ export default function GenreSelector({
 
   // Load available genres from database
   useEffect(() => {
+    if (!session?.user?.email) return
+    
     console.log('GenreSelector mounted with book:', book.title, 'enhancedGenres:', book.enhancedGenres)
     const loadGenres = async () => {
       try {
         setIsLoading(true)
-        const response = await fetch(`${getApiBaseUrl()}/api/genres`)
+        const response = await fetch(`${getApiBaseUrl()}/api/genres`, {
+          headers: {
+            'Authorization': `Bearer ${session.user.email}`,
+            'Content-Type': 'application/json',
+          },
+        })
         
         if (!response.ok) {
           throw new Error('Failed to load genres')
@@ -73,7 +82,7 @@ export default function GenreSelector({
     }
 
     loadGenres()
-  }, [book.enhancedGenres, onError])
+  }, [session, book.enhancedGenres, onError])
 
   const handleAcceptSuggestion = (genre: CuratedGenre) => {
     if (!selectedGenres.find(g => g.id === genre.id)) {
