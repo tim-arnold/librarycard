@@ -270,7 +270,34 @@ export default function AdminUserManager() {
       })
 
       if (response.ok) {
-        await loadUserAssignedLocations(userForLocationAssignment.id)
+        // Get fresh location data
+        const locResponse = await fetch(`${API_BASE}/api/admin/users/${userForLocationAssignment.id}/locations`, {
+          headers: {
+            'Authorization': `Bearer ${session?.user?.email}`,
+            'Content-Type': 'application/json',
+          },
+        })
+        
+        if (locResponse.ok) {
+          const locData = await locResponse.json()
+          setUserAssignedLocations(locData.assigned_locations || [])
+          setAvailableLocationsForAssignment(locData.available_locations || [])
+          
+          // Update the user's location data with the actual current state
+          const locationNames = (locData.assigned_locations || []).map(loc => loc.name).join(',')
+          setUsers(prevUsers => 
+            prevUsers.map(user => 
+              user.id === userForLocationAssignment.id 
+                ? { 
+                    ...user, 
+                    locations_joined: (locData.assigned_locations || []).length,
+                    location_names: locationNames || null
+                  }
+                : user
+            )
+          )
+        }
+        
         await alert({
           title: 'Location Assigned',
           message: 'Location has been successfully assigned to the user.',
@@ -303,7 +330,34 @@ export default function AdminUserManager() {
       })
 
       if (response.ok) {
-        await loadUserAssignedLocations(userForLocationAssignment.id)
+        // Get fresh location data
+        const locResponse = await fetch(`${API_BASE}/api/admin/users/${userForLocationAssignment.id}/locations`, {
+          headers: {
+            'Authorization': `Bearer ${session?.user?.email}`,
+            'Content-Type': 'application/json',
+          },
+        })
+        
+        if (locResponse.ok) {
+          const locData = await locResponse.json()
+          setUserAssignedLocations(locData.assigned_locations || [])
+          setAvailableLocationsForAssignment(locData.available_locations || [])
+          
+          // Update the user's location data with the actual current state
+          const locationNames = (locData.assigned_locations || []).map(loc => loc.name).join(',')
+          setUsers(prevUsers => 
+            prevUsers.map(user => 
+              user.id === userForLocationAssignment.id 
+                ? { 
+                    ...user, 
+                    locations_joined: (locData.assigned_locations || []).length,
+                    location_names: locationNames || null
+                  }
+                : user
+            )
+          )
+        }
+        
         await alert({
           title: 'Location Unassigned',
           message: 'Location has been successfully unassigned from the user.',
