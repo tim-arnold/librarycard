@@ -76,3 +76,26 @@ export async function deleteBook(id: string | number): Promise<boolean> {
     return true
   }
 }
+
+export async function getBooksWithRatings(): Promise<EnhancedBook[]> {
+  const response = await fetch('/api/books')
+  if (!response.ok) {
+    throw new Error('Failed to fetch books')
+  }
+  return response.json()
+}
+
+export async function getUserLocationName(): Promise<string | null> {
+  try {
+    const { getApiBaseUrl } = await import('@/lib/apiConfig')
+    const response = await fetch(`${getApiBaseUrl()}/api/locations`)
+    if (!response.ok) {
+      return null
+    }
+    const locations = await response.json()
+    return locations.length > 0 ? locations[0].name : null
+  } catch (error) {
+    console.error('Failed to fetch location name:', error)
+    return null
+  }
+}

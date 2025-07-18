@@ -1,7 +1,8 @@
 import { getServerSession } from 'next-auth'
 import { NextRequest, NextResponse } from 'next/server'
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
+// Check both NEXT_PUBLIC_ and regular env vars for API URL
+const API_BASE = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8787'
 
 export async function PUT(
   request: NextRequest,
