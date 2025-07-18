@@ -93,7 +93,7 @@ export function useBookActions({
           const response = await fetch(`${getApiBaseUrl()}/api/book-removal-requests/${requestId}`, {
             method: 'DELETE',
             headers: {
-              'Authorization': `Bearer ${session.user.email}`,
+              'Authorization': `Bearer ${session?.user?.email}`,
               'Content-Type': 'application/json',
             },
           })
@@ -161,7 +161,7 @@ export function useBookActions({
           const response = await fetch(`${getApiBaseUrl()}/api/book-removal-requests`, {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${session.user.email}`,
+              'Authorization': `Bearer ${session?.user?.email}`,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
@@ -254,7 +254,7 @@ export function useBookActions({
           const response = await fetch(`${getApiBaseUrl()}/api/books/${bookId}/checkout`, {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${session.user.email}`,
+              'Authorization': `Bearer ${session?.user?.email}`,
               'Content-Type': 'application/json',
             },
           })
@@ -335,7 +335,7 @@ export function useBookActions({
           const response = await fetch(`${getApiBaseUrl()}/api/books/${bookId}/checkin`, {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${session.user.email}`,
+              'Authorization': `Bearer ${session?.user?.email}`,
               'Content-Type': 'application/json',
             },
           })
@@ -400,7 +400,7 @@ export function useBookActions({
       const response = await fetch(`${getApiBaseUrl()}/api/books/${bookId}/rate`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${session.user.email}`,
+          'Authorization': `Bearer ${session?.user?.email}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -451,7 +451,7 @@ export function useBookActions({
       const response = await fetch(`${getApiBaseUrl()}/api/books/${bookId}/genres`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${session.user.email}`,
+          'Authorization': `Bearer ${session?.user?.email}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ genres }),
