@@ -284,7 +284,7 @@ export default function AdminUserManager() {
           setAvailableLocationsForAssignment(locData.available_locations || [])
           
           // Update the user's location data with the actual current state
-          const locationNames = (locData.assigned_locations || []).map(loc => loc.name).join(',')
+          const locationNames = (locData.assigned_locations || []).map((loc: any) => loc.name).join(',')
           setUsers(prevUsers => 
             prevUsers.map(user => 
               user.id === userForLocationAssignment.id 
@@ -344,7 +344,7 @@ export default function AdminUserManager() {
           setAvailableLocationsForAssignment(locData.available_locations || [])
           
           // Update the user's location data with the actual current state
-          const locationNames = (locData.assigned_locations || []).map(loc => loc.name).join(',')
+          const locationNames = (locData.assigned_locations || []).map((loc: any) => loc.name).join(',')
           setUsers(prevUsers => 
             prevUsers.map(user => 
               user.id === userForLocationAssignment.id 
