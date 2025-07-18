@@ -3,6 +3,7 @@
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { getApiBaseUrl } from '@/lib/apiConfig'
 import { Container, CircularProgress, Typography, Box } from '@mui/material'
 import AdminDashboard from '@/components/admin/AdminDashboard'
 import { isAdmin } from '@/lib/permissions'
@@ -22,7 +23,12 @@ export default function AdminPage() {
     }
 
     // Fetch user role to check admin permissions
-    fetch('/api/profile')
+    fetch(`${getApiBaseUrl()}/api/profile`, {
+      headers: {
+        'Authorization': `Bearer ${session.user.email}`,
+        'Content-Type': 'application/json',
+      },
+    })
       .then(res => res.json())
       .then(data => {
         setUserRole(data.user_role)

@@ -2,6 +2,69 @@
 
 This file documents all completed features, fixes, and improvements to the LibraryCard project.
 
+## July 18, 2025 - Star Rating Accessibility Improvements
+
+### Star Rating Accessibility Enhancement - GitHub Issue #76 COMPLETE!
+- **IMPLEMENTED**: Comprehensive accessibility labels for star rating components improving screen reader compatibility
+- **ADDED**: `aria-label` attributes to all star icons with "X out of 5 stars" format across all rating variants
+- **ENHANCED**: Both `StarRating.tsx` and `StarRatingInput.tsx` components with proper accessibility markup
+- **COVERED**: All rating variants including display, chip, mini, and interactive input modes
+- **FIXED**: Initial implementation issue using `aria-label` instead of `titleAccess` to prevent click event interference
+- **VERIFIED**: Screen reader accessibility without breaking existing click functionality for rating interactions
+
+### Accessibility Implementation Details
+- **APPLIED**: Consistent "X out of 5 stars" labeling pattern across all star rating components
+- **MAINTAINED**: Full backward compatibility with existing rating functionality
+- **ENSURED**: Proper accessibility markup following WCAG guidelines for interactive rating elements
+- **TESTED**: Click event functionality preserved while adding comprehensive screen reader support
+
+## July 17, 2025 - BookLibrary.tsx Major Refactoring
+
+### Component Architecture Refactoring - GitHub Issue #74 COMPLETE!
+- **ACHIEVED**: 79% size reduction of BookLibrary.tsx from 2,574 lines to 538 lines
+- **EXTRACTED**: 11 focused, reusable components following established codebase patterns
+- **CREATED**: 3 custom hooks for clean separation of business logic from UI components
+- **MOVED**: 2 modal components to dedicated modal directory for better organization
+- **MAINTAINED**: All existing functionality with zero breaking changes to public API
+
+### Phase 1: Modal Components Extraction (~400 lines)
+- **EXTRACTED**: `MoreDetailsModal.tsx` to `src/components/modals/MoreDetailsModal.tsx`
+- **MOVED**: `BookRelocateModal.tsx` to `src/components/modals/BookRelocateModal.tsx`
+- **RELOCATED**: Checkout history logic to dedicated custom hook for reusability
+
+### Phase 2: Business Logic Hooks (~800 lines)
+- **CREATED**: `useBookLibrary.ts` hook for main library state management and data fetching
+- **BUILT**: `useBookActions.ts` hook for book operation handlers (add, remove, relocate, rate)
+- **DEVELOPED**: `useBookFilters.ts` hook for filter state management and URL synchronization
+- **INTEGRATED**: Permission logic into existing hooks for streamlined access control
+
+### Phase 3: UI Components Extraction (~600 lines)
+- **EXTRACTED**: `LibraryHeader.tsx` for header with search functionality and action buttons
+- **CREATED**: `ActiveFilters.tsx` for filter display and management interface
+- **BUILT**: `ShelfTiles.tsx` for shelf navigation and organization display
+- **DEVELOPED**: `ViewModeControls.tsx` for view mode switching (grid, list, compact)
+- **ESTABLISHED**: `BookViews.tsx` for different book display modes with consistent rendering
+
+### Phase 4: Utility Integration (~300 lines)
+- **INTEGRATED**: Genre matching logic into custom hooks for better encapsulation
+- **INCORPORATED**: URL generation utilities into hooks for centralized routing management
+- **EMBEDDED**: Pagination utilities within hooks for consistent data handling patterns
+
+### Technical Achievements & Benefits
+- **PERFORMANCE**: Faster development builds and hot module replacement with smaller component sizes
+- **MAINTAINABILITY**: Clear separation of concerns enabling easier debugging and feature development
+- **TESTING**: Simplified unit testing with focused, single-responsibility components
+- **REUSABILITY**: Extracted components can be reused across different parts of the application
+- **DEVELOPER EXPERIENCE**: Improved IDE performance and reduced merge conflicts
+- **SCALABILITY**: Modular architecture supporting future feature additions and modifications
+
+### Code Quality Improvements
+- **PRESERVED**: All TypeScript strict mode compliance and type safety
+- **MAINTAINED**: Material UI design system consistency across all extracted components
+- **FOLLOWED**: Established codebase patterns and architectural conventions
+- **ENSURED**: Backward compatibility with existing component interfaces and props
+- **VERIFIED**: All tests passing including screenshot tests and build verification
+
 ## July 16, 2025 - Cloudflare KV Caching Implementation (Phase 3)
 
 ### Advanced KV Caching System - GitHub Issue #33 PHASE 3 COMPLETE!
