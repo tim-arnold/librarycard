@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import type { EnhancedBook } from '@/lib/types'
 import { getStorageItem, setStorageItem } from '@/lib/storage'
@@ -289,14 +289,33 @@ export function useBookFilters({
     return basePath + (searchParams.toString() ? `?${searchParams.toString()}` : '')
   }, [locationFilter, shelfFilter, checkoutFilter, searchTerm])
 
+  // Debounce URL updates to prevent rapid navigation
+  const urlUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  
   // Update URL when filters change (only after component is fully loaded)
   useEffect(() => {
     // Don't update URL until component is loaded and has data
     if (isLoading) return
     
-    const newUrl = generateFilterUrl()
-    if (pathname !== newUrl) {
-      router.push(newUrl, { scroll: false })
+    // Clear existing timeout
+    if (urlUpdateTimeoutRef.current) {
+      clearTimeout(urlUpdateTimeoutRef.current)
+    }
+    
+    // Debounce URL updates to prevent rapid navigation that causes blinking
+    urlUpdateTimeoutRef.current = setTimeout(() => {
+      const newUrl = generateFilterUrl()
+      if (pathname !== newUrl) {
+        // Use replace instead of push to avoid triggering a full page navigation
+        router.replace(newUrl, { scroll: false })
+      }
+    }, 100) // 100ms debounce
+    
+    // Cleanup timeout on unmount
+    return () => {
+      if (urlUpdateTimeoutRef.current) {
+        clearTimeout(urlUpdateTimeoutRef.current)
+      }
     }
   }, [generateFilterUrl, pathname, router, isLoading])
 
