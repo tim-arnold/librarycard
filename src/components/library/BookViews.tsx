@@ -122,55 +122,69 @@ export default function BookViews({
       if (isAdmin(userRole) && booksByLocation) {
         // Admin ultra-compact view with location grouping (paginated)
         return (
-          <div>
-            {getPaginatedBooksForView().map((location: any) => (
-              <div key={location.id} style={{ marginBottom: '2rem' }}>
-                {/* Only show location header when viewing all locations (no location filter active) */}
-                {!locationFilter && renderLocationHeader(location)}
-                
-                <BookList
-                  books={location.books || []}
-                  userRole={userRole}
-                  userPermissions={userPermissions}
-                  currentUserId={currentUserId}
-                  shelves={shelves}
-                  pendingRemovalRequests={pendingRemovalRequests}
-                  onCheckout={onCheckout}
-                  onCheckin={onCheckin}
-                  onDelete={onDelete}
-                  onRelocate={onRelocate}
-                  onRequestRemoval={onRequestRemoval}
-                  onCancelRemovalRequest={onCancelRemovalRequest}
-                  onMoreDetailsClick={onMoreDetailsClick}
-                  onAuthorClick={onAuthorClick}
-                  onRateBook={onRateBook}
-                  onGenreEdit={onGenreEdit}
-                />
-              </div>
-            ))}
-          </div>
+          <Fade 
+            in={true} 
+            timeout={500}
+            key={`admin-list-${locationFilter}-${currentPage}`}
+          >
+            <Box>
+              {getPaginatedBooksForView().map((location: any) => (
+                <div key={location.id} style={{ marginBottom: '2rem' }}>
+                  {/* Only show location header when viewing all locations (no location filter active) */}
+                  {!locationFilter && renderLocationHeader(location)}
+                  
+                  <BookList
+                    books={location.books || []}
+                    userRole={userRole}
+                    userPermissions={userPermissions}
+                    currentUserId={currentUserId}
+                    shelves={shelves}
+                    pendingRemovalRequests={pendingRemovalRequests}
+                    onCheckout={onCheckout}
+                    onCheckin={onCheckin}
+                    onDelete={onDelete}
+                    onRelocate={onRelocate}
+                    onRequestRemoval={onRequestRemoval}
+                    onCancelRemovalRequest={onCancelRemovalRequest}
+                    onMoreDetailsClick={onMoreDetailsClick}
+                    onAuthorClick={onAuthorClick}
+                    onRateBook={onRateBook}
+                    onGenreEdit={onGenreEdit}
+                  />
+                </div>
+              ))}
+            </Box>
+          </Fade>
         )
       } else {
         // Regular user ultra-compact view (paginated)
         return (
-          <BookList
-            books={paginatedBooks}
-            userRole={userRole}
-            userPermissions={userPermissions}
-            currentUserId={currentUserId}
-            shelves={shelves}
-            pendingRemovalRequests={pendingRemovalRequests}
-            onCheckout={onCheckout}
-            onCheckin={onCheckin}
-            onDelete={onDelete}
-            onRelocate={onRelocate}
-            onRequestRemoval={onRequestRemoval}
-            onCancelRemovalRequest={onCancelRemovalRequest}
-            onMoreDetailsClick={onMoreDetailsClick}
-            onAuthorClick={onAuthorClick}
-            onRateBook={onRateBook}
-            onGenreEdit={onGenreEdit}
-          />
+          <Fade 
+            in={true} 
+            timeout={500}
+            key={`list-${locationFilter}-${currentPage}`}
+          >
+            <Box>
+              <BookList
+                books={paginatedBooks}
+                userRole={userRole}
+                userPermissions={userPermissions}
+                currentUserId={currentUserId}
+                shelves={shelves}
+                pendingRemovalRequests={pendingRemovalRequests}
+                onCheckout={onCheckout}
+                onCheckin={onCheckin}
+                onDelete={onDelete}
+                onRelocate={onRelocate}
+                onRequestRemoval={onRequestRemoval}
+                onCancelRemovalRequest={onCancelRemovalRequest}
+                onMoreDetailsClick={onMoreDetailsClick}
+                onAuthorClick={onAuthorClick}
+                onRateBook={onRateBook}
+                onGenreEdit={onGenreEdit}
+              />
+            </Box>
+          </Fade>
         )
       }
     } else if (viewMode === 'compact') {
@@ -178,59 +192,73 @@ export default function BookViews({
       if (isAdmin(userRole) && booksByLocation) {
         // Admin compact list view with location grouping (paginated)
         return (
-          <div>
-            {getPaginatedBooksForView().map((location: any) => (
-              <div key={location.id} style={{ marginBottom: '2rem' }}>
-                {/* Only show location header when viewing all locations (no location filter active) */}
-                {!locationFilter && renderLocationHeader(location)}
-                
-                <BookCompact
-                  books={location.books || []}
-                  userRole={userRole}
-                  userPermissions={userPermissions}
-                  currentUserId={currentUserId}
-                  shelves={shelves}
-                  pendingRemovalRequests={pendingRemovalRequests}
-                  onCheckout={onCheckout}
-                  onCheckin={onCheckin}
-                  onDelete={onDelete}
-                  onRelocate={onRelocate}
-                  onRequestRemoval={onRequestRemoval}
-                  onCancelRemovalRequest={onCancelRemovalRequest}
-                  onMoreDetailsClick={onMoreDetailsClick}
-                  onAuthorClick={onAuthorClick}
-                  onSeriesClick={onSeriesClick}
-                  onRateBook={onRateBook}
-                  onGenreEdit={onGenreEdit}
-                  onCoverEdit={onCoverEdit}
-                />
-              </div>
-            ))}
-          </div>
+          <Fade 
+            in={true} 
+            timeout={500}
+            key={`admin-compact-${locationFilter}-${currentPage}`}
+          >
+            <Box>
+              {getPaginatedBooksForView().map((location: any) => (
+                <div key={location.id} style={{ marginBottom: '2rem' }}>
+                  {/* Only show location header when viewing all locations (no location filter active) */}
+                  {!locationFilter && renderLocationHeader(location)}
+                  
+                  <BookCompact
+                    books={location.books || []}
+                    userRole={userRole}
+                    userPermissions={userPermissions}
+                    currentUserId={currentUserId}
+                    shelves={shelves}
+                    pendingRemovalRequests={pendingRemovalRequests}
+                    onCheckout={onCheckout}
+                    onCheckin={onCheckin}
+                    onDelete={onDelete}
+                    onRelocate={onRelocate}
+                    onRequestRemoval={onRequestRemoval}
+                    onCancelRemovalRequest={onCancelRemovalRequest}
+                    onMoreDetailsClick={onMoreDetailsClick}
+                    onAuthorClick={onAuthorClick}
+                    onSeriesClick={onSeriesClick}
+                    onRateBook={onRateBook}
+                    onGenreEdit={onGenreEdit}
+                    onCoverEdit={onCoverEdit}
+                  />
+                </div>
+              ))}
+            </Box>
+          </Fade>
         )
       } else {
         // Regular user compact list view (paginated)
         return (
-          <BookCompact
-            books={paginatedBooks}
-            userRole={userRole}
-            userPermissions={userPermissions}
-            currentUserId={currentUserId}
-            shelves={shelves}
-            pendingRemovalRequests={pendingRemovalRequests}
-            onCheckout={onCheckout}
-            onCheckin={onCheckin}
-            onDelete={onDelete}
-            onRelocate={onRelocate}
-            onRequestRemoval={onRequestRemoval}
-            onCancelRemovalRequest={onCancelRemovalRequest}
-            onMoreDetailsClick={onMoreDetailsClick}
-            onAuthorClick={onAuthorClick}
-            onSeriesClick={onSeriesClick}
-            onRateBook={onRateBook}
-            onGenreEdit={onGenreEdit}
-            onCoverEdit={onCoverEdit}
-          />
+          <Fade 
+            in={true} 
+            timeout={500}
+            key={`compact-${locationFilter}-${currentPage}`}
+          >
+            <Box>
+              <BookCompact
+                books={paginatedBooks}
+                userRole={userRole}
+                userPermissions={userPermissions}
+                currentUserId={currentUserId}
+                shelves={shelves}
+                pendingRemovalRequests={pendingRemovalRequests}
+                onCheckout={onCheckout}
+                onCheckin={onCheckin}
+                onDelete={onDelete}
+                onRelocate={onRelocate}
+                onRequestRemoval={onRequestRemoval}
+                onCancelRemovalRequest={onCancelRemovalRequest}
+                onMoreDetailsClick={onMoreDetailsClick}
+                onAuthorClick={onAuthorClick}
+                onSeriesClick={onSeriesClick}
+                onRateBook={onRateBook}
+                onGenreEdit={onGenreEdit}
+                onCoverEdit={onCoverEdit}
+              />
+            </Box>
+          </Fade>
         )
       }
     } else {
@@ -238,57 +266,71 @@ export default function BookViews({
       if (isAdmin(userRole) && booksByLocation) {
         // Admin card view with location grouping (paginated)
         return (
-          <div>
-            {getPaginatedBooksForView().map((location: any) => (
-              <div key={location.id} style={{ marginBottom: '2rem' }}>
-                {/* Only show location header when viewing all locations (no location filter active) */}
-                {!locationFilter && renderLocationHeader(location)}
-                
-                <BookGrid
-                  books={location.books || []}
-                  userRole={userRole}
-                  userPermissions={userPermissions}
-                  shelves={shelves}
-                  pendingRemovalRequests={pendingRemovalRequests}
-                  onCheckout={onCheckout}
-                  onCheckin={onCheckin}
-                  onDelete={onDelete}
-                  onRelocate={onRelocate}
-                  onRequestRemoval={onRequestRemoval}
-                  onCancelRemovalRequest={onCancelRemovalRequest}
-                  onMoreDetailsClick={onMoreDetailsClick}
-                  onAuthorClick={onAuthorClick}
-                  onSeriesClick={onSeriesClick}
-                  onRateBook={onRateBook}
-                  onGenreEdit={onGenreEdit}
-                  onCoverEdit={onCoverEdit}
-                />
-              </div>
-            ))}
-          </div>
+          <Fade 
+            in={true} 
+            timeout={500}
+            key={`admin-card-${locationFilter}-${currentPage}`}
+          >
+            <Box>
+              {getPaginatedBooksForView().map((location: any) => (
+                <div key={location.id} style={{ marginBottom: '2rem' }}>
+                  {/* Only show location header when viewing all locations (no location filter active) */}
+                  {!locationFilter && renderLocationHeader(location)}
+                  
+                  <BookGrid
+                    books={location.books || []}
+                    userRole={userRole}
+                    userPermissions={userPermissions}
+                    shelves={shelves}
+                    pendingRemovalRequests={pendingRemovalRequests}
+                    onCheckout={onCheckout}
+                    onCheckin={onCheckin}
+                    onDelete={onDelete}
+                    onRelocate={onRelocate}
+                    onRequestRemoval={onRequestRemoval}
+                    onCancelRemovalRequest={onCancelRemovalRequest}
+                    onMoreDetailsClick={onMoreDetailsClick}
+                    onAuthorClick={onAuthorClick}
+                    onSeriesClick={onSeriesClick}
+                    onRateBook={onRateBook}
+                    onGenreEdit={onGenreEdit}
+                    onCoverEdit={onCoverEdit}
+                  />
+                </div>
+              ))}
+            </Box>
+          </Fade>
         )
       } else {
         // Regular user card view (paginated)
         return (
-          <BookGrid
-            books={paginatedBooks}
-            userRole={userRole}
-            userPermissions={userPermissions}
-            shelves={shelves}
-            pendingRemovalRequests={pendingRemovalRequests}
-            onCheckout={onCheckout}
-            onCheckin={onCheckin}
-            onDelete={onDelete}
-            onRelocate={onRelocate}
-            onRequestRemoval={onRequestRemoval}
-            onCancelRemovalRequest={onCancelRemovalRequest}
-            onMoreDetailsClick={onMoreDetailsClick}
-            onAuthorClick={onAuthorClick}
-            onSeriesClick={onSeriesClick}
-            onRateBook={onRateBook}
-            onGenreEdit={onGenreEdit}
-            onCoverEdit={onCoverEdit}
-          />
+          <Fade 
+            in={true} 
+            timeout={500}
+            key={`card-${locationFilter}-${currentPage}`}
+          >
+            <Box>
+              <BookGrid
+                books={paginatedBooks}
+                userRole={userRole}
+                userPermissions={userPermissions}
+                shelves={shelves}
+                pendingRemovalRequests={pendingRemovalRequests}
+                onCheckout={onCheckout}
+                onCheckin={onCheckin}
+                onDelete={onDelete}
+                onRelocate={onRelocate}
+                onRequestRemoval={onRequestRemoval}
+                onCancelRemovalRequest={onCancelRemovalRequest}
+                onMoreDetailsClick={onMoreDetailsClick}
+                onAuthorClick={onAuthorClick}
+                onSeriesClick={onSeriesClick}
+                onRateBook={onRateBook}
+                onGenreEdit={onGenreEdit}
+                onCoverEdit={onCoverEdit}
+              />
+            </Box>
+          </Fade>
         )
       }
     }
@@ -296,15 +338,7 @@ export default function BookViews({
 
   return (
     <Box>
-      <Fade 
-        in={true} 
-        timeout={500}
-        key={`${locationFilter}-${currentPage}-${viewMode}`}
-      >
-        <Box>
-          {renderBooks()}
-        </Box>
-      </Fade>
+      {renderBooks()}
       
       {/* Pagination Controls */}
       {filteredBooks.length > booksPerPage && (
