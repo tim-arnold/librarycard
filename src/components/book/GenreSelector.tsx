@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { getApiBaseUrl } from '@/lib/apiConfig'
 import {
   Box,
   Typography,
@@ -43,7 +44,7 @@ export default function GenreSelector({
     const loadGenres = async () => {
       try {
         setIsLoading(true)
-        const response = await fetch('/api/genres')
+        const response = await fetch(`${getApiBaseUrl()}/api/genres`)
         
         if (!response.ok) {
           throw new Error('Failed to load genres')
