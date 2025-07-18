@@ -353,12 +353,26 @@ export default {
       // Book checkout endpoints (must come before general /api/books/* routes)
       if (path.match(/^\/api\/books\/\d+\/checkout$/) && request.method === 'POST') {
         const bookId = parseInt(path.split('/')[3]);
-        return await checkoutBook(request, bookId, userId, env, corsHeaders);
+        const response = await checkoutBook(request, bookId, userId, env, corsHeaders);
+        
+        // Invalidate book cache after checkout
+        if (response.ok) {
+          await invalidateBookCache(bookId.toString(), userId, env);
+        }
+        
+        return response;
       }
 
       if (path.match(/^\/api\/books\/\d+\/checkin$/) && request.method === 'POST') {
         const bookId = parseInt(path.split('/')[3]);
-        return await checkinBook(bookId, userId, env, corsHeaders);
+        const response = await checkinBook(bookId, userId, env, corsHeaders);
+        
+        // Invalidate book cache after checkin
+        if (response.ok) {
+          await invalidateBookCache(bookId.toString(), userId, env);
+        }
+        
+        return response;
       }
 
       if (path === '/api/books/checkout-history' && request.method === 'GET') {
@@ -726,13 +740,27 @@ export default {
       if (path.match(/^\/api\/admin\/users\/[^\/]+\/locations\/[^\/]+$/) && request.method === 'POST') {
         const targetUserId = path.split('/')[4];
         const locationId = path.split('/')[6];
-        return await assignLocationToUser(targetUserId, locationId, userId, env, corsHeaders);
+        const response = await assignLocationToUser(targetUserId, locationId, userId, env, corsHeaders);
+        
+        // Invalidate admin cache after location assignment
+        if (response.ok) {
+          await invalidateAllAdminAnalytics(env);
+        }
+        
+        return response;
       }
 
       if (path.match(/^\/api\/admin\/users\/[^\/]+\/locations\/[^\/]+$/) && request.method === 'DELETE') {
         const targetUserId = path.split('/')[4];
         const locationId = path.split('/')[6];
-        return await unassignLocationFromUser(targetUserId, locationId, userId, env, corsHeaders);
+        const response = await unassignLocationFromUser(targetUserId, locationId, userId, env, corsHeaders);
+        
+        // Invalidate admin cache after location unassignment
+        if (response.ok) {
+          await invalidateAllAdminAnalytics(env);
+        }
+        
+        return response;
       }
 
       // Handle permission management endpoints directly (already authenticated)
