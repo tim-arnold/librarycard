@@ -96,6 +96,23 @@ export function useBookFilters({
     }
   }, [])
 
+  // Reset shelf filter when location changes (only if shelf doesn't belong to new location)
+  useEffect(() => {
+    // Only reset shelf filter if the current shelf doesn't exist in the new location
+    if (locationFilter && shelfFilter) {
+      const filteredShelves = shelves.filter(shelf => {
+        const location = allLocations.find(loc => loc.id === shelf.location_id)
+        return location?.name === locationFilter
+      })
+      
+      // If current shelf doesn't exist in the new location, reset to "All shelves"
+      const shelfExistsInLocation = filteredShelves.some(shelf => shelf.name === shelfFilter)
+      if (!shelfExistsInLocation) {
+        setShelfFilter('')
+      }
+    }
+  }, [locationFilter, shelves, allLocations, shelfFilter])
+
   // Helper function for dropdown generation - only check enhanced genres and categories
   const bookHasGenreForDropdown = (book: EnhancedBook, curatedGenre: string): boolean => {
     // Check assigned genres first (these are user-selected and highest priority)
