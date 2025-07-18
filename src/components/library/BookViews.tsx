@@ -1,6 +1,6 @@
 'use client'
 
-import { Box, Typography, Pagination } from '@mui/material'
+import { Box, Typography, Pagination, Fade } from '@mui/material'
 import BookGrid from '@/components/book/BookGrid'
 import BookCompact from '@/components/book/BookCompact'
 import BookList from '@/components/book/BookList'
@@ -296,7 +296,15 @@ export default function BookViews({
 
   return (
     <Box>
-      {renderBooks()}
+      <Fade 
+        in={true} 
+        timeout={300}
+        key={`${locationFilter}-${currentPage}-${viewMode}`}
+      >
+        <Box>
+          {renderBooks()}
+        </Box>
+      </Fade>
       
       {/* Pagination Controls */}
       {filteredBooks.length > booksPerPage && (
