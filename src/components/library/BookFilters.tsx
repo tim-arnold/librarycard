@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
   Box,
   TextField,
@@ -61,6 +61,16 @@ export default function BookFilters({
 }: BookFiltersProps) {
   const [genreSelectOpen, setGenreSelectOpen] = useState(false)
   
+  // Memoize filtered shelves to prevent re-rendering
+  const filteredShelves = useMemo(() => {
+    return locationFilter 
+      ? shelves.filter(shelf => {
+          const location = allLocations.find(loc => loc.id === shelf.location_id)
+          return location?.name === locationFilter
+        })
+      : shelves
+  }, [shelves, allLocations, locationFilter])
+  
   return (
     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
       <Box sx={{ flex: '1 1 200px', minWidth: 200 }}>
@@ -79,7 +89,7 @@ export default function BookFilters({
       </Box>
       
       {isAdmin(userRole) && allLocations.length > 1 && (
-        <Box sx={{ flex: '1 1 200px', minWidth: 200 }}>
+        <Box sx={{ flex: '1 1 200px', minWidth: 200 }} key="location-filter">
           <FormControl fullWidth size="small">
             <InputLabel>Location</InputLabel>
             <Select
@@ -96,7 +106,7 @@ export default function BookFilters({
       )}
 
       {isAdmin(userRole) && shelves.length > 1 && (
-        <Box sx={{ flex: '1 1 200px', minWidth: 200 }}>
+        <Box sx={{ flex: '1 1 200px', minWidth: 200 }} key="shelf-filter">
           <FormControl fullWidth size="small">
             <InputLabel>Shelf</InputLabel>
             <Select
@@ -105,24 +115,15 @@ export default function BookFilters({
               onChange={(e) => setShelfFilter(e.target.value)}
             >
               <MenuItem value="">All shelves</MenuItem>
-              {(() => {
-                const filteredShelves = locationFilter 
-                  ? shelves.filter(shelf => {
-                      const location = allLocations.find(loc => loc.id === shelf.location_id)
-                      return location?.name === locationFilter
-                    })
-                  : shelves
-                
-                return filteredShelves.map(shelf => (
-                  <MenuItem key={shelf.id} value={shelf.name}>{shelf.name}</MenuItem>
-                ))
-              })()}
+              {filteredShelves.map(shelf => (
+                <MenuItem key={shelf.id} value={shelf.name}>{shelf.name}</MenuItem>
+              ))}
             </Select>
           </FormControl>
         </Box>
       )}
 
-      <Box sx={{ flex: '1 1 200px', minWidth: 200 }}>
+      <Box sx={{ flex: '1 1 200px', minWidth: 200 }} key="status-filter">
         <FormControl fullWidth size="small">
           <InputLabel>Status</InputLabel>
           <Select
@@ -137,7 +138,7 @@ export default function BookFilters({
         </FormControl>
       </Box>
 
-      <Box sx={{ flex: '1 1 200px', minWidth: 200 }}>
+      <Box sx={{ flex: '1 1 200px', minWidth: 200 }} key="genre-filter">
         <FormControl fullWidth size="small">
           <InputLabel>Genre</InputLabel>
           <Select
@@ -165,7 +166,7 @@ export default function BookFilters({
         </FormControl>
       </Box>
 
-      <Box sx={{ flex: '1 1 200px', minWidth: 200 }}>
+      <Box sx={{ flex: '1 1 200px', minWidth: 200 }} key="sort-filter">
         <FormControl fullWidth size="small">
           <InputLabel>Sort by</InputLabel>
           <Select
