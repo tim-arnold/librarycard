@@ -14,6 +14,7 @@ export default function FilteredLibraryPage() {
   const searchParams = useSearchParams()
   const [locationNames, setLocationNames] = useState<string[]>([])
   const [shelfNames, setShelfNames] = useState<string[]>([])
+  const [namesLoaded, setNamesLoaded] = useState(false)
 
   useEffect(() => {
     if (status === 'loading') return
@@ -22,9 +23,9 @@ export default function FilteredLibraryPage() {
     }
   }, [session, status, router])
 
-  // Load location and shelf names for slug conversion
+  // Load location and shelf names for slug conversion (only once)
   useEffect(() => {
-    if (!session?.user?.email) return
+    if (!session?.user?.email || namesLoaded) return
 
     const loadNamesForSlugConversion = async () => {
       try {
@@ -56,6 +57,7 @@ export default function FilteredLibraryPage() {
             }
           }
           setShelfNames(allShelfNames)
+          setNamesLoaded(true)
         }
       } catch (error) {
         console.error('Failed to load location/shelf names for slug conversion:', error)
@@ -63,7 +65,7 @@ export default function FilteredLibraryPage() {
     }
 
     loadNamesForSlugConversion()
-  }, [session])
+  }, [session, namesLoaded])
 
   if (status === 'loading') {
     return (
