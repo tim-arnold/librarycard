@@ -298,7 +298,7 @@ export default function BookViews({
     <Box>
       <Fade 
         in={true} 
-        timeout={300}
+        timeout={500}
         key={`${locationFilter}-${currentPage}-${viewMode}`}
       >
         <Box>
