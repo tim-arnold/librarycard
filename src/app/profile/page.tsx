@@ -82,7 +82,7 @@ export default function ProfilePage() {
     try {
       const response = await fetch(`${getApiBaseUrl()}/api/profile`, {
         headers: {
-          'Authorization': `Bearer ${session.user.email}`,
+          'Authorization': `Bearer ${session?.user?.email}`,
           'Content-Type': 'application/json',
         },
       })
@@ -126,13 +126,10 @@ export default function ProfilePage() {
       }
 
       const response = await fetch(`${getApiBaseUrl()}/api/profile`, {
-        headers: {
-          'Authorization': `Bearer ${session.user.email}`,
-          'Content-Type': 'application/json',
-        },
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json'
+          'Authorization': `Bearer ${session?.user?.email}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(updateData)
       })
