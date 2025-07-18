@@ -1,12 +1,27 @@
 import type { EnhancedBook } from '@/lib/types'
+import { getSession } from 'next-auth/react'
+
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const session = await getSession()
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  }
+  
+  if (session?.user?.email) {
+    headers['Authorization'] = `Bearer ${session.user.email}`
+  }
+  
+  return headers
+}
 
 export async function saveBook(book: Omit<EnhancedBook, 'id'>): Promise<boolean> {
   try {
-    const response = await fetch('/api/books', {
+    const { getApiBaseUrl } = await import('@/lib/apiConfig')
+    const headers = await getAuthHeaders()
+    
+    const response = await fetch(`${getApiBaseUrl()}/api/books`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify(book),
     })
     
@@ -25,7 +40,12 @@ export async function saveBook(book: Omit<EnhancedBook, 'id'>): Promise<boolean>
 
 export async function getBooks(): Promise<EnhancedBook[]> {
   try {
-    const response = await fetch('/api/books')
+    const { getApiBaseUrl } = await import('@/lib/apiConfig')
+    const headers = await getAuthHeaders()
+    
+    const response = await fetch(`${getApiBaseUrl()}/api/books`, {
+      headers,
+    })
     if (response.ok) {
       return await response.json()
     }
@@ -39,11 +59,12 @@ export async function getBooks(): Promise<EnhancedBook[]> {
 
 export async function updateBook(id: string | number, updates: Partial<EnhancedBook>): Promise<boolean> {
   try {
-    const response = await fetch(`/api/books/${id}`, {
+    const { getApiBaseUrl } = await import('@/lib/apiConfig')
+    const headers = await getAuthHeaders()
+    
+    const response = await fetch(`${getApiBaseUrl()}/api/books/${id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify(updates),
     })
     return response.ok
@@ -62,8 +83,12 @@ export async function updateBook(id: string | number, updates: Partial<EnhancedB
 
 export async function deleteBook(id: string | number): Promise<boolean> {
   try {
-    const response = await fetch(`/api/books/${id}`, {
+    const { getApiBaseUrl } = await import('@/lib/apiConfig')
+    const headers = await getAuthHeaders()
+    
+    const response = await fetch(`${getApiBaseUrl()}/api/books/${id}`, {
       method: 'DELETE',
+      headers,
     })
     return response.ok
   } catch (error) {
@@ -78,7 +103,12 @@ export async function deleteBook(id: string | number): Promise<boolean> {
 }
 
 export async function getBooksWithRatings(): Promise<EnhancedBook[]> {
-  const response = await fetch('/api/books')
+  const { getApiBaseUrl } = await import('@/lib/apiConfig')
+  const headers = await getAuthHeaders()
+  
+  const response = await fetch(`${getApiBaseUrl()}/api/books`, {
+    headers,
+  })
   if (!response.ok) {
     throw new Error('Failed to fetch books')
   }

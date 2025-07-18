@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { isAdmin, isSuperAdmin } from '@/lib/permissions'
+import { getApiBaseUrl } from '@/lib/apiConfig'
 import {
   Dialog,
   DialogTitle,
@@ -43,7 +44,12 @@ export default function HelpModal({ open, onClose }: HelpModalProps) {
 
   useEffect(() => {
     if (session && open) {
-      fetch('/api/profile')
+      fetch(`${getApiBaseUrl()}/api/profile`, {
+        headers: {
+          'Authorization': `Bearer ${session?.user?.email}`,
+          'Content-Type': 'application/json',
+        },
+      })
         .then(res => res.json())
         .then(data => {
           setUserRole(data.user_role || 'user')

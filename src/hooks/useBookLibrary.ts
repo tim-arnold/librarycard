@@ -4,10 +4,9 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import type { EnhancedBook } from '@/lib/types'
 import { getBooks } from '@/lib/api'
+import { getApiBaseUrl } from '@/lib/apiConfig'
 import { isAdmin } from '@/lib/permissions'
 import { authenticatedFetch } from '@/lib/auth-utils'
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
 
 interface Shelf {
   id: number
@@ -98,7 +97,7 @@ export function useBookLibrary({ initialFilters }: UseBookLibraryProps = {}) {
     if (!session?.user?.email) return
 
     try {
-      const response = await fetch(`${API_BASE}/api/book-removal-requests`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/book-removal-requests`, {
         headers: {
           'Authorization': `Bearer ${session.user.email}`,
           'Content-Type': 'application/json',
@@ -129,7 +128,12 @@ export function useBookLibrary({ initialFilters }: UseBookLibraryProps = {}) {
     // Load user role and ID first
     let currentUserRole = 'user'
     try {
-      const response = await fetch('/api/profile')
+      const response = await fetch(`${getApiBaseUrl()}/api/profile`, {
+        headers: {
+          'Authorization': `Bearer ${session.user.email}`,
+          'Content-Type': 'application/json',
+        },
+      })
       if (response.ok) {
         const data = await response.json()
         currentUserRole = data.user_role || 'user'
@@ -148,7 +152,7 @@ export function useBookLibrary({ initialFilters }: UseBookLibraryProps = {}) {
 
     // Load locations and shelves
     try {
-      const response = await fetch(`${API_BASE}/api/locations`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/locations`, {
         headers: {
           'Authorization': `Bearer ${session.user.email}`,
           'Content-Type': 'application/json',
@@ -164,7 +168,7 @@ export function useBookLibrary({ initialFilters }: UseBookLibraryProps = {}) {
             // Load shelves from all locations for admin users
             const allShelves: Shelf[] = []
             for (const location of locations) {
-              const shelvesResponse = await fetch(`${API_BASE}/api/locations/${location.id}/shelves`, {
+              const shelvesResponse = await fetch(`${getApiBaseUrl()}/api/locations/${location.id}/shelves`, {
                 headers: {
                   'Authorization': `Bearer ${session.user.email}`,
                   'Content-Type': 'application/json',
@@ -183,7 +187,7 @@ export function useBookLibrary({ initialFilters }: UseBookLibraryProps = {}) {
             // Regular users: store first location and its shelves only
             setCurrentLocation(locations[0])
             
-            const shelvesResponse = await fetch(`${API_BASE}/api/locations/${locations[0].id}/shelves`, {
+            const shelvesResponse = await fetch(`${getApiBaseUrl()}/api/locations/${locations[0].id}/shelves`, {
               headers: {
                 'Authorization': `Bearer ${session.user.email}`,
                 'Content-Type': 'application/json',
