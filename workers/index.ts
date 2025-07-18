@@ -179,7 +179,7 @@ export default {
       }
 
       // Public genre endpoints (read-only access)
-      if (path === '/genres' && request.method === 'GET') {
+      if (path === '/api/genres' && request.method === 'GET') {
         console.log('Worker: handling /genres request');
         const genreService = new GenreService(env.DB);
         try {
