@@ -141,7 +141,9 @@ Display book details for confirmation
        ↓
 User adds location/tags and saves
        ↓
-POST to Cloudflare Worker
+Direct POST to Cloudflare Worker (getApiBaseUrl())
+       ↓
+Worker authenticates via Bearer token
        ↓
 Worker saves to D1 database
        ↓
@@ -152,7 +154,9 @@ Success response to frontend
 ```
 User opens library
        ↓
-GET request to Worker API
+Direct GET request to Worker API (getApiBaseUrl())
+       ↓
+Worker authenticates via Bearer token
        ↓
 Worker queries D1 database
        ↓
@@ -214,7 +218,8 @@ src/
 │   └── useModal.ts            # Modal state management
 └── lib/
     ├── bookApi.ts          # External book data fetching
-    ├── api.ts              # Backend API communication
+    ├── api.ts              # Backend API communication (direct worker calls)
+    ├── apiConfig.ts        # Centralized API URL configuration
     ├── types.ts            # TypeScript interfaces
     ├── theme.ts            # Material UI theme configuration
     └── permissions.ts      # Permission utilities
@@ -382,6 +387,16 @@ signup_approval_requests (
 - **Flexible authentication**: Supports both OAuth and email/password
 
 ## API Design
+
+### Direct Worker Architecture
+
+**IMPORTANT**: As of July 2025, all client-side API calls go directly to the Cloudflare Worker, bypassing Next.js API routes entirely.
+
+- **Direct Client → Worker**: All book, profile, checkout, genre operations use `getApiBaseUrl()` and call the worker directly
+- **Authentication**: Uses `Authorization: Bearer ${session?.user?.email}` headers for worker calls  
+- **Environment**: Only `NEXT_PUBLIC_API_URL` is needed (removed server-side `API_URL` variable)
+- **Next.js API routes**: Only used for auth flows (`/api/auth/*`) and contact form
+- **Fallbacks**: localStorage fallbacks maintained for offline functionality
 
 ### RESTful Endpoints
 

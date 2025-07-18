@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
+import { getApiBaseUrl } from '@/lib/apiConfig'
 import {
   Typography,
   Box,
@@ -145,7 +146,12 @@ export default function AdminUserManager() {
 
   const loadCurrentUserRole = async () => {
     try {
-      const response = await fetch('/api/profile')
+      const response = await fetch(`${getApiBaseUrl()}/api/profile`, {
+        headers: {
+          'Authorization': `Bearer ${session?.user?.email}`,
+          'Content-Type': 'application/json',
+        },
+      })
       if (response.ok) {
         const data = await response.json()
         setCurrentUserRole(data.user_role || 'user')

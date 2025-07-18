@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import { getApiBaseUrl } from '@/lib/apiConfig'
 import {
   Container,
   Paper,
@@ -48,7 +49,12 @@ export default function LocationsPage() {
 
   const fetchProfile = useCallback(async () => {
     try {
-      const response = await fetch('/api/profile')
+      const response = await fetch(`${getApiBaseUrl()}/api/profile`, {
+        headers: {
+          'Authorization': `Bearer ${session?.user?.email}`,
+          'Content-Type': 'application/json',
+        },
+      })
       if (response.ok) {
         const profileData = await response.json()
         setProfile(profileData)

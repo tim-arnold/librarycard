@@ -117,6 +117,10 @@ CREATE TABLE IF NOT EXISTS books (
   user_rating INTEGER,
   google_average_rating REAL,
   google_ratings_count INTEGER,
+  assigned_genres TEXT,
+  alternative_covers TEXT,
+  selected_cover_source TEXT,
+  cover_selection_date TEXT,
   FOREIGN KEY (shelf_id) REFERENCES shelves(id)
   -- Note: Removed FOREIGN KEY constraint for added_by to allow NULL
 );

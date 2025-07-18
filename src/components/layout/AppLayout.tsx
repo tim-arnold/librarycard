@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { getApiBaseUrl } from '@/lib/apiConfig'
 import { isAdmin } from '@/lib/permissions'
 import {
   Container,
@@ -83,7 +84,12 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
     try {
       // Fetch both user profile and locations in parallel to avoid race condition
       const [profileData, locations] = await Promise.all([
-        fetch('/api/profile').then(res => res.json()),
+        fetch(`${getApiBaseUrl()}/api/profile`, {
+          headers: {
+            'Authorization': `Bearer ${session?.user?.email}`,
+            'Content-Type': 'application/json',
+          },
+        }).then(res => res.json()),
         fetch(`${API_BASE}/api/locations`, {
           headers: {
             'Authorization': `Bearer ${session?.user?.email}`,

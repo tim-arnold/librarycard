@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { isAdmin } from '@/lib/permissions'
 import { useSession } from 'next-auth/react'
+import { getApiBaseUrl } from '@/lib/apiConfig'
 import {
   Container,
   Paper,
@@ -78,7 +79,12 @@ export default function LocationManager() {
     if (!session?.user?.email) return
     
     try {
-      const response = await fetch('/api/profile')
+      const response = await fetch(`${getApiBaseUrl()}/api/profile`, {
+        headers: {
+          'Authorization': `Bearer ${session?.user?.email}`,
+          'Content-Type': 'application/json',
+        },
+      })
       if (response.ok) {
         const data = await response.json()
         setUserRole(data.user_role || 'user')
