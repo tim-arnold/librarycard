@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import type { EnhancedBook } from '@/lib/types'
 import { getStorageItem, setStorageItem } from '@/lib/storage'
@@ -95,6 +95,23 @@ export function useBookFilters({
       }
     }
   }, [])
+
+  // Reset shelf filter when location changes (only if shelf doesn't belong to new location)
+  useEffect(() => {
+    // Only reset shelf filter if the current shelf doesn't exist in the new location
+    if (locationFilter && shelfFilter) {
+      const filteredShelves = shelves.filter(shelf => {
+        const location = allLocations.find(loc => loc.id === shelf.location_id)
+        return location?.name === locationFilter
+      })
+      
+      // If current shelf doesn't exist in the new location, reset to "All shelves"
+      const shelfExistsInLocation = filteredShelves.some(shelf => shelf.name === shelfFilter)
+      if (!shelfExistsInLocation) {
+        setShelfFilter('')
+      }
+    }
+  }, [locationFilter, shelves, allLocations, shelfFilter])
 
   // Helper function for dropdown generation - only check enhanced genres and categories
   const bookHasGenreForDropdown = (book: EnhancedBook, curatedGenre: string): boolean => {
@@ -289,14 +306,33 @@ export function useBookFilters({
     return basePath + (searchParams.toString() ? `?${searchParams.toString()}` : '')
   }, [locationFilter, shelfFilter, checkoutFilter, searchTerm])
 
+  // Debounce URL updates to prevent rapid navigation
+  const urlUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  
   // Update URL when filters change (only after component is fully loaded)
   useEffect(() => {
     // Don't update URL until component is loaded and has data
     if (isLoading) return
     
-    const newUrl = generateFilterUrl()
-    if (pathname !== newUrl) {
-      router.push(newUrl, { scroll: false })
+    // Clear existing timeout
+    if (urlUpdateTimeoutRef.current) {
+      clearTimeout(urlUpdateTimeoutRef.current)
+    }
+    
+    // Use longer debounce to prevent blinking during active filtering
+    urlUpdateTimeoutRef.current = setTimeout(() => {
+      const newUrl = generateFilterUrl()
+      if (pathname !== newUrl) {
+        // Update browser history without triggering navigation
+        window.history.replaceState({}, '', newUrl)
+      }
+    }, 1000) // 1 second debounce - only update URL when user stops interacting
+    
+    // Cleanup timeout on unmount
+    return () => {
+      if (urlUpdateTimeoutRef.current) {
+        clearTimeout(urlUpdateTimeoutRef.current)
+      }
     }
   }, [generateFilterUrl, pathname, router, isLoading])
 
