@@ -302,14 +302,14 @@ export function useBookFilters({
       clearTimeout(urlUpdateTimeoutRef.current)
     }
     
-    // Debounce URL updates to prevent rapid navigation that causes blinking
+    // Use longer debounce to prevent blinking during active filtering
     urlUpdateTimeoutRef.current = setTimeout(() => {
       const newUrl = generateFilterUrl()
       if (pathname !== newUrl) {
-        // Use replace instead of push to avoid triggering a full page navigation
-        router.replace(newUrl, { scroll: false })
+        // Update browser history without triggering navigation
+        window.history.replaceState({}, '', newUrl)
       }
-    }, 100) // 100ms debounce
+    }, 1000) // 1 second debounce - only update URL when user stops interacting
     
     // Cleanup timeout on unmount
     return () => {
