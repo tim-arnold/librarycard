@@ -249,21 +249,54 @@ export async function updateBook(request: Request, userId: string, env: Env, cor
     }
   }
 
+  // Build dynamic UPDATE query to only update provided fields
+  const updateFields = [];
+  const updateValues = [];
+  
+  if (book.shelf_id !== undefined) {
+    updateFields.push('shelf_id = ?');
+    updateValues.push(book.shelf_id || null);
+  }
+  
+  if (book.tags !== undefined) {
+    updateFields.push('tags = ?');
+    updateValues.push(JSON.stringify(book.tags || []));
+  }
+  
+  if (book.thumbnail !== undefined) {
+    updateFields.push('thumbnail = ?');
+    updateValues.push(book.thumbnail || null);
+  }
+  
+  if (book.alternative_covers !== undefined) {
+    updateFields.push('alternative_covers = ?');
+    updateValues.push(book.alternative_covers ? JSON.stringify(book.alternative_covers) : null);
+  }
+  
+  if (book.selected_cover_source !== undefined) {
+    updateFields.push('selected_cover_source = ?');
+    updateValues.push(book.selected_cover_source ? JSON.stringify(book.selected_cover_source) : null);
+  }
+  
+  if (book.selected_cover_source !== undefined) {
+    updateFields.push('cover_selection_date = ?');
+    updateValues.push(new Date().toISOString());
+  }
+  
+  if (updateFields.length === 0) {
+    return new Response(JSON.stringify({ success: true, message: 'No fields to update' }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+  
   const stmt = env.DB.prepare(`
     UPDATE books 
-    SET shelf_id = ?, tags = ?, thumbnail = ?, alternative_covers = ?, selected_cover_source = ?, cover_selection_date = ?
+    SET ${updateFields.join(', ')}
     WHERE id = ?
   `);
-
-  await stmt.bind(
-    book.shelf_id || null,
-    JSON.stringify(book.tags || []),
-    book.thumbnail || null,
-    book.alternative_covers ? JSON.stringify(book.alternative_covers) : null,
-    book.selected_cover_source ? JSON.stringify(book.selected_cover_source) : null,
-    book.selected_cover_source ? new Date().toISOString() : null,
-    id
-  ).run();
+  
+  updateValues.push(id);
+  await stmt.bind(...updateValues).run();
 
   // Invalidate admin analytics cache on book update
   await invalidateAllAdminAnalytics(env);
@@ -887,17 +920,32 @@ export async function rateBook(request: Request, bookId: number, userId: string,
   }
 
   try {
-    // Check if user has access to this book
-    const bookAccessStmt = env.DB.prepare(`
-      SELECT b.id, b.title, s.location_id, l.name as location_name
-      FROM books b
-      LEFT JOIN shelves s ON b.shelf_id = s.id
-      LEFT JOIN locations l ON s.location_id = l.id
-      LEFT JOIN location_members lm ON l.id = lm.location_id
-      WHERE b.id = ? AND (b.added_by = ? OR l.owner_id = ? OR lm.user_id = ?)
-    `);
-
-    const bookAccess = await bookAccessStmt.bind(bookId, userId, userId, userId).first();
+    // Check if user is admin first
+    const isAdmin = await isUserAdmin(userId, env);
+    
+    let bookAccess;
+    if (isAdmin) {
+      // Admins can rate all books
+      const bookStmt = env.DB.prepare(`
+        SELECT b.id, b.title, s.location_id, l.name as location_name
+        FROM books b
+        LEFT JOIN shelves s ON b.shelf_id = s.id
+        LEFT JOIN locations l ON s.location_id = l.id
+        WHERE b.id = ?
+      `);
+      bookAccess = await bookStmt.bind(bookId).first();
+    } else {
+      // Regular users need access check
+      const bookAccessStmt = env.DB.prepare(`
+        SELECT b.id, b.title, s.location_id, l.name as location_name
+        FROM books b
+        LEFT JOIN shelves s ON b.shelf_id = s.id
+        LEFT JOIN locations l ON s.location_id = l.id
+        LEFT JOIN location_members lm ON l.id = lm.location_id
+        WHERE b.id = ? AND (b.added_by = ? OR l.owner_id = ? OR lm.user_id = ?)
+      `);
+      bookAccess = await bookAccessStmt.bind(bookId, userId, userId, userId).first();
+    }
     
     if (!bookAccess) {
       return new Response(JSON.stringify({ error: 'Book not found or access denied' }), {
@@ -974,20 +1022,41 @@ export async function rateBook(request: Request, bookId: number, userId: string,
 
 export async function getBookRating(bookId: number, userId: string, env: Env, corsHeaders: Record<string, string>) {
   try {
-    // Check if user has access to this book and get rating info
-    const ratingStmt = env.DB.prepare(`
-      SELECT 
-        b.id, b.title, b.user_rating, b.average_rating, b.rating_count, s.location_id,
-        br.rating as current_user_rating, br.review_text as current_user_review
-      FROM books b
-      LEFT JOIN shelves s ON b.shelf_id = s.id
-      LEFT JOIN locations l ON s.location_id = l.id
-      LEFT JOIN location_members lm ON l.id = lm.location_id
-      LEFT JOIN book_ratings br ON b.id = br.book_id AND br.user_id = ?
-      WHERE b.id = ? AND (b.added_by = ? OR l.owner_id = ? OR lm.user_id = ?)
-    `);
+    // Check if user is admin first
+    const isAdmin = await isUserAdmin(userId, env);
+    
+    let ratingStmt;
+    let bindings: any[];
+    
+    if (isAdmin) {
+      // Admins can access all books
+      ratingStmt = env.DB.prepare(`
+        SELECT 
+          b.id, b.title, b.user_rating, b.average_rating, b.rating_count, s.location_id,
+          br.rating as current_user_rating, br.review_text as current_user_review
+        FROM books b
+        LEFT JOIN shelves s ON b.shelf_id = s.id
+        LEFT JOIN book_ratings br ON b.id = br.book_id AND br.user_id = ?
+        WHERE b.id = ?
+      `);
+      bindings = [userId, bookId];
+    } else {
+      // Regular users need location access
+      ratingStmt = env.DB.prepare(`
+        SELECT 
+          b.id, b.title, b.user_rating, b.average_rating, b.rating_count, s.location_id,
+          br.rating as current_user_rating, br.review_text as current_user_review
+        FROM books b
+        LEFT JOIN shelves s ON b.shelf_id = s.id
+        LEFT JOIN locations l ON s.location_id = l.id
+        LEFT JOIN location_members lm ON l.id = lm.location_id
+        LEFT JOIN book_ratings br ON b.id = br.book_id AND br.user_id = ?
+        WHERE b.id = ? AND (b.added_by = ? OR l.owner_id = ? OR lm.user_id = ?)
+      `);
+      bindings = [userId, bookId, userId, userId, userId];
+    }
 
-    const result = await ratingStmt.bind(userId, bookId, userId, userId, userId).first();
+    const result = await ratingStmt.bind(...bindings).first();
     
     if (!result) {
       return new Response(JSON.stringify({ error: 'Book not found or access denied' }), {
@@ -998,22 +1067,39 @@ export async function getBookRating(bookId: number, userId: string, env: Env, co
 
     const bookRating = result as any;
 
-    // Get all reviews for this book in this location
-    const allReviewsStmt = env.DB.prepare(`
-      SELECT 
-        br.rating, br.review_text, br.created_at, br.updated_at,
-        u.first_name as user_name
-      FROM book_ratings br
-      INNER JOIN books b ON br.book_id = b.id
-      INNER JOIN shelves s ON b.shelf_id = s.id
-      INNER JOIN locations l ON s.location_id = l.id
-      LEFT JOIN location_members lm ON l.id = lm.location_id
-      INNER JOIN users u ON br.user_id = u.id
-      WHERE br.book_id = ? 
-        AND (b.added_by = br.user_id OR l.owner_id = br.user_id OR lm.user_id = br.user_id)
-        AND br.review_text IS NOT NULL AND br.review_text != ''
-      ORDER BY br.created_at DESC
-    `);
+    // Get all reviews for this book
+    let allReviewsStmt;
+    
+    if (isAdmin) {
+      // Admins can see all reviews for any book
+      allReviewsStmt = env.DB.prepare(`
+        SELECT 
+          br.rating, br.review_text, br.created_at, br.updated_at,
+          u.first_name as user_name
+        FROM book_ratings br
+        INNER JOIN users u ON br.user_id = u.id
+        WHERE br.book_id = ? 
+          AND br.review_text IS NOT NULL AND br.review_text != ''
+        ORDER BY br.created_at DESC
+      `);
+    } else {
+      // Regular users see reviews from users with location access
+      allReviewsStmt = env.DB.prepare(`
+        SELECT 
+          br.rating, br.review_text, br.created_at, br.updated_at,
+          u.first_name as user_name
+        FROM book_ratings br
+        INNER JOIN books b ON br.book_id = b.id
+        INNER JOIN shelves s ON b.shelf_id = s.id
+        INNER JOIN locations l ON s.location_id = l.id
+        LEFT JOIN location_members lm ON l.id = lm.location_id
+        INNER JOIN users u ON br.user_id = u.id
+        WHERE br.book_id = ? 
+          AND (b.added_by = br.user_id OR l.owner_id = br.user_id OR lm.user_id = br.user_id)
+          AND br.review_text IS NOT NULL AND br.review_text != ''
+        ORDER BY br.created_at DESC
+      `);
+    }
 
     const reviewsResult = await allReviewsStmt.bind(bookId).all();
 
