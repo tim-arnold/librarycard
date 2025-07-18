@@ -86,6 +86,7 @@ export default function StarRatingInput({
               color: isHovered ? 'warning.dark' : 'warning.main',
               filter: isHovered ? 'brightness(1.1)' : 'none'
             }}
+            aria-label={`${starNumber} out of 5 stars`}
           />
         ) : (
           <StarBorder
@@ -94,6 +95,7 @@ export default function StarRatingInput({
               color: isHovered ? 'warning.main' : 'action.disabled',
               transition: 'color 0.2s ease'
             }}
+            aria-label={`${starNumber} out of 5 stars`}
           />
         )}
       </Box>
