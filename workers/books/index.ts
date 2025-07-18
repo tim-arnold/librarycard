@@ -434,7 +434,68 @@ export async function checkoutBook(request: Request, bookId: number, userId: str
 export async function checkinBook(bookId: number, userId: string, env: Env, corsHeaders: Record<string, string>) {
 
   try {
-    // Check if user has access to this book and that it's checked out by them
+    // Check user role first
+    const userStmt = env.DB.prepare(`SELECT user_role FROM users WHERE id = ?`);
+    const user = await userStmt.bind(userId).first() as any;
+    const isAdmin = user?.user_role === 'admin' || user?.user_role === 'super_admin';
+    
+    // For admin/superadmin, just check if book exists and is checked out
+    if (isAdmin) {
+      const bookStmt = env.DB.prepare(`
+        SELECT b.*, s.location_id, l.name as location_name
+        FROM books b
+        LEFT JOIN shelves s ON b.shelf_id = s.id
+        LEFT JOIN locations l ON s.location_id = l.id
+        WHERE b.id = ?
+      `);
+      
+      const book = await bookStmt.bind(bookId).first();
+      
+      if (!book) {
+        return new Response(JSON.stringify({ error: 'Book not found' }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
+      // Check if book is checked out
+      if ((book as any).status !== 'checked_out') {
+        return new Response(JSON.stringify({ error: 'Book is not currently checked out' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
+      // Admin can check in any book - proceed to checkin logic
+      const updateBookStmt = env.DB.prepare(`
+        UPDATE books 
+        SET status = 'available', 
+            checked_out_by = NULL, 
+            checked_out_date = NULL, 
+            due_date = NULL
+        WHERE id = ?
+      `);
+
+      await updateBookStmt.bind(bookId).run();
+
+      // Add checkin history entry
+      const historyStmt = env.DB.prepare(`
+        INSERT INTO book_checkout_history (book_id, user_id, action, action_date, created_at)
+        VALUES (?, ?, 'return', datetime('now'), datetime('now'))
+      `);
+
+      await historyStmt.bind(bookId, userId).run();
+
+      return new Response(JSON.stringify({ 
+        message: 'Book checked in successfully',
+        book_title: (book as any).title,
+        book_id: bookId
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    // For regular users, check if they have access to this book's location
     const bookStmt = env.DB.prepare(`
       SELECT b.*, s.location_id, l.name as location_name
       FROM books b
@@ -461,9 +522,7 @@ export async function checkinBook(bookId: number, userId: string, env: Env, cors
       });
     }
 
-    // Allow any user to check in any book (trusting community approach)
-    // No additional permission check needed beyond location access
-
+    // Regular user can check in any book within their accessible locations
     // Update book status
     const updateBookStmt = env.DB.prepare(`
       UPDATE books 
