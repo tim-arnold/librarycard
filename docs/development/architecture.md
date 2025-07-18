@@ -73,9 +73,11 @@ The frontend follows a **modular component architecture** designed for:
 - **Utility Components**: Provide reusable UI elements (`ShelfSelector`, `BookFilters`)
 
 #### Component Refactoring Results
-- **BookLibrary.tsx**: Reduced from 2,142 to 1,446 lines (32.5% reduction)
+- **BookLibrary.tsx**: Reduced from 2,574 to 538 lines (79% reduction) - **MAJOR REFACTORING COMPLETE!**
 - **AddBooks.tsx**: Reduced from 1,213 to 583 lines (52% reduction)
-- **Total frontend token savings**: ~1,326 lines moved to focused sub-components
+- **Total frontend token savings**: ~2,036 lines moved to focused sub-components across 11 new components
+- **Components extracted**: LibraryHeader, ActiveFilters, BookViews, ShelfTiles, ViewModeControls, MoreDetailsModal, BookRelocateModal, and others
+- **Hooks created**: useBookLibrary, useBookActions, useBookFilters for clean separation of business logic
 
 #### Backend Refactoring Results
 - **workers/index.ts**: Reduced from 2,351 to 366 lines (84% reduction) - **MASSIVE IMPROVEMENT!**
@@ -139,7 +141,9 @@ Display book details for confirmation
        ↓
 User adds location/tags and saves
        ↓
-POST to Cloudflare Worker
+Direct POST to Cloudflare Worker (getApiBaseUrl())
+       ↓
+Worker authenticates via Bearer token
        ↓
 Worker saves to D1 database
        ↓
@@ -150,7 +154,9 @@ Success response to frontend
 ```
 User opens library
        ↓
-GET request to Worker API
+Direct GET request to Worker API (getApiBaseUrl())
+       ↓
+Worker authenticates via Bearer token
        ↓
 Worker queries D1 database
        ↓
@@ -171,24 +177,52 @@ src/
 │   ├── page.tsx            # Main app with tab navigation
 │   └── globals.css         # Global styles
 ├── components/
-│   ├── AddBooks.tsx        # Main book addition coordinator
-│   ├── ISBNScanner.tsx     # Camera scanning + manual ISBN entry
-│   ├── BookSearch.tsx      # Google Books API search interface
-│   ├── BookPreview.tsx     # Selected book display + editing
-│   ├── BookLibrary.tsx     # Main library display coordinator
-│   ├── BookGrid.tsx        # Card view display component
-│   ├── BookList.tsx        # List view display component
-│   ├── BookActions.tsx     # Reusable action buttons
-│   ├── BookFilters.tsx     # Search and filter controls
-│   ├── ShelfSelector.tsx   # Shelf/location selection UI
-│   ├── LocationManager.tsx # Admin location management
-│   ├── RemovalRequestManager.tsx # Admin removal requests
-│   └── ...                 # Modal and utility components
+│   ├── book/
+│   │   ├── AddBooks.tsx        # Main book addition coordinator
+│   │   ├── ISBNScanner.tsx     # Camera scanning + manual ISBN entry
+│   │   ├── BookSearch.tsx      # Google Books API search interface
+│   │   ├── BookPreview.tsx     # Selected book display + editing
+│   │   ├── BookLibrary.tsx     # Main library display coordinator (538 lines)
+│   │   ├── BookGrid.tsx        # Card view display component
+│   │   ├── BookList.tsx        # List view display component
+│   │   ├── BookActions.tsx     # Reusable action buttons
+│   │   ├── BookFilters.tsx     # Search and filter controls
+│   │   ├── ShelfSelector.tsx   # Shelf/location selection UI
+│   │   ├── StarRating.tsx      # Star rating display component
+│   │   ├── StarRatingInput.tsx # Interactive star rating input
+│   │   └── GenreSelector.tsx   # Genre management interface
+│   ├── library/
+│   │   ├── LibraryHeader.tsx   # Library header with search and actions
+│   │   ├── ActiveFilters.tsx   # Filter display and management
+│   │   ├── BookViews.tsx       # Different book view modes
+│   │   ├── ShelfTiles.tsx      # Shelf navigation tiles
+│   │   ├── ViewModeControls.tsx # View mode switching
+│   │   └── ISBNScanner.tsx     # ISBN scanning functionality
+│   ├── admin/
+│   │   ├── LocationManager.tsx # Admin location management
+│   │   ├── LocationPermissionManager.tsx # Permission management
+│   │   └── AdminUserManager.tsx # User management interface
+│   ├── modals/
+│   │   ├── MoreDetailsModal.tsx # Book details modal
+│   │   ├── BookRelocateModal.tsx # Book relocation modal
+│   │   ├── RatingModal.tsx     # Star rating modal
+│   │   ├── RemovalRequestManager.tsx # Admin removal requests
+│   │   └── ...                 # Other modal components
+│   └── layout/
+│       ├── AppLayout.tsx       # Main app layout
+│       └── CookieNotice.tsx    # Privacy compliance
+├── hooks/
+│   ├── useBookLibrary.ts       # Library state management
+│   ├── useBookActions.ts       # Book action handlers
+│   ├── useBookFilters.ts       # Filter state and logic
+│   └── useModal.ts            # Modal state management
 └── lib/
     ├── bookApi.ts          # External book data fetching
-    ├── api.ts              # Backend API communication
+    ├── api.ts              # Backend API communication (direct worker calls)
+    ├── apiConfig.ts        # Centralized API URL configuration
     ├── types.ts            # TypeScript interfaces
-    └── theme.ts            # Material UI theme configuration
+    ├── theme.ts            # Material UI theme configuration
+    └── permissions.ts      # Permission utilities
 ```
 
 ### Backend Structure
@@ -353,6 +387,16 @@ signup_approval_requests (
 - **Flexible authentication**: Supports both OAuth and email/password
 
 ## API Design
+
+### Direct Worker Architecture
+
+**IMPORTANT**: As of July 2025, all client-side API calls go directly to the Cloudflare Worker, bypassing Next.js API routes entirely.
+
+- **Direct Client → Worker**: All book, profile, checkout, genre operations use `getApiBaseUrl()` and call the worker directly
+- **Authentication**: Uses `Authorization: Bearer ${session?.user?.email}` headers for worker calls  
+- **Environment**: Only `NEXT_PUBLIC_API_URL` is needed (removed server-side `API_URL` variable)
+- **Next.js API routes**: Only used for auth flows (`/api/auth/*`) and contact form
+- **Fallbacks**: localStorage fallbacks maintained for offline functionality
 
 ### RESTful Endpoints
 

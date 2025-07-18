@@ -4,8 +4,7 @@ import { useState } from 'react'
 import { useSession } from 'next-auth/react'
 import type { EnhancedBook, CuratedGenre } from '@/lib/types'
 import { updateBook, deleteBook as deleteBookAPI } from '@/lib/api'
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
+import { getApiBaseUrl } from '@/lib/apiConfig'
 
 interface Shelf {
   id: number
@@ -91,10 +90,10 @@ export function useBookActions({
       },
       async () => {
         try {
-          const response = await fetch(`${API_BASE}/api/book-removal-requests/${requestId}`, {
+          const response = await fetch(`${getApiBaseUrl()}/api/book-removal-requests/${requestId}`, {
             method: 'DELETE',
             headers: {
-              'Authorization': `Bearer ${session.user.email}`,
+              'Authorization': `Bearer ${session?.user?.email}`,
               'Content-Type': 'application/json',
             },
           })
@@ -159,10 +158,10 @@ export function useBookActions({
       },
       async () => {
         try {
-          const response = await fetch(`${API_BASE}/api/book-removal-requests`, {
+          const response = await fetch(`${getApiBaseUrl()}/api/book-removal-requests`, {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${session.user.email}`,
+              'Authorization': `Bearer ${session?.user?.email}`,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
@@ -252,9 +251,10 @@ export function useBookActions({
       },
       async () => {
         try {
-          const response = await fetch(`/api/books/${bookId}?action=checkout`, {
+          const response = await fetch(`${getApiBaseUrl()}/api/books/${bookId}/checkout`, {
             method: 'POST',
             headers: {
+              'Authorization': `Bearer ${session?.user?.email}`,
               'Content-Type': 'application/json',
             },
           })
@@ -332,9 +332,10 @@ export function useBookActions({
       },
       async () => {
         try {
-          const response = await fetch(`/api/books/${bookId}?action=checkin`, {
+          const response = await fetch(`${getApiBaseUrl()}/api/books/${bookId}/checkin`, {
             method: 'POST',
             headers: {
+              'Authorization': `Bearer ${session?.user?.email}`,
               'Content-Type': 'application/json',
             },
           })
@@ -396,10 +397,10 @@ export function useBookActions({
     if (!session?.user?.email) return
 
     try {
-      const response = await fetch(`${API_BASE}/api/books/${bookId}/rate`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/books/${bookId}/rate`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${session.user.email}`,
+          'Authorization': `Bearer ${session?.user?.email}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -447,9 +448,10 @@ export function useBookActions({
 
   const handleGenreUpdate = async (bookId: string, genres: CuratedGenre[]) => {
     try {
-      const response = await fetch(`/api/books/${bookId}/genres`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/books/${bookId}/genres`, {
         method: 'PUT',
         headers: {
+          'Authorization': `Bearer ${session?.user?.email}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ genres }),

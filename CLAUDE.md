@@ -72,9 +72,25 @@ npx wrangler d1 execute librarycard-db --file=migrations/migration.sql --env=pro
 
 **Component Architecture**: Recently refactored for token efficiency (32-52% line reduction)  
 **Backend Structure**: Modular workers with separated concerns (auth, books, locations, ocr)  
+**API Architecture**: All client-side API calls go directly to Cloudflare Worker (no Next.js API route proxying)  
 **Authentication**: NextAuth.js with Google OAuth + email/password  
 **Database**: Multi-user schema with role-based permissions  
 **OCR**: Google Vision API integration for bookshelf photo scanning  
+
+### API Architecture Details
+
+**IMPORTANT**: As of July 2025, all client-side API calls go directly to the Cloudflare Worker, bypassing Next.js API routes entirely.
+
+- **Client → Worker**: All book, profile, checkout, genre operations use `getApiBaseUrl()` and hit worker directly
+- **Authentication**: Uses `Authorization: Bearer ${session?.user?.email}` headers for worker calls
+- **Environment**: Only `NEXT_PUBLIC_API_URL` is needed (removed `API_URL` server-side variable)
+- **Next.js API routes**: Only used for auth flows (`/api/auth/*`) and contact form
+- **Fallbacks**: localStorage fallbacks maintained for offline functionality
+
+When adding new features:
+- Use `getApiBaseUrl()` from `@/lib/apiConfig` for all worker API calls
+- Avoid creating new Next.js API routes unless absolutely necessary for auth flows
+- Include proper Bearer token authentication for all worker requests
 
 ## AI Task Patterns
 

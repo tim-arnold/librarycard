@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import { getApiBaseUrl } from '@/lib/apiConfig'
 import {
   Container,
   Paper,
@@ -45,7 +46,7 @@ export default function CheckoutHistoryPage() {
     try {
       if (!session?.user?.email) return
       
-      const response = await fetch('/api/checkout-history', {
+      const response = await fetch(`${getApiBaseUrl()}/api/books/checkout-history`, {
         headers: {
           'Authorization': `Bearer ${session.user.email}`,
           'Content-Type': 'application/json',
