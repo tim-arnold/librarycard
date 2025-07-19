@@ -6,6 +6,17 @@ This file tracks active development tasks and future enhancements for the Librar
 
 ## ✅ Recently Completed (July 2025)
 
+### Single Shelf Location Setting - GitHub Issue #84 - COMPLETE!
+- [x] **Location Settings Modal**: Added single shelf location checkbox to location edit dialog with proper permission-based access control
+- [x] **Database Schema**: Implemented `single_shelf_location` boolean field with default false and performance index migration
+- [x] **Permission Integration**: Required `can_manage_location_settings` capability for location setting modifications
+- [x] **Smart UI Behavior**: Disabled single shelf checkbox when location already has multiple shelves with explanatory help text
+- [x] **Authentication Architecture Fix**: Consistently use `getApiBaseUrl()` throughout codebase, removing deprecated `API_BASE` constants
+- [x] **Permission Granularity**: Only users with specific location settings capability can modify location settings
+- [x] **Frontend Security**: Hide edit buttons for unauthorized admins and validate shelf count before enabling single shelf mode
+- [x] **Backend Validation**: Enhanced `updateLocation` function with capability-based permission checks in workers/locations/index.ts
+- [x] **Code Cleanup**: Removed unused imports from LocationPermissionManager.tsx improving bundle size and maintainability
+
 ### Enhanced Filtering System with Author Clicks and Multi-Genre Support - COMPLETE!
 - [x] **Author Click Filtering**: Implemented clickable author names across all book views (card, compact, list) to enable filtering by author
 - [x] **Author Filter Integration**: Click any author to filter library showing only books by that author with automatic clearing of other filters

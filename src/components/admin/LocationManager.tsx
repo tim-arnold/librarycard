@@ -18,6 +18,8 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  FormControlLabel,
+  Checkbox,
 } from '@mui/material'
 import {
   Add,
@@ -32,7 +34,6 @@ import AlertModal from '../modals/AlertModal'
 import { useModal } from '@/hooks/useModal'
 import LocationPermissionManager from './LocationPermissionManager'
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
 
 interface Location {
   id: number
@@ -40,6 +41,7 @@ interface Location {
   description?: string
   owner_id: string
   created_at: string
+  single_shelf_location?: boolean
 }
 
 interface Shelf {
@@ -60,6 +62,7 @@ export default function LocationManager() {
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [newLocationName, setNewLocationName] = useState('')
   const [newLocationDescription, setNewLocationDescription] = useState('')
+  const [newLocationSingleShelf, setNewLocationSingleShelf] = useState(false)
   const [editingLocation, setEditingLocation] = useState<Location | null>(null)
   const [editingShelf, setEditingShelf] = useState<Shelf | null>(null)
   const [showShelfForm, setShowShelfForm] = useState(false)
@@ -67,6 +70,8 @@ export default function LocationManager() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [userRole, setUserRole] = useState<string | null>(null)
+  const [canManageLocationPermissions, setCanManageLocationPermissions] = useState<boolean>(false)
+  const [locationPermissions, setLocationPermissions] = useState<Record<number, boolean>>({})
 
   useEffect(() => {
     if (session?.user) {
@@ -74,6 +79,12 @@ export default function LocationManager() {
       loadUserRole()
     }
   }, [session])
+
+  useEffect(() => {
+    if (selectedLocation && session?.user) {
+      checkLocationManagePermission(selectedLocation.id)
+    }
+  }, [selectedLocation, session])
 
   const loadUserRole = async () => {
     if (!session?.user?.email) return
@@ -99,7 +110,7 @@ export default function LocationManager() {
     if (!session?.user?.email) return
     
     try {
-      const response = await fetch(`${API_BASE}/api/locations`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/locations`, {
         headers: {
           'Authorization': `Bearer ${session.user.email}`,
           'Content-Type': 'application/json',
@@ -108,6 +119,10 @@ export default function LocationManager() {
       if (response.ok) {
         const data = await response.json()
         setLocations(data)
+        
+        // Check permissions for each location
+        await checkAllLocationPermissions(data)
+        
         if (data.length === 0 && isAdmin(userRole)) {
           setShowCreateForm(true)
         } else {
@@ -128,7 +143,7 @@ export default function LocationManager() {
     if (!session?.user?.email) return
     
     try {
-      const response = await fetch(`${API_BASE}/api/locations/${locationId}/shelves`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/locations/${locationId}/shelves`, {
         headers: {
           'Authorization': `Bearer ${session.user.email}`,
           'Content-Type': 'application/json',
@@ -159,7 +174,7 @@ export default function LocationManager() {
     if (!session?.user?.email) return
     
     try {
-      const response = await fetch(`${API_BASE}/api/locations`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/locations`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.user.email}`,
@@ -168,6 +183,7 @@ export default function LocationManager() {
         body: JSON.stringify({
           name: newLocationName.trim(),
           description: newLocationDescription.trim() || null,
+          single_shelf_location: newLocationSingleShelf,
         }),
       })
 
@@ -196,7 +212,7 @@ export default function LocationManager() {
     if (!session?.user?.email) return
     
     try {
-      const response = await fetch(`${API_BASE}/api/locations/${editingLocation.id}`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/locations/${editingLocation.id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${session.user.email}`,
@@ -205,6 +221,7 @@ export default function LocationManager() {
         body: JSON.stringify({
           name: newLocationName.trim(),
           description: newLocationDescription.trim() || null,
+          single_shelf_location: newLocationSingleShelf,
         }),
       })
 
@@ -219,6 +236,7 @@ export default function LocationManager() {
         setEditingLocation(null)
         setNewLocationName('')
         setNewLocationDescription('')
+        setNewLocationSingleShelf(false)
         setShowCreateForm(false)
       } else {
         const errorData = await response.json()
@@ -240,7 +258,7 @@ export default function LocationManager() {
       async () => {
         if (!session?.user?.email) throw new Error('Not authenticated')
         
-        const response = await fetch(`${API_BASE}/api/locations/${locationId}`, {
+        const response = await fetch(`${getApiBaseUrl()}/api/locations/${locationId}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${session.user.email}`,
@@ -276,11 +294,77 @@ export default function LocationManager() {
     }
   }
 
+  const checkAllLocationPermissions = async (locations: Location[]) => {
+    if (!session?.user?.email) return
+    
+    const permissions: Record<number, boolean> = {}
+    
+    // Check permissions for each location
+    for (const location of locations) {
+      try {
+        const response = await fetch(`${getApiBaseUrl()}/api/permissions/check?locationId=${location.id}&permission=can_manage_location_settings`, {
+          headers: {
+            'Authorization': `Bearer ${session.user.email}`,
+            'Content-Type': 'application/json',
+          },
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          permissions[location.id] = data.hasPermission || false
+        } else {
+          permissions[location.id] = false
+        }
+      } catch (error) {
+        console.error(`Failed to check permission for location ${location.id}:`, error)
+        permissions[location.id] = false
+      }
+    }
+    
+    setLocationPermissions(permissions)
+  }
+
+  const checkLocationManagePermission = async (locationId: number) => {
+    if (!session?.user?.email) {
+      setCanManageLocationPermissions(false)
+      return
+    }
+    
+    try {
+      // Use the general permission check for can_manage_location_settings capability
+      const response = await fetch(`${getApiBaseUrl()}/api/permissions/check?locationId=${locationId}&permission=can_manage_location_settings`, {
+        headers: {
+          'Authorization': `Bearer ${session.user.email}`,
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        // Check if user has the location management capability
+        const hasLocationManageCapability = data.hasPermission || false
+        setCanManageLocationPermissions(hasLocationManageCapability)
+      } else {
+        setCanManageLocationPermissions(false)
+      }
+    } catch (error) {
+      console.error('Failed to check location manage permission:', error)
+      setCanManageLocationPermissions(false)
+    }
+  }
+
+  const canManageLocationSettings = () => {
+    return userRole === 'super_admin' || canManageLocationPermissions
+  }
+
   const startEditLocation = (location: Location) => {
     setEditingLocation(location)
     setNewLocationName(location.name)
     setNewLocationDescription(location.description || '')
+    setNewLocationSingleShelf(location.single_shelf_location || false)
     setShowCreateForm(true)
+    // Check permissions for the specific location being edited
+    checkLocationManagePermission(location.id)
   }
 
   // Shelf management functions
@@ -291,7 +375,7 @@ export default function LocationManager() {
     if (!session?.user?.email) return
     
     try {
-      const response = await fetch(`${API_BASE}/api/locations/${selectedLocation.id}/shelves`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/locations/${selectedLocation.id}/shelves`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.user.email}`,
@@ -323,7 +407,7 @@ export default function LocationManager() {
     if (!session?.user?.email) return
     
     try {
-      const response = await fetch(`${API_BASE}/api/shelves/${editingShelf.id}`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/shelves/${editingShelf.id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${session.user.email}`,
@@ -362,7 +446,7 @@ export default function LocationManager() {
       async () => {
         if (!selectedLocation || !session?.user?.email) throw new Error('Invalid state')
         
-        const response = await fetch(`${API_BASE}/api/shelves/${shelfId}`, {
+        const response = await fetch(`${getApiBaseUrl()}/api/shelves/${shelfId}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${session.user.email}`,
@@ -501,17 +585,19 @@ export default function LocationManager() {
                   </div>
                   {isAdmin(userRole) && (
                     <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={<Edit />}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          startEditLocation(location)
-                        }}
-                      >
-                        Edit
-                      </Button>
+                      {(userRole === 'super_admin' || locationPermissions[location.id]) && (
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          startIcon={<Edit />}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            startEditLocation(location)
+                          }}
+                        >
+                          Edit
+                        </Button>
+                      )}
                       <Button
                         variant="contained"
                         color="error"
@@ -598,6 +684,7 @@ export default function LocationManager() {
                   locationId={selectedLocation.id}
                   locationName={selectedLocation.name}
                   userRole={userRole}
+                  singleShelfLocation={selectedLocation.single_shelf_location}
                 />
               )}
 
@@ -644,6 +731,23 @@ export default function LocationManager() {
                 placeholder="Brief description of this location"
                 helperText="Optional"
               />
+              
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={newLocationSingleShelf}
+                    onChange={(e) => setNewLocationSingleShelf(e.target.checked)}
+                    disabled={!!editingLocation && shelves.length > 1}
+                  />
+                }
+                label="Single shelf location"
+              />
+              <Typography variant="caption" color="text.secondary" sx={{ mt: -1, mb: 1, display: 'block' }}>
+                {editingLocation && shelves.length > 1 
+                  ? "Cannot enable single shelf mode when multiple shelves exist. Delete shelves to enable this option."
+                  : "When enabled, this location will operate with only one shelf. Users cannot create additional shelves or move books between shelves."
+                }
+              </Typography>
             </Box>
           </DialogContent>
           <DialogActions>
@@ -653,6 +757,7 @@ export default function LocationManager() {
                 setEditingLocation(null)
                 setNewLocationName('')
                 setNewLocationDescription('')
+                setNewLocationSingleShelf(false)
               }}
               startIcon={<Cancel />}
             >
