@@ -73,25 +73,35 @@ export async function createLocation(request: Request, userId: string, env: Env,
   
   // Create location
   const locationStmt = env.DB.prepare(`
-    INSERT INTO locations (name, description, owner_id, created_at)
-    VALUES (?, ?, ?, datetime('now'))
+    INSERT INTO locations (name, description, owner_id, single_shelf_location, created_at)
+    VALUES (?, ?, ?, ?, datetime('now'))
   `);
 
   const locationResult = await locationStmt.bind(
     location.name,
     location.description || null,
-    userId
+    userId,
+    location.single_shelf_location || false
   ).run();
 
   const locationId = locationResult.meta.last_row_id;
 
-  // Create default shelves
-  for (const shelfName of DEFAULT_SHELVES) {
+  // Create default shelves (only if not single shelf mode)
+  if (!location.single_shelf_location) {
+    for (const shelfName of DEFAULT_SHELVES) {
+      const shelfStmt = env.DB.prepare(`
+        INSERT INTO shelves (name, location_id, created_at)
+        VALUES (?, ?, datetime('now'))
+      `);
+      await shelfStmt.bind(shelfName, locationId).run();
+    }
+  } else {
+    // Create single default shelf for single shelf mode
     const shelfStmt = env.DB.prepare(`
       INSERT INTO shelves (name, location_id, created_at)
       VALUES (?, ?, datetime('now'))
     `);
-    await shelfStmt.bind(shelfName, locationId).run();
+    await shelfStmt.bind('General', locationId).run();
   }
 
   return new Response(JSON.stringify({ 
@@ -106,23 +116,33 @@ export async function createLocation(request: Request, userId: string, env: Env,
 export async function updateLocation(request: Request, userId: string, env: Env, corsHeaders: Record<string, string>, id: number) {
   const location: Partial<Location> = await request.json();
   
-  // Check if user can manage this location
-  if (!(await canManageLocation(userId, id, env))) {
-    return new Response(JSON.stringify({ error: 'Admin privileges required to update locations' }), {
-      status: 403,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+  // Check if user is super admin or has specific location settings management capability
+  const isSuperAdmin = await isUserSuperAdmin(userId, env);
+  
+  if (!isSuperAdmin) {
+    const hasLocationSettingsCapability = await env.DB.prepare(`
+      SELECT 1 FROM location_admin_capabilities 
+      WHERE location_id = ? AND user_id = ? AND capability = 'can_manage_location_settings'
+    `).bind(id, userId).first();
+
+    if (!hasLocationSettingsCapability) {
+      return new Response(JSON.stringify({ error: 'Location settings management permission required to update locations' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
   }
 
   const stmt = env.DB.prepare(`
     UPDATE locations 
-    SET name = ?, description = ?, updated_at = datetime('now')
+    SET name = ?, description = ?, single_shelf_location = ?, updated_at = datetime('now')
     WHERE id = ?
   `);
 
   await stmt.bind(
     location.name,
     location.description || null,
+    location.single_shelf_location || false,
     id
   ).run();
 
@@ -131,6 +151,7 @@ export async function updateLocation(request: Request, userId: string, env: Env,
     id,
     name: location.name,
     description: location.description || null,
+    single_shelf_location: location.single_shelf_location || false,
     owner_id: userId,
     updated_at: new Date().toISOString()
   };
