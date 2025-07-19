@@ -482,6 +482,18 @@ export async function revokeUserPermission(request: Request, userId: string, env
 // Helper function to check if user has specific permission in a location
 export async function hasUserPermission(userId: string, locationId: number, permission: string, env: Env): Promise<boolean> {
   try {
+    // Check if location is in single shelf mode and permission is incompatible
+    const location = await env.DB.prepare(`
+      SELECT single_shelf_location FROM locations WHERE id = ?
+    `).bind(locationId).first() as any;
+    
+    const isSingleShelfLocation = location?.single_shelf_location === 1;
+    
+    // Filter out shelf-related permissions for single shelf locations
+    if (isSingleShelfLocation && (permission === 'can_move_books' || permission === 'can_create_shelves')) {
+      return false;
+    }
+
     // Super admins have all permissions
     if (await isUserSuperAdmin(userId, env)) {
       return true;
@@ -594,27 +606,43 @@ export async function checkUserPermission(request: Request, userId: string, env:
       hasPermission = true;
       reason = 'super_admin';
     } else {
-      // Check if user is location admin (inherits all user permissions)
-      const isLocationAdmin = await env.DB.prepare(`
-        SELECT 1 FROM location_members lm
-        JOIN users u ON lm.user_id = u.id
-        WHERE lm.location_id = ? AND lm.user_id = ? 
-        AND (u.user_role = 'admin' OR u.user_role = 'super_admin')
-      `).bind(locationId, userId).first();
-
-      if (isLocationAdmin) {
-        hasPermission = true;
-        reason = 'admin_inherited';
-      } else {
-        // Check specific user permission
-        const userPermission = await env.DB.prepare(`
-          SELECT 1 FROM location_user_permissions 
-          WHERE location_id = ? AND user_id = ? AND permission = ?
+      // Check for admin capabilities first (if permission starts with 'can_manage_' or is an admin capability)
+      const adminCapabilities = ['can_control_user_capabilities', 'can_invite_users', 'can_manage_shelves', 'can_manage_location_settings'];
+      
+      if (adminCapabilities.includes(permission)) {
+        // Check if user has specific admin capability
+        const adminCapability = await env.DB.prepare(`
+          SELECT 1 FROM location_admin_capabilities 
+          WHERE location_id = ? AND user_id = ? AND capability = ?
         `).bind(locationId, userId, permission).first();
 
-        if (userPermission) {
+        if (adminCapability) {
           hasPermission = true;
-          reason = 'user_granted';
+          reason = 'admin_capability';
+        }
+      } else {
+        // Check if user is location admin (inherits all user permissions)
+        const isLocationAdmin = await env.DB.prepare(`
+          SELECT 1 FROM location_members lm
+          JOIN users u ON lm.user_id = u.id
+          WHERE lm.location_id = ? AND lm.user_id = ? 
+          AND (u.user_role = 'admin' OR u.user_role = 'super_admin')
+        `).bind(locationId, userId).first();
+
+        if (isLocationAdmin) {
+          hasPermission = true;
+          reason = 'admin_inherited';
+        } else {
+          // Check specific user permission
+          const userPermission = await env.DB.prepare(`
+            SELECT 1 FROM location_user_permissions 
+            WHERE location_id = ? AND user_id = ? AND permission = ?
+          `).bind(locationId, userId, permission).first();
+
+          if (userPermission) {
+            hasPermission = true;
+            reason = 'user_granted';
+          }
         }
       }
     }
@@ -650,6 +678,13 @@ export async function getUserPermissions(request: Request, userId: string, env: 
       });
     }
 
+    // Check if location is in single shelf mode
+    const location = await env.DB.prepare(`
+      SELECT single_shelf_location FROM locations WHERE id = ?
+    `).bind(locationId).first() as any;
+    
+    const isSingleShelfLocation = location?.single_shelf_location === 1;
+
     const permissions: string[] = [];
 
     // Super admins have all permissions
@@ -680,6 +715,19 @@ export async function getUserPermissions(request: Request, userId: string, env: 
           permissions.push((perm as any).permission);
         }
       }
+    }
+
+    // Filter out shelf-related permissions for single shelf locations
+    if (isSingleShelfLocation) {
+      const filteredPermissions = permissions.filter(perm => 
+        perm !== 'can_move_books' && perm !== 'can_create_shelves'
+      );
+      return new Response(JSON.stringify({ 
+        permissions: filteredPermissions
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     return new Response(JSON.stringify({ 
