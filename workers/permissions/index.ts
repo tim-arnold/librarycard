@@ -482,6 +482,18 @@ export async function revokeUserPermission(request: Request, userId: string, env
 // Helper function to check if user has specific permission in a location
 export async function hasUserPermission(userId: string, locationId: number, permission: string, env: Env): Promise<boolean> {
   try {
+    // Check if location is in single shelf mode and permission is incompatible
+    const location = await env.DB.prepare(`
+      SELECT single_shelf_location FROM locations WHERE id = ?
+    `).bind(locationId).first() as any;
+    
+    const isSingleShelfLocation = location?.single_shelf_location === 1;
+    
+    // Filter out shelf-related permissions for single shelf locations
+    if (isSingleShelfLocation && (permission === 'can_move_books' || permission === 'can_create_shelves')) {
+      return false;
+    }
+
     // Super admins have all permissions
     if (await isUserSuperAdmin(userId, env)) {
       return true;
@@ -666,6 +678,13 @@ export async function getUserPermissions(request: Request, userId: string, env: 
       });
     }
 
+    // Check if location is in single shelf mode
+    const location = await env.DB.prepare(`
+      SELECT single_shelf_location FROM locations WHERE id = ?
+    `).bind(locationId).first() as any;
+    
+    const isSingleShelfLocation = location?.single_shelf_location === 1;
+
     const permissions: string[] = [];
 
     // Super admins have all permissions
@@ -696,6 +715,19 @@ export async function getUserPermissions(request: Request, userId: string, env: 
           permissions.push((perm as any).permission);
         }
       }
+    }
+
+    // Filter out shelf-related permissions for single shelf locations
+    if (isSingleShelfLocation) {
+      const filteredPermissions = permissions.filter(perm => 
+        perm !== 'can_move_books' && perm !== 'can_create_shelves'
+      );
+      return new Response(JSON.stringify({ 
+        permissions: filteredPermissions
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     return new Response(JSON.stringify({ 
