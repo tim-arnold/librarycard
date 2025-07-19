@@ -737,7 +737,7 @@ export default function LocationManager() {
                   <Checkbox
                     checked={newLocationSingleShelf}
                     onChange={(e) => setNewLocationSingleShelf(e.target.checked)}
-                    disabled={editingLocation && shelves.length > 1}
+                    disabled={!!editingLocation && shelves.length > 1}
                   />
                 }
                 label="Single shelf location"
