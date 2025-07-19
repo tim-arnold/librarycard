@@ -2,6 +2,28 @@
 
 This file documents all completed features, fixes, and improvements to the LibraryCard project.
 
+## July 19, 2025 - Single Shelf Location Setting
+
+### Single Shelf Location Feature - GitHub Issue #84 COMPLETE!
+- **IMPLEMENTED**: Single shelf location setting in location edit dialog with proper permission-based access control
+- **ADDED**: Database schema migration adding `single_shelf_location` boolean field with default false and performance index
+- **ENHANCED**: Location management modal with checkbox to enable/disable single shelf mode for both admins and superadmins
+- **SECURED**: Backend API validation requiring `can_manage_location_settings` capability for location modifications
+- **PROTECTED**: Frontend permission checks hiding edit buttons for unauthorized admins and disabling single shelf option when multiple shelves exist
+
+### Permission System Enhancements
+- **FIXED**: Authentication architecture to consistently use `getApiBaseUrl()` throughout codebase, removing deprecated `API_BASE` constants
+- **REFINED**: Permission granularity so only users with `can_manage_location_settings` capability can modify location settings
+- **IMPLEMENTED**: Smart UI behavior that disables single shelf checkbox when location already has multiple shelves with explanatory help text
+- **RESOLVED**: User management visibility issues for admins with `can_control_user_capabilities` permission
+
+### Technical Implementation Details
+- **DATABASE**: Added `ALTER TABLE locations ADD COLUMN single_shelf_location BOOLEAN DEFAULT FALSE` with performance index
+- **BACKEND**: Enhanced `updateLocation` function in workers/locations/index.ts with capability-based permission checks
+- **FRONTEND**: Updated LocationManager.tsx with conditional rendering based on user permissions and shelf count validation
+- **PERMISSIONS**: Integrated with existing `checkUserPermission` API using admin capabilities system for fine-grained access control
+- **CLEANUP**: Removed unused imports from LocationPermissionManager.tsx improving bundle size and maintainability
+
 ## July 18, 2025 - Star Rating Accessibility Improvements
 
 ### Star Rating Accessibility Enhancement - GitHub Issue #76 COMPLETE!
