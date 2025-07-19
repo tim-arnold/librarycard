@@ -372,11 +372,11 @@ export default function LocationPermissionManager({ locationId, locationName, us
                               <CircularProgress size={20} />
                             ) : (
                               <Switch
-                                checked={hasCapability}
+                                checked={isIrrelevantInSingleShelf ? false : hasCapability}
                                 onChange={() => toggleAdminCapability(admin.userId, cap.key, hasCapability)}
                                 disabled={!canManagePermissions || isIrrelevantInSingleShelf}
                                 size="small"
-                                color={hasCapability ? "success" : "default"}
+                                color={isIrrelevantInSingleShelf ? "default" : (hasCapability ? "success" : "default")}
                               />
                             )}
                             {isIrrelevantInSingleShelf && (
@@ -483,11 +483,11 @@ export default function LocationPermissionManager({ locationId, locationName, us
                               <CircularProgress size={20} />
                             ) : (
                               <Switch
-                                checked={allHavePermission}
+                                checked={isIrrelevantInSingleShelf ? false : allHavePermission}
                                 onChange={() => bulkTogglePermission(perm.key, !allHavePermission)}
                                 disabled={!canManagePermissions || bulkControlsLocked || isIrrelevantInSingleShelf}
                                 size="small"
-                                color={allHavePermission ? "success" : "default"}
+                                color={isIrrelevantInSingleShelf ? "default" : (allHavePermission ? "success" : "default")}
                               />
                             )}
                             <Typography variant="caption" color="text.secondary">
@@ -523,11 +523,11 @@ export default function LocationPermissionManager({ locationId, locationName, us
                               <CircularProgress size={20} />
                             ) : (
                               <Switch
-                                checked={hasPermission}
+                                checked={isIrrelevantInSingleShelf ? false : hasPermission}
                                 onChange={() => toggleUserPermission(member.userId, perm.key, hasPermission)}
                                 disabled={!canManagePermissions || isIrrelevantInSingleShelf}
                                 size="small"
-                                color={hasPermission ? "success" : "default"}
+                                color={isIrrelevantInSingleShelf ? "default" : (hasPermission ? "success" : "default")}
                               />
                             )}
                             {isIrrelevantInSingleShelf && (
