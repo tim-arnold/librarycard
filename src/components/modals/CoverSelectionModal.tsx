@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
+import { getApiBaseUrl } from '@/lib/apiConfig'
 import {
   Dialog,
   DialogTitle,
@@ -22,8 +23,6 @@ import {
   InputAdornment,
 } from '@mui/material'
 import { Close, Image, Search, CheckCircle } from '@mui/icons-material'
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
 
 interface CoverOption {
   id: string
@@ -85,7 +84,7 @@ export default function CoverSelectionModal({
         author: authorToSearch
       })
       
-      const response = await fetch(`${API_BASE}/api/books/editions?${params}`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/books/editions?${params}`, {
         headers: {
           'Authorization': `Bearer ${session.user.email}`,
           'Content-Type': 'application/json',

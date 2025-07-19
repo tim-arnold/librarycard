@@ -14,25 +14,17 @@ import {
   TableRow,
   Chip,
   Switch,
-  FormControlLabel,
   Alert,
   CircularProgress,
   Accordion,
   AccordionSummary,
   AccordionDetails,
   Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
 } from '@mui/material'
 import {
   ExpandMore,
   Security,
   People,
-  Settings,
-  CheckCircle,
-  Cancel,
   AdminPanelSettings,
   Lock,
   LockOpen,
@@ -74,6 +66,7 @@ interface LocationPermissionManagerProps {
   locationId: number
   locationName: string
   userRole: string
+  singleShelfLocation?: boolean
 }
 
 const USER_PERMISSIONS = [
@@ -91,7 +84,7 @@ const ADMIN_CAPABILITIES = [
   { key: 'can_manage_location_settings', label: 'Manage Location', description: 'Edit location details' },
 ]
 
-export default function LocationPermissionManager({ locationId, locationName, userRole }: LocationPermissionManagerProps) {
+export default function LocationPermissionManager({ locationId, locationName, userRole, singleShelfLocation = false }: LocationPermissionManagerProps) {
   const { data: session } = useSession()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -371,6 +364,7 @@ export default function LocationPermissionManager({ locationId, locationName, us
                       {ADMIN_CAPABILITIES.map(cap => {
                         const hasCapability = admin.capabilities.includes(cap.key)
                         const isUpdating = updatingPermissions === `${admin.userId}-${cap.key}`
+                        const isIrrelevantInSingleShelf = singleShelfLocation && cap.key === 'can_manage_shelves'
                         
                         return (
                           <TableCell key={cap.key} align="center">
@@ -380,10 +374,15 @@ export default function LocationPermissionManager({ locationId, locationName, us
                               <Switch
                                 checked={hasCapability}
                                 onChange={() => toggleAdminCapability(admin.userId, cap.key, hasCapability)}
-                                disabled={!canManagePermissions}
+                                disabled={!canManagePermissions || isIrrelevantInSingleShelf}
                                 size="small"
                                 color={hasCapability ? "success" : "default"}
                               />
+                            )}
+                            {isIrrelevantInSingleShelf && (
+                              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                                N/A (Single shelf)
+                              </Typography>
                             )}
                           </TableCell>
                         )
@@ -475,6 +474,7 @@ export default function LocationPermissionManager({ locationId, locationName, us
                       const usersWithPermission = members.filter(m => m.permissions.includes(perm.key)).length
                       const allHavePermission = usersWithPermission === members.length
                       const isUpdating = bulkUpdating === perm.key
+                      const isIrrelevantInSingleShelf = singleShelfLocation && (perm.key === 'can_create_shelves' || perm.key === 'can_move_books')
                       
                       return (
                         <TableCell key={perm.key} align="center">
@@ -485,13 +485,13 @@ export default function LocationPermissionManager({ locationId, locationName, us
                               <Switch
                                 checked={allHavePermission}
                                 onChange={() => bulkTogglePermission(perm.key, !allHavePermission)}
-                                disabled={!canManagePermissions || bulkControlsLocked}
+                                disabled={!canManagePermissions || bulkControlsLocked || isIrrelevantInSingleShelf}
                                 size="small"
                                 color={allHavePermission ? "success" : "default"}
                               />
                             )}
                             <Typography variant="caption" color="text.secondary">
-                              {usersWithPermission}/{members.length}
+                              {isIrrelevantInSingleShelf ? 'N/A' : `${usersWithPermission}/${members.length}`}
                             </Typography>
                           </Box>
                         </TableCell>
@@ -515,6 +515,7 @@ export default function LocationPermissionManager({ locationId, locationName, us
                       {USER_PERMISSIONS.map(perm => {
                         const hasPermission = member.permissions.includes(perm.key)
                         const isUpdating = updatingPermissions === `${member.userId}-${perm.key}`
+                        const isIrrelevantInSingleShelf = singleShelfLocation && (perm.key === 'can_create_shelves' || perm.key === 'can_move_books')
                         
                         return (
                           <TableCell key={perm.key} align="center">
@@ -524,10 +525,15 @@ export default function LocationPermissionManager({ locationId, locationName, us
                               <Switch
                                 checked={hasPermission}
                                 onChange={() => toggleUserPermission(member.userId, perm.key, hasPermission)}
-                                disabled={!canManagePermissions}
+                                disabled={!canManagePermissions || isIrrelevantInSingleShelf}
                                 size="small"
                                 color={hasPermission ? "success" : "default"}
                               />
+                            )}
+                            {isIrrelevantInSingleShelf && (
+                              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                                N/A
+                              </Typography>
                             )}
                           </TableCell>
                         )

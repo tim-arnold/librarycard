@@ -594,27 +594,43 @@ export async function checkUserPermission(request: Request, userId: string, env:
       hasPermission = true;
       reason = 'super_admin';
     } else {
-      // Check if user is location admin (inherits all user permissions)
-      const isLocationAdmin = await env.DB.prepare(`
-        SELECT 1 FROM location_members lm
-        JOIN users u ON lm.user_id = u.id
-        WHERE lm.location_id = ? AND lm.user_id = ? 
-        AND (u.user_role = 'admin' OR u.user_role = 'super_admin')
-      `).bind(locationId, userId).first();
-
-      if (isLocationAdmin) {
-        hasPermission = true;
-        reason = 'admin_inherited';
-      } else {
-        // Check specific user permission
-        const userPermission = await env.DB.prepare(`
-          SELECT 1 FROM location_user_permissions 
-          WHERE location_id = ? AND user_id = ? AND permission = ?
+      // Check for admin capabilities first (if permission starts with 'can_manage_' or is an admin capability)
+      const adminCapabilities = ['can_control_user_capabilities', 'can_invite_users', 'can_manage_shelves', 'can_manage_location_settings'];
+      
+      if (adminCapabilities.includes(permission)) {
+        // Check if user has specific admin capability
+        const adminCapability = await env.DB.prepare(`
+          SELECT 1 FROM location_admin_capabilities 
+          WHERE location_id = ? AND user_id = ? AND capability = ?
         `).bind(locationId, userId, permission).first();
 
-        if (userPermission) {
+        if (adminCapability) {
           hasPermission = true;
-          reason = 'user_granted';
+          reason = 'admin_capability';
+        }
+      } else {
+        // Check if user is location admin (inherits all user permissions)
+        const isLocationAdmin = await env.DB.prepare(`
+          SELECT 1 FROM location_members lm
+          JOIN users u ON lm.user_id = u.id
+          WHERE lm.location_id = ? AND lm.user_id = ? 
+          AND (u.user_role = 'admin' OR u.user_role = 'super_admin')
+        `).bind(locationId, userId).first();
+
+        if (isLocationAdmin) {
+          hasPermission = true;
+          reason = 'admin_inherited';
+        } else {
+          // Check specific user permission
+          const userPermission = await env.DB.prepare(`
+            SELECT 1 FROM location_user_permissions 
+            WHERE location_id = ? AND user_id = ? AND permission = ?
+          `).bind(locationId, userId, permission).first();
+
+          if (userPermission) {
+            hasPermission = true;
+            reason = 'user_granted';
+          }
         }
       }
     }

@@ -40,6 +40,7 @@ export interface Location {
   name: string;
   description?: string;
   owner_id: string;
+  single_shelf_location?: boolean;
 }
 
 export interface Shelf {
