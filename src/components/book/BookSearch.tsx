@@ -18,6 +18,10 @@ import {
   DialogContent,
   DialogActions,
   Alert,
+  Chip,
+  Tooltip,
+  FormControlLabel,
+  Switch,
 } from '@mui/material'
 import {
   Search,
@@ -27,28 +31,15 @@ import {
   Warning,
   CheckBox,
   CheckBoxOutlineBlank,
+  Book,
+  Public,
+  AutoAwesome,
 } from '@mui/icons-material'
-import type { EnhancedBook } from '@/lib/types'
+import type { EnhancedBook, GoogleBookItem } from '@/lib/types'
 import { useBookSelection } from '@/contexts/BookSelectionContext'
+import { getApiBaseUrl } from '@/lib/apiConfig'
+import { useSession } from 'next-auth/react'
 
-interface GoogleBookItem {
-  id: string
-  volumeInfo: {
-    title: string
-    authors?: string[]
-    description?: string
-    imageLinks?: {
-      thumbnail?: string
-      smallThumbnail?: string
-    }
-    publishedDate?: string
-    categories?: string[]
-    industryIdentifiers?: Array<{
-      type: string
-      identifier: string
-    }>
-  }
-}
 
 interface BookSearchProps {
   searchQuery: string
@@ -95,9 +86,14 @@ export default function BookSearch({
 }: BookSearchProps) {
   // Selection context for cart functionality
   const { state: selectionState, actions: selectionActions } = useBookSelection()
+  const { data: session } = useSession()
   
   const [isSearching, setIsSearching] = useState(false)
   const [displayedResults, setDisplayedResults] = useState(parentDisplayedResults || 10)
+  const [enhancedMode, setEnhancedMode] = useState(true) // Default to enhanced mode
+  const [advancedSearch, setAdvancedSearch] = useState(false) // Toggle for title/author fields
+  const [titleQuery, setTitleQuery] = useState('')
+  const [authorQuery, setAuthorQuery] = useState('')
   
   // Use parent state if provided, otherwise use local state
   const searchResults = parentSearchResults || []
@@ -166,50 +162,29 @@ export default function BookSearch({
   // Auto-search when searchQuery is provided from OCR results or after adding a book
   useEffect(() => {
     if (shouldAutoSearch && searchQuery.trim() && searchResults.length === 0 && !isSearching) {
-      searchGoogleBooks(searchQuery)
+      searchBooks(searchQuery)
     }
   }, [searchQuery, shouldAutoSearch])
 
-  const searchGoogleBooks = async (query: string) => {
-    if (!query.trim()) return
+  const searchBooks = async (query: string) => {
+    // For advanced search, we allow empty query if we have title and author
+    const isAdvancedSearchValid = advancedSearch && enhancedMode && titleQuery.trim() && authorQuery.trim()
+    
+    if (!query.trim() && !isAdvancedSearchValid) return
 
     setIsSearching(true)
     
     try {
-      const response = await fetch(
-        `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=40`
-      )
-      
-      if (response.ok) {
-        const data = await response.json()
-        onSearchResultsChange?.(data.items || [])
-        onTotalResultsChange?.(data.totalItems || 0)
-        
-        // Only reset to 10 if parent doesn't have a specific displayedResults value
-        if (parentDisplayedResults === undefined) {
-          setDisplayedResults(10)
-          onDisplayedResultsChange?.(10)
+      if (enhancedMode) {
+        if (isAdvancedSearchValid) {
+          await searchEnhancedBooks('', titleQuery, authorQuery)
+        } else {
+          await searchEnhancedBooks(query)
         }
-        
-        // Scroll to search field at top of viewport after results are loaded
-        setTimeout(() => {
-          if (searchFormRef.current) {
-            const elementTop = searchFormRef.current.offsetTop - 20 // Small offset from top
-            window.scrollTo({
-              top: elementTop,
-              behavior: 'smooth'
-            })
-          }
-        }, 100)
-        
-        // Notify parent component that search is complete
-        onSearchComplete?.()
       } else {
-        onError(
-          'Search Error',
-          'Failed to search books. Please try again.'
-        )
+        await searchGoogleBooks(query)
       }
+      onSearchComplete?.()
     } catch (_error) {
       onError(
         'Search Error',
@@ -220,10 +195,133 @@ export default function BookSearch({
     }
   }
 
+  const searchEnhancedBooks = async (query: string, title?: string, author?: string) => {
+    if (!session?.user?.email) {
+      onError('Authentication Required', 'Please sign in to use enhanced search.')
+      return
+    }
+
+    // Use separate title/author fields if provided, otherwise use general query
+    const params = new URLSearchParams({
+      enhanced: 'true'
+    })
+    
+    if (title && author) {
+      // Advanced search with separate fields
+      params.set('title', title.trim())
+      params.set('author', author.trim())
+    } else {
+      // Simple search with general query
+      params.set('q', query.trim())
+    }
+    
+    const response = await fetch(`${getApiBaseUrl()}/api/books/editions?${params}`, {
+      headers: {
+        'Authorization': `Bearer ${session.user.email}`,
+        'Content-Type': 'application/json',
+      },
+    })
+    
+    if (response.ok) {
+      const data = await response.json()
+      const editions = data.editions || []
+      
+      onSearchResultsChange?.(editions)
+      onTotalResultsChange?.(editions.length)
+      
+      // Only reset to 10 if parent doesn't have a specific displayedResults value
+      if (parentDisplayedResults === undefined) {
+        setDisplayedResults(10)
+        onDisplayedResultsChange?.(10)
+      }
+      
+      // Scroll to search field at top of viewport after results are loaded
+      setTimeout(() => {
+        if (searchFormRef.current) {
+          const elementTop = searchFormRef.current.offsetTop - 20 // Small offset from top
+          window.scrollTo({
+            top: elementTop,
+            behavior: 'smooth'
+          })
+        }
+      }, 100)
+    } else {
+      onError('Enhanced Search Failed', 'Failed to search across multiple sources. Please try again.')
+    }
+  }
+
+  const searchGoogleBooks = async (query: string) => {
+    const response = await fetch(
+      `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=40`
+    )
+    
+    if (response.ok) {
+      const data = await response.json()
+      // Convert Google Books format to our enhanced format
+      const convertedItems = (data.items || []).map((item: any) => ({
+        id: item.id,
+        isbn: item.volumeInfo.industryIdentifiers?.find(
+          (id: any) => id.type === 'ISBN_13' || id.type === 'ISBN_10'
+        )?.identifier,
+        title: item.volumeInfo.title,
+        authors: item.volumeInfo.authors,
+        description: item.volumeInfo.description,
+        covers: item.volumeInfo.imageLinks ? {
+          thumbnail: item.volumeInfo.imageLinks.thumbnail,
+          small: item.volumeInfo.imageLinks.small,
+          medium: item.volumeInfo.imageLinks.medium,
+          large: item.volumeInfo.imageLinks.large,
+          extraLarge: item.volumeInfo.imageLinks.extraLarge,
+        } : undefined,
+        publishedDate: item.volumeInfo.publishedDate,
+        categories: item.volumeInfo.categories,
+        publisher: item.volumeInfo.publisher,
+        pageCount: item.volumeInfo.pageCount,
+        averageRating: item.volumeInfo.averageRating,
+        ratingsCount: item.volumeInfo.ratingsCount,
+        source: 'google' as const,
+        sourceDisplayName: 'Google Books',
+        // Keep legacy format for backward compatibility
+        volumeInfo: item.volumeInfo
+      }))
+      
+      onSearchResultsChange?.(convertedItems)
+      onTotalResultsChange?.(data.totalItems || 0)
+      
+      // Only reset to 10 if parent doesn't have a specific displayedResults value
+      if (parentDisplayedResults === undefined) {
+        setDisplayedResults(10)
+        onDisplayedResultsChange?.(10)
+      }
+      
+      // Scroll to search field at top of viewport after results are loaded
+      setTimeout(() => {
+        if (searchFormRef.current) {
+          const elementTop = searchFormRef.current.offsetTop - 20 // Small offset from top
+          window.scrollTo({
+            top: elementTop,
+            behavior: 'smooth'
+          })
+        }
+      }, 100)
+    } else {
+      onError('Search Failed', 'Failed to search for books. Please try again.')
+    }
+  }
+
   const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!disabled) {
-      searchGoogleBooks(searchQuery)
+      if (advancedSearch && enhancedMode) {
+        // For advanced search, we need both title and author
+        if (titleQuery.trim() && authorQuery.trim()) {
+          searchBooks('') // Pass empty query, will use title/author instead
+        } else {
+          onError('Search Error', 'Please enter both title and author for advanced search.')
+        }
+      } else {
+        searchBooks(searchQuery)
+      }
     }
   }
 
@@ -235,6 +333,8 @@ export default function BookSearch({
 
   const handleClearSearch = () => {
     onSearchQueryChange('')
+    setTitleQuery('')
+    setAuthorQuery('')
     onSearchResultsChange?.([])
     onTotalResultsChange?.(0)
     setDisplayedResults(10)
@@ -265,15 +365,34 @@ export default function BookSearch({
     setAddAnywayDialog({ isOpen: false, book: null })
   }
 
+  // Helper function to extract data from either new or legacy format
+  const getItemData = (item: GoogleBookItem) => {
+    if (item.volumeInfo) {
+      // Legacy Google Books format
+      return {
+        isbn: item.volumeInfo.industryIdentifiers?.find(
+          id => id.type === 'ISBN_13' || id.type === 'ISBN_10'
+        )?.identifier,
+        title: item.volumeInfo.title,
+        authors: item.volumeInfo.authors || [],
+        publishedDate: item.volumeInfo.publishedDate,
+        thumbnail: item.volumeInfo.imageLinks?.thumbnail
+      }
+    } else {
+      // Enhanced format
+      return {
+        isbn: item.isbn,
+        title: item.title,
+        authors: item.authors || [],
+        publishedDate: item.publishedDate,
+        thumbnail: item.covers?.thumbnail || item.covers?.small || item.covers?.medium
+      }
+    }
+  }
+
   // Enhanced duplicate detection helper functions
   const getBookDuplicateInfo = (googleBookItem: GoogleBookItem): { isExactDuplicate: boolean; isPotentialDuplicate: boolean } => {
-    const isbn = googleBookItem.volumeInfo.industryIdentifiers?.find(
-      id => id.type === 'ISBN_13' || id.type === 'ISBN_10'
-    )?.identifier
-
-    const title = googleBookItem.volumeInfo.title
-    const authors = googleBookItem.volumeInfo.authors || []
-    const publishedDate = googleBookItem.volumeInfo.publishedDate
+    const { isbn, title, authors, publishedDate } = getItemData(googleBookItem)
 
     let isExactDuplicate = false
     let isPotentialDuplicate = false
@@ -330,28 +449,24 @@ export default function BookSearch({
 
 
   const wasBookJustAdded = (googleBookItem: GoogleBookItem): boolean => {
-    const isbn = googleBookItem.volumeInfo.industryIdentifiers?.find(
-      id => id.type === 'ISBN_13' || id.type === 'ISBN_10'
-    )?.identifier
-    const bookKey = isbn || googleBookItem.volumeInfo.title
+    const { isbn, title } = getItemData(googleBookItem)
+    const bookKey = isbn || title
     return justAddedBooks.has(bookKey)
   }
 
   // Convert GoogleBookItem to EnhancedBook for cart functionality
   const createEnhancedBookFromGoogleItem = (item: GoogleBookItem): EnhancedBook => {
-    const isbn = item.volumeInfo.industryIdentifiers?.find(
-      id => id.type === 'ISBN_13' || id.type === 'ISBN_10'
-    )?.identifier || item.id
+    const { isbn, title, authors, publishedDate, thumbnail } = getItemData(item)
 
     return {
       id: item.id,
-      isbn: isbn,
-      title: item.volumeInfo.title,
-      authors: item.volumeInfo.authors || ['Unknown Author'],
-      description: item.volumeInfo.description,
-      thumbnail: item.volumeInfo.imageLinks?.thumbnail,
-      publishedDate: item.volumeInfo.publishedDate,
-      categories: item.volumeInfo.categories,
+      isbn: isbn || item.id,
+      title: title || 'Unknown Title',
+      authors: authors.length > 0 ? authors : ['Unknown Author'],
+      description: item.volumeInfo?.description || item.description,
+      thumbnail,
+      publishedDate,
+      categories: item.volumeInfo?.categories || item.categories,
     }
   }
 
@@ -378,39 +493,143 @@ export default function BookSearch({
     <Box>
       {/* Search Form */}
       <Box component="form" onSubmit={handleSearchSubmit} sx={{ mb: 3 }} ref={searchFormRef}>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <TextField
-            fullWidth
-            value={searchQuery}
-            onChange={(e) => onSearchQueryChange(e.target.value)}
-            placeholder="Search by title, author, or keywords..."
-            variant="outlined"
-            disabled={isSearching || disabled}
-            inputRef={searchInputRef}
-            InputProps={{
-              endAdornment: searchQuery && (
-                <InputAdornment position="end">
-                  <IconButton
-                    onClick={handleClearSearch}
-                    disabled={isSearching || disabled}
-                    size="small"
-                    aria-label="Clear search"
-                  >
-                    <Clear />
-                  </IconButton>
-                </InputAdornment>
-              )
-            }}
+        {/* Search Mode Toggle */}
+        {enhancedMode && (
+          <Box sx={{ mb: 2 }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={advancedSearch}
+                  onChange={(e) => setAdvancedSearch(e.target.checked)}
+                  disabled={isSearching || disabled}
+                />
+              }
+              label="Advanced Search (separate title and author fields)"
+            />
+          </Box>
+        )}
+        
+        {/* Search Fields */}
+        {advancedSearch && enhancedMode ? (
+          // Advanced Search: Separate Title and Author Fields
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 2 }}>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <TextField
+                fullWidth
+                value={titleQuery}
+                onChange={(e) => setTitleQuery(e.target.value)}
+                placeholder="Book title (e.g., 'Books of Blood')"
+                label="Title"
+                variant="outlined"
+                disabled={isSearching || disabled}
+                inputRef={searchInputRef}
+              />
+              <TextField
+                fullWidth
+                value={authorQuery}
+                onChange={(e) => setAuthorQuery(e.target.value)}
+                placeholder="Author name (e.g., 'Clive Barker')"
+                label="Author"
+                variant="outlined"
+                disabled={isSearching || disabled}
+              />
+            </Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Button 
+                variant="outlined"
+                onClick={handleClearSearch}
+                disabled={isSearching || disabled}
+                startIcon={<Clear />}
+              >
+                Clear
+              </Button>
+              <Button 
+                type="submit" 
+                variant="contained"
+                startIcon={isSearching ? <CircularProgress size={16} color="inherit" /> : <Search />}
+                disabled={isSearching || (!titleQuery.trim() || !authorQuery.trim()) || disabled}
+                sx={{ minWidth: 120 }}
+              >
+                {isSearching ? 'Searching...' : 'Search'}
+              </Button>
+            </Box>
+          </Box>
+        ) : (
+          // Simple Search: Single Query Field
+          <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+            <TextField
+              fullWidth
+              value={searchQuery}
+              onChange={(e) => onSearchQueryChange(e.target.value)}
+              placeholder={enhancedMode ? "Search by title, author, or keywords (enhanced search across 2 sources)..." : "Search by title, author, or keywords..."}
+              variant="outlined"
+              disabled={isSearching || disabled}
+              inputRef={searchInputRef}
+              InputProps={{
+                endAdornment: searchQuery && (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={handleClearSearch}
+                      disabled={isSearching || disabled}
+                      size="small"
+                      aria-label="Clear search"
+                    >
+                      <Clear />
+                    </IconButton>
+                  </InputAdornment>
+                )
+              }}
+            />
+            <Button 
+              type="submit" 
+              variant="contained"
+              startIcon={isSearching ? <CircularProgress size={16} color="inherit" /> : <Search />}
+              disabled={isSearching || !searchQuery.trim() || disabled}
+              sx={{ minWidth: 120 }}
+            >
+              {isSearching ? 'Searching...' : 'Search'}
+            </Button>
+          </Box>
+        )}
+        
+        {/* Enhanced Search Toggle */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={enhancedMode}
+                onChange={(e) => setEnhancedMode(e.target.checked)}
+                disabled={isSearching || disabled}
+              />
+            }
+            label={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <AutoAwesome fontSize="small" />
+                <Typography variant="body2">
+                  Enhanced Search (2 sources)
+                </Typography>
+              </Box>
+            }
           />
-          <Button 
-            type="submit" 
-            variant="contained"
-            startIcon={isSearching ? <CircularProgress size={16} color="inherit" /> : <Search />}
-            disabled={isSearching || !searchQuery.trim() || disabled}
-            sx={{ minWidth: 120 }}
-          >
-            {isSearching ? 'Searching...' : 'Search'}
-          </Button>
+          
+          {enhancedMode && (
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+              <Chip
+                icon={<Book />}
+                label="Google Books"
+                size="small"
+                variant="outlined"
+                color="primary"
+              />
+              <Chip
+                icon={<Public />}
+                label="Open Library"
+                size="small"
+                variant="outlined"
+                color="success"
+              />
+            </Box>
+          )}
         </Box>
       </Box>
 
@@ -427,29 +646,98 @@ export default function BookSearch({
           </Box>
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 2 }}>
             {searchResults.slice(0, displayedResults).map((item) => {
-              const isbn = item.volumeInfo.industryIdentifiers?.find(
-                id => id.type === 'ISBN_13' || id.type === 'ISBN_10'
-              )?.identifier
-              const bookKey = isbn || item.volumeInfo.title
+              const { isbn, title, authors, publishedDate, thumbnail } = getItemData(item)
+              const bookKey = isbn || title
+              
+              // Helper function to get source icon
+              const getSourceIcon = (source?: string) => {
+                switch (source) {
+                  case 'google':
+                    return <Book fontSize="small" />
+                  case 'openlibrary':
+                    return <Public fontSize="small" />
+                  default:
+                    return <Book fontSize="small" />
+                }
+              }
+
+              // Helper function to get source color
+              const getSourceColor = (source?: string): 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' | 'default' => {
+                switch (source) {
+                  case 'google':
+                    return 'primary'  // Blue
+                  case 'openlibrary':
+                    return 'success'  // Green
+                  default:
+                    return 'default'
+                }
+              }
               
               return (
               <Card key={item.id} data-book-key={bookKey} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                 <CardContent sx={{ flex: 1 }}>
-                  {item.volumeInfo.imageLinks?.thumbnail && (
+                  {/* Source attribution chip */}
+                  {enhancedMode && item.source && (
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+                      <Tooltip title={item.sourceDisplayName || item.source}>
+                        <Chip
+                          icon={getSourceIcon(item.source)}
+                          label={item.source === 'google' ? 'GB' : 'OL'}
+                          size="small"
+                          color={getSourceColor(item.source)}
+                          variant="filled"
+                          sx={{ 
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            '& .MuiChip-label': {
+                              color: 'white'
+                            },
+                            '& .MuiChip-icon': {
+                              color: 'white'
+                            }
+                          }}
+                        />
+                      </Tooltip>
+                    </Box>
+                  )}
+                  
+                  {thumbnail && (
                     <CardMedia
                       component="img"
-                      src={item.volumeInfo.imageLinks.thumbnail}
-                      alt={item.volumeInfo.title}
+                      src={thumbnail}
+                      alt={title}
                       sx={{ width: 80, height: 'auto', mx: 'auto', mb: 1 }}
                     />
                   )}
+                  
                   <Typography variant="h6" component="h3" gutterBottom>
-                    {item.volumeInfo.title}
+                    {title}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" gutterBottom>
-                    {item.volumeInfo.authors?.join(', ') || 'Unknown Author'}
-                    {item.volumeInfo.publishedDate && `, ${new Date(item.volumeInfo.publishedDate).getFullYear()}`}
+                    {authors.join(', ') || 'Unknown Author'}
+                    {publishedDate && `, ${new Date(publishedDate).getFullYear()}`}
                   </Typography>
+                  
+                  {/* Additional metadata for enhanced results */}
+                  {enhancedMode && (
+                    <Box sx={{ mt: 1 }}>
+                      {item.publisher && (
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          Publisher: {item.publisher}
+                        </Typography>
+                      )}
+                      {item.classification && (
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          Classification: {item.classification}
+                        </Typography>
+                      )}
+                      {item.lccn && (
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          LCCN: {item.lccn}
+                        </Typography>
+                      )}
+                    </Box>
+                  )}
                 </CardContent>
                 <CardActions>
                   {wasBookJustAdded(item) ? (
@@ -621,11 +909,11 @@ export default function BookSearch({
                 Book to Add:
               </Typography>
               <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                {addAnywayDialog.book.volumeInfo.title}
+                {getItemData(addAnywayDialog.book).title}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                by {addAnywayDialog.book.volumeInfo.authors?.join(', ') || 'Unknown Author'}
-                {addAnywayDialog.book.volumeInfo.publishedDate && `, ${new Date(addAnywayDialog.book.volumeInfo.publishedDate).getFullYear()}`}
+                by {getItemData(addAnywayDialog.book).authors.join(', ') || 'Unknown Author'}
+                {getItemData(addAnywayDialog.book).publishedDate && `, ${new Date(getItemData(addAnywayDialog.book).publishedDate!).getFullYear()}`}
               </Typography>
               
               <Typography variant="body2" sx={{ mt: 2 }}>

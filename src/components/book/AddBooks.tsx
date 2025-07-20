@@ -21,7 +21,7 @@ import {
   Cancel,
 } from '@mui/icons-material'
 import { fetchEnhancedBookData, fetchEnhancedBookFromSearch } from '@/lib/bookApi'
-import type { EnhancedBook, CuratedGenre } from '@/lib/types'
+import type { EnhancedBook, CuratedGenre, GoogleBookItem } from '@/lib/types'
 import { saveBook as saveBookAPI, getBooks } from '@/lib/api'
 import { authenticatedFetch } from '@/lib/auth-utils'
 import ConfirmationModal from '../modals/ConfirmationModal'
@@ -159,24 +159,6 @@ interface Shelf {
   created_at: string
 }
 
-interface GoogleBookItem {
-  id: string
-  volumeInfo: {
-    title: string
-    authors?: string[]
-    description?: string
-    imageLinks?: {
-      thumbnail?: string
-      smallThumbnail?: string
-    }
-    publishedDate?: string
-    categories?: string[]
-    industryIdentifiers?: Array<{
-      type: string
-      identifier: string
-    }>
-  }
-}
 
 interface AddBooksInternalProps {
   initialTab?: 'scan' | 'search'
@@ -413,19 +395,46 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
         })
         
         // Fallback to basic book data
-        const isbn = item.volumeInfo.industryIdentifiers?.find(
-          id => id.type === 'ISBN_13' || id.type === 'ISBN_10'
-        )?.identifier || item.id
+        // Handle both new format and legacy format
+        let isbn: string
+        let title: string
+        let authors: string[]
+        let description: string | undefined
+        let thumbnail: string | undefined
+        let publishedDate: string | undefined
+        let categories: string[] | undefined
+
+        if (item.volumeInfo) {
+          // Legacy Google Books format
+          isbn = item.volumeInfo.industryIdentifiers?.find(
+            id => id.type === 'ISBN_13' || id.type === 'ISBN_10'
+          )?.identifier || item.id
+          title = item.volumeInfo.title
+          authors = item.volumeInfo.authors || ['Unknown Author']
+          description = item.volumeInfo.description
+          thumbnail = item.volumeInfo.imageLinks?.thumbnail
+          publishedDate = item.volumeInfo.publishedDate
+          categories = item.volumeInfo.categories
+        } else {
+          // Enhanced format
+          isbn = item.isbn || item.id
+          title = item.title
+          authors = item.authors || ['Unknown Author']
+          description = item.description
+          thumbnail = item.covers?.thumbnail || item.covers?.small || item.covers?.medium
+          publishedDate = item.publishedDate
+          categories = item.categories
+        }
 
         const book: EnhancedBook = {
           id: item.id,
-          isbn: isbn,
-          title: item.volumeInfo.title,
-          authors: item.volumeInfo.authors || ['Unknown Author'],
-          description: item.volumeInfo.description,
-          thumbnail: item.volumeInfo.imageLinks?.thumbnail,
-          publishedDate: item.volumeInfo.publishedDate,
-          categories: item.volumeInfo.categories,
+          isbn,
+          title,
+          authors,
+          description,
+          thumbnail,
+          publishedDate,
+          categories,
         }
 
         setSelectedBook(book)
