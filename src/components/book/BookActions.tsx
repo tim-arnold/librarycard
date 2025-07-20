@@ -57,9 +57,9 @@ export default function BookActions({
   const canRelocate = !isCheckedOut && canMove && (hasMultipleShelves || canCreateShelves)
 
   if (viewMode === 'list') {
-    // Ultra-compact list view - icon-only buttons in horizontal layout
+    // List view - responsive sizing for better mobile usability
     return (
-      <Box sx={{ display: 'flex', gap: 0.5 }}>
+      <Box sx={{ display: 'flex', gap: { xs: 1, sm: 0.5 } }}>
         {/* Always show available action buttons */}
         {canDelete && (
           <Button
@@ -67,9 +67,14 @@ export default function BookActions({
             variant="outlined"
             color="error"
             onClick={() => onDelete(book.id, book.title)}
-            sx={{ minWidth: 'auto', p: 0.5 }}
+            sx={{ 
+              minWidth: 'auto',
+              p: { xs: 1, sm: 0.5 },
+              minHeight: { xs: 40, sm: 32 },
+              width: { xs: 40, sm: 32 }
+            }}
           >
-            <Delete fontSize="small" />
+            <Delete sx={{ fontSize: { xs: '1.25rem', sm: '1rem' } }} />
           </Button>
         )}
         
@@ -78,9 +83,14 @@ export default function BookActions({
             size="small"
             variant="outlined"
             onClick={() => onRelocate(book)}
-            sx={{ minWidth: 'auto', p: 0.5 }}
+            sx={{ 
+              minWidth: 'auto',
+              p: { xs: 1, sm: 0.5 },
+              minHeight: { xs: 40, sm: 32 },
+              width: { xs: 40, sm: 32 }
+            }}
           >
-            <SwapHoriz fontSize="small" />
+            <SwapHoriz sx={{ fontSize: { xs: '1.25rem', sm: '1rem' } }} />
           </Button>
         )}
         
@@ -91,9 +101,14 @@ export default function BookActions({
             variant="contained"
             color="primary"
             onClick={() => onCheckout(book.id, book.title)}
-            sx={{ minWidth: 'auto', p: 0.5 }}
+            sx={{ 
+              minWidth: 'auto',
+              p: { xs: 1, sm: 0.5 },
+              minHeight: { xs: 40, sm: 32 },
+              width: { xs: 40, sm: 32 }
+            }}
           >
-            <CheckCircle fontSize="small" />
+            <CheckCircle sx={{ fontSize: { xs: '1.25rem', sm: '1rem' } }} />
           </Button>
         ) : canReturn ? (
           <Button
@@ -101,9 +116,14 @@ export default function BookActions({
             variant="contained"
             color="secondary"
             onClick={() => onCheckin(book.id, book.title)}
-            sx={{ minWidth: 'auto', p: 0.5 }}
+            sx={{ 
+              minWidth: 'auto',
+              p: { xs: 1, sm: 0.5 },
+              minHeight: { xs: 40, sm: 32 },
+              width: { xs: 40, sm: 32 }
+            }}
           >
-            <Undo fontSize="small" />
+            <Undo sx={{ fontSize: { xs: '1.25rem', sm: '1rem' } }} />
           </Button>
         ) : null}
         
@@ -116,9 +136,14 @@ export default function BookActions({
                 variant="outlined"
                 color="warning"
                 onClick={() => onRequestRemoval(book.id, book.title)}
-                sx={{ minWidth: 'auto', p: 0.5 }}
+                sx={{ 
+                  minWidth: 'auto',
+                  p: { xs: 1, sm: 0.5 },
+                  minHeight: { xs: 40, sm: 32 },
+                  width: { xs: 40, sm: 32 }
+                }}
               >
-                <ReportProblem fontSize="small" />
+                <ReportProblem sx={{ fontSize: { xs: '1.25rem', sm: '1rem' } }} />
               </Button>
             ) : (
               <Button
@@ -126,9 +151,14 @@ export default function BookActions({
                 variant="outlined"
                 color="info"
                 onClick={() => onCancelRemovalRequest(book.id, book.title)}
-                sx={{ minWidth: 'auto', p: 0.5 }}
+                sx={{ 
+                  minWidth: 'auto',
+                  p: { xs: 1, sm: 0.5 },
+                  minHeight: { xs: 40, sm: 32 },
+                  width: { xs: 40, sm: 32 }
+                }}
               >
-                <Cancel fontSize="small" />
+                <Cancel sx={{ fontSize: { xs: '1.25rem', sm: '1rem' } }} />
               </Button>
             )}
           </>
