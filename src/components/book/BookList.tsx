@@ -242,8 +242,7 @@ export default function BookText({
           <Box sx={{ 
             ml: { xs: 0, sm: 2 }, 
             mt: { xs: 1, sm: 0 }, 
-            flexShrink: 0,
-            alignSelf: { xs: 'flex-end', sm: 'auto' }
+            flexShrink: 0
           }}>
             <BookActions
               book={book}
