@@ -41,6 +41,9 @@ import {
   getCachedBookEditions
 } from './books/google-cached';
 import {
+  getEnhancedBookEditions
+} from './books/loc-cached';
+import {
   sendInvitationEmail,
   sendVerificationEmail,
   notifyAdminsOfSignupRequest,
@@ -332,22 +335,61 @@ export default {
         return response;
       }
 
-      // Book editions endpoint for cover selection
+      // Enhanced book editions endpoint for cover selection (multi-source)
       if (path === '/api/books/editions' && request.method === 'GET') {
+        console.log('🔍 Enhanced book editions request received');
         const title = url.searchParams.get('title');
         const author = url.searchParams.get('author');
+        const query = url.searchParams.get('q'); // General search query
+        const enhanced = url.searchParams.get('enhanced') === 'true';
         
-        if (!title || !author) {
-          return new Response(JSON.stringify({ error: 'Title and author parameters are required' }), {
+        console.log('📝 Request params:', { title, author, query, enhanced });
+        
+        // Handle different search formats: title+author, general query, or legacy
+        if (!title && !author && !query) {
+          return new Response(JSON.stringify({ error: 'Either title+author parameters or q parameter is required' }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
         
-        const editions = await getCachedBookEditions(title, author, env);
-        return new Response(JSON.stringify({ editions }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        if (enhanced) {
+          let searchTitle: string;
+          let searchAuthor: string;
+          
+          if (title && author) {
+            // Advanced search with separate title and author fields
+            searchTitle = title;
+            searchAuthor = author;
+          } else if (query) {
+            // Simple search - use the same string for both title and author searches
+            // This allows each API to handle the query in its own way
+            searchTitle = query;
+            searchAuthor = query;
+          } else {
+            // Legacy format with separate title and author
+            searchTitle = title!;
+            searchAuthor = author!;
+          }
+          
+          console.log('🚀 Calling getEnhancedBookEditions with:', { searchTitle, searchAuthor });
+          console.log('ℹ️  Enhanced search always filters for books with cover art');
+          
+          // Use enhanced multi-source approach (always filters for covers)
+          const editions = await getEnhancedBookEditions(searchTitle, searchAuthor, env);
+          
+          console.log('✅ Enhanced search complete, returning', editions.length, 'editions');
+          
+          return new Response(JSON.stringify({ editions }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } else {
+          // Use legacy Google Books only approach
+          const editions = await getCachedBookEditions(title, author, env);
+          return new Response(JSON.stringify({ editions }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
       }
 
       // Book checkout endpoints (must come before general /api/books/* routes)
