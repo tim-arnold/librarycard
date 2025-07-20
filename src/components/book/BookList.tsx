@@ -58,7 +58,8 @@ export default function BookText({
           key={book.id}
           sx={{
             display: 'flex',
-            alignItems: 'center',
+            flexDirection: { xs: 'column', sm: 'row' },
+            alignItems: { xs: 'stretch', sm: 'center' },
             border: 1,
             borderColor: 'divider',
             borderRadius: 1,
@@ -79,6 +80,7 @@ export default function BookText({
             alignItems: 'center',
             gap: 2,
             flex: 1,
+            width: { xs: '100%', sm: 'auto' },
             minWidth: 0,
             overflow: 'hidden'
           }}>
@@ -237,7 +239,12 @@ export default function BookText({
           </Box>
 
           {/* Action Controls - Compact */}
-          <Box sx={{ ml: 2, flexShrink: 0 }}>
+          <Box sx={{ 
+            ml: { xs: 0, sm: 2 }, 
+            mt: { xs: 1, sm: 0 }, 
+            flexShrink: 0,
+            alignSelf: { xs: 'flex-end', sm: 'auto' }
+          }}>
             <BookActions
               book={book}
               userRole={userRole}
