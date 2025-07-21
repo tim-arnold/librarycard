@@ -74,26 +74,22 @@ export default function CoverSelectionModal({
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string>('')
   const [selectedCover, setSelectedCover] = useState<CoverOption | null>(null)
-  const [searchTitle, setSearchTitle] = useState(title)
-  const [searchAuthor, setSearchAuthor] = useState(author)
+  const [searchQuery, setSearchQuery] = useState(`${title} ${author}`.trim())
   const [enhancedMode, setEnhancedMode] = useState(true) // Default to enhanced mode
   const { data: session } = useSession()
 
-  const fetchEditions = async (searchTitleParam?: string, searchAuthorParam?: string) => {
-    const titleToSearch = searchTitleParam || searchTitle
-    const authorToSearch = searchAuthorParam || searchAuthor
+  const fetchEditions = async (queryParam?: string) => {
+    const queryToSearch = queryParam || searchQuery
     
-    if (!titleToSearch || !authorToSearch || !session?.user?.email) return
+    if (!queryToSearch.trim() || !session?.user?.email) return
 
     setIsLoading(true)
     setError('')
     
     try {
       const params = new URLSearchParams({
-        title: titleToSearch,
-        author: authorToSearch,
-        enhanced: enhancedMode.toString(),
-        covers: 'true' // Only return editions with covers for cover selection
+        q: queryToSearch,
+        enhanced: enhancedMode.toString()
       })
       
       const response = await fetch(`${getApiBaseUrl()}/api/books/editions?${params}`, {
@@ -124,9 +120,9 @@ export default function CoverSelectionModal({
 
   useEffect(() => {
     if (open) {
-      setSearchTitle(title)
-      setSearchAuthor(author)
-      fetchEditions(title, author)
+      const initialQuery = `${title} ${author}`.trim()
+      setSearchQuery(initialQuery)
+      fetchEditions(initialQuery)
     }
   }, [open, title, author])
 
@@ -259,23 +255,17 @@ export default function CoverSelectionModal({
           
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'end' }}>
             <TextField
-              label="Title"
-              value={searchTitle}
-              onChange={(e) => setSearchTitle(e.target.value)}
+              label="Search Query"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               disabled={isLoading}
-              sx={{ flex: 1 }}
-            />
-            <TextField
-              label="Author"
-              value={searchAuthor}
-              onChange={(e) => setSearchAuthor(e.target.value)}
-              disabled={isLoading}
+              placeholder="Enter title, author, or keywords..."
               sx={{ flex: 1 }}
             />
             <Button
               variant="outlined"
               onClick={handleSearch}
-              disabled={isLoading || !searchTitle || !searchAuthor}
+              disabled={isLoading || !searchQuery.trim()}
               startIcon={isLoading ? <CircularProgress size={16} /> : <Search />}
               sx={{ minWidth: 100 }}
             >
