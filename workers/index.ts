@@ -338,39 +338,24 @@ export default {
       // Enhanced book editions endpoint for cover selection (multi-source)
       if (path === '/api/books/editions' && request.method === 'GET') {
         console.log('🔍 Enhanced book editions request received');
-        const title = url.searchParams.get('title');
-        const author = url.searchParams.get('author');
         const query = url.searchParams.get('q'); // General search query
         const enhanced = url.searchParams.get('enhanced') === 'true';
         
-        console.log('📝 Request params:', { title, author, query, enhanced });
+        console.log('📝 Request params:', { query, enhanced });
         
-        // Handle different search formats: title+author, general query, or legacy
-        if (!title && !author && !query) {
-          return new Response(JSON.stringify({ error: 'Either title+author parameters or q parameter is required' }), {
+        // Require query parameter
+        if (!query) {
+          return new Response(JSON.stringify({ error: 'Query parameter (q) is required' }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
         
         if (enhanced) {
-          let searchTitle: string;
-          let searchAuthor: string;
-          
-          if (title && author) {
-            // Advanced search with separate title and author fields
-            searchTitle = title;
-            searchAuthor = author;
-          } else if (query) {
-            // Simple search - use the same string for both title and author searches
-            // This allows each API to handle the query in its own way
-            searchTitle = query;
-            searchAuthor = query;
-          } else {
-            // Legacy format with separate title and author
-            searchTitle = title!;
-            searchAuthor = author!;
-          }
+          // Use the same search query for both title and author searches
+          // This allows each API to handle the query in its own way
+          const searchTitle = query;
+          const searchAuthor = query;
           
           console.log('🚀 Calling getEnhancedBookEditions with:', { searchTitle, searchAuthor });
           console.log('ℹ️  Enhanced search always filters for books with cover art');
@@ -385,7 +370,7 @@ export default {
           });
         } else {
           // Use legacy Google Books only approach
-          const editions = await getCachedBookEditions(title, author, env);
+          const editions = await getCachedBookEditions(query, '', env);
           return new Response(JSON.stringify({ editions }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });

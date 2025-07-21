@@ -91,9 +91,6 @@ export default function BookSearch({
   const [isSearching, setIsSearching] = useState(false)
   const [displayedResults, setDisplayedResults] = useState(parentDisplayedResults || 10)
   const [enhancedMode, setEnhancedMode] = useState(true) // Default to enhanced mode
-  const [advancedSearch, setAdvancedSearch] = useState(false) // Toggle for title/author fields
-  const [titleQuery, setTitleQuery] = useState('')
-  const [authorQuery, setAuthorQuery] = useState('')
   
   // Use parent state if provided, otherwise use local state
   const searchResults = parentSearchResults || []
@@ -167,20 +164,13 @@ export default function BookSearch({
   }, [searchQuery, shouldAutoSearch])
 
   const searchBooks = async (query: string) => {
-    // For advanced search, we allow empty query if we have title and author
-    const isAdvancedSearchValid = advancedSearch && enhancedMode && titleQuery.trim() && authorQuery.trim()
-    
-    if (!query.trim() && !isAdvancedSearchValid) return
+    if (!query.trim()) return
 
     setIsSearching(true)
     
     try {
       if (enhancedMode) {
-        if (isAdvancedSearchValid) {
-          await searchEnhancedBooks('', titleQuery, authorQuery)
-        } else {
-          await searchEnhancedBooks(query)
-        }
+        await searchEnhancedBooks(query)
       } else {
         await searchGoogleBooks(query)
       }
@@ -195,25 +185,16 @@ export default function BookSearch({
     }
   }
 
-  const searchEnhancedBooks = async (query: string, title?: string, author?: string) => {
+  const searchEnhancedBooks = async (query: string) => {
     if (!session?.user?.email) {
       onError('Authentication Required', 'Please sign in to use enhanced search.')
       return
     }
 
-    // Use separate title/author fields if provided, otherwise use general query
     const params = new URLSearchParams({
-      enhanced: 'true'
+      enhanced: 'true',
+      q: query.trim()
     })
-    
-    if (title && author) {
-      // Advanced search with separate fields
-      params.set('title', title.trim())
-      params.set('author', author.trim())
-    } else {
-      // Simple search with general query
-      params.set('q', query.trim())
-    }
     
     const response = await fetch(`${getApiBaseUrl()}/api/books/editions?${params}`, {
       headers: {
@@ -312,16 +293,7 @@ export default function BookSearch({
   const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!disabled) {
-      if (advancedSearch && enhancedMode) {
-        // For advanced search, we need both title and author
-        if (titleQuery.trim() && authorQuery.trim()) {
-          searchBooks('') // Pass empty query, will use title/author instead
-        } else {
-          onError('Search Error', 'Please enter both title and author for advanced search.')
-        }
-      } else {
-        searchBooks(searchQuery)
-      }
+      searchBooks(searchQuery)
     }
   }
 
@@ -333,8 +305,6 @@ export default function BookSearch({
 
   const handleClearSearch = () => {
     onSearchQueryChange('')
-    setTitleQuery('')
-    setAuthorQuery('')
     onSearchResultsChange?.([])
     onTotalResultsChange?.(0)
     setDisplayedResults(10)
@@ -493,104 +463,41 @@ export default function BookSearch({
     <Box>
       {/* Search Form */}
       <Box component="form" onSubmit={handleSearchSubmit} sx={{ mb: 3 }} ref={searchFormRef}>
-        {/* Search Mode Toggle */}
-        {enhancedMode && (
-          <Box sx={{ mb: 2 }}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={advancedSearch}
-                  onChange={(e) => setAdvancedSearch(e.target.checked)}
-                  disabled={isSearching || disabled}
-                />
-              }
-              label="Advanced Search (separate title and author fields)"
-            />
-          </Box>
-        )}
-        
-        {/* Search Fields */}
-        {advancedSearch && enhancedMode ? (
-          // Advanced Search: Separate Title and Author Fields
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 2 }}>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <TextField
-                fullWidth
-                value={titleQuery}
-                onChange={(e) => setTitleQuery(e.target.value)}
-                placeholder="Book title (e.g., 'Books of Blood')"
-                label="Title"
-                variant="outlined"
-                disabled={isSearching || disabled}
-                inputRef={searchInputRef}
-              />
-              <TextField
-                fullWidth
-                value={authorQuery}
-                onChange={(e) => setAuthorQuery(e.target.value)}
-                placeholder="Author name (e.g., 'Clive Barker')"
-                label="Author"
-                variant="outlined"
-                disabled={isSearching || disabled}
-              />
-            </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Button 
-                variant="outlined"
-                onClick={handleClearSearch}
-                disabled={isSearching || disabled}
-                startIcon={<Clear />}
-              >
-                Clear
-              </Button>
-              <Button 
-                type="submit" 
-                variant="contained"
-                startIcon={isSearching ? <CircularProgress size={16} color="inherit" /> : <Search />}
-                disabled={isSearching || (!titleQuery.trim() || !authorQuery.trim()) || disabled}
-                sx={{ minWidth: 120 }}
-              >
-                {isSearching ? 'Searching...' : 'Search'}
-              </Button>
-            </Box>
-          </Box>
-        ) : (
-          // Simple Search: Single Query Field
-          <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-            <TextField
-              fullWidth
-              value={searchQuery}
-              onChange={(e) => onSearchQueryChange(e.target.value)}
-              placeholder={enhancedMode ? "Search by title, author, or keywords (enhanced search across 2 sources)..." : "Search by title, author, or keywords..."}
-              variant="outlined"
-              disabled={isSearching || disabled}
-              inputRef={searchInputRef}
-              InputProps={{
-                endAdornment: searchQuery && (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={handleClearSearch}
-                      disabled={isSearching || disabled}
-                      size="small"
-                      aria-label="Clear search"
-                    >
-                      <Clear />
-                    </IconButton>
-                  </InputAdornment>
-                )
-              }}
-            />
-            <Button 
-              type="submit" 
-              variant="contained"
-              startIcon={isSearching ? <CircularProgress size={16} color="inherit" /> : <Search />}
-              disabled={isSearching || !searchQuery.trim() || disabled}
-              sx={{ minWidth: 120 }}
-            >
-              {isSearching ? 'Searching...' : 'Search'}
-            </Button>
-          </Box>
-        )}
+        {/* Search Field */}
+        <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+          <TextField
+            fullWidth
+            value={searchQuery}
+            onChange={(e) => onSearchQueryChange(e.target.value)}
+            placeholder={enhancedMode ? "Search by title, author, or keywords (enhanced search across 2 sources)..." : "Search by title, author, or keywords..."}
+            variant="outlined"
+            disabled={isSearching || disabled}
+            inputRef={searchInputRef}
+            InputProps={{
+              endAdornment: searchQuery && (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={handleClearSearch}
+                    disabled={isSearching || disabled}
+                    size="small"
+                    aria-label="Clear search"
+                  >
+                    <Clear />
+                  </IconButton>
+                </InputAdornment>
+              )
+            }}
+          />
+          <Button 
+            type="submit" 
+            variant="contained"
+            startIcon={isSearching ? <CircularProgress size={16} color="inherit" /> : <Search />}
+            disabled={isSearching || !searchQuery.trim() || disabled}
+            sx={{ minWidth: 120 }}
+          >
+            {isSearching ? 'Searching...' : 'Search'}
+          </Button>
+        </Box>
         
         {/* Enhanced Search Toggle */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
