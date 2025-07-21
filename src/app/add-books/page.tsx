@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { Container, CircularProgress, Typography, Box } from '@mui/material'
+import AddBooks from '@/components/book/AddBooks'
 
 export default function AddBooksPage() {
   const { data: session, status } = useSession()
@@ -13,11 +14,7 @@ export default function AddBooksPage() {
     if (status === 'loading') return
     if (!session) {
       router.push('/auth/signin')
-      return
     }
-
-    // Redirect to the default tab (search)
-    router.push('/add-books/search')
   }, [session, status, router])
 
   if (status === 'loading') {
@@ -31,5 +28,9 @@ export default function AddBooksPage() {
     )
   }
 
-  return null
+  if (!session) {
+    return null
+  }
+
+  return <AddBooks />
 }
