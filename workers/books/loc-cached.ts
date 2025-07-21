@@ -539,9 +539,9 @@ function calculateRelevanceScore(edition: any, searchTitle: string, searchAuthor
   }
   
   // Author matching (high weight)
-  const authorMatch = editionAuthors.some(author => {
-    if (author === queryAuthor) return true;
-    if (author.includes(queryAuthor) || queryAuthor.includes(author)) return true;
+  const authorMatch = editionAuthors.some((editionAuthor: string) => {
+    if (editionAuthor === queryAuthor) return true;
+    if (editionAuthor.includes(queryAuthor) || queryAuthor.includes(editionAuthor)) return true;
     return false;
   });
   
