@@ -50,8 +50,8 @@ LibraryCard is built as a modern, serverless web application using a hybrid arch
 - **Email**: Resend for verification emails
 
 ### External Services
-- **Book Data**: Google Books API (primary)
-- **Fallback**: OpenLibrary API
+- **Book Data**: Enhanced multi-source search (Google Books + OpenLibrary)
+- **Advanced Search**: Intelligent relevance sorting and deduplication across sources
 - **Barcode Scanning**: ZXing library (@zxing/library)
 - **Email Service**: Resend for user verification
 - **Authentication**: NextAuth.js with Google OAuth and email/password
