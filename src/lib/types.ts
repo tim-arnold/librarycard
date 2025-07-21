@@ -18,6 +18,53 @@ export interface Book {
   due_date?: string
 }
 
+// Shared interface for Google Books API items (used across components)
+export interface GoogleBookItem {
+  id: string
+  isbn?: string
+  title: string
+  authors?: string[]
+  description?: string
+  covers?: {
+    thumbnail?: string
+    small?: string
+    medium?: string
+    large?: string
+    extraLarge?: string
+  }
+  publishedDate?: string
+  categories?: string[]
+  publisher?: string
+  pageCount?: number
+  averageRating?: number
+  ratingsCount?: number
+  source?: 'google' | 'openlibrary' | 'loc'
+  sourceDisplayName?: string
+  classification?: string
+  lccn?: string
+  language?: string
+  // Legacy support for existing Google Books API format
+  volumeInfo?: {
+    title: string
+    authors?: string[]
+    description?: string
+    imageLinks?: {
+      thumbnail?: string
+      smallThumbnail?: string
+    }
+    publishedDate?: string
+    categories?: string[]
+    publisher?: string
+    pageCount?: number
+    averageRating?: number
+    ratingsCount?: number
+    industryIdentifiers?: Array<{
+      type: string
+      identifier: string
+    }>
+  }
+}
+
 export interface EnhancedBook extends Book {
   enhancedGenres?: string[]
   assignedGenres?: CuratedGenre[]  // New: Assigned curated genres (simplified for display)
@@ -40,6 +87,19 @@ export interface EnhancedBook extends Book {
   // Cover selection fields
   alternative_covers?: CoverOption[]      // JSON array of cover options
   selected_cover_source?: CoverMetadata     // JSON metadata about selected cover
+  
+  // Library of Congress specific fields
+  lccn?: string                   // Library of Congress Control Number
+  locSubjects?: string[]          // LoC subject headings
+  classification?: string         // Library classification number
+  language?: string               // Language of the book
+  physicalDescription?: string    // Physical format details
+  notes?: string[]               // Additional notes from LoC
+  
+  // Multi-source data attribution
+  sourceAttribution?: SourceAttribution
+  allCovers?: EnhancedCoverOption[]  // All covers from all sources
+  coverSources?: DataSource[]        // Which sources provided covers
 }
 
 // Rating-specific interfaces
@@ -133,12 +193,36 @@ export interface GenreClassificationResult {
   confidence: number
 }
 
+// Data source types
+export type DataSource = 'google' | 'openlibrary' | 'loc'
+
+// Source attribution interface
+export interface SourceAttribution {
+  title: DataSource
+  description: DataSource
+  publishedDate: DataSource
+  publisher: DataSource
+  authors: DataSource
+  subjects: DataSource
+}
+
 // Cover selection interfaces
 export interface CoverOption {
   source: string
   url: string
   width?: number
   height?: number
+}
+
+export interface EnhancedCoverOption {
+  source: DataSource
+  url: string
+  size: 'thumbnail' | 'small' | 'medium' | 'large' | 'extraLarge'
+  metadata?: {
+    width?: number
+    height?: number
+    quality?: 'low' | 'medium' | 'high'
+  }
 }
 
 export interface CoverMetadata {

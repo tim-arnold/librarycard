@@ -219,3 +219,132 @@ export interface GoogleBooksResponse {
   items?: GoogleBooksItem[];
   totalItems?: number;
 }
+
+// Library of Congress API response types
+export interface LocBookData {
+  isbn: string;
+  title: string;
+  authors: string[];
+  description?: string;
+  subjects: string[];
+  publisher?: string;
+  publishedDate?: string;
+  lccn?: string; // Library of Congress Control Number
+  series?: string;
+  language?: string;
+  physicalDescription?: string;
+  notes?: string[];
+  classification?: string;
+  coverUrls?: string[];
+}
+
+export interface LocSearchResponse {
+  numberOfRecords: number;
+  records: LocRecord[];
+}
+
+export interface LocRecord {
+  recordData: {
+    mods: ModsData;
+  };
+}
+
+export interface ModsData {
+  titleInfo?: ModsTitleInfo[];
+  name?: ModsName[];
+  subject?: ModsSubject[];
+  identifier?: ModsIdentifier[];
+  originInfo?: ModsOriginInfo;
+  abstract?: string;
+  physicalDescription?: string;
+  note?: string[];
+  classification?: ModsClassification[];
+  language?: ModsLanguage;
+  relatedItem?: ModsRelatedItem[];
+  location?: ModsLocation;
+}
+
+export interface ModsTitleInfo {
+  title: string;
+  subTitle?: string;
+}
+
+export interface ModsName {
+  namePart: string;
+  type?: string;
+  role?: {
+    roleTerm: string;
+  };
+}
+
+export interface ModsSubject {
+  topic?: string;
+  geographic?: string;
+  temporal?: string;
+  genre?: string;
+}
+
+export interface ModsIdentifier {
+  value: string;
+  type: string;
+}
+
+export interface ModsOriginInfo {
+  dateIssued?: string;
+  publisher?: string;
+  place?: {
+    placeTerm: string;
+  };
+}
+
+export interface ModsClassification {
+  value: string;
+  authority?: string;
+}
+
+export interface ModsLanguage {
+  languageTerm: string;
+}
+
+export interface ModsRelatedItem {
+  type?: string;
+  titleInfo?: ModsTitleInfo;
+}
+
+export interface ModsLocation {
+  url?: string;
+}
+
+// Data source attribution types
+export type DataSource = 'google' | 'openlibrary' | 'loc';
+
+export interface SourceAttribution {
+  title: DataSource;
+  description: DataSource;
+  publishedDate: DataSource;
+  publisher: DataSource;
+  authors: DataSource;
+  subjects: DataSource;
+}
+
+// Enhanced cover selection types
+export interface CoverOption {
+  source: DataSource;
+  url: string;
+  size: 'thumbnail' | 'small' | 'medium' | 'large' | 'extraLarge';
+  metadata?: {
+    width?: number;
+    height?: number;
+    quality?: 'low' | 'medium' | 'high';
+  };
+}
+
+// Multi-source book data aggregation
+export interface MultiSourceBookData {
+  google?: GoogleBooksItem;
+  openLibrary?: any; // TODO: Define OpenLibrary types
+  loc?: LocBookData;
+  mergedData: Book;
+  sourceAttribution: SourceAttribution;
+  allCovers: CoverOption[];
+}
