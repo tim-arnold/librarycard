@@ -2,10 +2,8 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
-  Container,
-  Paper,
   Typography,
   Box,
   Chip,
@@ -13,6 +11,7 @@ import {
   Tab,
   CircularProgress,
   Alert,
+  Fade,
 } from '@mui/material'
 import {
   QrCodeScanner,
@@ -36,6 +35,7 @@ import { BookSelectionProvider, useBookSelection } from '@/contexts/BookSelectio
 import CartIndicator from '@/components/library/CartIndicator'
 import BulkReviewModal from '../modals/BulkReviewModal'
 import GenreSelector from './GenreSelector'
+import PageContainer from '../layout/PageContainer'
 import {
   Dialog,
   DialogTitle,
@@ -170,15 +170,25 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
   const { modalState, alert, closeModal } = useModal()
   const { state: selectionState, actions: selectionActions } = useBookSelection()
   const router = useRouter()
+  const searchParams = useSearchParams()
   
-  const [activeTab, setActiveTab] = useState<'scan' | 'search'>(() => {
+  const [activeTab, setActiveTab] = useState(() => {
     // If initialTab is provided (from URL), use that
-    if (initialTab) return initialTab
+    if (initialTab) return initialTab === 'search' ? 0 : 1
     
     // Otherwise, remember user's preferred tab choice
     const savedTab = getStorageItem('addBooks_preferredTab', 'functional') as 'scan' | 'search'
-    return savedTab || 'search'
+    return (savedTab === 'scan') ? 1 : 0
   })
+
+  useEffect(() => {
+    const tabFromUrl = searchParams.get('tab')
+    if (tabFromUrl === 'scan') {
+      setActiveTab(1)
+    } else if (!tabFromUrl) {
+      setActiveTab(0) // Default to search
+    }
+  }, [searchParams])
   
   // Search state
   const [searchQuery, setSearchQuery] = useState('')
@@ -543,7 +553,7 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
       }
       
       // Trigger auto-search when returning to search screen
-      if (activeTab === 'search' || searchQuery.trim()) {
+      if (activeTab === 0 || searchQuery.trim()) {
         setAutoSearchAfterAdd(true)
       }
     } else {
@@ -605,7 +615,7 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
       setIsLoading(false)
 
       // Trigger auto-search when returning to search screen
-      if (activeTab === 'search' || searchQuery.trim()) {
+      if (activeTab === 0 || searchQuery.trim()) {
         setAutoSearchAfterAdd(true)
       }
 
@@ -643,17 +653,29 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
     })
   }
 
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: 'scan' | 'search') => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue)
     
-    // Navigate to the appropriate URL
-    router.push(`/add-books/${newValue}`)
+    // Convert number to string for URL and storage
+    const tabName = newValue === 0 ? 'search' : 'scan'
+    
+    // Update URL parameters instead of changing pathname
+    const params = new URLSearchParams(searchParams.toString())
+    
+    if (newValue === 0) {
+      params.delete('tab') // Default tab, no need to set parameter
+    } else {
+      params.set('tab', 'scan')
+    }
+    
+    const newUrl = params.toString() ? `?${params.toString()}` : ''
+    router.replace(`/add-books${newUrl}`, { scroll: false })
     
     // Save user's preferred tab choice
-    setStorageItem('addBooks_preferredTab', newValue, 'functional')
+    setStorageItem('addBooks_preferredTab', tabName, 'functional')
     
     // Clear search query when switching away from search
-    if (newValue !== 'search') {
+    if (newValue !== 0) {
       setSearchQuery('')
     }
   }
@@ -703,8 +725,7 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
   }
 
   return (
-      <Container maxWidth="lg" sx={{ py: 2 }}>
-        <Paper sx={{ p: 3 }}>
+      <PageContainer>
           <Typography variant="h4" component="h2" gutterBottom>
             📚  Add Books
           </Typography>
@@ -719,20 +740,18 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
           )}
 
         {/* Tab Navigation */}
-        <Paper sx={{ mb: 3 }}>
+        <Box sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}>
           <Tabs 
             value={activeTab} 
             onChange={handleTabChange}
             variant="fullWidth"
           >
             <Tab 
-              value="search" 
               label="Search"
               icon={<MenuBook />}
               iconPosition="start"
             />
             <Tab 
-              value="scan" 
               label="Scan ISBN"
               icon={<QrCodeScanner />}
               iconPosition="start"
@@ -746,44 +765,53 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
             />
             */}
           </Tabs>
-        </Paper>
+        </Box>
 
-        {/* ISBN Scanner Tab */}
-        {activeTab === 'scan' && !selectedBook && (
-          <ISBNScanner
-            onISBNDetected={handleISBNDetected}
-            onError={handleError}
-            isLoading={isLoading}
-            disabled={loadingData}
-          />
-        )}
+        {/* Tab Content with Transitions */}
+        {!selectedBook && (
+          <Box sx={{ mt: 3, minHeight: '400px', position: 'relative' }}>
+            {/* Search Tab */}
+            <Fade in={activeTab === 0} timeout={300}>
+              <Box sx={{ position: activeTab === 0 ? 'relative' : 'absolute', width: '100%', display: activeTab === 0 ? 'block' : 'none' }}>
+                <BookSearch
+                  searchQuery={searchQuery}
+                  onSearchQueryChange={setSearchQuery}
+                  onBookSelected={selectBookFromSearch}
+                  onError={handleError}
+                  existingBooks={existingBooks}
+                  justAddedBooks={justAddedBooks}
+                  disabled={loadingData || isLoading}
+                  actionsDisabled={!canAddBooks}
+                  shouldAutoSearch={autoSearchAfterAdd && !preserveSearchState}
+                  onSearchComplete={() => {
+                    setAutoSearchAfterAdd(false)
+                    setPreserveSearchState(false)
+                  }}
+                  displayedResults={searchDisplayedResults}
+                  onDisplayedResultsChange={setSearchDisplayedResults}
+                  lastAddedBookKey={lastAddedBookKey}
+                  cancelledBookKey={cancelledBookKey}
+                  onCancelledBookScrollComplete={() => setCancelledBookKey(null)}
+                  searchResults={searchResults}
+                  onSearchResultsChange={setSearchResults}
+                  totalResults={searchTotalResults}
+                  onTotalResultsChange={setSearchTotalResults}
+                />
+              </Box>
+            </Fade>
 
-        {/* Search Tab */}
-        {activeTab === 'search' && !selectedBook && (
-          <BookSearch
-            searchQuery={searchQuery}
-            onSearchQueryChange={setSearchQuery}
-            onBookSelected={selectBookFromSearch}
-            onError={handleError}
-            existingBooks={existingBooks}
-            justAddedBooks={justAddedBooks}
-            disabled={loadingData || isLoading}
-            actionsDisabled={!canAddBooks}
-            shouldAutoSearch={autoSearchAfterAdd && !preserveSearchState}
-            onSearchComplete={() => {
-              setAutoSearchAfterAdd(false)
-              setPreserveSearchState(false)
-            }}
-            displayedResults={searchDisplayedResults}
-            onDisplayedResultsChange={setSearchDisplayedResults}
-            lastAddedBookKey={lastAddedBookKey}
-            cancelledBookKey={cancelledBookKey}
-            onCancelledBookScrollComplete={() => setCancelledBookKey(null)}
-            searchResults={searchResults}
-            onSearchResultsChange={setSearchResults}
-            totalResults={searchTotalResults}
-            onTotalResultsChange={setSearchTotalResults}
-          />
+            {/* ISBN Scanner Tab */}
+            <Fade in={activeTab === 1} timeout={300}>
+              <Box sx={{ position: activeTab === 1 ? 'relative' : 'absolute', width: '100%', display: activeTab === 1 ? 'block' : 'none' }}>
+                <ISBNScanner
+                  onISBNDetected={handleISBNDetected}
+                  onError={handleError}
+                  isLoading={isLoading}
+                  disabled={loadingData}
+                />
+              </Box>
+            </Fade>
+          </Box>
         )}
 
 
@@ -914,8 +942,7 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
         <CartIndicator 
           onViewSelection={() => setShowBulkReviewModal(true)}
         />
-        </Paper>
-      </Container>
+      </PageContainer>
   )
 }
 

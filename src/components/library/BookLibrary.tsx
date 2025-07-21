@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Container, Paper, Alert, Typography, Box, CircularProgress } from '@mui/material'
+import { Alert, Typography, Box, CircularProgress } from '@mui/material'
 import type { EnhancedBook } from '@/lib/types'
 import { useModal } from '@/hooks/useModal'
 import { useBookLibrary } from '@/hooks/useBookLibrary'
@@ -22,6 +22,7 @@ import ActiveFilters from './ActiveFilters'
 import ShelfTiles from './ShelfTiles'
 import ViewModeControls from './ViewModeControls'
 import BookViews from './BookViews'
+import PageContainer from '../layout/PageContainer'
 
 interface BookLibraryProps {
   initialFilters?: {
@@ -289,25 +290,22 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
   // Show loading screen while data is being fetched
   if (isLoading) {
     return (
-      <Container maxWidth="xl" sx={{ py: 2 }}>
-        <Paper sx={{ p: 3 }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 8 }}>
-            <CircularProgress size={60} sx={{ mb: 3 }} />
-            <Typography variant="h5" component="h2" gutterBottom>
-              📚 Loading Your Library
-            </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ textAlign: 'center', maxWidth: 400 }}>
-              Please wait while we fetch your books, shelves, and settings...
-            </Typography>
-          </Box>
-        </Paper>
-      </Container>
+      <PageContainer>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 8 }}>
+          <CircularProgress size={60} sx={{ mb: 3 }} />
+          <Typography variant="h5" component="h2" gutterBottom>
+            📚 Loading Your Library
+          </Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ textAlign: 'center', maxWidth: 400 }}>
+            Please wait while we fetch your books, shelves, and settings...
+          </Typography>
+        </Box>
+      </PageContainer>
     )
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 2 }}>
-      <Paper sx={{ p: 3 }}>
+    <PageContainer>
         <LibraryHeader
           userRole={userRole}
           currentLocation={currentLocation}
@@ -533,7 +531,6 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
             open={true}
           />
         )}
-      </Paper>
-    </Container>
+    </PageContainer>
   )
 }
