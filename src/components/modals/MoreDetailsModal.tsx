@@ -399,6 +399,50 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole }: Mo
                   </Typography>
                 </Box>
               )}
+              
+              {book.lccn && (
+                <Box>
+                  <Typography variant="subtitle2" color="primary">
+                    Library of Congress Control Number
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {book.lccn}
+                  </Typography>
+                </Box>
+              )}
+              
+              {book.classification && (
+                <Box>
+                  <Typography variant="subtitle2" color="primary">
+                    Classification
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {book.classification}
+                  </Typography>
+                </Box>
+              )}
+              
+              {book.language && (
+                <Box>
+                  <Typography variant="subtitle2" color="primary">
+                    Language
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {book.language}
+                  </Typography>
+                </Box>
+              )}
+              
+              {book.physicalDescription && (
+                <Box>
+                  <Typography variant="subtitle2" color="primary">
+                    Physical Description
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {book.physicalDescription}
+                  </Typography>
+                </Box>
+              )}
             </Box>
             
             {/* Assigned Genres (User-selected) */}
@@ -475,6 +519,81 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole }: Mo
                   {book.subjects.length > 10 && (
                     <Chip label={`+${book.subjects.length - 10} more`} size="small" variant="outlined" onClick={undefined} />
                   )}
+                </Box>
+              </Box>
+            )}
+
+            {/* Library of Congress Subjects */}
+            {book.locSubjects && book.locSubjects.length > 0 && (
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                  Library of Congress Subjects
+                </Typography>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                  {book.locSubjects.slice(0, 10).map((subject, index) => (
+                    <Chip 
+                      key={index} 
+                      label={subject} 
+                      size="small" 
+                      variant="outlined"
+                      color="info"
+                      onClick={undefined} 
+                    />
+                  ))}
+                  {book.locSubjects.length > 10 && (
+                    <Chip 
+                      label={`+${book.locSubjects.length - 10} more`} 
+                      size="small" 
+                      variant="outlined"
+                      color="info"
+                      onClick={undefined} 
+                    />
+                  )}
+                </Box>
+              </Box>
+            )}
+
+            {/* Library of Congress Notes */}
+            {book.notes && book.notes.length > 0 && (
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                  Library of Congress Notes
+                </Typography>
+                <Box>
+                  {book.notes.map((note, index) => (
+                    <Typography key={index} variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                      • {note}
+                    </Typography>
+                  ))}
+                </Box>
+              </Box>
+            )}
+
+            {/* Source Attribution */}
+            {book.sourceAttribution && (
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                  Data Sources
+                </Typography>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                  <Chip 
+                    label={`Title: ${book.sourceAttribution.title === 'google' ? 'Google Books' : book.sourceAttribution.title === 'openlibrary' ? 'Open Library' : 'Library of Congress'}`}
+                    size="small"
+                    variant="outlined"
+                    color={book.sourceAttribution.title === 'google' ? 'primary' : book.sourceAttribution.title === 'openlibrary' ? 'secondary' : 'info'}
+                  />
+                  <Chip 
+                    label={`Description: ${book.sourceAttribution.description === 'google' ? 'Google Books' : book.sourceAttribution.description === 'openlibrary' ? 'Open Library' : 'Library of Congress'}`}
+                    size="small"
+                    variant="outlined"
+                    color={book.sourceAttribution.description === 'google' ? 'primary' : book.sourceAttribution.description === 'openlibrary' ? 'secondary' : 'info'}
+                  />
+                  <Chip 
+                    label={`Authors: ${book.sourceAttribution.authors === 'google' ? 'Google Books' : book.sourceAttribution.authors === 'openlibrary' ? 'Open Library' : 'Library of Congress'}`}
+                    size="small"
+                    variant="outlined"
+                    color={book.sourceAttribution.authors === 'google' ? 'primary' : book.sourceAttribution.authors === 'openlibrary' ? 'secondary' : 'info'}
+                  />
                 </Box>
               </Box>
             )}
