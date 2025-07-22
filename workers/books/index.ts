@@ -1,6 +1,6 @@
 import { Env, Book, GoogleBooksResponse } from '../types';
 import { isUserAdmin, isUserSuperAdmin } from '../auth';
-import { hasUserPermission, getLocationIdFromShelfId, getLocationIdFromBookId } from '../permissions';
+import { hasUserPermission, hasGlobalPermission, getLocationIdFromShelfId, getLocationIdFromBookId } from '../permissions';
 import { invalidateAllAdminAnalytics } from '../admin/cached';
 
 // Core Book Management Functions
@@ -237,8 +237,18 @@ export async function updateBook(request: Request, userId: string, env: Env, cor
       });
     }
 
-    // If moving to different location, check add permission in target location
+    // If moving to different location, check cross-location and add permissions
     if (currentLocationId !== newLocationId) {
+      // Check if user has global cross-location permission
+      const canMoveBetweenLocations = await hasGlobalPermission(userId, 'can_move_books_between_locations', env);
+      if (!canMoveBetweenLocations) {
+        return new Response(JSON.stringify({ error: 'You do not have permission to move books between locations. Contact your administrator to enable cross-location book movement.' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Also check add permission in target location
       const canAddToNew = await hasUserPermission(userId, newLocationId, 'can_add_books', env);
       if (!canAddToNew) {
         return new Response(JSON.stringify({ error: 'You do not have permission to add books to the target location' }), {

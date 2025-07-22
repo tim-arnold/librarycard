@@ -19,6 +19,8 @@ interface BookGridProps {
   books: EnhancedBook[]
   userRole: string | null
   userPermissions: string[]
+  userGlobalPermissions: string[]
+  userLocations: Array<{ id: number; name: string }>
   shelves: Array<{ id: number; name: string; location_id: number; created_at: string }>
   pendingRemovalRequests: Record<string, number>
   onCheckout: (bookId: string, bookTitle: string) => Promise<void>
@@ -39,6 +41,8 @@ export default function BookGrid({
   books,
   userRole,
   userPermissions,
+  userGlobalPermissions,
+  userLocations,
   shelves,
   pendingRemovalRequests,
   onCheckout,
@@ -285,6 +289,8 @@ export default function BookGrid({
               book={book}
               userRole={userRole}
               userPermissions={userPermissions}
+              userGlobalPermissions={userGlobalPermissions}
+              userLocations={userLocations}
               shelves={shelves}
               pendingRemovalRequests={pendingRemovalRequests}
               viewMode="card"

@@ -47,6 +47,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
     allLocations,
     userLocations,
     userPermissions,
+    userGlobalPermissions,
     pendingRemovalRequests,
     isLoading,
     isRefreshing,
@@ -117,6 +118,8 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
     books,
     shelves,
     allLocations,
+    userLocations,
+    currentLocation,
     userRole,
     isLoading,
     initialFilters
@@ -179,7 +182,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
   const handleRelocateSuccess = async (newShelfId: number, shelfName: string) => {
     if (!selectedBookForRelocate) return
     
-    await updateBookShelf(selectedBookForRelocate.id, newShelfId)
+    await updateBookShelf(selectedBookForRelocate.id, newShelfId, shelfName)
     await alert({
       title: 'Book Relocated',
       message: `"${selectedBookForRelocate.title}" has been moved to ${shelfName}.`,
@@ -374,8 +377,8 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
 
         <ShelfTiles
           userRole={userRole}
-          shelves={shelves}
-          books={books}
+          shelves={isAdmin(userRole) ? shelves : shelves.filter(shelf => currentLocation && shelf.location_id === currentLocation.id)}
+          books={filteredBooks}
           shelfFilter={shelfFilter}
           onShelfTileClick={(shelfName) => setShelfFilter(shelfFilter === shelfName ? '' : shelfName)}
           onAllShelvesClick={() => setShelfFilter('')}
@@ -397,7 +400,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
           sortDirection={sortDirection}
           setSortDirection={handleSortDirectionChange}
           userRole={userRole || ''}
-          shelves={shelves}
+          shelves={isAdmin(userRole) ? shelves : shelves.filter(shelf => currentLocation && shelf.location_id === currentLocation.id)}
           allLocations={allLocations}
           userLocations={userLocations}
           currentLocation={currentLocation}
@@ -431,6 +434,8 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
           viewMode={viewMode}
           userRole={userRole}
           userPermissions={userPermissions}
+          userGlobalPermissions={userGlobalPermissions}
+          userLocations={userLocations}
           currentUserId={currentUserId}
           shelves={shelves}
           pendingRemovalRequests={pendingRemovalRequests}
@@ -495,7 +500,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
           isOpen={!!selectedBookForRelocate}
           onClose={() => setSelectedBookForRelocate(null)}
           shelves={shelves}
-          allLocations={allLocations}
+          allLocations={isAdmin(userRole) ? allLocations : userLocations}
           userPermissions={userPermissions}
           onRelocateSuccess={handleRelocateSuccess}
           onCreateShelfSuccess={handleCreateShelfSuccess}
