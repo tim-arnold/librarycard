@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import {
   Typography,
   Box,
@@ -27,7 +27,7 @@ import AdminUserManager from './AdminUserManager'
 import AdminNotificationCenter from './AdminNotificationCenter'
 import AdminSignupManager from './AdminSignupManager'
 import LocationManager from './LocationManager'
-import PageContainer from '../layout/PageContainer'
+import { Container, Paper } from '@mui/material'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
 
@@ -51,22 +51,36 @@ interface AdminOverview {
   recentCheckouts: number
 }
 
-export default function AdminDashboard() {
+interface AdminDashboardProps {
+  initialTab?: string
+}
+
+export default function AdminDashboard({ initialTab }: AdminDashboardProps = {}) {
   const { data: session } = useSession()
-  const searchParams = useSearchParams()
+  const pathname = usePathname()
   const router = useRouter()
   const [overview, setOverview] = useState<AdminOverview | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [activeTab, setActiveTab] = useState(0)
   const [dataLoaded, setDataLoaded] = useState(false)
+  const [fadeIn, setFadeIn] = useState(true)
+  const [isTransitioning, setIsTransitioning] = useState(false)
 
   useEffect(() => {
-    const tabFromUrl = searchParams.get('tab')
-    if (tabFromUrl && TAB_INDEX_MAP[tabFromUrl] !== undefined) {
-      setActiveTab(TAB_INDEX_MAP[tabFromUrl])
+    // Only run on initial mount to set tab from URL/prop
+    let tabName = 'overview' // default
+    
+    if (initialTab) {
+      tabName = initialTab
     }
-  }, [searchParams])
+    // Note: We don't read pathname here to avoid re-renders on URL changes
+    // The initial tab is set via initialTab prop passed from page components
+    
+    const newTabIndex = TAB_INDEX_MAP[tabName] ?? 0
+    setActiveTab(newTabIndex)
+    setFadeIn(true)
+  }, [initialTab]) // Only depend on initialTab
 
   useEffect(() => {
     if (session?.user?.email && !dataLoaded) {
@@ -111,51 +125,66 @@ export default function AdminDashboard() {
   }
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setActiveTab(newValue)
-    const tabName = TAB_NAMES[newValue]
-    const params = new URLSearchParams(searchParams.toString())
-    
-    if (tabName === 'overview') {
-      params.delete('tab')
-    } else {
-      params.set('tab', tabName)
+    // If switching to a different tab, trigger fade out
+    if (newValue !== activeTab) {
+      setIsTransitioning(true)
+      setFadeIn(false)
+      
+      setTimeout(() => {
+        setActiveTab(newValue)
+        const tabName = TAB_NAMES[newValue]
+        
+        // Fade in the new content after a short delay to ensure content is ready
+        setTimeout(() => {
+          setFadeIn(true)
+          
+          // URL updates disabled for subtabs to prevent flash during transitions
+          
+          // Clear transition flag after fade completes
+          setTimeout(() => {
+            setIsTransitioning(false)
+          }, 500)
+        }, 50)
+      }, 250) // Half of the timeout to create smooth transition
     }
-    
-    const newUrl = params.toString() ? `?${params.toString()}` : ''
-    router.replace(`/admin${newUrl}`, { scroll: false })
   }
 
   if (loading) {
     return (
-      <PageContainer>
-        <Typography variant="h4" component="h1" gutterBottom>
-          🔧 Admin Dashboard
-        </Typography>
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 4 }}>
-          <CircularProgress sx={{ mr: 2 }} />
-          <Typography color="text.secondary">
-            Loading admin dashboard...
+      <Container maxWidth="xl" sx={{ py: 2 }}>
+        <Paper sx={{ p: 3 }}>
+          <Typography variant="h4" component="h1" gutterBottom>
+            🔧 Admin Dashboard
           </Typography>
-        </Box>
-      </PageContainer>
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 4 }}>
+            <CircularProgress sx={{ mr: 2 }} />
+            <Typography color="text.secondary">
+              Loading admin dashboard...
+            </Typography>
+          </Box>
+        </Paper>
+      </Container>
     )
   }
 
   if (error) {
     return (
-      <PageContainer>
-        <Typography variant="h4" component="h1" gutterBottom>
-          🔧 Admin Dashboard
-        </Typography>
-        <Alert severity="error" sx={{ mt: 2 }}>
-          {error}
-        </Alert>
-      </PageContainer>
+      <Container maxWidth="xl" sx={{ py: 2 }}>
+        <Paper sx={{ p: 3 }}>
+          <Typography variant="h4" component="h1" gutterBottom>
+            🔧 Admin Dashboard
+          </Typography>
+          <Alert severity="error" sx={{ mt: 2 }}>
+            {error}
+          </Alert>
+        </Paper>
+      </Container>
     )
   }
 
   return (
-    <PageContainer>
+    <Container maxWidth="xl" sx={{ py: 2 }}>
+      <Paper sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" component="h1">
           🔧 Admin Dashboard
@@ -208,65 +237,63 @@ export default function AdminDashboard() {
       </Box>
 
       {/* Tab Content */}
-      <Box sx={{ mt: 3, minHeight: '400px', position: 'relative' }}>
-        <Fade in={activeTab === 0} timeout={300}>
-          <Box sx={{ position: activeTab === 0 ? 'relative' : 'absolute', width: '100%', display: activeTab === 0 ? 'block' : 'none' }}>
-            <Typography variant="h6" gutterBottom>
-              📊 Dashboard Overview
-            </Typography>
-            <Typography variant="body1" color="text.secondary" paragraph>
-              Welcome to the LibraryCard admin dashboard. Use the tabs above to navigate between different administrative functions:
-            </Typography>
-            <Box component="ul" sx={{ pl: 2 }}>
-              <Typography component="li" variant="body2" paragraph>
-                <strong>Analytics:</strong> Detailed insights into library usage, popular genres, and user activity
-              </Typography>
-              <Typography component="li" variant="body2" paragraph>
-                <strong>Users:</strong> Manage user accounts, roles, and permissions
-              </Typography>
-              <Typography component="li" variant="body2" paragraph>
-                <strong>Locations:</strong> Manage physical locations, shelves, and invitations
-              </Typography>
-              <Typography component="li" variant="body2" paragraph>
-                <strong>Signup Requests:</strong> Review and approve or deny new user signup requests
-              </Typography>
-              <Typography component="li" variant="body2" paragraph>
-                <strong>Notifications:</strong> Review pending book removal requests and system notifications
-              </Typography>
-            </Box>
-          </Box>
-        </Fade>
+      <Box sx={{ mt: 3, position: 'relative', minHeight: '400px' }}>
+        <Fade 
+          in={fadeIn} 
+          timeout={500}
+        >
+          <Box>
+            {activeTab === 0 && (
+              <Box>
+                <Typography variant="h6" gutterBottom>
+                  📊 Dashboard Overview
+                </Typography>
+                <Typography variant="body1" color="text.secondary" paragraph>
+                  Welcome to the LibraryCard admin dashboard. Use the tabs above to navigate between different administrative functions:
+                </Typography>
+                <Box component="ul" sx={{ pl: 2 }}>
+                  <Typography component="li" variant="body2" paragraph>
+                    <strong>Analytics:</strong> Detailed insights into library usage, popular genres, and user activity
+                  </Typography>
+                  <Typography component="li" variant="body2" paragraph>
+                    <strong>Users:</strong> Manage user accounts, roles, and permissions
+                  </Typography>
+                  <Typography component="li" variant="body2" paragraph>
+                    <strong>Locations:</strong> Manage physical locations, shelves, and invitations
+                  </Typography>
+                  <Typography component="li" variant="body2" paragraph>
+                    <strong>Signup Requests:</strong> Review and approve or deny new user signup requests
+                  </Typography>
+                  <Typography component="li" variant="body2" paragraph>
+                    <strong>Notifications:</strong> Review pending book removal requests and system notifications
+                  </Typography>
+                </Box>
+              </Box>
+            )}
 
-        <Fade in={activeTab === 1} timeout={300}>
-          <Box sx={{ position: activeTab === 1 ? 'relative' : 'absolute', width: '100%', display: activeTab === 1 ? 'block' : 'none' }}>
-            <AdminAnalytics />
-          </Box>
-        </Fade>
+            {activeTab === 1 && (
+              <AdminAnalytics />
+            )}
 
-        <Fade in={activeTab === 2} timeout={300}>
-          <Box sx={{ position: activeTab === 2 ? 'relative' : 'absolute', width: '100%', display: activeTab === 2 ? 'block' : 'none' }}>
-            <AdminUserManager />
-          </Box>
-        </Fade>
+            {activeTab === 2 && (
+              <AdminUserManager />
+            )}
 
-        <Fade in={activeTab === 3} timeout={300}>
-          <Box sx={{ position: activeTab === 3 ? 'relative' : 'absolute', width: '100%', display: activeTab === 3 ? 'block' : 'none' }}>
-            <LocationManager />
-          </Box>
-        </Fade>
+            {activeTab === 3 && (
+              <LocationManager />
+            )}
 
-        <Fade in={activeTab === 4} timeout={300}>
-          <Box sx={{ position: activeTab === 4 ? 'relative' : 'absolute', width: '100%', display: activeTab === 4 ? 'block' : 'none' }}>
-            <AdminSignupManager />
-          </Box>
-        </Fade>
+            {activeTab === 4 && (
+              <AdminSignupManager />
+            )}
 
-        <Fade in={activeTab === 5} timeout={300}>
-          <Box sx={{ position: activeTab === 5 ? 'relative' : 'absolute', width: '100%', display: activeTab === 5 ? 'block' : 'none' }}>
-            <AdminNotificationCenter />
+            {activeTab === 5 && (
+              <AdminNotificationCenter />
+            )}
           </Box>
         </Fade>
       </Box>
-    </PageContainer>
+      </Paper>
+    </Container>
   )
 }

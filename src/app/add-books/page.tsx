@@ -32,5 +32,5 @@ export default function AddBooksPage() {
     return null
   }
 
-  return <AddBooks />
+  return <AddBooks initialTab="search" />
 }

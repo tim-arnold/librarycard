@@ -21,17 +21,40 @@ export default function PageContainer({
   const prevPathnameRef = useRef(pathname)
 
   useEffect(() => {
-    // Only trigger fade if pathname actually changed (for main navigation)
-    if (prevPathnameRef.current !== pathname) {
-      prevPathnameRef.current = pathname
-      setFadeIn(false)
+    // Helper function to check if we should skip fade for tab navigation
+    const shouldSkipFade = (oldPath: string, newPath: string) => {
+      // Skip fade for library filter changes: /library -> /library/location/shelf
+      const isLibraryFilter = (oldPath.startsWith('/library') && newPath.startsWith('/library'))
       
-      const timer = setTimeout(() => {
+      // Skip fade for admin tab changes: /admin -> /admin/users
+      const isAdminTab = (oldPath.startsWith('/admin') && newPath.startsWith('/admin'))
+      
+      // Skip fade for add-books tab changes: /add-books -> /add-books/scan
+      const isAddBooksTab = (oldPath.startsWith('/add-books') && newPath.startsWith('/add-books'))
+      
+      return isLibraryFilter || isAdminTab || isAddBooksTab
+    }
+    
+    // Only trigger fade if pathname actually changed and it's not a tab/filter change
+    if (prevPathnameRef.current !== pathname) {
+      const skipFade = shouldSkipFade(prevPathnameRef.current, pathname)
+      prevPathnameRef.current = pathname
+      
+      if (skipFade) {
+        // For tab/filter changes, update directly without fade
         setDisplayChildren(children)
         setFadeIn(true)
-      }, 150)
-      
-      return () => clearTimeout(timer)
+      } else {
+        // For main navigation, use fade transition
+        setFadeIn(false)
+        
+        const timer = setTimeout(() => {
+          setDisplayChildren(children)
+          setFadeIn(true)
+        }, 150)
+        
+        return () => clearTimeout(timer)
+      }
     } else {
       // If pathname didn't change, just update children directly
       setDisplayChildren(children)

@@ -3,9 +3,9 @@
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
-import AddBooks from '@/components/book/AddBooks'
+import AdminDashboard from '@/components/admin/AdminDashboard'
 
-export default function AddBooksScanPage() {
+export default function AdminLocationsPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
 
@@ -20,5 +20,5 @@ export default function AddBooksScanPage() {
     return null
   }
 
-  return <AddBooks initialTab="scan" />
+  return <AdminDashboard initialTab="locations" />
 }
