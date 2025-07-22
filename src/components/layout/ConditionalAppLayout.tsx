@@ -2,6 +2,7 @@
 
 import { useSession } from 'next-auth/react'
 import { usePathname } from 'next/navigation'
+import { useRef } from 'react'
 import AppLayout from '@/components/layout/AppLayout'
 
 interface ConditionalAppLayoutProps {
@@ -26,12 +27,20 @@ export default function ConditionalAppLayout({ children }: ConditionalAppLayoutP
   const { data: session } = useSession()
   const pathname = usePathname()
 
+  // Use ref to store stable currentPage value - only update when main section changes
+  const currentPageRef = useRef<'library' | 'add-books' | 'admin'>('library')
+  
+  const newCurrentPage = getCurrentPageFromPath(pathname)
+  if (currentPageRef.current !== newCurrentPage) {
+    currentPageRef.current = newCurrentPage
+  }
+  
+  const currentPage = currentPageRef.current
+
   // Don't show AppLayout for public pages or when not authenticated
   if (!session || PUBLIC_PAGES.includes(pathname) || pathname === '/') {
     return <>{children}</>
   }
-
-  const currentPage = getCurrentPageFromPath(pathname)
 
   return (
     <AppLayout currentPage={currentPage}>
