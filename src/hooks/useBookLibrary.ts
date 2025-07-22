@@ -43,6 +43,7 @@ export function useBookLibrary({ initialFilters }: UseBookLibraryProps = {}) {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [currentLocation, setCurrentLocation] = useState<Location | null>(null)
   const [allLocations, setAllLocations] = useState<Location[]>([])
+  const [userLocations, setUserLocations] = useState<Location[]>([])
   const [userPermissions, setUserPermissions] = useState<string[]>([])
   const [pendingRemovalRequests, setPendingRemovalRequests] = useState<Record<string, number>>({})
   
@@ -184,7 +185,8 @@ export function useBookLibrary({ initialFilters }: UseBookLibraryProps = {}) {
             // Load user permissions for the first location (admins can see all locations)
             await loadUserPermissions(locations[0].id)
           } else {
-            // Regular users: store first location and its shelves only
+            // Regular users: store all accessible locations and set first as current
+            setUserLocations(locations)
             setCurrentLocation(locations[0])
             
             const shelvesResponse = await fetch(`${getApiBaseUrl()}/api/locations/${locations[0].id}/shelves`, {
@@ -254,6 +256,49 @@ export function useBookLibrary({ initialFilters }: UseBookLibraryProps = {}) {
     setPendingRemovalRequests(updatedRequests)
   }
 
+  const switchToLocation = async (locationId: number) => {
+    if (!session?.user?.email) return { success: false, error: 'No session' }
+    
+    const targetLocation = userLocations.find(loc => loc.id === locationId) || allLocations.find(loc => loc.id === locationId)
+    if (!targetLocation) return { success: false, error: 'Location not found' }
+    
+    setIsLoading(true)
+    try {
+      // Update current location
+      setCurrentLocation(targetLocation)
+      
+      // Load shelves for the new location
+      const shelvesResponse = await fetch(`${getApiBaseUrl()}/api/locations/${locationId}/shelves`, {
+        headers: {
+          'Authorization': `Bearer ${session.user.email}`,
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      if (shelvesResponse.ok) {
+        const shelvesData = await shelvesResponse.json()
+        setShelves(shelvesData)
+      } else {
+        setShelves([])
+      }
+      
+      // Load user permissions for the new location
+      await loadUserPermissions(locationId)
+      
+      // For regular users, reload pending removal requests for new location
+      if (!isAdmin(userRole)) {
+        await loadPendingRemovalRequests()
+      }
+      
+      return { success: true }
+    } catch (error) {
+      console.error('Error switching to location:', error)
+      return { success: false, error }
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return {
     // Data
     books,
@@ -262,6 +307,7 @@ export function useBookLibrary({ initialFilters }: UseBookLibraryProps = {}) {
     currentUserId,
     currentLocation,
     allLocations,
+    userLocations,
     userPermissions,
     pendingRemovalRequests,
     
@@ -275,6 +321,7 @@ export function useBookLibrary({ initialFilters }: UseBookLibraryProps = {}) {
     loadUserData,
     handleManualRefresh,
     loadPendingRemovalRequests,
+    switchToLocation,
     
     // Updaters
     updateBooks,

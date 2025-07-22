@@ -36,6 +36,9 @@ interface BookFiltersProps {
   userRole: string
   shelves: Array<{ id: number; name: string; location_id: number }>
   allLocations: Array<{ id: number; name: string }>
+  userLocations?: Array<{ id: number; name: string }>
+  currentLocation?: { id: number; name: string } | null
+  onLocationSwitch?: (locationId: number) => void
   allCategories: string[]
 }
 
@@ -57,6 +60,9 @@ export default function BookFilters({
   userRole,
   shelves,
   allLocations,
+  userLocations,
+  currentLocation,
+  onLocationSwitch,
   allCategories,
 }: BookFiltersProps) {
   const [genreSelectOpen, setGenreSelectOpen] = useState(false)
@@ -105,7 +111,24 @@ export default function BookFilters({
         </Box>
       )}
 
-      {isAdmin(userRole) && shelves.length > 1 && (
+      {!isAdmin(userRole) && userLocations && userLocations.length > 1 && onLocationSwitch && (
+        <Box sx={{ flex: '1 1 200px', minWidth: 200 }} key="user-location-switcher">
+          <FormControl fullWidth size="small">
+            <InputLabel>Location</InputLabel>
+            <Select
+              value={currentLocation?.id || ''}
+              label="Location"
+              onChange={(e) => onLocationSwitch(Number(e.target.value))}
+            >
+              {userLocations.map(location => (
+                <MenuItem key={location.id} value={location.id}>{location.name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
+      )}
+
+      {shelves.length > 1 && (
         <Box sx={{ flex: '1 1 200px', minWidth: 200 }} key="shelf-filter">
           <FormControl fullWidth size="small">
             <InputLabel>Shelf</InputLabel>
