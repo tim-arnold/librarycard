@@ -45,12 +45,14 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
     currentUserId,
     currentLocation,
     allLocations,
+    userLocations,
     userPermissions,
     pendingRemovalRequests,
     isLoading,
     isRefreshing,
     handleManualRefresh,
     loadPendingRemovalRequests,
+    switchToLocation,
     setBooks,
     setShelves,
     setPendingRemovalRequests,
@@ -397,6 +399,9 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
           userRole={userRole || ''}
           shelves={shelves}
           allLocations={allLocations}
+          userLocations={userLocations}
+          currentLocation={currentLocation}
+          onLocationSwitch={switchToLocation}
           allCategories={allCategories}
         />
 
