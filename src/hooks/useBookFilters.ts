@@ -29,6 +29,8 @@ interface UseBookFiltersProps {
   books: EnhancedBook[]
   shelves: Shelf[]
   allLocations: Location[]
+  userLocations?: Location[]
+  currentLocation?: Location | null
   userRole: string | null
   isLoading: boolean
   initialFilters?: {
@@ -44,6 +46,8 @@ export function useBookFilters({
   books,
   shelves,
   allLocations,
+  userLocations,
+  currentLocation,
   userRole,
   isLoading,
   initialFilters
@@ -360,13 +364,28 @@ export function useBookFilters({
       )
     }
 
-    // Admin location filter
-    if (isAdmin(userRole) && locationFilter) {
+    // Location filter - applies to both admin and regular users
+    if (locationFilter) {
       filtered = filtered.filter(book => {
         const shelf = shelves.find(s => s.id === book.shelf_id)
         if (!shelf) return false
-        const location = allLocations.find(l => l.id === shelf.location_id)
-        return location?.name === locationFilter
+        
+        // For admin users, use allLocations
+        if (isAdmin(userRole)) {
+          const location = allLocations.find(l => l.id === shelf.location_id)
+          return location?.name === locationFilter
+        } else {
+          // For regular users, use userLocations
+          const location = userLocations?.find(l => l.id === shelf.location_id)
+          return location?.name === locationFilter
+        }
+      })
+    } else if (!isAdmin(userRole) && currentLocation) {
+      // For regular users with no explicit location filter, show only books from current location
+      filtered = filtered.filter(book => {
+        const shelf = shelves.find(s => s.id === book.shelf_id)
+        if (!shelf) return false
+        return shelf.location_id === currentLocation.id
       })
     }
 
@@ -449,7 +468,7 @@ export function useBookFilters({
     setFilteredBooks(filtered)
     // Reset to first page when filters or sorting change
     setCurrentPage(1)
-  }, [books, searchTerm, shelfFilter, categoryFilter, locationFilter, checkoutFilter, authorFilter, userRole, shelves, allLocations, sortField, sortDirection])
+  }, [books, searchTerm, shelfFilter, categoryFilter, locationFilter, checkoutFilter, authorFilter, userRole, shelves, allLocations, userLocations, currentLocation, sortField, sortDirection])
 
   // Pagination functions
   const getPaginatedBooks = (books: EnhancedBook[]) => {

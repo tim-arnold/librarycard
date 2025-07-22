@@ -2,6 +2,43 @@
 
 This file documents all completed features, fixes, and improvements to the LibraryCard project.
 
+## July 22, 2025 - Cross-Location Book Movement System
+
+### Multi-Location User Book Management - GitHub Issue #73 COMPLETE!
+- **IMPLEMENTED**: Cross-location book movement permissions allowing multi-location users to relocate books between their accessible locations
+- **FIXED**: Relocate button visibility for multi-location users in single shelf locations - users can now move books between locations even when each location has only one shelf
+- **ENHANCED**: Global permission system with `can_move_books_between_locations` permission for granular control over cross-location book movements
+- **RESOLVED**: Permission architecture conflict where single shelf locations blocked relocate functionality for valid multi-location scenarios
+
+### Location-Based Filtering & Display
+- **IMPLEMENTED**: Proper location-based book and shelf filtering for regular multi-location users
+- **FIXED**: Location switching now correctly displays different books and shelves based on selected location
+- **ENHANCED**: Shelf tiles and filters now show only shelves from the current location for regular users while maintaining cross-location relocate functionality
+- **STREAMLINED**: Data loading strategy that supports both location-specific views and cross-location operations
+
+### BookRelocateModal Improvements
+- **FIXED**: Relocate modal now displays shelves from all accessible locations for multi-location users, enabling cross-location book movements
+- **ENHANCED**: Location-grouped shelf selection with clear visual hierarchy showing "📍 Location Name" headers and "📚 Shelf Name" options
+- **RESOLVED**: Modal data passing issues where regular users saw empty shelf selections due to incorrect location data handling
+- **IMPROVED**: New shelf creation workflow with proper state synchronization
+
+### State Management & UI Consistency
+- **FIXED**: Book relocation state updates - books now correctly display their new shelf name after being moved, eliminating "No shelf assigned" display issues
+- **ENHANCED**: Component prop threading to pass global permissions and location data through the entire book display chain
+- **OPTIMIZED**: Real-time UI updates ensuring newly created shelves appear immediately in subsequent relocate operations
+- **MAINTAINED**: Backward compatibility for single-location users and admin functionality
+
+### Technical Architecture
+- **ENHANCED**: Permission system in `workers/permissions/index.ts` with intelligent handling of single shelf locations for multi-location users
+- **UPDATED**: Book filtering logic to support both admin and regular users with appropriate location-based filtering
+- **IMPROVED**: State synchronization between database operations and local UI state to prevent display inconsistencies
+- **STREAMLINED**: Data loading patterns that efficiently support both location-specific browsing and cross-location functionality
+
+### Database Changes
+- **ADDED**: `user_global_permissions` table for storing user-level permissions that transcend location boundaries
+- **IMPLEMENTED**: Global permission API endpoints (`/api/permissions/global`) for managing cross-location capabilities
+- **ENHANCED**: Permission checking logic that considers both location-specific and global permissions for comprehensive access control
+
 ## July 22, 2025 - Admin Tab Refresh Persistence
 
 ### Smooth Subtab Transitions - GitHub Issue #87 COMPLETE!

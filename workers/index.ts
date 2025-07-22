@@ -114,7 +114,10 @@ import {
   revokeUserPermission,
   checkUserPermission,
   checkLocationPermissionManagement,
-  getUserPermissions
+  getUserPermissions,
+  getUserGlobalPermissions,
+  grantGlobalPermission,
+  revokeGlobalPermission
 } from './permissions';
 
 export default {
@@ -823,6 +826,20 @@ export default {
 
       if (path === '/api/permissions/user' && request.method === 'GET') {
         return await getUserPermissions(request, userId, env, corsHeaders);
+      }
+
+      // Global permissions endpoints
+      if (path === '/api/permissions/global' && request.method === 'GET') {
+        return await getUserGlobalPermissions(request, userId, env, corsHeaders);
+      }
+
+      if (path === '/api/permissions/global') {
+        switch (request.method) {
+          case 'POST':
+            return await grantGlobalPermission(request, userId, env, corsHeaders);
+          case 'DELETE':
+            return await revokeGlobalPermission(request, userId, env, corsHeaders);
+        }
       }
 
       // Admin cache management endpoints

@@ -228,12 +228,12 @@ export function useBookActions({
     }
   }
 
-  const updateBookShelf = async (bookId: string, newShelfId: number) => {
+  const updateBookShelf = async (bookId: string, newShelfId: number, shelfName?: string) => {
     const success = await updateBook(bookId, { shelf_id: newShelfId })
     if (success) {
-      const shelfName = shelves.find(s => s.id === newShelfId)?.name || ''
+      const resolvedShelfName = shelfName || shelves.find(s => s.id === newShelfId)?.name || ''
       const updatedBooks = books.map(book =>
-        book.id === bookId ? { ...book, shelf_id: newShelfId, shelf_name: shelfName } : book
+        book.id === bookId ? { ...book, shelf_id: newShelfId, shelf_name: resolvedShelfName } : book
       )
       setBooks(updatedBooks)
     }
