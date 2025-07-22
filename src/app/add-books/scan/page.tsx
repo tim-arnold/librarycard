@@ -3,6 +3,7 @@
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
+import AddBooks from '@/components/book/AddBooks'
 
 export default function AddBooksScanPage() {
   const { data: session, status } = useSession()
@@ -12,12 +13,12 @@ export default function AddBooksScanPage() {
     if (status === 'loading') return
     if (!session) {
       router.push('/auth/signin')
-      return
     }
-    
-    // Redirect to new URL parameter format
-    router.replace('/add-books?tab=scan')
   }, [session, status, router])
 
-  return null
+  if (status === 'loading' || !session) {
+    return null
+  }
+
+  return <AddBooks initialTab="scan" />
 }
