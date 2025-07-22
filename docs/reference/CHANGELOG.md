@@ -2,6 +2,23 @@
 
 This file documents all completed features, fixes, and improvements to the LibraryCard project.
 
+## July 22, 2025 - Admin Tab Refresh Persistence
+
+### Smooth Subtab Transitions - GitHub Issue #87 COMPLETE!
+- **FIXED**: Double-fade and blink issues in admin dashboard and add-books subtab transitions
+- **IMPLEMENTED**: Smooth 500ms fade transitions for all subtab content without visual artifacts
+- **RESOLVED**: Header and subtab flashing during navigation by removing conflicting PageContainer transitions
+- **ELIMINATED**: Footer jumping during transitions by maintaining proper container heights with `minHeight: 400px`
+- **OPTIMIZED**: Transition state management with proper fade-out/fade-in sequencing and timing coordination
+- **DISABLED**: URL updates for subtabs to prevent router-induced re-renders and flashing while maintaining localStorage state persistence
+- **ENHANCED**: ConditionalAppLayout with useRef optimization to prevent unnecessary re-renders on pathname changes
+
+### Technical Improvements
+- **STREAMLINED**: Component architecture by removing redundant PageContainer wrappers from AdminDashboard and AddBooks
+- **CONSOLIDATED**: Multiple Fade components into single wrapper with proper content height preservation
+- **REFINED**: React state management with proper transition sequencing (250ms fade-out → 50ms delay → fade-in)
+- **MAINTAINED**: Tab state persistence through localStorage while eliminating problematic URL synchronization for subtabs
+
 ## July 21, 2025 - Enhanced Book Search Integration
 
 ### Enhanced Multi-Source Book Search - GitHub Issue #90 COMPLETE!
