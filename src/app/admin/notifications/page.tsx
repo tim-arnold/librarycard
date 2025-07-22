@@ -3,8 +3,9 @@
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
+import AdminDashboard from '@/components/admin/AdminDashboard'
 
-export default function AddBooksSearchPage() {
+export default function AdminNotificationsPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
 
@@ -12,12 +13,12 @@ export default function AddBooksSearchPage() {
     if (status === 'loading') return
     if (!session) {
       router.push('/auth/signin')
-      return
     }
-    
-    // Redirect to new URL parameter format
-    router.replace('/add-books')
   }, [session, status, router])
 
-  return null
+  if (status === 'loading' || !session) {
+    return null
+  }
+
+  return <AdminDashboard initialTab="notifications" />
 }
