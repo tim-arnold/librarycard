@@ -324,10 +324,18 @@ export default function BookSearch({
     setAddAnywayDialog({ isOpen: true, book })
   }
 
-  const confirmAddAnyway = () => {
+  const confirmAddAnyway = async () => {
     if (addAnywayDialog.book) {
-      onBookSelected(addAnywayDialog.book)
-      setAddAnywayDialog({ isOpen: false, book: null })
+      try {
+        // Close dialog first to prevent UI stuck state
+        setAddAnywayDialog({ isOpen: false, book: null })
+        // Then trigger book selection
+        onBookSelected(addAnywayDialog.book)
+      } catch (error) {
+        // If book selection fails, ensure dialog is closed and show error
+        setAddAnywayDialog({ isOpen: false, book: null })
+        onError('Selection Error', 'Failed to add book. Please try again.')
+      }
     }
   }
 
