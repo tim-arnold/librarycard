@@ -402,59 +402,15 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
         setSelectedGenres([])
         // Keep search results populated - don't clear them
       } else {
+        // This should never happen now, but keep as safety fallback
         await alert({
-          title: 'Book Enhancement Failed',
-          message: 'Failed to get enhanced book data. Using basic information instead.',
-          variant: 'warning'
+          title: 'Selection Error',
+          message: 'Failed to select book. Please try again.',
+          variant: 'error'
         })
-        
-        // Fallback to basic book data
-        // Handle both new format and legacy format
-        let isbn: string
-        let title: string
-        let authors: string[]
-        let description: string | undefined
-        let thumbnail: string | undefined
-        let publishedDate: string | undefined
-        let categories: string[] | undefined
-
-        if (item.volumeInfo) {
-          // Legacy Google Books format
-          isbn = item.volumeInfo.industryIdentifiers?.find(
-            id => id.type === 'ISBN_13' || id.type === 'ISBN_10'
-          )?.identifier || item.id
-          title = item.volumeInfo.title
-          authors = item.volumeInfo.authors || ['Unknown Author']
-          description = item.volumeInfo.description
-          thumbnail = item.volumeInfo.imageLinks?.thumbnail
-          publishedDate = item.volumeInfo.publishedDate
-          categories = item.volumeInfo.categories
-        } else {
-          // Enhanced format
-          isbn = item.isbn || item.id
-          title = item.title
-          authors = item.authors || ['Unknown Author']
-          description = item.description
-          thumbnail = item.covers?.thumbnail || item.covers?.small || item.covers?.medium
-          publishedDate = item.publishedDate
-          categories = item.categories
-        }
-
-        const book: EnhancedBook = {
-          id: item.id,
-          isbn,
-          title,
-          authors,
-          description,
-          thumbnail,
-          publishedDate,
-          categories,
-        }
-
-        setSelectedBook(book)
-        // Keep search results populated - don't clear them
       }
-    } catch {
+    } catch (error) {
+      console.error('Book selection error:', error)
       await alert({
         title: 'Selection Error',
         message: 'Failed to select book. Please try again.',
