@@ -26,6 +26,8 @@ interface BookViewsProps {
   viewMode: 'card' | 'compact' | 'list'
   userRole: string | null
   userPermissions: string[]
+  userGlobalPermissions: string[]
+  userLocations: Location[]
   currentUserId: string | null
   shelves: Shelf[]
   pendingRemovalRequests: Record<string, number>
@@ -56,6 +58,8 @@ export default function BookViews({
   viewMode,
   userRole,
   userPermissions,
+  userGlobalPermissions,
+  userLocations,
   currentUserId,
   shelves,
   pendingRemovalRequests,
@@ -137,6 +141,8 @@ export default function BookViews({
                     books={location.books || []}
                     userRole={userRole}
                     userPermissions={userPermissions}
+                    userGlobalPermissions={userGlobalPermissions}
+                    userLocations={userLocations}
                     currentUserId={currentUserId}
                     shelves={shelves}
                     pendingRemovalRequests={pendingRemovalRequests}
@@ -169,6 +175,8 @@ export default function BookViews({
                 books={paginatedBooks}
                 userRole={userRole}
                 userPermissions={userPermissions}
+                userGlobalPermissions={userGlobalPermissions}
+                userLocations={userLocations}
                 currentUserId={currentUserId}
                 shelves={shelves}
                 pendingRemovalRequests={pendingRemovalRequests}
@@ -207,6 +215,8 @@ export default function BookViews({
                     books={location.books || []}
                     userRole={userRole}
                     userPermissions={userPermissions}
+                    userGlobalPermissions={userGlobalPermissions}
+                    userLocations={userLocations}
                     currentUserId={currentUserId}
                     shelves={shelves}
                     pendingRemovalRequests={pendingRemovalRequests}
@@ -241,6 +251,8 @@ export default function BookViews({
                 books={paginatedBooks}
                 userRole={userRole}
                 userPermissions={userPermissions}
+                userGlobalPermissions={userGlobalPermissions}
+                userLocations={userLocations}
                 currentUserId={currentUserId}
                 shelves={shelves}
                 pendingRemovalRequests={pendingRemovalRequests}
@@ -281,6 +293,8 @@ export default function BookViews({
                     books={location.books || []}
                     userRole={userRole}
                     userPermissions={userPermissions}
+                    userGlobalPermissions={userGlobalPermissions}
+                    userLocations={userLocations}
                     shelves={shelves}
                     pendingRemovalRequests={pendingRemovalRequests}
                     onCheckout={onCheckout}
@@ -314,6 +328,8 @@ export default function BookViews({
                 books={paginatedBooks}
                 userRole={userRole}
                 userPermissions={userPermissions}
+                userGlobalPermissions={userGlobalPermissions}
+                userLocations={userLocations}
                 shelves={shelves}
                 pendingRemovalRequests={pendingRemovalRequests}
                 onCheckout={onCheckout}

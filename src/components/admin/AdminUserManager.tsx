@@ -33,6 +33,7 @@ import {
   List,
   ListItem,
   ListItemText,
+  Switch,
 } from '@mui/material'
 import {
   MoreVert,
@@ -125,6 +126,7 @@ export default function AdminUserManager() {
   const [userForLocationAssignment, setUserForLocationAssignment] = useState<AdminUser | null>(null)
   const [userAssignedLocations, setUserAssignedLocations] = useState<Location[]>([])
   const [availableLocationsForAssignment, setAvailableLocationsForAssignment] = useState<Location[]>([])
+  const [userGlobalPermissions, setUserGlobalPermissions] = useState<string[]>([])
   
   // Bulk invitation state
   const [bulkInviteMode, setBulkInviteMode] = useState(false)
@@ -254,6 +256,56 @@ export default function AdminUserManager() {
         message: error instanceof Error ? error.message : 'Failed to promote user. Please try again.',
         variant: 'error'
       })
+    }
+  }
+
+  // Global permission functions
+  const loadUserGlobalPermissions = async (userId: string) => {
+    try {
+      const response = await fetch(`${API_BASE}/api/permissions/global?userId=${userId}`, {
+        headers: {
+          'Authorization': `Bearer ${session?.user?.email}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setUserGlobalPermissions(data.permissions || [])
+      }
+    } catch (error) {
+      console.error('Failed to load user global permissions:', error)
+      setUserGlobalPermissions([])
+    }
+  }
+
+  const toggleGlobalPermission = async (permission: string, currentlyHas: boolean) => {
+    if (!userForLocationAssignment) return
+
+    try {
+      const response = await fetch(`${API_BASE}/api/permissions/global`, {
+        method: currentlyHas ? 'DELETE' : 'POST',
+        headers: {
+          'Authorization': `Bearer ${session?.user?.email}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          targetUserId: userForLocationAssignment.id,
+          permission,
+          ...(currentlyHas ? {} : { notes: 'Granted via Admin Dashboard' })
+        })
+      })
+
+      if (response.ok) {
+        // Reload global permissions
+        await loadUserGlobalPermissions(userForLocationAssignment.id)
+      } else {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to update global permission')
+      }
+    } catch (error) {
+      console.error('Failed to toggle global permission:', error)
+      // Could add a toast notification here
     }
   }
 
@@ -1352,6 +1404,7 @@ export default function AdminUserManager() {
                   handleMenuClose()
                   setUserForLocationAssignment(selectedUser)
                   loadUserAssignedLocations(selectedUser.id)
+                  loadUserGlobalPermissions(selectedUser.id)
                   setLocationAssignmentDialogOpen(true)
                 }}
               >
@@ -1797,6 +1850,48 @@ export default function AdminUserManager() {
                   </ListItem>
                 ))}
               </List>
+            </Box>
+          )}
+
+          {/* Global Permissions Section */}
+          {userAssignedLocations.length > 1 && (
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Cross-Location Permissions:
+              </Typography>
+              <Typography variant="body2" color="text.secondary" paragraph>
+                These permissions apply across all locations this user has access to.
+              </Typography>
+              <Box sx={{ 
+                border: 1, 
+                borderColor: 'divider', 
+                borderRadius: 1, 
+                p: 2 
+              }}>
+                <Box sx={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  mb: 1
+                }}>
+                  <Box>
+                    <Typography variant="body1" fontWeight="medium">
+                      Move Books Between Locations
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Allows this user to move books from shelves in one location to shelves in another location they have access to.
+                    </Typography>
+                  </Box>
+                  <Switch
+                    checked={userGlobalPermissions.includes('can_move_books_between_locations')}
+                    onChange={() => toggleGlobalPermission(
+                      'can_move_books_between_locations',
+                      userGlobalPermissions.includes('can_move_books_between_locations')
+                    )}
+                    color="primary"
+                  />
+                </Box>
+              </Box>
             </Box>
           )}
 
