@@ -121,26 +121,77 @@ backup-directory/
 └── backup-metadata.json       # Backup metadata
 ```
 
+## Accessing Backup Files
+
+Before restoration, you need to download the backup files from GitHub Releases.
+
+### Downloading Backups from GitHub Releases
+
+1. **Navigate to Releases**:
+   - Go to your LibraryCard GitHub repository
+   - Click "Releases" tab (or go to `/releases`)
+   - Look for releases named `backup-{run-number}-{date}` (frontend) or `cf-backup-{run-number}-{date}` (backend)
+
+2. **Download Backup Files**:
+   ```bash
+   # Example URLs (replace with actual repository):
+   # Frontend backup:
+   wget https://github.com/yourusername/librarycard/releases/download/backup-123-20250723/backup-123-20250723.tar.gz
+   
+   # Backend backup:
+   wget https://github.com/yourusername/librarycard/releases/download/cf-backup-456-20250723/cf-backup-456-20250723.tar.gz
+   ```
+
+3. **Extract Downloaded Backup**:
+   ```bash
+   # Extract the main backup archive
+   tar -xzf backup-123-20250723.tar.gz
+   
+   # This creates a directory with the backup contents:
+   # backup-123-20250723/
+   # ├── source-code.tar.gz
+   # ├── build-artifacts.tar.gz
+   # ├── package.json
+   # └── ... (other backup files)
+   ```
+
+4. **Choose the Right Backup**:
+   - **Latest backup**: Most recent date for current restoration
+   - **Specific date**: Choose backup from before a known issue occurred
+   - **Check metadata**: Look at `backup-metadata.json` for backup details
+
+### Manual Backup Location
+
+If you've run manual backups, they're typically in:
+```bash
+# Default locations from backup scripts:
+./backups/netlify-backup-YYYYMMDD/    # Frontend backups
+./backups/cloudflare-backup-YYYYMMDD/ # Backend backups
+```
+
 ## Restoration Procedures
 
 ### Frontend Restoration (Netlify)
 
 #### Scenario 1: Complete Site Restoration
 ```bash
-# 1. Extract backup
+# 1. Navigate to extracted backup directory
+cd backup-123-20250723/  # Use your actual backup directory name
+
+# 2. Extract source code
 tar -xzf source-code.tar.gz
 
-# 2. Install dependencies
+# 3. Install dependencies
 npm install
 
-# 3. Configure environment
+# 4. Configure environment
 cp .env.example .env.local
 # Edit .env.local with your API URL
 
-# 4. Test locally
+# 5. Test locally
 npm run dev
 
-# 5. Deploy to Netlify
+# 6. Deploy to Netlify
 netlify deploy --prod --dir .next
 ```
 
@@ -158,16 +209,19 @@ netlify deploy --prod --dir .next
 
 #### Scenario 1: Worker Restoration
 ```bash
-# 1. Extract worker source
+# 1. Navigate to extracted backup directory
+cd cf-backup-456-20250723/  # Use your actual backup directory name
+
+# 2. Extract worker source
 tar -xzf worker-source.tar.gz
 
-# 2. Install dependencies
+# 3. Install dependencies
 npm install
 
-# 3. Authenticate with Cloudflare
+# 4. Authenticate with Cloudflare
 wrangler auth login
 
-# 4. Deploy worker
+# 5. Deploy worker
 cd workers
 wrangler deploy
 ```

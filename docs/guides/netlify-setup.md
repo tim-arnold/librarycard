@@ -1,6 +1,6 @@
-so # Netlify Deployment Guide
+# Netlify Setup Guide
 
-This guide walks you through deploying LibraryCard to Netlify with your existing Cloudflare Workers API.
+This guide walks you through the initial setup and configuration of LibraryCard on Netlify.
 
 ## Prerequisites
 
@@ -8,7 +8,7 @@ This guide walks you through deploying LibraryCard to Netlify with your existing
 2. **GitHub Repository**: Your LibraryCard repo (already done ✅)
 3. **Cloudflare Worker**: Your API should be deployed and working (already done ✅)
 
-## Step 1: Connect Repository to Netlify
+## Initial Site Setup
 
 ### Option A: Web Interface (Recommended)
 
@@ -33,12 +33,9 @@ netlify login
 
 # Initialize site
 netlify init
-
-# Deploy
-netlify deploy --prod
 ```
 
-## Step 2: Environment Variables
+## Environment Variables Setup
 
 In your Netlify site dashboard:
 
@@ -48,25 +45,6 @@ In your Netlify site dashboard:
    - **Value**: `https://your-worker-name.your-subdomain.workers.dev`
    
    > Replace with your actual Cloudflare Worker URL from your deployment
-
-## Step 3: Deploy
-
-1. **Trigger deployment**: Push to main branch or click "Deploy site"
-2. **Monitor build**: Check the deploy log for any errors
-3. **Get your URL**: Netlify will provide a URL like `https://your-app-name.netlify.app`
-
-## Step 4: Custom Domain (Optional)
-
-### Using Netlify DNS
-1. **Go to Domain Settings** in your site dashboard
-2. **Add custom domain**: Enter your domain name
-3. **Update nameservers**: Point your domain to Netlify's nameservers
-4. **SSL**: Automatically provided by Netlify
-
-### Using External DNS
-1. **Add custom domain** in Netlify dashboard
-2. **Create CNAME record**: Point to your Netlify site URL
-3. **Verify**: Wait for DNS propagation
 
 ## Configuration Files
 
@@ -86,65 +64,18 @@ The repository includes these Netlify-specific files:
   package = "@netlify/plugin-nextjs"
 ```
 
-### Environment Variables in Netlify Dashboard
+## Custom Domain Setup (Optional)
 
-Instead of using .env.production files, configure environment variables directly in the Netlify dashboard:
+### Using Netlify DNS
+1. **Go to Domain Settings** in your site dashboard
+2. **Add custom domain**: Enter your domain name
+3. **Update nameservers**: Point your domain to Netlify's nameservers
+4. **SSL**: Automatically provided by Netlify
 
-1. **Go to Site Settings** → **Environment Variables**
-2. **Add the following variable**:
-   - **Key**: `NEXT_PUBLIC_API_URL`
-   - **Value**: `https://your-worker-name.your-subdomain.workers.dev`
-
-## Verification Steps
-
-After deployment:
-
-1. **Test the site**: Visit your Netlify URL
-2. **Check camera access**: Ensure HTTPS works for camera API
-3. **Test ISBN scanning**: Try scanning a book barcode
-4. **Verify API connection**: Check that books save to your Cloudflare database
-5. **Test library view**: Ensure books display properly
-
-## Troubleshooting
-
-### Build Failures
-
-**Common issues:**
-```bash
-# Node.js version mismatch
-# Solution: Check netlify.toml has correct Node version
-
-# Missing dependencies
-# Solution: Ensure package.json includes all dependencies
-
-# TypeScript errors
-# Solution: Run npm run typecheck locally first
-```
-
-### Runtime Issues
-
-**API connection problems:**
-- Verify `NEXT_PUBLIC_API_URL` environment variable
-- Check CORS headers in your Cloudflare Worker
-- Test API endpoint directly
-
-**Camera not working:**
-- Ensure site is served over HTTPS (automatic on Netlify)
-- Check browser permissions
-- Test on different devices
-
-## Automatic Deployments
-
-Netlify automatically deploys when you push to the `main` branch:
-
-```bash
-# Make changes locally
-git add .
-git commit -m "Update feature"
-git push origin main
-
-# Netlify automatically builds and deploys
-```
+### Using External DNS
+1. **Add custom domain** in Netlify dashboard
+2. **Create CNAME record**: Point to your Netlify site URL
+3. **Verify**: Wait for DNS propagation
 
 ## Performance Optimization
 
@@ -159,6 +90,18 @@ git push origin main
 - Static asset optimization
 - Image optimization for book covers
 
+## Security Configuration
+
+### Automatic HTTPS
+- SSL certificates automatically provisioned
+- HTTP redirects to HTTPS
+- Security headers configured in `netlify.toml`
+
+### Environment Variables
+- Encrypted at rest
+- Only available during build
+- `NEXT_PUBLIC_*` variables exposed to browser
+
 ## Cost Considerations
 
 **Netlify Free Tier**:
@@ -169,7 +112,7 @@ git push origin main
 
 **Perfect for personal use!** LibraryCard should easily fit within free limits.
 
-## Monitoring and Analytics
+## Monitoring and Analytics Setup
 
 ### Built-in Analytics
 - **Netlify Analytics**: Available in site dashboard
@@ -203,18 +146,6 @@ curl -X POST https://api.netlify.com/build_hooks/your-hook-id
 </form>
 ```
 
-## Security
-
-### Automatic HTTPS
-- SSL certificates automatically provisioned
-- HTTP redirects to HTTPS
-- Security headers configured in `netlify.toml`
-
-### Environment Variables
-- Encrypted at rest
-- Only available during build
-- `NEXT_PUBLIC_*` variables exposed to browser
-
 ## Backup Strategy
 
 ### Automatic Backups
@@ -228,27 +159,22 @@ curl -X POST https://api.netlify.com/build_hooks/your-hook-id
 # Use the "Export Library" button in the UI
 ```
 
-## Support and Updates
+## Next Steps
 
-### Updating the App
-1. **Make changes** locally
-2. **Test** with `npm run dev`
-3. **Commit and push** to GitHub
-4. **Netlify automatically deploys** the update
+After initial setup:
 
-### Getting Help
+1. **Test all features** thoroughly
+2. **Set up custom domain** if desired
+3. **Configure monitoring** and analytics
+4. **Set up branch deploys** for staging
+5. **Review security settings**
+
+## Getting Help
+
 - **Netlify Documentation**: [docs.netlify.com](https://docs.netlify.com)
 - **Community Forum**: [community.netlify.com](https://community.netlify.com)
 - **Support**: Available on paid plans
 
-## Next Steps
+---
 
-After successful deployment:
-
-1. **Test all features** thoroughly
-2. **Set up custom domain** if desired
-3. **Share with family** and start scanning books!
-4. **Monitor usage** and performance
-5. **Regular data exports** for backup
-
-Your LibraryCard app is now live and ready to manage your book collection! 🎉
+**Last updated**: July 2025

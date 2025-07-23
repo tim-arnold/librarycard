@@ -4,6 +4,11 @@ on:
   push:
     branches: [ staging ]
   workflow_dispatch:
+    inputs:
+      migration_file:
+        description: 'Migration file to apply (e.g., 20250722_add_user_global_permissions.sql)'
+        required: false
+        type: string
 
 jobs:
   deploy-worker:
@@ -53,10 +58,5 @@ jobs:
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          command: d1 execute librarycard-db-staging --file=schema.sql --env=staging --remote
-
-      - name: Apply permission tables migration
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          command: d1 execute librarycard-db-staging --file=migrations/20250712_add_permission_tables.sql --env=staging --remote
+          command: d1 execute librarycard-db-staging --file=migrations/${{ github.event.inputs.migration_file }} --env=staging --remote
+        if: github.event.inputs.migration_file != ''
