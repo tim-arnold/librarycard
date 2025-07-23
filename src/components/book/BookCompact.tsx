@@ -18,6 +18,8 @@ interface BookListProps {
   books: EnhancedBook[]
   userRole: string | null
   userPermissions: string[]
+  userGlobalPermissions: string[]
+  userLocations: Array<{ id: number; name: string }>
   currentUserId: string | null
   shelves: Array<{ id: number; name: string; location_id: number; created_at: string }>
   pendingRemovalRequests: Record<string, number>
@@ -39,6 +41,8 @@ export default function BookList({
   books,
   userRole,
   userPermissions,
+  userGlobalPermissions,
+  userLocations,
   currentUserId,
   shelves,
   pendingRemovalRequests,
@@ -377,6 +381,8 @@ export default function BookList({
             book={book}
             userRole={userRole}
             userPermissions={userPermissions}
+            userGlobalPermissions={userGlobalPermissions}
+            userLocations={userLocations}
             shelves={shelves}
             pendingRemovalRequests={pendingRemovalRequests}
             viewMode="compact"

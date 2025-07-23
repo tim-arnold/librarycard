@@ -490,8 +490,23 @@ export async function hasUserPermission(userId: string, locationId: number, perm
     const isSingleShelfLocation = location?.single_shelf_location === 1;
     
     // Filter out shelf-related permissions for single shelf locations
-    if (isSingleShelfLocation && (permission === 'can_move_books' || permission === 'can_create_shelves')) {
+    // Exception: allow can_move_books if user has access to multiple locations (for cross-location moves)
+    if (isSingleShelfLocation && permission === 'can_create_shelves') {
       return false;
+    }
+    
+    if (isSingleShelfLocation && permission === 'can_move_books') {
+      // Check if user has access to multiple locations - if so, allow move permission for cross-location moves
+      const userLocationCount = await env.DB.prepare(`
+        SELECT COUNT(DISTINCT l.id) as location_count
+        FROM locations l
+        LEFT JOIN location_members lm ON l.id = lm.location_id
+        WHERE l.owner_id = ? OR lm.user_id = ?
+      `).bind(userId, userId).first() as any;
+      
+      if (userLocationCount?.location_count <= 1) {
+        return false; // Block move permission if user only has access to one location
+      }
     }
 
     // Super admins have all permissions
@@ -719,9 +734,23 @@ export async function getUserPermissions(request: Request, userId: string, env: 
 
     // Filter out shelf-related permissions for single shelf locations
     if (isSingleShelfLocation) {
-      const filteredPermissions = permissions.filter(perm => 
-        perm !== 'can_move_books' && perm !== 'can_create_shelves'
-      );
+      let filteredPermissions = permissions.filter(perm => perm !== 'can_create_shelves');
+      
+      // For can_move_books, check if user has multiple locations before filtering out
+      if (permissions.includes('can_move_books')) {
+        const userLocationCount = await env.DB.prepare(`
+          SELECT COUNT(DISTINCT l.id) as location_count
+          FROM locations l
+          LEFT JOIN location_members lm ON l.id = lm.location_id
+          WHERE l.owner_id = ? OR lm.user_id = ?
+        `).bind(userId, userId).first() as any;
+        
+        if (userLocationCount?.location_count <= 1) {
+          // Remove can_move_books if user only has access to one location
+          filteredPermissions = filteredPermissions.filter(perm => perm !== 'can_move_books');
+        }
+      }
+      
       return new Response(JSON.stringify({ 
         permissions: filteredPermissions
       }), {
@@ -740,6 +769,176 @@ export async function getUserPermissions(request: Request, userId: string, env: 
   } catch (error) {
     console.error('Error getting user permissions:', error);
     return new Response(JSON.stringify({ error: 'Failed to get permissions' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+// Helper function to check if user has a global permission
+export async function hasGlobalPermission(userId: string, permission: string, env: Env): Promise<boolean> {
+  try {
+    // Super admins have all global permissions
+    if (await isUserSuperAdmin(userId, env)) {
+      return true;
+    }
+
+    // Location admins automatically have cross-location book moving permission
+    if (permission === 'can_move_books_between_locations') {
+      // Check if user is an admin with access to multiple locations
+      const isMultiLocationAdmin = await env.DB.prepare(`
+        SELECT COUNT(DISTINCT l.id) as location_count
+        FROM location_members lm
+        JOIN users u ON lm.user_id = u.id
+        JOIN locations l ON lm.location_id = l.id
+        WHERE lm.user_id = ? AND u.user_role = 'admin'
+      `).bind(userId).first() as any;
+      
+      if (isMultiLocationAdmin?.location_count > 1) {
+        return true;
+      }
+    }
+
+    // Check specific global permission
+    const globalPermission = await env.DB.prepare(`
+      SELECT 1 FROM user_global_permissions 
+      WHERE user_id = ? AND permission = ?
+    `).bind(userId, permission).first();
+
+    return !!globalPermission;
+  } catch (error) {
+    console.error('Error checking global permission:', error);
+    return false;
+  }
+}
+
+// Get user global permissions
+export async function getUserGlobalPermissions(request: Request, userId: string, env: Env, corsHeaders: any) {
+  try {
+    const url = new URL(request.url);
+    const targetUserId = url.searchParams.get('userId') || userId;
+
+    // Only super admins or the user themselves can view global permissions
+    if (targetUserId !== userId && !await isUserSuperAdmin(userId, env)) {
+      return new Response(JSON.stringify({ error: 'Access denied' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const permissions = await env.DB.prepare(`
+      SELECT permission FROM user_global_permissions 
+      WHERE user_id = ?
+    `).bind(targetUserId).all();
+
+    const globalPermissions = permissions.results.map((perm: any) => perm.permission);
+
+    return new Response(JSON.stringify({ 
+      permissions: globalPermissions
+    }), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (error) {
+    console.error('Error getting global permissions:', error);
+    return new Response(JSON.stringify({ error: 'Failed to get global permissions' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+// Grant global permission
+export async function grantGlobalPermission(request: Request, userId: string, env: Env, corsHeaders: any) {
+  try {
+    const { targetUserId, permission, notes } = await request.json() as { 
+      targetUserId: string; 
+      permission: string; 
+      notes?: string; 
+    };
+
+    if (!targetUserId || !permission) {
+      return new Response(JSON.stringify({ error: 'targetUserId and permission required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Only super admins can grant global permissions
+    if (!await isUserSuperAdmin(userId, env)) {
+      return new Response(JSON.stringify({ error: 'Super admin access required' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Validate permission type
+    const validPermissions = ['can_move_books_between_locations'];
+    if (!validPermissions.includes(permission)) {
+      return new Response(JSON.stringify({ error: 'Invalid global permission type' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Insert or ignore if already exists
+    await env.DB.prepare(`
+      INSERT OR IGNORE INTO user_global_permissions 
+      (user_id, permission, granted_by, granted_at, notes)
+      VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?)
+    `).bind(targetUserId, permission, userId, notes || null).run();
+
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (error) {
+    console.error('Error granting global permission:', error);
+    return new Response(JSON.stringify({ error: 'Failed to grant global permission' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+// Revoke global permission
+export async function revokeGlobalPermission(request: Request, userId: string, env: Env, corsHeaders: any) {
+  try {
+    const { targetUserId, permission } = await request.json() as { 
+      targetUserId: string; 
+      permission: string; 
+    };
+
+    if (!targetUserId || !permission) {
+      return new Response(JSON.stringify({ error: 'targetUserId and permission required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Only super admins can revoke global permissions
+    if (!await isUserSuperAdmin(userId, env)) {
+      return new Response(JSON.stringify({ error: 'Super admin access required' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    await env.DB.prepare(`
+      DELETE FROM user_global_permissions 
+      WHERE user_id = ? AND permission = ?
+    `).bind(targetUserId, permission).run();
+
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (error) {
+    console.error('Error revoking global permission:', error);
+    return new Response(JSON.stringify({ error: 'Failed to revoke global permission' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

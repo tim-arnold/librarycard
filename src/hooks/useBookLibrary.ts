@@ -45,6 +45,7 @@ export function useBookLibrary({ initialFilters }: UseBookLibraryProps = {}) {
   const [allLocations, setAllLocations] = useState<Location[]>([])
   const [userLocations, setUserLocations] = useState<Location[]>([])
   const [userPermissions, setUserPermissions] = useState<string[]>([])
+  const [userGlobalPermissions, setUserGlobalPermissions] = useState<string[]>([])
   const [pendingRemovalRequests, setPendingRemovalRequests] = useState<Record<string, number>>({})
   
   // Loading states
@@ -91,6 +92,30 @@ export function useBookLibrary({ initialFilters }: UseBookLibraryProps = {}) {
       setUserPermissions([])
     } finally {
       setPermissionsChecked(true)
+    }
+  }
+
+  const loadUserGlobalPermissions = async () => {
+    if (!session?.user?.email) {
+      setUserGlobalPermissions([])
+      return
+    }
+
+    try {
+      const result = await authenticatedFetch<{ permissions: string[] }>(
+        session,
+        `/api/permissions/global`,
+        { method: 'GET' }
+      )
+
+      if (result.success && result.data) {
+        setUserGlobalPermissions(result.data.permissions || [])
+      } else {
+        setUserGlobalPermissions([])
+      }
+    } catch (error) {
+      console.error('Error loading global permissions:', error)
+      setUserGlobalPermissions([])
     }
   }
 
@@ -189,16 +214,22 @@ export function useBookLibrary({ initialFilters }: UseBookLibraryProps = {}) {
             setUserLocations(locations)
             setCurrentLocation(locations[0])
             
-            const shelvesResponse = await fetch(`${getApiBaseUrl()}/api/locations/${locations[0].id}/shelves`, {
-              headers: {
-                'Authorization': `Bearer ${session.user.email}`,
-                'Content-Type': 'application/json',
-              },
-            })
-            if (shelvesResponse.ok) {
-              const shelvesData = await shelvesResponse.json()
-              setShelves(shelvesData)
+            // Load shelves from ALL accessible locations for multi-location users
+            // This enables cross-location book moves in the relocate modal
+            const allShelves: Shelf[] = []
+            for (const location of locations) {
+              const shelvesResponse = await fetch(`${getApiBaseUrl()}/api/locations/${location.id}/shelves`, {
+                headers: {
+                  'Authorization': `Bearer ${session.user.email}`,
+                  'Content-Type': 'application/json',
+                },
+              })
+              if (shelvesResponse.ok) {
+                const shelvesData = await shelvesResponse.json()
+                allShelves.push(...shelvesData)
+              }
             }
+            setShelves(allShelves)
             
             // Load user permissions for the current location
             await loadUserPermissions(locations[0].id)
@@ -213,6 +244,9 @@ export function useBookLibrary({ initialFilters }: UseBookLibraryProps = {}) {
     if (!isAdmin(currentUserRole)) {
       await loadPendingRemovalRequests()
     }
+
+    // Load global permissions for all users
+    await loadUserGlobalPermissions()
     
     setIsLoading(false)
   }
@@ -267,19 +301,39 @@ export function useBookLibrary({ initialFilters }: UseBookLibraryProps = {}) {
       // Update current location
       setCurrentLocation(targetLocation)
       
-      // Load shelves for the new location
-      const shelvesResponse = await fetch(`${getApiBaseUrl()}/api/locations/${locationId}/shelves`, {
-        headers: {
-          'Authorization': `Bearer ${session.user.email}`,
-          'Content-Type': 'application/json',
-        },
-      })
-      
-      if (shelvesResponse.ok) {
-        const shelvesData = await shelvesResponse.json()
-        setShelves(shelvesData)
+      // For multi-location users, we need to maintain shelves from ALL accessible locations
+      // For single-location users, we only need shelves from their one location
+      if (userLocations.length > 1) {
+        // Multi-location user: reload shelves from ALL accessible locations
+        const allShelves: Shelf[] = []
+        for (const location of userLocations) {
+          const shelvesResponse = await fetch(`${getApiBaseUrl()}/api/locations/${location.id}/shelves`, {
+            headers: {
+              'Authorization': `Bearer ${session.user.email}`,
+              'Content-Type': 'application/json',
+            },
+          })
+          if (shelvesResponse.ok) {
+            const shelvesData = await shelvesResponse.json()
+            allShelves.push(...shelvesData)
+          }
+        }
+        setShelves(allShelves)
       } else {
-        setShelves([])
+        // Single-location user: only load shelves for the current location
+        const shelvesResponse = await fetch(`${getApiBaseUrl()}/api/locations/${locationId}/shelves`, {
+          headers: {
+            'Authorization': `Bearer ${session.user.email}`,
+            'Content-Type': 'application/json',
+          },
+        })
+        
+        if (shelvesResponse.ok) {
+          const shelvesData = await shelvesResponse.json()
+          setShelves(shelvesData)
+        } else {
+          setShelves([])
+        }
       }
       
       // Load user permissions for the new location
@@ -309,6 +363,7 @@ export function useBookLibrary({ initialFilters }: UseBookLibraryProps = {}) {
     allLocations,
     userLocations,
     userPermissions,
+    userGlobalPermissions,
     pendingRemovalRequests,
     
     // Loading states

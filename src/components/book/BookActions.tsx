@@ -16,6 +16,8 @@ export interface BookActionsProps {
   book: EnhancedBook
   userRole: string | null
   userPermissions: string[]
+  userGlobalPermissions: string[]
+  userLocations: Array<{ id: number; name: string }>
   shelves: Array<{ id: number; name: string; location_id: number; created_at: string }>
   pendingRemovalRequests: Record<string, number>
   viewMode: 'card' | 'compact' | 'list'
@@ -31,6 +33,8 @@ export default function BookActions({
   book,
   userRole,
   userPermissions,
+  userGlobalPermissions,
+  userLocations,
   shelves,
   pendingRemovalRequests,
   viewMode,
@@ -53,8 +57,19 @@ export default function BookActions({
   // Allow any user to return any checked out book (trusting community approach)
   const canReturn = isCheckedOut
   
-  // Show relocate button if: book is not checked out AND user has move permission AND (multiple shelves exist OR user can create shelves)
-  const canRelocate = !isCheckedOut && canMove && (hasMultipleShelves || canCreateShelves)
+  // Show relocate button if:
+  // 1. Book is not checked out
+  // 2. User has intra-location move permission (canMove) OR cross-location move permission with multiple locations
+  const hasMultipleLocations = userLocations.length > 1
+  const hasCrossLocationPermission = userGlobalPermissions.includes('can_move_books_between_locations')
+  const canCrossLocationMove = hasCrossLocationPermission && hasMultipleLocations
+  
+  const canRelocate = !isCheckedOut && (
+    // Can move within location (needs multiple shelves or ability to create shelves)
+    (canMove && (hasMultipleShelves || canCreateShelves)) ||
+    // Can move between locations (doesn't need multiple shelves in current location)
+    canCrossLocationMove
+  )
 
   if (viewMode === 'list') {
     // List view - responsive sizing for better mobile usability
