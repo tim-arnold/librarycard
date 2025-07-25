@@ -208,12 +208,16 @@ export async function fetchEnhancedBookFromSearch(googleBookItem: GoogleBookItem
     ratingsCount = googleBookItem.ratingsCount
   }
 
-  // Only try enhanced lookup if we have a real ISBN (not generated IDs)
+  // Try enhanced lookup if we have a real ISBN (not generated IDs)
   if (isbn && !isbn.startsWith('OL') && !isbn.startsWith('ol-') && !isbn.startsWith('loc-')) {
-    return await fetchEnhancedBookData(isbn)
+    const enhancedBook = await fetchEnhancedBookData(isbn)
+    if (enhancedBook) {
+      return enhancedBook
+    }
+    // If enhanced lookup fails, continue to fallback below
   }
 
-  // Fallback to basic data if no ISBN
+  // Fallback to basic data - always return something useful
   const enhancedBook: EnhancedBook = {
     id: googleBookItem.id,
     isbn: isbn || googleBookItem.id, // Use Google Books ID as fallback

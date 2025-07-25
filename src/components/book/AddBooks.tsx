@@ -11,6 +11,8 @@ import {
   CircularProgress,
   Alert,
   Fade,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material'
 import {
   QrCodeScanner,
@@ -168,6 +170,8 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
   const { data: session } = useSession()
   const { modalState, alert, closeModal } = useModal()
   const { state: selectionState, actions: selectionActions } = useBookSelection()
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
   
   const [activeTab, setActiveTab] = useState(() => {
     // If initialTab is provided (from URL), use that
@@ -192,6 +196,13 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
     setActiveTab(newTabIndex)
     setFadeIn(true)
   }, [initialTab]) // Only depend on initialTab
+
+  // Handle responsive tab changes - switch to search tab if on desktop and scan tab is selected
+  useEffect(() => {
+    if (!isMobile && activeTab === 1) {
+      setActiveTab(0) // Switch to search tab on desktop
+    }
+  }, [isMobile, activeTab])
   
   // Search state
   const [searchQuery, setSearchQuery] = useState('')
@@ -373,7 +384,9 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
       if (bookData) {
         setSelectedBook(bookData)
         setSelectedGenres([])
+        setIsLoading(false)
       } else {
+        setIsLoading(false)
         await alert({
           title: 'Book Not Found',
           message: 'Book not found for this ISBN. Please try a different ISBN or use the search feature.',
@@ -381,13 +394,12 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
         })
       }
     } catch {
+      setIsLoading(false)
       await alert({
         title: 'Lookup Error',
         message: 'Failed to fetch book data. Please check your internet connection and try again.',
         variant: 'error'
       })
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -402,59 +414,15 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
         setSelectedGenres([])
         // Keep search results populated - don't clear them
       } else {
+        // This should never happen now, but keep as safety fallback
         await alert({
-          title: 'Book Enhancement Failed',
-          message: 'Failed to get enhanced book data. Using basic information instead.',
-          variant: 'warning'
+          title: 'Selection Error',
+          message: 'Failed to select book. Please try again.',
+          variant: 'error'
         })
-        
-        // Fallback to basic book data
-        // Handle both new format and legacy format
-        let isbn: string
-        let title: string
-        let authors: string[]
-        let description: string | undefined
-        let thumbnail: string | undefined
-        let publishedDate: string | undefined
-        let categories: string[] | undefined
-
-        if (item.volumeInfo) {
-          // Legacy Google Books format
-          isbn = item.volumeInfo.industryIdentifiers?.find(
-            id => id.type === 'ISBN_13' || id.type === 'ISBN_10'
-          )?.identifier || item.id
-          title = item.volumeInfo.title
-          authors = item.volumeInfo.authors || ['Unknown Author']
-          description = item.volumeInfo.description
-          thumbnail = item.volumeInfo.imageLinks?.thumbnail
-          publishedDate = item.volumeInfo.publishedDate
-          categories = item.volumeInfo.categories
-        } else {
-          // Enhanced format
-          isbn = item.isbn || item.id
-          title = item.title
-          authors = item.authors || ['Unknown Author']
-          description = item.description
-          thumbnail = item.covers?.thumbnail || item.covers?.small || item.covers?.medium
-          publishedDate = item.publishedDate
-          categories = item.categories
-        }
-
-        const book: EnhancedBook = {
-          id: item.id,
-          isbn,
-          title,
-          authors,
-          description,
-          thumbnail,
-          publishedDate,
-          categories,
-        }
-
-        setSelectedBook(book)
-        // Keep search results populated - don't clear them
       }
-    } catch {
+    } catch (error) {
+      console.error('Book selection error:', error)
       await alert({
         title: 'Selection Error',
         message: 'Failed to select book. Please try again.',
@@ -747,33 +715,35 @@ try {
           </Alert>
         )}
 
-        {/* Tab Navigation */}
-        <Box sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs 
-            value={activeTab} 
-            onChange={handleTabChange}
-            variant="fullWidth"
-          >
-            <Tab 
-              label="Search"
-              icon={<MenuBook />}
-              iconPosition="start"
-            />
-            <Tab 
-              label="Scan ISBN"
-              icon={<QrCodeScanner />}
-              iconPosition="start"
-            />
-            {/*
-            <Tab
-              value="bookshelf" 
-              label="Scan Shelf"
-              icon={<PhotoLibrary />}
-              iconPosition="start"
-            />
-            */}
-          </Tabs>
-        </Box>
+        {/* Tab Navigation - only show on mobile when there are multiple tabs */}
+        {isMobile && (
+          <Box sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}>
+            <Tabs 
+              value={activeTab} 
+              onChange={handleTabChange}
+              variant="fullWidth"
+            >
+              <Tab 
+                label="Search"
+                icon={<MenuBook />}
+                iconPosition="start"
+              />
+              <Tab 
+                label="Scan ISBN"
+                icon={<QrCodeScanner />}
+                iconPosition="start"
+              />
+              {/*
+              <Tab
+                value="bookshelf" 
+                label="Scan Shelf"
+                icon={<PhotoLibrary />}
+                iconPosition="start"
+              />
+              */}
+            </Tabs>
+          </Box>
+        )}
 
         {/* Tab Content with Transitions */}
         {!selectedBook && (
