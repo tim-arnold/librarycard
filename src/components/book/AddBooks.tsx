@@ -373,7 +373,9 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
       if (bookData) {
         setSelectedBook(bookData)
         setSelectedGenres([])
+        setIsLoading(false)
       } else {
+        setIsLoading(false)
         await alert({
           title: 'Book Not Found',
           message: 'Book not found for this ISBN. Please try a different ISBN or use the search feature.',
@@ -381,13 +383,12 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
         })
       }
     } catch {
+      setIsLoading(false)
       await alert({
         title: 'Lookup Error',
         message: 'Failed to fetch book data. Please check your internet connection and try again.',
         variant: 'error'
       })
-    } finally {
-      setIsLoading(false)
     }
   }
 
