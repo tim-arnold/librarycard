@@ -825,12 +825,14 @@ try {
             />
             
             {/* Genre Selector */}
-            <GenreSelector
-              book={selectedBook}
-              selectedGenres={selectedGenres}
-              onGenresChange={setSelectedGenres}
-              onError={(message) => alert({ title: 'Genre Error', message, variant: 'error' })}
-            />
+            <Box sx={{ mb: { xs: 2, sm: 2.5 } }}>
+              <GenreSelector
+                book={selectedBook}
+                selectedGenres={selectedGenres}
+                onGenresChange={setSelectedGenres}
+                onError={(message) => alert({ title: 'Genre Error', message, variant: 'error' })}
+              />
+            </Box>
             
             {/* Shelf selector */}
             <Box sx={{ mt: { xs: 2, sm: 3 }, mb: { xs: 1.5, sm: 2 } }}>
@@ -846,6 +848,7 @@ try {
             {/* Action buttons */}
             <Box sx={{ 
               display: 'flex', 
+              flexDirection: { xs: 'column-reverse', sm: 'row' },
               gap: 1, 
               mt: 2,
               position: { xs: 'sticky', sm: 'static' },
@@ -862,6 +865,7 @@ try {
                 startIcon={isLoading ? <CircularProgress size={16} color="inherit" /> : <Save />}
                 onClick={saveBook}
                 disabled={!selectedShelfId || isLoading}
+                sx={{ width: { xs: '100%', sm: 'auto' } }}
               >
                 {isLoading ? 'Saving...' : (allShelves.length === 1 ? 'Add to Library' : 'Save to Library')}
               </Button>
@@ -876,6 +880,7 @@ try {
                   setCancelledBookKey(bookKey)
                 }}
                 disabled={isLoading}
+                sx={{ width: { xs: '100%', sm: 'auto' } }}
               >
                 Cancel
               </Button>

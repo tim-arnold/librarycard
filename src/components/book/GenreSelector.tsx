@@ -128,7 +128,7 @@ export default function GenreSelector({
   }
 
   return (
-    <Box sx={{ mt: 2 }}>
+    <Box sx={{ mt: 2, mb: 2 }}>
       
       {/* Auto-Suggested Genres */}
       {remainingSuggestions.length > 0 && (
@@ -188,7 +188,7 @@ export default function GenreSelector({
       )}
 
       {/* Add Custom Genre */}
-      <Box>
+      <Box sx={{ pb: 2 }}>
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'stretch' }}>
           <FormControl fullWidth size="small">
             <Autocomplete
@@ -231,7 +231,9 @@ export default function GenreSelector({
             disabled={!autocompleteValue}
             sx={{ 
               whiteSpace: 'nowrap',
-              height: '40px' // Match the height of small TextField
+              height: '40px', // Match the height of small TextField
+              minWidth: { xs: '120px', sm: 'auto' }, // Ensure minimum width on mobile
+              px: { xs: 2, sm: 1.5 } // More padding on mobile for better text fit
             }}
           >
             Add Genre
