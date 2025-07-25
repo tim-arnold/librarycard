@@ -732,8 +732,8 @@ try {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 2 }}>
-      <Paper sx={{ p: 3 }}>
+    <Container maxWidth="xl" sx={{ py: { xs: 1, sm: 2 } }}>
+      <Paper sx={{ p: { xs: 2, sm: 3 } }}>
         <Typography variant="h4" component="h2" gutterBottom>
           📚  Add Books
         </Typography>
@@ -826,7 +826,7 @@ try {
 
         {/* Selected Book Display (shared between tabs) */}
         {selectedBook && (
-          <Box sx={{ mt: 3 }} data-testid="book-selected-section" ref={bookSelectedRef}>
+          <Box sx={{ mt: { xs: 2, sm: 3 } }} data-testid="book-selected-section" ref={bookSelectedRef}>
             <BookPreview
               book={selectedBook}
               customTags={customTags}
@@ -863,7 +863,7 @@ try {
             />
             
             {/* Shelf selector */}
-            <Box sx={{ mt: 3, mb: 2 }}>
+            <Box sx={{ mt: { xs: 2, sm: 3 }, mb: { xs: 1.5, sm: 2 } }}>
               <ShelfSelector
                 shelves={allShelves}
                 locations={locations}
@@ -874,7 +874,19 @@ try {
             </Box>
 
             {/* Action buttons */}
-            <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
+            <Box sx={{ 
+              display: 'flex', 
+              gap: 1, 
+              mt: 2,
+              position: { xs: 'sticky', sm: 'static' },
+              bottom: { xs: 0, sm: 'auto' },
+              bgcolor: { xs: 'background.paper', sm: 'transparent' },
+              p: { xs: 2, sm: 0 },
+              mx: { xs: -2, sm: 0 },
+              borderTop: { xs: '1px solid', sm: 'none' },
+              borderColor: { xs: 'divider', sm: 'transparent' },
+              zIndex: { xs: 1, sm: 'auto' }
+            }}>
               <Button 
                 variant="contained"
                 startIcon={isLoading ? <CircularProgress size={16} color="inherit" /> : <Save />}

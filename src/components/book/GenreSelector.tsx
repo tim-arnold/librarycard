@@ -10,9 +10,8 @@ import {
   Autocomplete,
   TextField,
   Button,
-  Paper,
-  Divider,
   CircularProgress,
+  FormControl,
 } from '@mui/material'
 import {
   Add,
@@ -129,17 +128,11 @@ export default function GenreSelector({
   }
 
   return (
-    <Paper sx={{ p: 2, mt: 2 }}>
-      <Typography variant="h6" gutterBottom>
-        📚 Select Genres
-      </Typography>
+    <Box sx={{ mt: 2 }}>
       
       {/* Auto-Suggested Genres */}
       {remainingSuggestions.length > 0 && (
         <Box sx={{ mb: 3 }}>
-          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-            Suggested based on book classification:
-          </Typography>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
             {remainingSuggestions.map(genre => (
               <Box key={genre.id} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -194,65 +187,58 @@ export default function GenreSelector({
         </Box>
       )}
 
-      {(remainingSuggestions.length > 0 || selectedGenres.length > 0) && (
-        <Divider sx={{ my: 2 }} />
-      )}
-
       {/* Add Custom Genre */}
       <Box>
-        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-          Add more genres:
-        </Typography>
-        <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end' }}>
-          <Autocomplete
-            value={autocompleteValue}
-            onChange={(_, newValue) => setAutocompleteValue(newValue)}
-            options={availableForAutocomplete}
-            getOptionLabel={(option) => option.name}
-            renderOption={(props, option) => (
-              <li {...props}>
-                <Box>
-                  <Typography variant="body2">{option.name}</Typography>
-                  {option.description && (
-                    <Typography variant="caption" color="text.secondary">
-                      {option.description}
-                    </Typography>
-                  )}
-                </Box>
-              </li>
-            )}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="Search genres"
-                variant="outlined"
-                size="small"
-                placeholder="Type to search..."
-              />
-            )}
-            sx={{ flexGrow: 1, minWidth: 200 }}
-            ListboxProps={{
-              style: { maxHeight: 200 }
-            }}
-          />
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'stretch' }}>
+          <FormControl fullWidth size="small">
+            <Autocomplete
+              value={autocompleteValue}
+              onChange={(_, newValue) => setAutocompleteValue(newValue)}
+              options={availableForAutocomplete}
+              getOptionLabel={(option) => option.name}
+              renderOption={(props, option) => (
+                <li {...props}>
+                  <Box>
+                    <Typography variant="body2">{option.name}</Typography>
+                    {option.description && (
+                      <Typography variant="caption" color="text.secondary">
+                        {option.description}
+                      </Typography>
+                    )}
+                  </Box>
+                </li>
+              )}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Add Genres"
+                  variant="outlined"
+                  size="small"
+                  placeholder="Type to search..."
+                />
+              )}
+              sx={{ flexGrow: 1, minWidth: 200 }}
+              ListboxProps={{
+                style: { maxHeight: 200 }
+              }}
+            />
+          </FormControl>
           <Button
             variant="contained"
             size="small"
             startIcon={<Add />}
             onClick={handleAddFromAutocomplete}
             disabled={!autocompleteValue}
-            sx={{ whiteSpace: 'nowrap' }}
+            sx={{ 
+              whiteSpace: 'nowrap',
+              height: '40px' // Match the height of small TextField
+            }}
           >
             Add Genre
           </Button>
         </Box>
       </Box>
 
-      {selectedGenres.length === 0 && remainingSuggestions.length === 0 && (
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 2, fontStyle: 'italic' }}>
-          No genre suggestions available. You can search and add genres manually above.
-        </Typography>
-      )}
-    </Paper>
+    </Box>
   )
 }
