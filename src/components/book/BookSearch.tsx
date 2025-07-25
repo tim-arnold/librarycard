@@ -105,6 +105,7 @@ export default function BookSearch({
   }>({ isOpen: false, book: null })
   const searchInputRef = useRef<HTMLInputElement>(null)
   const searchFormRef = useRef<HTMLDivElement>(null)
+  const searchResultsRef = useRef<HTMLHeadingElement>(null)
 
   // Auto-focus the search input field when component mounts
   useEffect(() => {
@@ -220,16 +221,19 @@ export default function BookSearch({
         onDisplayedResultsChange?.(10)
       }
       
-      // Scroll to search field at top of viewport after results are loaded
+      // Scroll to "Search Results" heading after results are loaded
+      // Use longer timeout to ensure DOM is fully rendered
       setTimeout(() => {
-        if (searchFormRef.current) {
-          const elementTop = searchFormRef.current.offsetTop - 20 // Small offset from top
-          window.scrollTo({
-            top: elementTop,
-            behavior: 'smooth'
+        if (searchResultsRef.current) {
+          console.log('Scrolling to Search Results (Enhanced):', { element: searchResultsRef.current, offsetTop: searchResultsRef.current.offsetTop, currentScrollTop: window.scrollY })
+          searchResultsRef.current.scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'start'
           })
+        } else {
+          console.log('searchResultsRef.current is null (Enhanced)')
         }
-      }, 100)
+      }, 300)
     } else {
       onError('Enhanced Search Failed', 'Failed to search across multiple sources. Please try again.')
     }
@@ -279,16 +283,19 @@ export default function BookSearch({
         onDisplayedResultsChange?.(10)
       }
       
-      // Scroll to search field at top of viewport after results are loaded
+      // Scroll to "Search Results" heading after results are loaded
+      // Use longer timeout to ensure DOM is fully rendered
       setTimeout(() => {
-        if (searchFormRef.current) {
-          const elementTop = searchFormRef.current.offsetTop - 20 // Small offset from top
-          window.scrollTo({
-            top: elementTop,
-            behavior: 'smooth'
+        if (searchResultsRef.current) {
+          console.log('Scrolling to Search Results (Google):', { element: searchResultsRef.current, offsetTop: searchResultsRef.current.offsetTop, currentScrollTop: window.scrollY })
+          searchResultsRef.current.scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'start'
           })
+        } else {
+          console.log('searchResultsRef.current is null (Google)')
         }
-      }, 100)
+      }, 300)
     } else {
       onError('Search Failed', 'Failed to search for books. Please try again.')
     }
@@ -565,7 +572,7 @@ export default function BookSearch({
       {searchResults.length > 0 && (
         <Box data-testid="search-results-section">
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h6">
+            <Typography variant="h6" ref={searchResultsRef}>
               Search Results
             </Typography>
             <Typography variant="body2" color="text.secondary">
