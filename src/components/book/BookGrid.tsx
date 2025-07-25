@@ -64,7 +64,15 @@ export default function BookGrid({
   onCoverAnimationComplete,
 }: BookGridProps) {
   return (
-    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 2 }}>
+    <Box sx={{ 
+      display: 'grid', 
+      gridTemplateColumns: { 
+        xs: 'repeat(auto-fit, minmax(350px, 1fr))', // Mobile: better minimum width, auto-fit (no empty columns)
+        sm: 'repeat(2, 1fr)', // Tablet: exactly 2 columns
+        lg: 'repeat(3, 1fr)' // Large Desktop: exactly 3 columns (1200px+)
+      }, 
+      gap: 2 
+    }}>
       {books.map(book => (
         <Card key={book.id} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           <CardContent sx={{ flex: 1 }}>

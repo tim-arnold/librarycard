@@ -14,19 +14,33 @@ const commonTypography = {
     '"Helvetica Neue"',
     'sans-serif',
   ].join(','),
+  // Increase base font size for better accessibility for elderly users
+  fontSize: 16, // Base font size in pixels
+  body1: {
+    fontSize: '1.125rem', // 18px (was 16px)
+    lineHeight: 1.6,
+  },
+  body2: {
+    fontSize: '1rem', // 16px (was 14px)
+    lineHeight: 1.5,
+  },
+  caption: {
+    fontSize: '0.875rem', // 14px (was 12px)
+    lineHeight: 1.4,
+  },
+  overline: {
+    fontSize: '0.875rem', // 14px (was 12px)
+    lineHeight: 1.4,
+  },
 }
 
 const commonComponents = {
   MuiContainer: {
     styleOverrides: {
-      root: ({ theme }: { theme: Theme }) => ({
+      root: {
         paddingLeft: '0 !important',
         paddingRight: '0 !important',
-        [theme.breakpoints.up('md')]: {
-          paddingLeft: '24px !important',
-          paddingRight: '24px !important',
-        },
-      }),
+      },
     },
   },
   MuiCard: {
@@ -38,11 +52,16 @@ const commonComponents = {
   },
   MuiButton: {
     styleOverrides: {
-      root: {
+      root: ({ theme }: { theme: Theme }) => ({
         borderRadius: '0.375rem',
         textTransform: 'none' as const,
-        fontWeight: 500,
-      },
+        fontWeight: 600,
+        fontSize: '1.125rem', // 18px on mobile for accessibility
+        [theme.breakpoints.up('md')]: {
+          fontSize: '1rem', // 16px on desktop (Material-UI default)
+          fontWeight: 500, // Normal weight on desktop
+        },
+      }),
     },
   },
   MuiTextField: {
