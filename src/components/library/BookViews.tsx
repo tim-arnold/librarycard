@@ -49,6 +49,8 @@ interface BookViewsProps {
   onRateBook: (book: EnhancedBook) => void
   onGenreEdit?: (book: EnhancedBook) => void
   onCoverEdit?: (book: EnhancedBook) => void
+  animatingCovers?: Set<string>
+  onCoverAnimationComplete?: (bookId: string) => void
   onPageChange: (event: React.ChangeEvent<unknown>, page: number) => void
   getTotalPages: (books: EnhancedBook[]) => number
   getPaginatedBooksForView: () => any[]
@@ -81,6 +83,8 @@ export default function BookViews({
   onRateBook,
   onGenreEdit,
   onCoverEdit,
+  animatingCovers,
+  onCoverAnimationComplete,
   onPageChange,
   getTotalPages,
   getPaginatedBooksForView
@@ -309,6 +313,8 @@ export default function BookViews({
                     onRateBook={onRateBook}
                     onGenreEdit={onGenreEdit}
                     onCoverEdit={onCoverEdit}
+                    animatingCovers={animatingCovers}
+                    onCoverAnimationComplete={onCoverAnimationComplete}
                   />
                 </div>
               ))}
@@ -344,6 +350,8 @@ export default function BookViews({
                 onRateBook={onRateBook}
                 onGenreEdit={onGenreEdit}
                 onCoverEdit={onCoverEdit}
+                animatingCovers={animatingCovers}
+                onCoverAnimationComplete={onCoverAnimationComplete}
               />
             </Box>
           </Fade>

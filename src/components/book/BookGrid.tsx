@@ -14,6 +14,7 @@ import type { EnhancedBook } from '@/lib/types'
 import { getDisplayGenres } from '@/lib/genreUtils'
 import BookActions from './BookActions'
 import StarRating from './StarRating'
+import AnimatedBookCover from './AnimatedBookCover'
 
 interface BookGridProps {
   books: EnhancedBook[]
@@ -35,6 +36,8 @@ interface BookGridProps {
   onRateBook?: (book: EnhancedBook) => void
   onGenreEdit?: (book: EnhancedBook) => void
   onCoverEdit?: (book: EnhancedBook) => void
+  animatingCovers?: Set<string>
+  onCoverAnimationComplete?: (bookId: string) => void
 }
 
 export default function BookGrid({
@@ -57,6 +60,8 @@ export default function BookGrid({
   onRateBook,
   onGenreEdit,
   onCoverEdit,
+  animatingCovers = new Set(),
+  onCoverAnimationComplete,
 }: BookGridProps) {
   return (
     <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 2 }}>
@@ -65,39 +70,20 @@ export default function BookGrid({
           <CardContent sx={{ flex: 1 }}>
             <Box sx={{ display: 'flex', gap: 2 }}>
               <Box sx={{ position: 'relative' }}>
-                {book.thumbnail ? (
-                  <Box
-                    component="img"
-                    src={book.thumbnail}
-                    alt={book.title}
-                    sx={{ 
-                      width: 80, 
-                      height: 120, 
-                      objectFit: 'cover', 
-                      flexShrink: 0,
-                      borderRadius: 1,
-                      cursor: onCoverEdit && userPermissions.includes('can_add_books') ? 'pointer' : 'default'
-                    }}
-                    onClick={() => onCoverEdit && userPermissions.includes('can_add_books') && onCoverEdit(book)}
-                  />
-                ) : (
-                  <Box sx={{ 
-                    width: 80, 
-                    height: 120, 
-                    borderRadius: 1, 
-                    bgcolor: 'grey.300',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                    fontSize: '2rem',
-                    cursor: onCoverEdit && userPermissions.includes('can_add_books') ? 'pointer' : 'default'
-                  }}
+                <AnimatedBookCover
+                  src={book.thumbnail}
+                  alt={book.title}
+                  width={80}
+                  height={120}
+                  borderRadius={1}
+                  objectFit="cover"
+                  cursor={onCoverEdit && userPermissions.includes('can_add_books') ? 'pointer' : 'default'}
                   onClick={() => onCoverEdit && userPermissions.includes('can_add_books') && onCoverEdit(book)}
-                  >
-                    📖
-                  </Box>
-                )}
+                  bookId={book.id}
+                  isAnimating={animatingCovers.has(book.id)}
+                  onAnimationComplete={() => onCoverAnimationComplete?.(book.id)}
+                  sx={{ flexShrink: 0 }}
+                />
                 {onCoverEdit && userPermissions.includes('can_add_books') && (
                   <Box
                     sx={{
@@ -112,7 +98,8 @@ export default function BookGrid({
                       alignItems: 'center',
                       justifyContent: 'center',
                       opacity: 0.8,
-                      '&:hover': { opacity: 1 }
+                      '&:hover': { opacity: 1 },
+                      pointerEvents: 'none'
                     }}
                   >
                     <Image sx={{ color: 'white', fontSize: 12 }} />
