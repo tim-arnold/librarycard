@@ -22,6 +22,8 @@ import {
   Tooltip,
   FormControlLabel,
   Switch,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material'
 import {
   Search,
@@ -87,6 +89,8 @@ export default function BookSearch({
   // Selection context for cart functionality
   const { state: selectionState, actions: selectionActions } = useBookSelection()
   const { data: session } = useSession()
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
   
   const [isSearching, setIsSearching] = useState(false)
   const [displayedResults, setDisplayedResults] = useState(parentDisplayedResults || 10)
@@ -546,6 +550,15 @@ export default function BookSearch({
             </Box>
           )}
         </Box>
+        
+        {/* Mobile scanning tip for desktop users */}
+        {!isMobile && (
+          <Alert severity="info" sx={{ mt: 2 }}>
+            <Typography variant="body2">
+              📱 To scan ISBN codes using your camera (and add books more quickly), use this site on your mobile phone!
+            </Typography>
+          </Alert>
+        )}
       </Box>
 
       {/* Search Results */}
