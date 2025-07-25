@@ -11,6 +11,8 @@ import {
   CircularProgress,
   Alert,
   Fade,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material'
 import {
   QrCodeScanner,
@@ -168,6 +170,8 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
   const { data: session } = useSession()
   const { modalState, alert, closeModal } = useModal()
   const { state: selectionState, actions: selectionActions } = useBookSelection()
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
   
   const [activeTab, setActiveTab] = useState(() => {
     // If initialTab is provided (from URL), use that
@@ -192,6 +196,13 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
     setActiveTab(newTabIndex)
     setFadeIn(true)
   }, [initialTab]) // Only depend on initialTab
+
+  // Handle responsive tab changes - switch to search tab if on desktop and scan tab is selected
+  useEffect(() => {
+    if (!isMobile && activeTab === 1) {
+      setActiveTab(0) // Switch to search tab on desktop
+    }
+  }, [isMobile, activeTab])
   
   // Search state
   const [searchQuery, setSearchQuery] = useState('')
@@ -373,7 +384,9 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
       if (bookData) {
         setSelectedBook(bookData)
         setSelectedGenres([])
+        setIsLoading(false)
       } else {
+        setIsLoading(false)
         await alert({
           title: 'Book Not Found',
           message: 'Book not found for this ISBN. Please try a different ISBN or use the search feature.',
@@ -381,13 +394,12 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
         })
       }
     } catch {
+      setIsLoading(false)
       await alert({
         title: 'Lookup Error',
         message: 'Failed to fetch book data. Please check your internet connection and try again.',
         variant: 'error'
       })
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -703,33 +715,35 @@ try {
           </Alert>
         )}
 
-        {/* Tab Navigation */}
-        <Box sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs 
-            value={activeTab} 
-            onChange={handleTabChange}
-            variant="fullWidth"
-          >
-            <Tab 
-              label="Search"
-              icon={<MenuBook />}
-              iconPosition="start"
-            />
-            <Tab 
-              label="Scan ISBN"
-              icon={<QrCodeScanner />}
-              iconPosition="start"
-            />
-            {/*
-            <Tab
-              value="bookshelf" 
-              label="Scan Shelf"
-              icon={<PhotoLibrary />}
-              iconPosition="start"
-            />
-            */}
-          </Tabs>
-        </Box>
+        {/* Tab Navigation - only show on mobile when there are multiple tabs */}
+        {isMobile && (
+          <Box sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}>
+            <Tabs 
+              value={activeTab} 
+              onChange={handleTabChange}
+              variant="fullWidth"
+            >
+              <Tab 
+                label="Search"
+                icon={<MenuBook />}
+                iconPosition="start"
+              />
+              <Tab 
+                label="Scan ISBN"
+                icon={<QrCodeScanner />}
+                iconPosition="start"
+              />
+              {/*
+              <Tab
+                value="bookshelf" 
+                label="Scan Shelf"
+                icon={<PhotoLibrary />}
+                iconPosition="start"
+              />
+              */}
+            </Tabs>
+          </Box>
+        )}
 
         {/* Tab Content with Transitions */}
         {!selectedBook && (
