@@ -41,6 +41,9 @@ export function useBookActions({
   // Modal states
   const [showRemovalReasonModal, setShowRemovalReasonModal] = useState(false)
   const [removalReasonCallback, setRemovalReasonCallback] = useState<((result: { value: string; label: string; details?: string } | null) => void) | null>(null)
+  
+  // Animation states
+  const [animatingCovers, setAnimatingCovers] = useState<Set<string>>(new Set())
 
   const deleteBook = async (bookId: string, bookTitle: string) => {
     const confirmed = await confirmAsync(
@@ -482,6 +485,9 @@ export function useBookActions({
     try {
       const coverUrl = coverOption.covers.medium || coverOption.covers.small || coverOption.covers.thumbnail
       
+      // Start animation
+      setAnimatingCovers(prev => new Set(Array.from(prev).concat(bookId)))
+      
       const success = await updateBook(bookId, {
         thumbnail: coverUrl,
         alternative_covers: [coverOption],
@@ -496,7 +502,7 @@ export function useBookActions({
       })
 
       if (success) {
-        // Update the book in local state
+        // Update the book in local state with new cover
         const updatedBooks = books.map(book => 
           book.id === bookId 
             ? { ...book, thumbnail: coverUrl }
@@ -504,14 +510,15 @@ export function useBookActions({
         )
         setBooks(updatedBooks)
         
-        await alert({
-          title: 'Cover Updated',
-          message: 'Book cover has been updated successfully.',
-          variant: 'success'
-        })
-        
         return true
       } else {
+        // Stop animation on failure
+        setAnimatingCovers(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(bookId)
+          return newSet
+        })
+        
         await alert({
           title: 'Update Failed',
           message: 'Failed to update book cover. Please try again.',
@@ -520,6 +527,13 @@ export function useBookActions({
         return false
       }
     } catch (error) {
+      // Stop animation on error
+      setAnimatingCovers(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(bookId)
+        return newSet
+      })
+      
       console.error('Error updating book cover:', error)
       await alert({
         title: 'Update Failed',
@@ -528,6 +542,14 @@ export function useBookActions({
       })
       return false
     }
+  }
+
+  const handleCoverAnimationComplete = (bookId: string) => {
+    setAnimatingCovers(prev => {
+      const newSet = new Set(prev)
+      newSet.delete(bookId)
+      return newSet
+    })
   }
 
   return {
@@ -541,6 +563,10 @@ export function useBookActions({
     handleRatingSubmit,
     handleGenreUpdate,
     handleCoverSelect,
+    
+    // Animation states
+    animatingCovers,
+    handleCoverAnimationComplete,
     
     // Modal states
     showRemovalReasonModal,
