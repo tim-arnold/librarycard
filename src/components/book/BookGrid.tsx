@@ -136,14 +136,12 @@ export default function BookGrid({
                 </Typography>
                 {book.series && (
                   <Typography variant="body2" color="text.secondary" gutterBottom>
-                    <strong>Series:</strong> 
                     <Typography 
                       component="span" 
                       sx={{ 
                         color: 'primary.main', 
                         cursor: 'pointer',
                         textDecoration: 'underline',
-                        ml: 0.5,
                         '&:hover': { textDecoration: 'none' }
                       }}
                       onClick={() => onSeriesClick(book.series!)}
