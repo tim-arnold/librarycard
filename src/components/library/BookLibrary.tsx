@@ -70,6 +70,8 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
     handleRatingSubmit,
     handleGenreUpdate,
     handleCoverSelect,
+    animatingCovers,
+    handleCoverAnimationComplete,
     showRemovalReasonModal,
     handleRemovalReasonModalClose,
   } = useBookActions({
@@ -457,6 +459,8 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
           onRateBook={handleRateBook}
           onGenreEdit={userPermissions.includes('can_edit_genres') ? handleGenreEdit : undefined}
           onCoverEdit={userPermissions.includes('can_add_books') ? handleCoverEdit : undefined}
+          animatingCovers={animatingCovers}
+          onCoverAnimationComplete={handleCoverAnimationComplete}
           onPageChange={handlePageChange}
           getTotalPages={getTotalPages}
           getPaginatedBooksForView={getPaginatedBooksForView}
