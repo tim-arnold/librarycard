@@ -13,20 +13,15 @@ import {
   Typography,
   CircularProgress,
   Alert,
-  Grid,
   Card,
   CardMedia,
-  CardContent,
-  CardActionArea,
   Chip,
   TextField,
-  InputAdornment,
   FormControlLabel,
   Switch,
-  Divider,
   Tooltip,
 } from '@mui/material'
-import { Close, Image, Search, CheckCircle, AutoAwesome, Book, Public, AccountBalance } from '@mui/icons-material'
+import { Close, Image, Search, AutoAwesome, Book, Public } from '@mui/icons-material'
 
 interface CoverOption {
   id: string
@@ -73,7 +68,6 @@ export default function CoverSelectionModal({
   const [editions, setEditions] = useState<CoverOption[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string>('')
-  const [selectedCover, setSelectedCover] = useState<CoverOption | null>(null)
   const [searchQuery, setSearchQuery] = useState(`${title} ${author}`.trim())
   const [enhancedMode, setEnhancedMode] = useState(true) // Default to enhanced mode
   const { data: session } = useSession()
@@ -127,14 +121,8 @@ export default function CoverSelectionModal({
   }, [open, title, author])
 
   const handleCoverSelect = (cover: CoverOption) => {
-    setSelectedCover(cover)
-  }
-
-  const handleConfirmSelection = () => {
-    if (selectedCover) {
-      onCoverSelect(selectedCover)
-      onClose()
-    }
+    onCoverSelect(cover)
+    onClose()
   }
 
   const handleSearch = () => {
@@ -142,7 +130,6 @@ export default function CoverSelectionModal({
   }
 
   const handleClose = () => {
-    setSelectedCover(null)
     setError('')
     onClose()
   }
@@ -290,14 +277,24 @@ export default function CoverSelectionModal({
 
         {/* Cover Grid */}
         {!isLoading && editions.length > 0 && (
-          <Box sx={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', 
-            gap: 3 
+          <Box sx={{
+            columns: {
+              xs: 2,    // 2 columns on phones
+              sm: 3,    // 3 columns on tablets
+              md: 4,    // 4 columns on small laptops
+              lg: 5,    // 5 columns on desktops
+              xl: 6     // 6 columns on large screens
+            },
+            columnGap: 3,
+            '& > *': {
+              breakInside: 'avoid',
+              marginBottom: 3,
+              display: 'block'
+            }
           }}>
             {editions.map((edition) => {
               const coverUrl = getCoverUrl(edition.covers)
-              const isSelected = selectedCover?.id === edition.id
+              const isSelected = false
               const isCurrent = isCurrentCover(edition)
               
               return (
@@ -320,13 +317,8 @@ export default function CoverSelectionModal({
                 >
                   {/* Cover Image */}
                   <Box sx={{ 
-                    height: 240, 
                     width: '100%', 
-                    position: 'relative', 
-                    bgcolor: 'grey.100',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
+                    position: 'relative'
                   }}>
                     {coverUrl ? (
                       <CardMedia
@@ -334,9 +326,9 @@ export default function CoverSelectionModal({
                         image={coverUrl}
                         alt={`Cover option for ${edition.title}`}
                         sx={{ 
-                          height: '100%', 
                           width: '100%',
-                          objectFit: 'cover'
+                          height: 'auto',
+                          display: 'block'
                         }}
                       />
                     ) : (
@@ -347,7 +339,10 @@ export default function CoverSelectionModal({
                           justifyContent: 'center',
                           color: 'text.secondary',
                           flexDirection: 'column',
-                          gap: 1
+                          gap: 1,
+                          minHeight: 200,
+                          width: '100%',
+                          bgcolor: 'grey.100'
                         }}
                       >
                         <Image fontSize="large" />
@@ -357,26 +352,6 @@ export default function CoverSelectionModal({
                       </Box>
                     )}
                     
-                    {/* Selection Indicator */}
-                    {isSelected && (
-                      <Box
-                        sx={{
-                          position: 'absolute',
-                          top: 12,
-                          right: 12,
-                          bgcolor: 'primary.main',
-                          borderRadius: '50%',
-                          width: 36,
-                          height: 36,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          boxShadow: 2
-                        }}
-                      >
-                        <CheckCircle sx={{ color: 'white', fontSize: 24 }} />
-                      </Box>
-                    )}
 
                     {/* Current Cover Indicator */}
                     {isCurrent && (
@@ -440,14 +415,6 @@ export default function CoverSelectionModal({
           color="inherit"
         >
           Cancel
-        </Button>
-        <Button 
-          onClick={handleConfirmSelection}
-          variant="contained"
-          disabled={!selectedCover}
-          startIcon={<CheckCircle />}
-        >
-          Use This Cover
         </Button>
       </DialogActions>
     </Dialog>
