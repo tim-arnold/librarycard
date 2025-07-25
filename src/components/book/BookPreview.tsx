@@ -12,12 +12,13 @@ import {
   Chip,
   Alert,
   CircularProgress,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material'
 import {
   Save,
   Cancel,
   Info,
-  Image,
 } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
 import CoverSelectionModal from '../modals/CoverSelectionModal'
@@ -61,6 +62,8 @@ export default function BookPreview({
 }: BookPreviewProps) {
   const [tagsError, setTagsError] = useState<string>('')
   const [showCoverSelection, setShowCoverSelection] = useState(false)
+  const theme = useTheme()
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'))
 
   const handleTagsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
@@ -106,33 +109,47 @@ export default function BookPreview({
         </Alert>
       )}
       
-      <Card sx={{ mb: 3 }}>
+      <Card sx={{ mb: { xs: 2, sm: 3 } }}>
         <CardContent>
-          <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box sx={{ display: 'flex', gap: { xs: 1.5, sm: 2 }, flexDirection: 'row', alignItems: 'flex-start' }}>
             <Box sx={{ position: 'relative' }}>
-              {book.thumbnail && (
+              {book.thumbnail ? (
                 <CardMedia
                   component="img"
                   src={book.thumbnail}
                   alt={book.title}
-                  sx={{ width: 120, height: 'auto', objectFit: 'contain' }}
-                />
-              )}
-              {canSelectCover && (
-                <Button
-                  size="small"
-                  variant="outlined"
-                  startIcon={<Image />}
-                  onClick={() => setShowCoverSelection(true)}
                   sx={{ 
-                    mt: 1, 
-                    width: 120,
-                    fontSize: '0.75rem',
-                    py: 0.5
+                    width: { xs: 100, sm: 120 }, 
+                    height: 'auto', 
+                    objectFit: 'contain',
+                    cursor: canSelectCover ? 'pointer' : 'default',
+                    borderRadius: 1,
+                    '&:hover': canSelectCover ? {
+                      opacity: 0.8,
+                      transform: 'scale(1.02)'
+                    } : {}
                   }}
+                  onClick={() => canSelectCover && setShowCoverSelection(true)}
+                />
+              ) : (
+                <Box 
+                  sx={{ 
+                    width: { xs: 100, sm: 120 }, 
+                    height: 150, 
+                    bgcolor: 'grey.200',
+                    borderRadius: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: canSelectCover ? 'pointer' : 'default',
+                    '&:hover': canSelectCover ? {
+                      bgcolor: 'grey.300'
+                    } : {}
+                  }}
+                  onClick={() => canSelectCover && setShowCoverSelection(true)}
                 >
-                  Choose Cover
-                </Button>
+                  <Typography variant="h4" color="text.secondary">📖</Typography>
+                </Box>
               )}
             </Box>
             <Box sx={{ flex: 1 }}>
@@ -141,7 +158,7 @@ export default function BookPreview({
               </Typography>
               
               <Typography variant="body2" color="text.secondary" gutterBottom>
-                <strong>Authors:</strong> {book.authors.map((author, index) => (
+                {book.authors.map((author, index) => (
                   <span key={index}>
                     <Typography 
                       component="span" 
@@ -158,28 +175,21 @@ export default function BookPreview({
                     {index < book.authors.length - 1 && ', '}
                   </span>
                 ))}
+                {book.publishedDate && (
+                  <Typography component="span" color="text.secondary">
+                    , {new Date(book.publishedDate).getFullYear()}
+                  </Typography>
+                )}
               </Typography>
-              
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                <strong>ISBN:</strong> {book.isbn}
-              </Typography>
-              
-              {book.publishedDate && (
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  <strong>Published:</strong> {book.publishedDate}
-                </Typography>
-              )}
               
               {book.series && (
                 <Typography variant="body2" color="text.secondary" gutterBottom>
-                  <strong>Series:</strong>
                   <Typography 
                     component="span" 
                     sx={{ 
                       color: 'primary.main', 
                       cursor: 'pointer',
                       textDecoration: 'underline',
-                      ml: 0.5,
                       '&:hover': { textDecoration: 'none' }
                     }}
                     onClick={() => onSeriesClick(book.series!)}
@@ -193,9 +203,6 @@ export default function BookPreview({
               {/* Enhanced genres with fallback to categories */}
               {(book.enhancedGenres || book.categories) && (
                 <Box sx={{ mt: 1, mb: 1 }}>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                    <strong>Genres:</strong>
-                  </Typography>
                   {(book.enhancedGenres || book.categories || []).slice(0, 4).map((genre, index) => (
                     <Chip 
                       key={index} 
@@ -226,8 +233,8 @@ export default function BookPreview({
               
               {book.description && (
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                  {book.description.substring(0, 200)}
-                  {book.description.length > 200 && '...'}
+                  {book.description.substring(0, isSmallScreen ? 100 : 200)}
+                  {book.description.length > (isSmallScreen ? 100 : 200) && '...'}
                 </Typography>
               )}
               
@@ -251,7 +258,7 @@ export default function BookPreview({
       </Card>
 
       {/* Tags input */}
-      <Box sx={{ mb: 2 }}>
+      <Box sx={{ mb: { xs: 1.5, sm: 2 } }}>
         <TextField
           fullWidth
           size="small"
