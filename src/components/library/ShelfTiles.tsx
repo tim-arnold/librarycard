@@ -1,6 +1,7 @@
 'use client'
 
 import { Box, Typography, Button } from '@mui/material'
+import { LibraryBooks } from '@mui/icons-material'
 import { isAdmin } from '@/lib/permissions'
 
 interface Shelf {
@@ -41,7 +42,7 @@ export default function ShelfTiles({
   return (
     <Box sx={{ mb: 3 }}>
       <Typography variant="h6" gutterBottom>
-        📚 My Shelves
+        <LibraryBooks sx={{ mr: 1, verticalAlign: 'middle' }} /> My Shelves
       </Typography>
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 1, mt: 1 }}>
         {/* All Shelves tile */}

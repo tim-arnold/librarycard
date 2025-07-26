@@ -28,6 +28,7 @@ import {
   Shelves,
   Cancel,
   Save,
+  Home,
 } from '@mui/icons-material'
 import ConfirmationModal from '../modals/ConfirmationModal'
 import AlertModal from '../modals/AlertModal'
@@ -501,7 +502,7 @@ export default function LocationManager() {
       <Container maxWidth="xl" sx={{ py: 2 }}>
         <Paper sx={{ p: 3 }}>
           <Typography variant="h4" component="h2" gutterBottom>
-            🏠 Locations
+            <Home sx={{ mr: 1, verticalAlign: 'middle' }} /> Locations
           </Typography>
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 4 }}>
             <CircularProgress sx={{ mr: 2 }} />
@@ -518,16 +519,16 @@ export default function LocationManager() {
     <Container maxWidth="xl" sx={{ py: 2 }}>
       <Paper sx={{ p: 3 }}>
         <Typography variant="h4" component="h2" gutterBottom>
-          🏠 Locations
+          <Home sx={{ mr: 1, verticalAlign: 'middle' }} /> Locations
         </Typography>
         
         {error && (
           <Alert 
-            severity={error.startsWith('✅') ? 'success' : 'error'} 
+            severity={error.includes('success') || error.includes('Success') ? 'success' : 'error'} 
             sx={{ mb: 2 }}
             onClose={() => setError('')}
           >
-            {error.replace('✅ ', '')}
+            {error}
           </Alert>
         )}
 
