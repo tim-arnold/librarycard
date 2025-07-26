@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { Alert, Typography, Box, CircularProgress } from '@mui/material'
+import { LibraryBooks, MenuBook } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
 import { useModal } from '@/hooks/useModal'
 import { useBookLibrary } from '@/hooks/useBookLibrary'
@@ -301,7 +302,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 8 }}>
           <CircularProgress size={60} sx={{ mb: 3 }} />
           <Typography variant="h5" component="h2" gutterBottom>
-            📚 Loading Your Library
+            <LibraryBooks sx={{ mr: 1 }} /> Loading Your Library
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ textAlign: 'center', maxWidth: 400 }}>
             Please wait while we fetch your books, shelves, and settings...
@@ -345,7 +346,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
         {books.length === 0 ? (
           <Alert 
             severity="info" 
-            icon={<Typography sx={{ fontSize: '1.5rem' }}>📚</Typography>}
+            icon={<LibraryBooks />}
             sx={{ mb: 3, textAlign: 'center' }}
           >
             <Typography variant="h6" gutterBottom>
@@ -363,15 +364,15 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
           >
             {shelves.length <= 1 ? (
               <Typography variant="body2">
-                📖 <strong>Your Library:</strong> Use search and category filters to find what you&apos;re looking for.{!isAdmin(userRole) && ' Click &quot;Request Removal&quot; to submit requests to an administrator.'}
+                <MenuBook sx={{ mr: 1, verticalAlign: 'middle' }} /> <strong>Your Library:</strong> Use search and category filters to find what you&apos;re looking for.{!isAdmin(userRole) && ' Click &quot;Request Removal&quot; to submit requests to an administrator.'}
               </Typography>
             ) : isAdmin(userRole) ? (
               <Typography variant="body2">
-                🔧 <strong>Admin View:</strong> {books.length} books across {allLocations.length} location{allLocations.length !== 1 ? 's' : ''} and {shelves.length} shelves.
+                <strong>Admin View:</strong> {books.length} books across {allLocations.length} location{allLocations.length !== 1 ? 's' : ''} and {shelves.length} shelves.
               </Typography>
             ) : (
               <Typography variant="body2">
-                📚 <strong>Your Collection:</strong> Browse your {books.length} books across {shelves.length} shelves. Click shelf tiles to filter, or use the search bar to find specific titles. Click &quot;Request Removal&quot; to submit requests to an administrator.
+                <LibraryBooks sx={{ mr: 1, verticalAlign: 'middle' }} /> <strong>Your Collection:</strong> Browse your {books.length} books across {shelves.length} shelves. Click shelf tiles to filter, or use the search bar to find specific titles. Click &quot;Request Removal&quot; to submit requests to an administrator.
               </Typography>
             )}
           </Alert>

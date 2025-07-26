@@ -19,7 +19,7 @@ import {
   Divider,
   CircularProgress,
 } from '@mui/material'
-import { ExpandMore, History, Email, Star } from '@mui/icons-material'
+import { ExpandMore, History, Email, Star, MenuBook } from '@mui/icons-material'
 import type { EnhancedBook, BookRating } from '@/lib/types'
 import { isAdmin } from '@/lib/permissions'
 import { useSession } from 'next-auth/react'
@@ -129,7 +129,7 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole }: Mo
   return (
     <Dialog open={isOpen} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>
-        📖 More Details: {book.title}
+        <MenuBook sx={{ mr: 1, verticalAlign: 'middle' }} /> More Details: {book.title}
       </DialogTitle>
       <DialogContent>
         <Box sx={{ py: 1 }}>
