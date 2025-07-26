@@ -25,8 +25,6 @@ import AlertModal from '@/components/modals/AlertModal'
 import Footer from '@/components/layout/Footer'
 import { useModal } from '@/hooks/useModal'
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
-
 interface Location {
   id: number
   name: string
@@ -68,7 +66,7 @@ export default function LocationsPage() {
     try {
       if (!session?.user?.email) return
       
-      const response = await fetch(`${API_BASE}/api/locations`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/locations`, {
         headers: {
           'Authorization': `Bearer ${session.user.email}`,
           'Content-Type': 'application/json',
@@ -106,7 +104,7 @@ export default function LocationsPage() {
         variant: 'error'
       },
       async () => {
-        const response = await fetch(`${API_BASE}/api/locations/${locationId}/leave`, {
+        const response = await fetch(`${getApiBaseUrl()}/api/locations/${locationId}/leave`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${session?.user?.email}`,
