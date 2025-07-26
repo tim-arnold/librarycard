@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
+import { getApiBaseUrl } from '@/lib/apiConfig'
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
@@ -11,7 +10,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const response = await fetch(`${API_BASE}/api/users/check?email=${encodeURIComponent(email)}`)
+    const response = await fetch(`${getApiBaseUrl()}/api/users/check?email=${encodeURIComponent(email)}`)
     
     if (response.ok) {
       const data = await response.json()
