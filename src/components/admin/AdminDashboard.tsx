@@ -29,8 +29,7 @@ import AdminNotificationCenter from './AdminNotificationCenter'
 import AdminSignupManager from './AdminSignupManager'
 import LocationManager from './LocationManager'
 import { Container, Paper } from '@mui/material'
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
+import { getApiBaseUrl } from '@/lib/apiConfig'
 
 const TAB_NAMES = ['overview', 'analytics', 'users', 'locations', 'signup-requests', 'notifications']
 const TAB_INDEX_MAP: { [key: string]: number } = {
@@ -95,7 +94,7 @@ export default function AdminDashboard({ initialTab }: AdminDashboardProps = {})
 
     try {
       setLoading(true)
-      const response = await fetch(`${API_BASE}/api/admin/analytics`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/admin/analytics`, {
         headers: {
           'Authorization': `Bearer ${session.user.email}`,
           'Content-Type': 'application/json',
