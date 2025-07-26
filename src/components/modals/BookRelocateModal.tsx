@@ -20,6 +20,7 @@ import {
   MenuItem,
   CircularProgress,
 } from '@mui/material'
+import { LocationOn, LibraryBooks } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
@@ -212,7 +213,7 @@ export default function BookRelocateModal({
                             }
                           }}
                         >
-                          📍 {location.name}
+                          <LocationOn sx={{ mr: 1, verticalAlign: 'middle' }} /> {location.name}
                         </MenuItem>,
                         ...locationShelves.map(shelf => (
                           <MenuItem 
@@ -220,7 +221,7 @@ export default function BookRelocateModal({
                             value={shelf.id} 
                             sx={{ pl: 3 }}
                           >
-                            📚 {shelf.name}
+                            <LibraryBooks sx={{ mr: 1, verticalAlign: 'middle', fontSize: 'inherit' }} /> {shelf.name}
                           </MenuItem>
                         ))
                       ]

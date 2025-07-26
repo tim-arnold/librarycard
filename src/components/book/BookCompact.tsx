@@ -8,7 +8,7 @@ import {
   Chip,
   Button,
 } from '@mui/material'
-import { Info, Star, Edit } from '@mui/icons-material'
+import { Info, Star, Edit, MenuBook } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
 import BookActions from './BookActions'
 import { getDisplayGenres } from '@/lib/genreUtils'
@@ -124,7 +124,7 @@ export default function BookList({
               }}
               onClick={() => onCoverEdit && userPermissions.includes('can_add_books') && onCoverEdit(book)}
               >
-                📖
+                <MenuBook />
               </Box>
             )}
             
@@ -354,7 +354,7 @@ export default function BookList({
                     color="text.primary"
                     sx={{ fontWeight: 500, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
                   >
-                    📖 Checked out by {book.checked_out_by === currentUserId ? 'you' : (book.checked_out_by_name || 'Unknown')}
+                    <MenuBook sx={{ mr: 1, verticalAlign: 'middle', fontSize: 'inherit' }} /> Checked out by {book.checked_out_by === currentUserId ? 'you' : (book.checked_out_by_name || 'Unknown')}
                     {book.checked_out_date && (() => {
                       const checkoutDate = new Date(book.checked_out_date)
                       const today = new Date()

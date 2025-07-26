@@ -28,6 +28,7 @@ import {
   LocationOn,
   History,
   Settings,
+  CreditCard,
 } from '@mui/icons-material'
 import Footer from './Footer'
 import HelpModal from '@/components/modals/HelpModal'
@@ -213,7 +214,7 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
       <AppBar position="static" color="primary">
         <Toolbar>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-            📚 LibraryCard
+            <CreditCard sx={{ mr: 1, verticalAlign: 'middle' }} /> LibraryCard
           </Typography>
           
           <Typography variant="body2" sx={{ mr: 2 }}>

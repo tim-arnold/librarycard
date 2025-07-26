@@ -20,6 +20,9 @@ import {
   Email,
   PersonAdd,
   Login,
+  LibraryBooks,
+  CheckCircle,
+  CreditCard,
 } from '@mui/icons-material'
 import Footer from '@/components/layout/Footer'
 import { Turnstile, TurnstileInstance } from '@marsidev/react-turnstile'
@@ -35,7 +38,7 @@ function SignInForm() {
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [error, setError] = useState('')
-  const [message, setMessage] = useState('')
+  const [message, setMessage] = useState<string | React.ReactNode>('')
   const [invitationToken, setInvitationToken] = useState<string | null>(null)
   const [invitationDetails, setInvitationDetails] = useState<{invited_email: string, location_name: string} | null>(null)
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
@@ -69,7 +72,12 @@ function SignInForm() {
       const data = await response.json()
 
       if (response.ok) {
-        setMessage(`✅ Successfully joined ${data.location_name}! Redirecting...`)
+        setMessage(
+          <Box component="span" sx={{ display: 'flex', alignItems: 'center' }}>
+            <CheckCircle sx={{ mr: 1 }} />
+            Successfully joined {data.location_name}! Redirecting...
+          </Box>
+        )
         setTimeout(() => {
           router.push('/')
         }, 2000)
@@ -374,7 +382,7 @@ function SignInForm() {
     <Container maxWidth="sm" sx={{ py: 4 }}>
       <Paper sx={{ p: 4, textAlign: 'center' }}>
         <Typography variant="h3" component="h1" gutterBottom sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-          📚 LibraryCard
+          <CreditCard sx={{ mr: 1, verticalAlign: 'middle' }} /> LibraryCard
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
           Sign in to start managing your book collection
@@ -411,7 +419,7 @@ function SignInForm() {
           </Alert>
         )}
 
-        {!showEmailForm && !showRegisterForm && !showForgotPasswordForm && !message.includes('verification') && (
+        {!showEmailForm && !showRegisterForm && !showForgotPasswordForm && !(typeof message === 'string' && message.includes('verification')) && (
           <Box sx={{ width: '100%' }}>
             <Button
               onClick={handleGoogleSignIn}

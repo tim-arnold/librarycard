@@ -6,7 +6,7 @@ import {
   Button, 
   CircularProgress 
 } from '@mui/material'
-import { Refresh } from '@mui/icons-material'
+import { Refresh, LibraryBooks, MenuBook } from '@mui/icons-material'
 import { isAdmin } from '@/lib/permissions'
 
 interface Location {
@@ -45,24 +45,49 @@ export default function LibraryHeader({
   // Generate title based on user role and current filters
   const getLibraryTitle = () => {
     if (isAdmin(userRole)) {
-      return `📚 ${locationFilter} (${filteredBooksCount} books)`
+      return (
+        <Box component="span" sx={{ display: 'flex', alignItems: 'center' }}>
+          <LibraryBooks sx={{ mr: 1 }} />
+          {locationFilter} ({filteredBooksCount} books)
+        </Box>
+      )
     }
     
     if (!currentLocation) {
-      return `📖 My Library (${totalBooksCount} books)`
+      return (
+        <Box component="span" sx={{ display: 'flex', alignItems: 'center' }}>
+          <MenuBook sx={{ mr: 1 }} />
+          My Library ({totalBooksCount} books)
+        </Box>
+      )
     }
     
     if (shelvesCount <= 1) {
       // Single shelf - show location and shelf name
       const shelfName = 'Main Library' // This would need to be passed as a prop if we need the actual shelf name
-      return `📖 ${currentLocation.name}: ${shelfName} (${totalBooksCount} books)`
+      return (
+        <Box component="span" sx={{ display: 'flex', alignItems: 'center' }}>
+          <MenuBook sx={{ mr: 1 }} />
+          {currentLocation.name}: {shelfName} ({totalBooksCount} books)
+        </Box>
+      )
     }
     
     // Multiple shelves - show current filter or "All Shelves"
     if (shelfFilter) {
-      return `📖 ${currentLocation.name}: ${shelfFilter} (${filteredBooksCount} books)`
+      return (
+        <Box component="span" sx={{ display: 'flex', alignItems: 'center' }}>
+          <MenuBook sx={{ mr: 1 }} />
+          {currentLocation.name}: {shelfFilter} ({filteredBooksCount} books)
+        </Box>
+      )
     } else {
-      return `📖 ${currentLocation.name}: All Shelves (${totalBooksCount} books)`
+      return (
+        <Box component="span" sx={{ display: 'flex', alignItems: 'center' }}>
+          <MenuBook sx={{ mr: 1 }} />
+          {currentLocation.name}: All Shelves ({totalBooksCount} books)
+        </Box>
+      )
     }
   }
 
