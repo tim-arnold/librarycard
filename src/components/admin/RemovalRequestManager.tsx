@@ -23,6 +23,8 @@ import {
   Inbox,
   Delete,
   Email,
+  Assignment,
+  LocationOn,
 } from '@mui/icons-material'
 import ConfirmationModal from '../modals/ConfirmationModal'
 import AlertModal from '../modals/AlertModal'
@@ -354,7 +356,7 @@ export default function RemovalRequestManager() {
       <Container maxWidth="xl" sx={{ py: 2 }}>
         <Paper sx={{ p: 3 }}>
           <Typography variant="h4" component="h2" gutterBottom>
-            📋 Requests
+            <Assignment sx={{ mr: 1, verticalAlign: 'middle' }} /> Requests
           </Typography>
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 4 }}>
             <CircularProgress sx={{ mr: 2 }} />
@@ -372,7 +374,7 @@ export default function RemovalRequestManager() {
       <Paper sx={{ p: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
           <Typography variant="h4" component="h2">
-            📋  Requests ({filteredRequests.length})
+            <Assignment sx={{ mr: 1, verticalAlign: 'middle' }} /> Requests ({filteredRequests.length})
           </Typography>
           <Button 
             variant="outlined"
@@ -427,7 +429,7 @@ export default function RemovalRequestManager() {
               py: 4
             }}
           >
-            <Typography sx={{ fontSize: '2rem', mb: 1 }}>📭</Typography>
+            <Inbox sx={{ fontSize: '2rem', mb: 1, color: 'text.secondary' }} />
             <Typography variant="h6" color="text.secondary" gutterBottom>
               {filter === 'pending' ? 'No Pending Requests' : `No ${filter === 'all' ? '' : filter.charAt(0).toUpperCase() + filter.slice(1)} Requests`}
             </Typography>
@@ -464,7 +466,7 @@ export default function RemovalRequestManager() {
                         by {request.book_authors.join(', ')} • ISBN: {request.book_isbn}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        📍 Location: {request.location_name}
+                        <LocationOn sx={{ mr: 0.5, verticalAlign: 'middle', fontSize: 'inherit' }} /> Location: {request.location_name}
                       </Typography>
                     </Box>
                     

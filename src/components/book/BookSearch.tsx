@@ -36,6 +36,7 @@ import {
   Book,
   Public,
   AutoAwesome,
+  PhoneAndroid,
 } from '@mui/icons-material'
 import type { EnhancedBook, GoogleBookItem } from '@/lib/types'
 import { useBookSelection } from '@/contexts/BookSelectionContext'
@@ -562,7 +563,7 @@ export default function BookSearch({
         {!isMobile && (
           <Alert severity="info" sx={{ mt: 2 }}>
             <Typography variant="body2">
-              📱 To scan ISBN codes using your camera (and add books more quickly), use this site on your mobile phone!
+              <PhoneAndroid sx={{ mr: 1, verticalAlign: 'middle' }} /> To scan ISBN codes using your camera (and add books more quickly), use this site on your mobile phone!
             </Typography>
           </Alert>
         )}

@@ -27,6 +27,9 @@ import {
   Person,
   TrendingUp,
   Category,
+  BarChart,
+  LocationOn,
+  LibraryBooks,
 } from '@mui/icons-material'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
@@ -146,7 +149,7 @@ export default function AdminAnalytics() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h5" gutterBottom>
-          📊 Library Analytics
+          <BarChart sx={{ mr: 1, verticalAlign: 'middle' }} /> Library Analytics
         </Typography>
         <Typography variant="body2" color="text.secondary">
           Generated: {formatDate(analytics.generatedAt)}
@@ -158,8 +161,7 @@ export default function AdminAnalytics() {
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 3, mb: 3 }}>
           <Card>
             <CardHeader 
-              title="📍 Books per Location"
-              avatar={<MenuBook color="primary" />}
+              title={<><LocationOn sx={{ mr: 1, verticalAlign: 'middle' }} /> Books per Location</>}
             />
             <CardContent>
               {analytics.booksPerLocation.length === 0 ? (
@@ -202,8 +204,7 @@ export default function AdminAnalytics() {
 
           <Card>
             <CardHeader 
-              title="👥 Most Active Users"
-              avatar={<Person color="secondary" />}
+              title={<><Person sx={{ mr: 1, verticalAlign: 'middle' }} /> Most Active Users</>}
             />
             <CardContent>
               {analytics.activeUsers.length === 0 ? (
@@ -238,8 +239,7 @@ export default function AdminAnalytics() {
         <Box sx={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 3 }}>
           <Card>
             <CardHeader 
-              title="📚 Popular Genres"
-              avatar={<Category color="info" />}
+              title={<><LibraryBooks sx={{ mr: 1, verticalAlign: 'middle' }} /> Popular Genres</>}
             />
             <CardContent>
               {analytics.topGenres.length === 0 ? (
@@ -305,7 +305,7 @@ export default function AdminAnalytics() {
           </Card>
 
           <Card>
-            <CardHeader title="📈 Quick Stats" />
+            <CardHeader title={<><TrendingUp sx={{ mr: 1, verticalAlign: 'middle' }} /> Quick Stats</>} />
             <CardContent>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

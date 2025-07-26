@@ -19,6 +19,7 @@ import {
   MenuBook,
   Save,
   Cancel,
+  LibraryBooks,
 } from '@mui/icons-material'
 import { fetchEnhancedBookData, fetchEnhancedBookFromSearch } from '@/lib/bookApi'
 import type { EnhancedBook, CuratedGenre, GoogleBookItem } from '@/lib/types'
@@ -58,7 +59,7 @@ function MoreDetailsModal({ book, isOpen, onClose }: MoreDetailsModalProps) {
   return (
     <Dialog open={isOpen} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>
-        📖 More Details: {book.title}
+        <MenuBook sx={{ mr: 1 }} /> More Details: {book.title}
       </DialogTitle>
       <DialogContent>
         <Box sx={{ py: 1 }}>
@@ -703,7 +704,7 @@ try {
     <Container maxWidth="xl" sx={{ py: { xs: 1, sm: 2 } }}>
       <Paper sx={{ p: { xs: 2, sm: 3 } }}>
         <Typography variant="h4" component="h2" gutterBottom>
-          📚  Add Books
+          <LibraryBooks sx={{ mr: 1 }} /> Add Books
         </Typography>
 
         {/* Permission Warning */}

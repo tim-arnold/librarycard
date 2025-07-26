@@ -9,7 +9,7 @@ import {
   Chip,
   Button,
 } from '@mui/material'
-import { Info, Star, Edit, Image } from '@mui/icons-material'
+import { Info, Star, Edit, Image, MenuBook } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
 import { getDisplayGenres } from '@/lib/genreUtils'
 import BookActions from './BookActions'
@@ -264,7 +264,7 @@ export default function BookGrid({
             {book.status === 'checked_out' && (
               <Box sx={{ mt: 2, p: 1, border: 1, borderColor: 'warning.main', borderRadius: 1 }}>
                 <Typography variant="body2" color="text.primary" sx={{ fontWeight: 500 }}>
-                  📖 Checked out
+                  <MenuBook sx={{ mr: 1, verticalAlign: 'middle', fontSize: 'inherit' }} /> Checked out
                   {book.checked_out_date && (() => {
                     const checkoutDate = new Date(book.checked_out_date)
                     const today = new Date()
