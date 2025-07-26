@@ -11,6 +11,7 @@ import {
   CircularProgress,
   Typography,
 } from '@mui/material'
+import { LocationOn, LibraryBooks } from '@mui/icons-material'
 
 interface Location {
   id: number
@@ -128,7 +129,7 @@ export default function ShelfSelector({
               }
             }}
           >
-            📍 {location.name}
+            <LocationOn sx={{ mr: 1, verticalAlign: 'middle' }} /> {location.name}
           </MenuItem>,
           ...locationShelves.map(shelf => (
             <MenuItem 
@@ -136,7 +137,7 @@ export default function ShelfSelector({
               value={shelf.id} 
               sx={{ pl: 3 }}
             >
-              📚 {shelf.name}
+              <LibraryBooks sx={{ mr: 1, verticalAlign: 'middle', fontSize: 'inherit' }} /> {shelf.name}
             </MenuItem>
           ))
         ]
@@ -178,7 +179,12 @@ export default function ShelfSelector({
           {(() => {
             const selectedShelf = shelves.find(shelf => shelf.id === selectedShelfId)
             const selectedLocation = locations.find(loc => loc.id === selectedShelf?.location_id)
-            return selectedLocation ? `📍 ${selectedLocation.name}` : ''
+            return selectedLocation ? (
+              <Box component="span" sx={{ display: 'flex', alignItems: 'center' }}>
+                <LocationOn sx={{ mr: 1, fontSize: 'inherit' }} />
+                {selectedLocation.name}
+              </Box>
+            ) : ''
           })()}
         </Typography>
       )}

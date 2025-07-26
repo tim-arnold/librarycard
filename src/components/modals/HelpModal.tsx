@@ -30,6 +30,10 @@ import {
   Search,
   AccountCircle,
   AdminPanelSettings,
+  Star,
+  Sync,
+  Settings,
+  Warning,
 } from '@mui/icons-material'
 
 interface HelpModalProps {
@@ -133,14 +137,14 @@ export default function HelpModal({ open, onClose }: HelpModalProps) {
                     <ListItem>
                       <QrCodeScanner sx={{ mr: 2 }} />
                       <ListItemText
-                        primary="📱 Scan Books"
+                        primary="Scan Books"
                         secondary="Add new books to your library using camera or manual entry"
                       />
                     </ListItem>
                     <ListItem>
                       <LibraryBooks sx={{ mr: 2 }} />
                       <ListItemText
-                        primary="📖 My Library"
+                        primary="My Library"
                         secondary="Browse and manage your book collection"
                       />
                     </ListItem>
@@ -148,7 +152,7 @@ export default function HelpModal({ open, onClose }: HelpModalProps) {
                       <ListItem>
                         <LocationOn sx={{ mr: 2 }} />
                         <ListItemText
-                          primary="🏠 Location Management"
+                          primary="Location Management"
                           secondary="Organize your physical locations and shelves (Admin only)"
                         />
                       </ListItem>
@@ -170,7 +174,7 @@ export default function HelpModal({ open, onClose }: HelpModalProps) {
                   </Typography>
                   <List dense>
                     <ListItem>
-                      <ListItemText primary="1. Click '📱 Scan Books' tab" />
+                      <ListItemText primary="1. Click 'Scan Books' tab" />
                     </ListItem>
                     <ListItem>
                       <ListItemText primary="2. Click 'Start Camera Scanner' button" />
@@ -251,7 +255,7 @@ export default function HelpModal({ open, onClose }: HelpModalProps) {
                     </Typography>
                     <List dense>
                       <ListItem>
-                        <ListItemText primary="1. Click '🏠 Location Management' tab" />
+                        <ListItemText primary="1. Click 'Location Management' tab" />
                       </ListItem>
                       <ListItem>
                         <ListItemText primary="2. Click 'Create Your First Location' button" />
@@ -399,7 +403,7 @@ export default function HelpModal({ open, onClose }: HelpModalProps) {
                     Library Overview
                   </Typography>
                   <Typography variant="body1" gutterBottom>
-                    The &quot;📖 My Library&quot; section shows:
+                    The &quot;My Library&quot; section shows:
                   </Typography>
                   <List dense>
                     <ListItem>
@@ -753,7 +757,7 @@ export default function HelpModal({ open, onClose }: HelpModalProps) {
               <Accordion>
                 <AccordionSummary expandIcon={<ExpandMore />}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Typography variant="h6">⭐ Star Rating System</Typography>
+                    <Typography variant="h6"><Star sx={{ mr: 1, verticalAlign: 'middle' }} /> Star Rating System</Typography>
                   </Box>
                 </AccordionSummary>
                 <AccordionDetails>
@@ -821,7 +825,7 @@ export default function HelpModal({ open, onClose }: HelpModalProps) {
               <Accordion>
                 <AccordionSummary expandIcon={<ExpandMore />}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Typography variant="h6">📚 Book Cover Selection</Typography>
+                    <Typography variant="h6"><LibraryBooks sx={{ mr: 1, verticalAlign: 'middle' }} /> Book Cover Selection</Typography>
                   </Box>
                 </AccordionSummary>
                 <AccordionDetails>
@@ -883,7 +887,7 @@ export default function HelpModal({ open, onClose }: HelpModalProps) {
               <Accordion>
                 <AccordionSummary expandIcon={<ExpandMore />}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Typography variant="h6">🔄 Advanced Book Management</Typography>
+                    <Typography variant="h6"><Sync sx={{ mr: 1, verticalAlign: 'middle' }} /> Advanced Book Management</Typography>
                   </Box>
                 </AccordionSummary>
                 <AccordionDetails>
@@ -954,7 +958,7 @@ export default function HelpModal({ open, onClose }: HelpModalProps) {
               <Accordion>
                 <AccordionSummary expandIcon={<ExpandMore />}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Typography variant="h6">⚙️ Profile & Settings Updates</Typography>
+                    <Typography variant="h6"><Settings sx={{ mr: 1, verticalAlign: 'middle' }} /> Profile & Settings Updates</Typography>
                   </Box>
                 </AccordionSummary>
                 <AccordionDetails>
@@ -1265,7 +1269,7 @@ export default function HelpModal({ open, onClose }: HelpModalProps) {
 
                     <Alert severity="warning" sx={{ mt: 2 }}>
                       <Typography variant="subtitle2" gutterBottom>
-                        ⚠️ Super Admin Responsibility
+                        <Warning sx={{ mr: 1, verticalAlign: 'middle' }} /> Super Admin Responsibility
                       </Typography>
                       Super Admin privileges provide unrestricted access to all system functions. Use these capabilities responsibly and maintain the security and privacy of all users across the platform.
                     </Alert>
@@ -1283,7 +1287,7 @@ export default function HelpModal({ open, onClose }: HelpModalProps) {
               </Typography>
               <List dense>
                 <ListItem>
-                  <ListItemText primary="1. Go to '📖 My Library'" />
+                  <ListItemText primary="1. Go to 'My Library'" />
                 </ListItem>
                 <ListItem>
                   <ListItemText primary="2. Look for 'Export Library' button in the library controls" />

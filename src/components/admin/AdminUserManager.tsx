@@ -46,6 +46,8 @@ import {
   Cancel,
   Refresh,
   LocationOn,
+  LibraryBooks,
+  Warning,
 } from '@mui/icons-material'
 import ConfirmationModal from '../modals/ConfirmationModal'
 import AlertModal from '../modals/AlertModal'
@@ -1086,7 +1088,7 @@ export default function AdminUserManager() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h5" gutterBottom>
-          👥 User Management
+          <Person sx={{ mr: 1, verticalAlign: 'middle' }} /> User Management
         </Typography>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Button
@@ -1169,10 +1171,10 @@ export default function AdminUserManager() {
                       <TableCell align="right">
                         <Box sx={{ textAlign: 'right' }}>
                           <Typography variant="body2">
-                            📚 {user.books_added} books
+                            <LibraryBooks sx={{ mr: 0.5, verticalAlign: 'middle', fontSize: 'inherit' }} /> {user.books_added} books
                           </Typography>
                           <Typography variant="body2" color="text.secondary">
-                            📍 {formatLocationDisplay(user)}
+                            <LocationOn sx={{ mr: 0.5, verticalAlign: 'middle', fontSize: 'inherit' }} /> {formatLocationDisplay(user)}
                           </Typography>
                           {user.last_book_added && (
                             <Typography variant="caption" color="text.secondary">
@@ -1297,13 +1299,13 @@ export default function AdminUserManager() {
                           {invitation.invited_email}
                         </Typography>
                         <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                          📍 {invitation.location_name || `Location ${invitation.location_id}`}
+                          <LocationOn sx={{ mr: 0.5, verticalAlign: 'middle', fontSize: 'inherit' }} /> {invitation.location_name || `Location ${invitation.location_id}`}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
                           Sent: {formatInvitationDate(invitation.created_at)} by {invitation.invited_by_name || 'Admin'} | 
                           Expires: {formatInvitationDate(invitation.expires_at)}
                           {invitation.used_at && (
-                            <Box component="span" sx={{ color: 'success.main' }}> | ✅ Accepted</Box>
+                            <Box component="span" sx={{ color: 'success.main' }}> | <CheckCircle sx={{ fontSize: 'inherit', verticalAlign: 'middle' }} /> Accepted</Box>
                           )}
                         </Typography>
                       </Box>
@@ -1448,7 +1450,7 @@ export default function AdminUserManager() {
 
       {/* User Cleanup Dialog */}
       <Dialog open={cleanupDialogOpen} onClose={() => setCleanupDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>⚠️ Cleanup User Account</DialogTitle>
+        <DialogTitle><Warning sx={{ mr: 1, verticalAlign: 'middle' }} /> Cleanup User Account</DialogTitle>
         <DialogContent>
           <Typography variant="body1" paragraph>
             This action will permanently delete a user and ALL their associated data. Use with extreme caution.
@@ -1693,7 +1695,7 @@ export default function AdminUserManager() {
                     <ListItem key={index} sx={{ py: 0.5 }}>
                       <ListItemText
                         primary={result.email}
-                        secondary={result.success ? '✅ Sent successfully' : `❌ ${result.error}`}
+                        secondary={result.success ? <><CheckCircle sx={{ fontSize: 'inherit', verticalAlign: 'middle', mr: 0.5 }} /> Sent successfully</> : <>❌ {result.error}</>}
                         secondaryTypographyProps={{
                           color: result.success ? 'success.main' : 'error.main'
                         }}
@@ -1810,7 +1812,7 @@ export default function AdminUserManager() {
         maxWidth="md" 
         fullWidth
       >
-        <DialogTitle>📍 Manage Location Access</DialogTitle>
+        <DialogTitle><LocationOn sx={{ mr: 1, verticalAlign: 'middle' }} /> Manage Location Access</DialogTitle>
         <DialogContent>
           <Typography variant="body1" paragraph>
             Managing location access for <strong>{userForLocationAssignment?.first_name || userForLocationAssignment?.email}</strong>

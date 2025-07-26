@@ -12,6 +12,7 @@ import {
   PhotoCamera,
   Stop,
   Search,
+  PhoneAndroid,
 } from '@mui/icons-material'
 import { BrowserMultiFormatReader } from '@zxing/library'
 
@@ -298,7 +299,7 @@ export default function ISBNScanner({
       {isScanning && (
         <Box sx={{ mt: 2, textAlign: 'center' }}>
           <Typography variant="body1" color="primary" sx={{ mb: 2 }}>
-            📱 Point your camera at the ISBN barcode
+            <PhoneAndroid sx={{ mr: 1, verticalAlign: 'middle' }} /> Point your camera at the ISBN barcode
           </Typography>
           <Button 
             variant="outlined"

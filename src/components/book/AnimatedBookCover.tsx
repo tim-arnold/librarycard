@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Box, Fade, Zoom, Grow } from '@mui/material'
-import { Image } from '@mui/icons-material'
+import { Image, MenuBook } from '@mui/icons-material'
 
 interface AnimatedBookCoverProps {
   src?: string
@@ -106,7 +106,7 @@ export default function AnimatedBookCover({
             justifyContent: 'center',
             fontSize: '2rem'
           }}>
-            📖
+            <MenuBook />
           </Box>
         )}
       </Box>
@@ -141,7 +141,7 @@ export default function AnimatedBookCover({
               justifyContent: 'center',
               fontSize: '2rem'
             }}>
-              📖
+              <MenuBook />
             </Box>
           )}
         </Box>
@@ -172,7 +172,7 @@ export default function AnimatedBookCover({
               justifyContent: 'center',
               fontSize: '2rem'
             }}>
-              📖
+              <MenuBook />
             </Box>
           )}
         </Box>

@@ -33,6 +33,8 @@ import {
   Schedule,
   CheckCircle,
   Cancel,
+  Person,
+  Assignment,
 } from '@mui/icons-material'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
@@ -185,7 +187,7 @@ export default function AdminSignupManager() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h5" component="h2">
-          👤 Signup Request Management
+          <Person sx={{ mr: 1, verticalAlign: 'middle' }} /> Signup Request Management
         </Typography>
         <Button
           variant="outlined"
@@ -309,7 +311,7 @@ export default function AdminSignupManager() {
         <Box>
           <Divider sx={{ my: 3 }} />
           <Typography variant="h6" gutterBottom>
-            📋 Request History ({processedRequests.length})
+            <Assignment sx={{ mr: 1, verticalAlign: 'middle' }} /> Request History ({processedRequests.length})
           </Typography>
           
           <TableContainer component={Paper} variant="outlined">
@@ -355,7 +357,7 @@ export default function AdminSignupManager() {
       {/* Review Dialog */}
       <Dialog open={showReviewDialog} onClose={() => setShowReviewDialog(false)} maxWidth="sm" fullWidth>
         <DialogTitle>
-          {reviewAction === 'approve' ? '✅ Approve Signup Request' : '❌ Deny Signup Request'}
+          {reviewAction === 'approve' ? <><CheckCircle sx={{ mr: 1, verticalAlign: 'middle' }} /> Approve Signup Request</> : <><Cancel sx={{ mr: 1, verticalAlign: 'middle' }} /> Deny Signup Request</>}
         </DialogTitle>
         <DialogContent>
           {reviewRequest && (

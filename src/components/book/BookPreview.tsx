@@ -19,6 +19,8 @@ import {
   Save,
   Cancel,
   Info,
+  Warning,
+  MenuBook,
 } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
 import CoverSelectionModal from '../modals/CoverSelectionModal'
@@ -103,7 +105,7 @@ export default function BookPreview({
           sx={{ mb: 2 }}
         >
           <Typography variant="body2">
-            ⚠️ <strong>Duplicate Detected:</strong> This book appears to already be in your library. 
+            <Warning sx={{ mr: 1, verticalAlign: 'middle' }} /> <strong>Duplicate Detected:</strong> This book appears to already be in your library. 
             You can still add it if you have multiple copies or different editions.
           </Typography>
         </Alert>
@@ -148,7 +150,7 @@ export default function BookPreview({
                   }}
                   onClick={() => canSelectCover && setShowCoverSelection(true)}
                 >
-                  <Typography variant="h4" color="text.secondary">📖</Typography>
+                  <MenuBook sx={{ fontSize: '2rem', color: 'text.secondary' }} />
                 </Box>
               )}
             </Box>
