@@ -54,7 +54,6 @@ import AlertModal from '../modals/AlertModal'
 import { useModal } from '@/hooks/useModal'
 import { isAdmin, isSuperAdmin } from '@/lib/permissions'
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
 
 interface AdminUser {
   id: string
@@ -171,7 +170,7 @@ export default function AdminUserManager() {
 
     try {
       setLoading(true)
-      const response = await fetch(`${API_BASE}/api/admin/users`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/admin/users`, {
         headers: {
           'Authorization': `Bearer ${session.user.email}`,
           'Content-Type': 'application/json',
@@ -206,7 +205,7 @@ export default function AdminUserManager() {
 
   const loadUserAssignedLocations = async (userId: string) => {
     try {
-      const response = await fetch(`${API_BASE}/api/admin/users/${userId}/locations`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/admin/users/${userId}/locations`, {
         headers: {
           'Authorization': `Bearer ${session?.user?.email}`,
           'Content-Type': 'application/json',
@@ -229,7 +228,7 @@ export default function AdminUserManager() {
     if (!userForRoleChange) return
 
     try {
-      const response = await fetch(`${API_BASE}/api/admin/users/${userForRoleChange.id}/role`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/admin/users/${userForRoleChange.id}/role`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${session?.user?.email}`,
@@ -264,7 +263,7 @@ export default function AdminUserManager() {
   // Global permission functions
   const loadUserGlobalPermissions = async (userId: string) => {
     try {
-      const response = await fetch(`${API_BASE}/api/permissions/global?userId=${userId}`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/permissions/global?userId=${userId}`, {
         headers: {
           'Authorization': `Bearer ${session?.user?.email}`,
           'Content-Type': 'application/json',
@@ -285,7 +284,7 @@ export default function AdminUserManager() {
     if (!userForLocationAssignment) return
 
     try {
-      const response = await fetch(`${API_BASE}/api/permissions/global`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/permissions/global`, {
         method: currentlyHas ? 'DELETE' : 'POST',
         headers: {
           'Authorization': `Bearer ${session?.user?.email}`,
@@ -315,7 +314,7 @@ export default function AdminUserManager() {
     if (!userForLocationAssignment) return
 
     try {
-      const response = await fetch(`${API_BASE}/api/admin/users/${userForLocationAssignment.id}/locations/${locationId}`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/admin/users/${userForLocationAssignment.id}/locations/${locationId}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session?.user?.email}`,
@@ -325,7 +324,7 @@ export default function AdminUserManager() {
 
       if (response.ok) {
         // Get fresh location data
-        const locResponse = await fetch(`${API_BASE}/api/admin/users/${userForLocationAssignment.id}/locations`, {
+        const locResponse = await fetch(`${getApiBaseUrl()}/api/admin/users/${userForLocationAssignment.id}/locations`, {
           headers: {
             'Authorization': `Bearer ${session?.user?.email}`,
             'Content-Type': 'application/json',
@@ -375,7 +374,7 @@ export default function AdminUserManager() {
     if (!userForLocationAssignment) return
 
     try {
-      const response = await fetch(`${API_BASE}/api/admin/users/${userForLocationAssignment.id}/locations/${locationId}`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/admin/users/${userForLocationAssignment.id}/locations/${locationId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${session?.user?.email}`,
@@ -385,7 +384,7 @@ export default function AdminUserManager() {
 
       if (response.ok) {
         // Get fresh location data
-        const locResponse = await fetch(`${API_BASE}/api/admin/users/${userForLocationAssignment.id}/locations`, {
+        const locResponse = await fetch(`${getApiBaseUrl()}/api/admin/users/${userForLocationAssignment.id}/locations`, {
           headers: {
             'Authorization': `Bearer ${session?.user?.email}`,
             'Content-Type': 'application/json',
@@ -444,7 +443,7 @@ export default function AdminUserManager() {
         variant: newRole === 'admin' ? 'warning' : 'info'
       },
       async () => {
-        const response = await fetch(`${API_BASE}/api/admin/users/${userId}/role`, {
+        const response = await fetch(`${getApiBaseUrl()}/api/admin/users/${userId}/role`, {
           method: 'PUT',
           headers: {
             'Authorization': `Bearer ${session?.user?.email}`,
@@ -488,7 +487,7 @@ export default function AdminUserManager() {
 
     try {
       // First check if location ownership transfer is needed
-      const response = await fetch(`${API_BASE}/api/admin/cleanup-user`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/admin/cleanup-user`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session?.user?.email}`,
@@ -518,7 +517,7 @@ export default function AdminUserManager() {
           setSelectedOwners({})
           
           // Load available admins
-          const adminsResponse = await fetch(`${API_BASE}/api/admin/available-admins`, {
+          const adminsResponse = await fetch(`${getApiBaseUrl()}/api/admin/available-admins`, {
             headers: {
               'Authorization': `Bearer ${session?.user?.email}`,
               'Content-Type': 'application/json',
@@ -568,7 +567,7 @@ export default function AdminUserManager() {
 
     try {
       // First check if location ownership transfer is needed
-      const response = await fetch(`${API_BASE}/api/admin/cleanup-user`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/admin/cleanup-user`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session?.user?.email}`,
@@ -596,7 +595,7 @@ export default function AdminUserManager() {
           setSelectedOwners({})
           
           // Load available admins
-          const adminsResponse = await fetch(`${API_BASE}/api/admin/available-admins`, {
+          const adminsResponse = await fetch(`${getApiBaseUrl()}/api/admin/available-admins`, {
             headers: {
               'Authorization': `Bearer ${session?.user?.email}`,
               'Content-Type': 'application/json',
@@ -677,7 +676,7 @@ export default function AdminUserManager() {
         variant: 'error'
       },
       async () => {
-        const response = await fetch(`${API_BASE}/api/admin/cleanup-user`, {
+        const response = await fetch(`${getApiBaseUrl()}/api/admin/cleanup-user`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${session?.user?.email}`,
@@ -773,7 +772,7 @@ export default function AdminUserManager() {
       setInvitationsLoading(true)
       
       // First, get all locations the user has access to
-      const locationsResponse = await fetch(`${API_BASE}/api/locations`, {
+      const locationsResponse = await fetch(`${getApiBaseUrl()}/api/locations`, {
         headers: {
           'Authorization': `Bearer ${session.user.email}`,
           'Content-Type': 'application/json',
@@ -792,7 +791,7 @@ export default function AdminUserManager() {
       
       for (const location of locations) {
         try {
-          const invitationsResponse = await fetch(`${API_BASE}/api/locations/${location.id}/invitations`, {
+          const invitationsResponse = await fetch(`${getApiBaseUrl()}/api/locations/${location.id}/invitations`, {
             headers: {
               'Authorization': `Bearer ${session.user.email}`,
               'Content-Type': 'application/json',
@@ -829,7 +828,7 @@ export default function AdminUserManager() {
     if (!session?.user?.email) return
     
     try {
-      const response = await fetch(`${API_BASE}/api/locations`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/locations`, {
         headers: {
           'Authorization': `Bearer ${session.user.email}`,
           'Content-Type': 'application/json',
@@ -859,7 +858,7 @@ export default function AdminUserManager() {
     if (!session?.user?.email) return
     
     try {
-      const response = await fetch(`${API_BASE}/api/locations/${selectedLocationId}/invite`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/locations/${selectedLocationId}/invite`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.user.email}`,
@@ -927,7 +926,7 @@ export default function AdminUserManager() {
     // Send invitations one by one to get individual results
     for (const email of emailList) {
       try {
-        const response = await fetch(`${API_BASE}/api/locations/${selectedLocationId}/invite`, {
+        const response = await fetch(`${getApiBaseUrl()}/api/locations/${selectedLocationId}/invite`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${session.user.email}`,
@@ -989,7 +988,7 @@ export default function AdminUserManager() {
       async () => {
         if (!session?.user?.email) throw new Error('Not authenticated')
         
-        const response = await fetch(`${API_BASE}/api/invitations/${invitationId}/revoke`, {
+        const response = await fetch(`${getApiBaseUrl()}/api/invitations/${invitationId}/revoke`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${session.user.email}`,

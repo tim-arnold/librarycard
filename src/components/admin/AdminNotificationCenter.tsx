@@ -21,8 +21,7 @@ import {
   Event,
 } from '@mui/icons-material'
 import RemovalRequestManager from './RemovalRequestManager'
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
+import { getApiBaseUrl } from '@/lib/apiConfig'
 
 interface NotificationCounts {
   pendingRemovalRequests: number
@@ -54,7 +53,7 @@ export default function AdminNotificationCenter() {
 
     try {
       // Load analytics data to get pending requests count
-      const analyticsResponse = await fetch(`${API_BASE}/api/admin/analytics`, {
+      const analyticsResponse = await fetch(`${getApiBaseUrl()}/api/admin/analytics`, {
         headers: {
           'Authorization': `Bearer ${session.user.email}`,
           'Content-Type': 'application/json',

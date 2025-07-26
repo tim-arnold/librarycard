@@ -22,8 +22,7 @@ import {
 } from '@mui/material'
 import { LocationOn, LibraryBooks } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
+import { getApiBaseUrl } from '@/lib/apiConfig'
 
 interface Shelf {
   id: number
@@ -82,7 +81,7 @@ export default function BookRelocateModal({
       }
 
       // Create the new shelf
-      const response = await fetch(`${API_BASE}/api/locations/${locationId}/shelves`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/locations/${locationId}/shelves`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.user.email}`,

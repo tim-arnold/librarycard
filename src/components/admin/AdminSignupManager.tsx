@@ -36,8 +36,7 @@ import {
   Person,
   Assignment,
 } from '@mui/icons-material'
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
+import { getApiBaseUrl } from '@/lib/apiConfig'
 
 interface SignupRequest {
   id: number
@@ -77,7 +76,7 @@ export default function AdminSignupManager() {
 
     try {
       setLoading(true)
-      const response = await fetch(`${API_BASE}/api/signup-requests`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/signup-requests`, {
         headers: {
           'Authorization': `Bearer ${session.user.email}`,
           'Content-Type': 'application/json',
@@ -115,8 +114,8 @@ export default function AdminSignupManager() {
     try {
       setProcessingId(reviewRequest.id)
       const endpoint = reviewAction === 'approve' 
-        ? `${API_BASE}/api/signup-requests/${reviewRequest.id}/approve`
-        : `${API_BASE}/api/signup-requests/${reviewRequest.id}/deny`
+        ? `${getApiBaseUrl()}/api/signup-requests/${reviewRequest.id}/approve`
+        : `${getApiBaseUrl()}/api/signup-requests/${reviewRequest.id}/deny`
 
       const response = await fetch(endpoint, {
         method: 'POST',
