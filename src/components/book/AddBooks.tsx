@@ -45,8 +45,7 @@ import {
   DialogActions,
   Button,
 } from '@mui/material'
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
+import { getApiBaseUrl } from '@/lib/apiConfig'
 
 // More Details Modal Component
 interface MoreDetailsModalProps {
@@ -288,7 +287,7 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
     
     try {
       setLoadingData(true)
-      const locationsResponse = await fetch(`${API_BASE}/api/locations`, {
+      const locationsResponse = await fetch(`${getApiBaseUrl()}/api/locations`, {
         headers: {
           'Authorization': `Bearer ${session.user.email}`,
           'Content-Type': 'application/json',
@@ -301,7 +300,7 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
         // Load shelves for all locations
         const allShelvesData: Shelf[] = []
         for (const location of locationsData) {
-          const shelvesResponse = await fetch(`${API_BASE}/api/locations/${location.id}/shelves`, {
+          const shelvesResponse = await fetch(`${getApiBaseUrl()}/api/locations/${location.id}/shelves`, {
             headers: {
               'Authorization': `Bearer ${session.user.email}`,
               'Content-Type': 'application/json',
@@ -480,7 +479,7 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
           if (savedBook) {
             // Assign each selected genre to the book
             for (const genre of selectedGenres) {
-              const response = await fetch(`${API_BASE}/books/${savedBook.id}/genres`, {
+              const response = await fetch(`${getApiBaseUrl()}/books/${savedBook.id}/genres`, {
                 method: 'POST',
                 headers: { 
                   'Content-Type': 'application/json',
