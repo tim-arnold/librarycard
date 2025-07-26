@@ -80,7 +80,6 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
   }, [session])
 
   const loadUserData = async () => {
-    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
     
     try {
       // Fetch both user profile and locations in parallel to avoid race condition
@@ -91,7 +90,7 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
             'Content-Type': 'application/json',
           },
         }).then(res => res.json()),
-        fetch(`${API_BASE}/api/locations`, {
+        fetch(`${getApiBaseUrl()}/api/locations`, {
           headers: {
             'Authorization': `Bearer ${session?.user?.email}`,
             'Content-Type': 'application/json',
@@ -122,10 +121,9 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
   }
 
   const handleInvitationAcceptance = async (token: string) => {
-    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
     
     try {
-      const response = await fetch(`${API_BASE}/api/invitations/accept`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/invitations/accept`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session?.user?.email}`,

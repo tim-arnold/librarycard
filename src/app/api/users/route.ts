@@ -1,7 +1,6 @@
 import { getServerSession } from 'next-auth'
 import { NextRequest, NextResponse } from 'next/server'
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
+import { getApiBaseUrl } from '@/lib/apiConfig'
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession()
@@ -13,7 +12,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     
-    const response = await fetch(`${API_BASE}/api/users`, {
+    const response = await fetch(`${getApiBaseUrl()}/api/users`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

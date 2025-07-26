@@ -26,6 +26,7 @@ import {
 } from '@mui/icons-material'
 import Footer from '@/components/layout/Footer'
 import { Turnstile, TurnstileInstance } from '@marsidev/react-turnstile'
+import { getApiBaseUrl } from '@/lib/apiConfig'
 
 function SignInForm() {
   const [loading, setLoading] = useState(false)
@@ -49,8 +50,6 @@ function SignInForm() {
   const handleInvitationAcceptance = useCallback(async (token: string) => {
     setError('')
     
-    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
-    
     try {
       const session = await getSession()
       if (!session?.user?.email) {
@@ -58,7 +57,7 @@ function SignInForm() {
         return
       }
 
-      const response = await fetch(`${API_BASE}/api/invitations/accept`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/invitations/accept`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.user.email}`,
@@ -135,10 +134,8 @@ function SignInForm() {
 
 
   const fetchInvitationDetails = async (token: string) => {
-    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
-    
     try {
-      const response = await fetch(`${API_BASE}/api/invitations/details?token=${token}`)
+      const response = await fetch(`${getApiBaseUrl()}/api/invitations/details?token=${token}`)
       const data = await response.json()
       
       if (response.ok) {

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
+import { getApiBaseUrl } from '@/lib/apiConfig'
 
 function validatePasswordStrength(password: string): { isValid: boolean; error?: string } {
   const minLength = 8;
@@ -39,7 +38,7 @@ export async function POST(request: NextRequest) {
     // (Development mock disabled to use real worker authentication)
 
     // Call the workers API to verify credentials
-    const response = await fetch(`${API_BASE}/api/auth/verify`, {
+    const response = await fetch(`${getApiBaseUrl()}/api/auth/verify`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

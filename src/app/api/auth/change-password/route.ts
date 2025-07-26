@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
+import { getApiBaseUrl } from '@/lib/apiConfig'
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,7 +24,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Forward the request to the Cloudflare Worker
-    const response = await fetch(`${API_BASE}/api/auth/change-password`, {
+    const response = await fetch(`${getApiBaseUrl()}/api/auth/change-password`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

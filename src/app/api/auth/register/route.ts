@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
+import { getApiBaseUrl } from '@/lib/apiConfig'
 
 function validatePasswordStrength(password: string): { isValid: boolean; error?: string } {
   const minLength = 8;
@@ -92,7 +91,7 @@ export async function POST(request: NextRequest) {
     // }
 
     // Call the workers API to register user
-    const apiUrl = `${API_BASE}/api/auth/register`;
+    const apiUrl = `${getApiBaseUrl()}/api/auth/register`;
     
     const response = await fetch(apiUrl, {
       method: 'POST',

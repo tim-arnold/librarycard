@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
+import { getApiBaseUrl } from '@/lib/apiConfig'
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,7 +14,7 @@ export async function POST(request: NextRequest) {
 
     // Call the worker API to clear user cache
     try {
-      const response = await fetch(`${API_BASE}/api/auth/logout`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/auth/logout`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
