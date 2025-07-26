@@ -29,8 +29,7 @@ import {
 import ConfirmationModal from '../modals/ConfirmationModal'
 import AlertModal from '../modals/AlertModal'
 import { useModal } from '@/hooks/useModal'
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
+import { getApiBaseUrl } from '@/lib/apiConfig'
 
 interface BookRemovalRequest {
   id: number
@@ -64,7 +63,7 @@ export default function RemovalRequestManager() {
 
     try {
       setLoading(true)
-      const response = await fetch(`${API_BASE}/api/book-removal-requests`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/book-removal-requests`, {
         headers: {
           'Authorization': `Bearer ${session.user.email}`,
           'Content-Type': 'application/json',
@@ -107,7 +106,7 @@ export default function RemovalRequestManager() {
         variant: 'error'
       },
       async () => {
-        const response = await fetch(`${API_BASE}/api/book-removal-requests/${requestId}/approve`, {
+        const response = await fetch(`${getApiBaseUrl()}/api/book-removal-requests/${requestId}/approve`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${session?.user?.email}`,
@@ -151,7 +150,7 @@ export default function RemovalRequestManager() {
         variant: 'warning'
       },
       async () => {
-        const response = await fetch(`${API_BASE}/api/book-removal-requests/${requestId}/deny`, {
+        const response = await fetch(`${getApiBaseUrl()}/api/book-removal-requests/${requestId}/deny`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${session?.user?.email}`,
@@ -194,7 +193,7 @@ export default function RemovalRequestManager() {
         variant: 'info'
       },
       async () => {
-        const response = await fetch(`${API_BASE}/api/books/${bookId}/email-overdue-user`, {
+        const response = await fetch(`${getApiBaseUrl()}/api/books/${bookId}/email-overdue-user`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${session?.user?.email}`,
