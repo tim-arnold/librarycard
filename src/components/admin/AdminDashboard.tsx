@@ -21,6 +21,7 @@ import {
   LocationOn,
   Refresh,
   PersonAdd,
+  BarChart,
 } from '@mui/icons-material'
 import AdminAnalytics from './AdminAnalytics'
 import AdminUserManager from './AdminUserManager'
@@ -246,7 +247,7 @@ export default function AdminDashboard({ initialTab }: AdminDashboardProps = {})
             {activeTab === 0 && (
               <Box>
                 <Typography variant="h6" gutterBottom>
-                  📊 Dashboard Overview
+                  <BarChart sx={{ mr: 1, verticalAlign: 'middle' }} /> Dashboard Overview
                 </Typography>
                 <Typography variant="body1" color="text.secondary" paragraph>
                   Welcome to the LibraryCard admin dashboard. Use the tabs above to navigate between different administrative functions:

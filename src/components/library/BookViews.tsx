@@ -1,6 +1,7 @@
 'use client'
 
 import { Box, Typography, Pagination, Fade } from '@mui/material'
+import { LocationOn } from '@mui/icons-material'
 import BookGrid from '@/components/book/BookGrid'
 import BookCompact from '@/components/book/BookCompact'
 import BookList from '@/components/book/BookList'
@@ -114,7 +115,7 @@ export default function BookViews({
       alignItems: 'center'
     }}>
       <Typography variant="h6" sx={{ m: 0, fontSize: '1.1rem' }}>
-        📍 {location.name} ({(location.books || []).length} book{(location.books || []).length !== 1 ? 's' : ''})
+        <LocationOn sx={{ mr: 1, verticalAlign: 'middle' }} /> {location.name} ({(location.books || []).length} book{(location.books || []).length !== 1 ? 's' : ''})
       </Typography>
       {location.description && (
         <Typography variant="body2" color="text.secondary" sx={{ m: 0, fontStyle: 'italic' }}>

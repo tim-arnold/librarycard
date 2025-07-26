@@ -18,6 +18,7 @@ import {
   CheckCircle,
   Schedule,
   Refresh,
+  Event,
 } from '@mui/icons-material'
 import RemovalRequestManager from './RemovalRequestManager'
 
@@ -86,7 +87,7 @@ export default function AdminNotificationCenter() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h5" gutterBottom>
-          🔔 Notification Center
+          <Notifications sx={{ mr: 1, verticalAlign: 'middle' }} /> Notification Center
         </Typography>
         <Button
           variant="outlined"
@@ -237,7 +238,7 @@ export default function AdminNotificationCenter() {
                 This feature will track books that have been checked out for extended periods and require follow-up.
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                📅 Coming soon: Automatic detection of books checked out for more than 30 days
+                <Event sx={{ mr: 1, verticalAlign: 'middle' }} /> Coming soon: Automatic detection of books checked out for more than 30 days
               </Typography>
             </Box>
           )}
