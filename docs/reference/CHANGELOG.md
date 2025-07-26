@@ -2,6 +2,48 @@
 
 This file documents all completed features, fixes, and improvements to the LibraryCard project.
 
+## July 26, 2025 - API Architecture Consolidation & UI Standardization
+
+### API Base URL Consolidation - GitHub Issue #80 COMPLETE!
+- **IMPLEMENTED**: Centralized API base URL configuration using `getApiBaseUrl()` function from `@/lib/apiConfig`
+- **ELIMINATED**: All hardcoded `API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'` constants throughout the application
+- **CONSOLIDATED**: 20+ API base URL references across components, modals, admin panels, and API routes into single source of truth
+- **ENHANCED**: Consistent API endpoint resolution for better maintainability and environment configuration management
+- **UPDATED**: Auth utilities, admin components, modal components, layout components, and remaining API routes
+
+### Phase 1 Consolidation 
+- **UPDATED**: Core infrastructure including auth-utils.ts, AddBooks.tsx, library filters, API routes, and signin page
+- **REPLACED**: Hardcoded constants in critical authentication and book management workflows
+- **VERIFIED**: Build and functionality testing to ensure no regressions during consolidation
+
+### Phase 2 Completion
+- **FINALIZED**: All remaining admin components (Dashboard, UserManager, Analytics, SignupManager, NotificationCenter, RemovalRequestManager)
+- **CONSOLIDATED**: Modal components (BookRelocateModal), layout components (AppLayout), and remaining API routes
+- **ACHIEVED**: 100% elimination of hardcoded API_BASE constants with 48 insertions and 62 deletions (net -14 lines)
+- **MAINTAINED**: Existing `API_BASE_URL` import pattern for consistent function-based API configuration
+
+### Icon Standardization - GitHub Issue #110 COMPLETE! 
+- **STANDARDIZED**: Complete replacement of emoji icons with Material UI icons across entire application
+- **ENHANCED**: Professional and cohesive user interface with semantic icon choices
+- **IMPLEMENTED**: Consistent visual language using LibraryBooks, MenuBook, LocationOn, Person, Assignment, Settings, and other MUI icons
+- **IMPROVED**: Accessibility and screen reader support with proper icon semantics
+- **UPDATED**: 24 files with responsive icons that work well at all sizes
+- **ADOPTED**: CreditCard icon for LibraryCard app branding throughout the interface
+
+### Accessibility & User Experience Improvements
+- **ENHANCED**: Typography sizing for elderly users - body2 increased to 16px, body1 to 18px for better readability
+- **IMPROVED**: Responsive button sizing with larger fonts (18px) on mobile, standard (16px) on desktop
+- **OPTIMIZED**: Library grid layout with mobile auto-fit 350px minimum, tablet 2-column, desktop 3-column at 1200px+
+- **FIXED**: Add Books button layout with reversed order on mobile and full-width buttons on phones
+- **ADDED**: Better visual separation between genre selector and shelf selector components
+- **RESOLVED**: Mobile ADD GENRE button width issues with responsive sizing and padding
+
+### Bug Fixes & UI Polish
+- **FIXED**: Book search autoscroll behavior for better user navigation experience  
+- **RESOLVED**: Add Books UI stuck states that could prevent proper form submission
+- **IMPROVED**: Desktop container padding removal for better space utilization
+- **ENHANCED**: Button styling consistency and responsive behavior across all form components
+
 ## July 22, 2025 - Cross-Location Book Movement System
 
 ### Multi-Location User Book Management - GitHub Issue #73 COMPLETE!

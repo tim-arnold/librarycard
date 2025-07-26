@@ -1,6 +1,5 @@
 import { Session } from 'next-auth'
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
+import { getApiBaseUrl } from '@/lib/apiConfig'
 
 export interface AuthenticatedFetchOptions {
   method?: string
@@ -44,7 +43,7 @@ export async function authenticatedFetch<T = unknown>(
   }
 
   try {
-    const response = await fetch(`${API_BASE}${endpoint}`, fetchOptions)
+    const response = await fetch(`${getApiBaseUrl()}${endpoint}`, fetchOptions)
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))

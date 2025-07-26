@@ -31,8 +31,7 @@ import {
   LocationOn,
   LibraryBooks,
 } from '@mui/icons-material'
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
+import { getApiBaseUrl } from '@/lib/apiConfig'
 
 interface AnalyticsData {
   overview: {
@@ -80,7 +79,7 @@ export default function AdminAnalytics() {
 
     try {
       setLoading(true)
-      const response = await fetch(`${API_BASE}/api/admin/analytics`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/admin/analytics`, {
         headers: {
           'Authorization': `Bearer ${session.user.email}`,
           'Content-Type': 'application/json',

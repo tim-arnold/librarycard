@@ -5,6 +5,7 @@ import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Container, CircularProgress, Typography, Box } from '@mui/material'
 import BookLibrary from '@/components/library/BookLibrary'
+import { getApiBaseUrl } from '@/lib/apiConfig'
 import { slugToName, createSlugMap } from '@/lib/urlUtils'
 
 export default function FilteredLibraryPage() {
@@ -29,8 +30,7 @@ export default function FilteredLibraryPage() {
 
     const loadNamesForSlugConversion = async () => {
       try {
-        const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
-        const response = await fetch(`${API_BASE}/api/locations`, {
+        const response = await fetch(`${getApiBaseUrl()}/api/locations`, {
           headers: {
             'Authorization': `Bearer ${session.user.email}`,
             'Content-Type': 'application/json',
@@ -45,7 +45,7 @@ export default function FilteredLibraryPage() {
           // Load all shelf names
           const allShelfNames: string[] = []
           for (const location of locations) {
-            const shelvesResponse = await fetch(`${API_BASE}/api/locations/${location.id}/shelves`, {
+            const shelvesResponse = await fetch(`${getApiBaseUrl()}/api/locations/${location.id}/shelves`, {
               headers: {
                 'Authorization': `Bearer ${session.user.email}`,
                 'Content-Type': 'application/json',
