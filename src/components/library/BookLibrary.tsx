@@ -322,23 +322,6 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
           shelfFilter={shelfFilter}
           shelvesCount={shelves.length}
           allLocationsCount={allLocations.length}
-          isRefreshing={isRefreshing}
-          onRefresh={async () => {
-            const result = await handleManualRefresh()
-            if (result?.success) {
-              await alert({
-                title: 'Library Refreshed',
-                message: 'Your library has been refreshed with the latest data.',
-                variant: 'success'
-              })
-            } else {
-              await alert({
-                title: 'Refresh Failed',
-                message: 'Failed to refresh library. Please try again.',
-                variant: 'error'
-              })
-            }
-          }}
         />
 
         {/* Show welcome message only for empty libraries */}
@@ -395,12 +378,20 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
           onGenreRemove={handleGenreRemove}
           onLocationRemove={() => setLocationFilter('')}
           onCheckoutRemove={() => setCheckoutFilter('')}
+          onClearAll={() => {
+            setAuthorFilter('')
+            setShelfFilter('')
+            setCategoryFilter([])
+            setLocationFilter('')
+            setCheckoutFilter('')
+          }}
         />
 
         <ViewModeControls
           viewMode={viewMode}
           booksPerPage={booksPerPage}
           filteredBooksCount={filteredBooks.length}
+          totalBooksCount={books.length}
           onViewModeChange={handleViewModeChange}
           onBooksPerPageChange={handleBooksPerPageChange}
         />

@@ -11,8 +11,12 @@ import {
   IconButton,
   Checkbox,
   ListItemText,
+  Button,
+  Collapse,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material'
-import { Search, Sort, ArrowUpward, ArrowDownward } from '@mui/icons-material'
+import { Search, Sort, ArrowUpward, ArrowDownward, FilterList, ExpandMore, ExpandLess } from '@mui/icons-material'
 import { isAdmin } from '@/lib/permissions'
 
 export type SortField = 'title' | 'author' | 'publishedDate' | 'dateAdded'
@@ -75,6 +79,9 @@ export default function BookFilters({
   allCategories,
 }: BookFiltersProps) {
   const [genreSelectOpen, setGenreSelectOpen] = useState(false)
+  const [filtersExpanded, setFiltersExpanded] = useState(false)
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
   
   // Memoize filtered shelves to prevent re-rendering
   const filteredShelves = useMemo(() => {
@@ -156,9 +163,19 @@ export default function BookFilters({
     return counts
   }, [books, locationFilter, shelfFilter, shelves, allLocations, allCategories])
   
+  // Count active filters for mobile display
+  const activeFiltersCount = [
+    locationFilter,
+    shelfFilter,
+    checkoutFilter,
+    categoryFilter.length > 0 ? 'genre' : '',
+    'sort' // Always consider sort as "active" since it always has a value
+  ].filter(Boolean).length
+
   return (
-    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
-      <Box sx={{ flex: '1 1 200px', minWidth: 200 }}>
+    <Box sx={{ mb: 3 }}>
+      {/* Search bar - always visible */}
+      <Box sx={{ mb: 2 }}>
         <TextField
           fullWidth
           size="small"
@@ -172,6 +189,23 @@ export default function BookFilters({
           }}
         />
       </Box>
+
+      {/* Mobile filter toggle button */}
+      {isMobile && (
+        <Button
+          variant="outlined"
+          startIcon={<FilterList />}
+          endIcon={filtersExpanded ? <ExpandLess /> : <ExpandMore />}
+          onClick={() => setFiltersExpanded(!filtersExpanded)}
+          sx={{ mb: 2, width: '100%' }}
+        >
+          Filters {activeFiltersCount > 0 && `(${activeFiltersCount})`}
+        </Button>
+      )}
+
+      {/* Filters container - collapsible on mobile, always visible on desktop */}
+      <Collapse in={!isMobile || filtersExpanded}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
       
       {isAdmin(userRole) && allLocations.length > 1 && (
         <Box sx={{ flex: '1 1 200px', minWidth: 200 }} key="location-filter">
@@ -312,6 +346,8 @@ export default function BookFilters({
           {sortDirection === 'asc' ? <ArrowUpward /> : <ArrowDownward />}
         </IconButton>
       </Box>
+        </Box>
+      </Collapse>
     </Box>
   )
 }
