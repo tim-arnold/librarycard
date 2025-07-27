@@ -466,9 +466,22 @@ export function useBookFilters({
     })
 
     setFilteredBooks(filtered)
-    // Reset to first page when filters or sorting change
-    setCurrentPage(1)
   }, [books, searchTerm, shelfFilter, categoryFilter, locationFilter, checkoutFilter, authorFilter, userRole, shelves, allLocations, userLocations, currentLocation, sortField, sortDirection])
+
+  // Separate effect to reset pagination only when filter criteria change (not when book data changes)
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, shelfFilter, categoryFilter, locationFilter, checkoutFilter, authorFilter, sortField, sortDirection])
+
+  // Ensure current page is valid when filtered books change (but don't reset unnecessarily)
+  useEffect(() => {
+    if (filteredBooks.length > 0) {
+      const maxPage = Math.ceil(filteredBooks.length / booksPerPage)
+      if (currentPage > maxPage) {
+        setCurrentPage(maxPage)
+      }
+    }
+  }, [filteredBooks.length, booksPerPage, currentPage])
 
   // Pagination functions
   const getPaginatedBooks = (books: EnhancedBook[]) => {
