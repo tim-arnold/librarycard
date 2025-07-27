@@ -2,11 +2,9 @@
 
 import { 
   Box, 
-  Typography, 
-  Button, 
-  CircularProgress 
+  Typography
 } from '@mui/material'
-import { Refresh, LibraryBooks, MenuBook } from '@mui/icons-material'
+import { LibraryBooks, MenuBook } from '@mui/icons-material'
 import { isAdmin } from '@/lib/permissions'
 
 interface Location {
@@ -26,8 +24,6 @@ interface LibraryHeaderProps {
   shelfFilter: string
   shelvesCount: number
   allLocationsCount: number
-  isRefreshing: boolean
-  onRefresh: () => void
 }
 
 export default function LibraryHeader({
@@ -38,9 +34,7 @@ export default function LibraryHeader({
   totalBooksCount,
   shelfFilter,
   shelvesCount,
-  allLocationsCount,
-  isRefreshing,
-  onRefresh
+  allLocationsCount
 }: LibraryHeaderProps) {
   // Generate title based on user role and current filters
   const getLibraryTitle = () => {
@@ -92,20 +86,10 @@ export default function LibraryHeader({
   }
 
   return (
-    <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <Box sx={{ mb: 3 }}>
       <Typography variant="h4" component="h2">
         {getLibraryTitle()}
       </Typography>
-      <Button
-        variant="outlined"
-        startIcon={isRefreshing ? <CircularProgress size={20} /> : <Refresh />}
-        onClick={onRefresh}
-        disabled={isRefreshing}
-        size="small"
-        sx={{ minWidth: 110 }}
-      >
-        {isRefreshing ? 'Refreshing...' : 'Refresh'}
-      </Button>
     </Box>
   )
 }
