@@ -1,6 +1,7 @@
 'use client'
 
-import { Box, Chip } from '@mui/material'
+import { Box, Chip, Button } from '@mui/material'
+import { ClearAll } from '@mui/icons-material'
 
 interface ActiveFiltersProps {
   authorFilter: string
@@ -14,6 +15,7 @@ interface ActiveFiltersProps {
   onGenreRemove: (genre: string) => void
   onLocationRemove: () => void
   onCheckoutRemove: () => void
+  onClearAll?: () => void
 }
 
 export default function ActiveFilters({
@@ -27,7 +29,8 @@ export default function ActiveFilters({
   onShelfRemove,
   onGenreRemove,
   onLocationRemove,
-  onCheckoutRemove
+  onCheckoutRemove,
+  onClearAll
 }: ActiveFiltersProps) {
   const hasActiveFilters = authorFilter || shelfFilter || categoryFilter.length > 0 || locationFilter || checkoutFilter
 
@@ -36,7 +39,8 @@ export default function ActiveFilters({
   }
 
   return (
-    <Box sx={{ mb: 3, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+    <Box sx={{ mb: 3 }}>
+      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
       {authorFilter && (
         <Chip
           label={`Author: ${authorFilter}`}
@@ -113,6 +117,20 @@ export default function ActiveFilters({
           }}
         />
       )}
+        
+        {/* Clear All button */}
+        {onClearAll && (
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<ClearAll />}
+            onClick={onClearAll}
+            sx={{ ml: 1 }}
+          >
+            Clear All
+          </Button>
+        )}
+      </Box>
     </Box>
   )
 }
