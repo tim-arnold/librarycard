@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { Alert, Typography, Box, CircularProgress } from '@mui/material'
-import { LibraryBooks, MenuBook } from '@mui/icons-material'
+import { LibraryBooks } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
 import { useModal } from '@/hooks/useModal'
 import { useBookLibrary } from '@/hooks/useBookLibrary'
@@ -20,7 +20,6 @@ import MoreDetailsModal from '../modals/MoreDetailsModal'
 import BookRelocateModal from '../modals/BookRelocateModal'
 import LibraryHeader from './LibraryHeader'
 import ActiveFilters from './ActiveFilters'
-import ShelfTiles from './ShelfTiles'
 import ViewModeControls from './ViewModeControls'
 import BookViews from './BookViews'
 import PageContainer from '../layout/PageContainer'
@@ -342,8 +341,8 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
           }}
         />
 
-        {/* Contextual help text based on user role and library state */}
-        {books.length === 0 ? (
+        {/* Show welcome message only for empty libraries */}
+        {books.length === 0 && (
           <Alert 
             severity="info" 
             icon={<LibraryBooks />}
@@ -356,36 +355,8 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
               Your library is empty. Head over to the <strong>ISBN Scanner</strong> to add your first book!
             </Typography>
           </Alert>
-        ) : (
-          <Alert 
-            severity="info" 
-            variant="outlined"
-            sx={{ mb: 3 }}
-          >
-            {shelves.length <= 1 ? (
-              <Typography variant="body2">
-                <MenuBook sx={{ mr: 1, verticalAlign: 'middle' }} /> <strong>Your Library:</strong> Use search and category filters to find what you&apos;re looking for.{!isAdmin(userRole) && ' Click &quot;Request Removal&quot; to submit requests to an administrator.'}
-              </Typography>
-            ) : isAdmin(userRole) ? (
-              <Typography variant="body2">
-                <strong>Admin View:</strong> {books.length} books across {allLocations.length} location{allLocations.length !== 1 ? 's' : ''} and {shelves.length} shelves.
-              </Typography>
-            ) : (
-              <Typography variant="body2">
-                <LibraryBooks sx={{ mr: 1, verticalAlign: 'middle' }} /> <strong>Your Collection:</strong> Browse your {books.length} books across {shelves.length} shelves. Click shelf tiles to filter, or use the search bar to find specific titles. Click &quot;Request Removal&quot; to submit requests to an administrator.
-              </Typography>
-            )}
-          </Alert>
         )}
 
-        <ShelfTiles
-          userRole={userRole}
-          shelves={isAdmin(userRole) ? shelves : shelves.filter(shelf => currentLocation && shelf.location_id === currentLocation.id)}
-          books={filteredBooks}
-          shelfFilter={shelfFilter}
-          onShelfTileClick={(shelfName) => setShelfFilter(shelfFilter === shelfName ? '' : shelfName)}
-          onAllShelvesClick={() => setShelfFilter('')}
-        />
 
         <BookFilters
           searchTerm={searchTerm}
@@ -404,6 +375,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
           setSortDirection={handleSortDirectionChange}
           userRole={userRole || ''}
           shelves={isAdmin(userRole) ? shelves : shelves.filter(shelf => currentLocation && shelf.location_id === currentLocation.id)}
+          books={books}
           allLocations={allLocations}
           userLocations={userLocations}
           currentLocation={currentLocation}

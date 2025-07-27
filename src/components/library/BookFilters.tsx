@@ -35,6 +35,14 @@ interface BookFiltersProps {
   setSortDirection: (direction: SortDirection) => void
   userRole: string
   shelves: Array<{ id: number; name: string; location_id: number }>
+  books: Array<{ 
+    shelf_name?: string; 
+    categories?: string[]; 
+    subjects?: string[];
+    enhancedGenres?: string[];
+    assignedGenres?: Array<{name: string}>;
+    [key: string]: any 
+  }>
   allLocations: Array<{ id: number; name: string }>
   userLocations?: Array<{ id: number; name: string }>
   currentLocation?: { id: number; name: string } | null
@@ -59,6 +67,7 @@ export default function BookFilters({
   setSortDirection,
   userRole,
   shelves,
+  books,
   allLocations,
   userLocations,
   currentLocation,
@@ -76,6 +85,76 @@ export default function BookFilters({
         })
       : shelves
   }, [shelves, allLocations, locationFilter])
+
+  // Calculate book counts per shelf
+  const shelfBookCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    books.forEach(book => {
+      if (book.shelf_name) {
+        counts[book.shelf_name] = (counts[book.shelf_name] || 0) + 1
+      }
+    })
+    return counts
+  }, [books])
+
+  // Calculate genre counts based on currently filtered books (excluding genre filter itself)
+  const genreBookCounts = useMemo(() => {
+    // Filter books by location and shelf, but not by genre or search terms
+    const filteredForGenreCounts = books.filter(book => {
+      // Apply location filter
+      if (locationFilter) {
+        const shelf = shelves.find(s => s.name === book.shelf_name)
+        if (shelf) {
+          const location = allLocations.find(loc => loc.id === shelf.location_id)
+          if (location?.name !== locationFilter) {
+            return false
+          }
+        }
+      }
+      
+      // Apply shelf filter
+      if (shelfFilter && book.shelf_name !== shelfFilter) {
+        return false
+      }
+      
+      return true
+    })
+
+    // Count how many books match each genre from allCategories
+    const counts: Record<string, number> = {}
+    
+    allCategories.forEach(genre => {
+      counts[genre] = filteredForGenreCounts.filter(book => {
+        // Check assigned genres first (these are user-selected and highest priority)
+        if (book.assignedGenres) {
+          const curatedLower = genre.toLowerCase()
+          const hasMatch = book.assignedGenres.some(assignedGenre => assignedGenre.name.toLowerCase() === curatedLower)
+          if (hasMatch) {
+            return true
+          }
+        }
+        
+        // Check enhanced genres (these are already curated) - use case-insensitive matching
+        if (book.enhancedGenres) {
+          const curatedLower = genre.toLowerCase()
+          const hasMatch = book.enhancedGenres.some(enhancedGenre => enhancedGenre.toLowerCase() === curatedLower)
+          if (hasMatch) {
+            return true
+          }
+        }
+        
+        // For raw categories and subjects, use simple matching
+        const rawGenres = [...(book.categories || []), ...(book.subjects || [])]
+        return rawGenres.some(rawGenre => {
+          const rawLower = rawGenre.toLowerCase()
+          const curatedLower = genre.toLowerCase()
+          return rawLower.includes(curatedLower) || curatedLower.includes(rawLower)
+        })
+      }).length
+    })
+    
+    return counts
+  }, [books, locationFilter, shelfFilter, shelves, allLocations, allCategories])
   
   return (
     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
@@ -138,9 +217,14 @@ export default function BookFilters({
               onChange={(e) => setShelfFilter(e.target.value)}
             >
               <MenuItem value="">All shelves</MenuItem>
-              {filteredShelves.map(shelf => (
-                <MenuItem key={shelf.id} value={shelf.name}>{shelf.name}</MenuItem>
-              ))}
+              {filteredShelves.map(shelf => {
+                const bookCount = shelfBookCounts[shelf.name] || 0
+                return (
+                  <MenuItem key={shelf.id} value={shelf.name}>
+                    {shelf.name} ({bookCount})
+                  </MenuItem>
+                )
+              })}
             </Select>
           </FormControl>
         </Box>
@@ -179,12 +263,15 @@ export default function BookFilters({
               selected.length === 0 ? 'All genres' : `${selected.length} selected`
             }
           >
-            {allCategories.map(genre => (
-              <MenuItem key={genre} value={genre}>
-                <Checkbox checked={categoryFilter.includes(genre)} />
-                <ListItemText primary={genre} />
-              </MenuItem>
-            ))}
+            {allCategories.map(genre => {
+              const genreCount = genreBookCounts[genre] || 0
+              return (
+                <MenuItem key={genre} value={genre}>
+                  <Checkbox checked={categoryFilter.includes(genre)} />
+                  <ListItemText primary={`${genre} (${genreCount})`} />
+                </MenuItem>
+              )
+            })}
           </Select>
         </FormControl>
       </Box>
