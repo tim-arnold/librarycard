@@ -134,9 +134,39 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole }: Mo
       <DialogContent>
         <Box sx={{ py: 1 }}>
           {/* Cover Image and Description Section */}
-          <Box sx={{ display: 'flex', gap: 3, mb: 3 }}>
-            {/* Main content area */}
-            <Box sx={{ flex: 1 }}>
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: { xs: 'column', sm: 'row' },
+            gap: 3, 
+            mb: 3 
+          }}>
+            {/* Cover Image - Shows first on mobile, right on desktop */}
+            {book.thumbnail && (
+              <Box sx={{ 
+                flexShrink: 0,
+                order: { xs: 1, sm: 2 },
+                alignSelf: { xs: 'center', sm: 'flex-start' }
+              }}>
+                <img
+                  src={book.thumbnail}
+                  alt={`Cover of ${book.title}`}
+                  style={{
+                    width: '120px',
+                    height: 'auto',
+                    maxHeight: '180px',
+                    objectFit: 'cover',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                  }}
+                />
+              </Box>
+            )}
+            
+            {/* Main content area - Shows second on mobile, left on desktop */}
+            <Box sx={{ 
+              flex: 1,
+              order: { xs: 2, sm: 1 }
+            }}>
               {/* Basic Description */}
               {book.description && (
                 <Box sx={{ mb: 3 }}>
@@ -160,24 +190,6 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole }: Mo
                 </Box>
               )}
             </Box>
-            
-            {/* Cover Image */}
-            {book.thumbnail && (
-              <Box sx={{ flexShrink: 0 }}>
-                <img
-                  src={book.thumbnail}
-                  alt={`Cover of ${book.title}`}
-                  style={{
-                    width: '120px',
-                    height: 'auto',
-                    maxHeight: '180px',
-                    objectFit: 'cover',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
-                  }}
-                />
-              </Box>
-            )}
           </Box>
           
           {/* User Reviews Section */}
