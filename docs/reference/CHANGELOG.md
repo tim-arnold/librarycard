@@ -2,6 +2,28 @@
 
 This file documents all completed features, fixes, and improvements to the LibraryCard project.
 
+## July 27, 2025 - Library UI Mobile Optimization & User Experience Improvements
+
+### Mobile-First Library Interface - GitHub Issue #114 COMPLETE!
+- **ELIMINATED**: Shelf tiles component entirely (was confusing and took excessive space on mobile)
+- **IMPLEMENTED**: Dynamic book counts in shelf filter dropdown (e.g., "Fiction (24)") 
+- **ADDED**: Dynamic genre counts in genre filter that update based on location/shelf filters
+- **REMOVED**: Verbose library info panel to save vertical space (kept welcome message for empty libraries)
+- **ENHANCED**: Mobile-responsive library header with stacked layout on small screens
+- **OPTIMIZED**: Genre counting logic to check all genre sources (assignedGenres, enhancedGenres, categories, subjects)
+
+### Advanced Mobile Filter System
+- **CREATED**: Collapsible filters toggle for mobile devices (< md breakpoint) with "Filters" button showing active count
+- **IMPROVED**: Mobile-responsive ViewModeControls with vertical stacking and icon-only view mode buttons
+- **ADDED**: "Clear All Filters" button to ActiveFilters component for quick filter reset
+- **IMPLEMENTED**: Filtered book count display ("Showing X of Y books" when filters active)
+- **STREAMLINED**: Search bar always visible with advanced filters collapsible on mobile
+
+### User Experience Simplification
+- **REMOVED**: Refresh button from library header (unnecessary in modern web applications)
+- **ENHANCED**: Clean, distraction-free interface focused on core book browsing functionality
+- **OPTIMIZED**: Touch-friendly targets and progressive disclosure for mobile users
+
 ## July 26, 2025 - API Architecture Consolidation & UI Standardization
 
 ### API Base URL Consolidation - GitHub Issue #80 COMPLETE!
