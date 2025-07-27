@@ -77,15 +77,25 @@ A personal book collection management app that allows you to scan ISBN barcodes 
    npm install
    \`\`\`
 
-2. Start the development server:
+2. Set up local database with sample data:
    \`\`\`bash
-   npm run dev
+   cp .env.example .env.local
+   node scripts/setup-local-db.js
    \`\`\`
 
-3. For local API development:
+3. Start development servers:
    \`\`\`bash
-   wrangler dev workers/index.ts
+   # Terminal 1: Frontend
+   npm run dev
+   
+   # Terminal 2: Worker API
+   npx wrangler dev --local
    \`\`\`
+
+The setup script will automatically:
+- Initialize the database schema
+- Apply all migrations
+- Seed with sample users, locations, and 60 books
 
 ## Component Architecture
 
