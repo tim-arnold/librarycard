@@ -92,20 +92,28 @@ export default function LibraryHeader({
   }
 
   return (
-    <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-      <Typography variant="h4" component="h2">
-        {getLibraryTitle()}
-      </Typography>
-      <Button
-        variant="outlined"
-        startIcon={isRefreshing ? <CircularProgress size={20} /> : <Refresh />}
-        onClick={onRefresh}
-        disabled={isRefreshing}
-        size="small"
-        sx={{ minWidth: 110 }}
-      >
-        {isRefreshing ? 'Refreshing...' : 'Refresh'}
-      </Button>
+    <Box sx={{ mb: 3 }}>
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', sm: 'row' },
+        justifyContent: 'space-between', 
+        alignItems: { xs: 'flex-start', sm: 'center' },
+        gap: { xs: 2, sm: 0 }
+      }}>
+        <Typography variant="h4" component="h2">
+          {getLibraryTitle()}
+        </Typography>
+        <Button
+          variant="outlined"
+          startIcon={isRefreshing ? <CircularProgress size={20} /> : <Refresh />}
+          onClick={onRefresh}
+          disabled={isRefreshing}
+          size="small"
+          sx={{ minWidth: 110, alignSelf: { xs: 'flex-start', sm: 'auto' } }}
+        >
+          {isRefreshing ? 'Refreshing...' : 'Refresh'}
+        </Button>
+      </Box>
     </Box>
   )
 }
