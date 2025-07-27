@@ -30,6 +30,13 @@ Create a pull request following LibraryCard standards:
   - Include the GitHub issue link if working on a specific issue
 - Return the PR URL for easy access
 
+## GitHub Issue Updates
+If working on a specific GitHub issue, update it with progress:
+- Use `gh issue comment [issue-number]` to add a status update comment
+- Include summary of changes implemented, technical details, and PR link
+- Mark issue resolution status (✅ Issue Resolved, 🚧 In Progress, etc.)
+- Provide clear documentation for future reference
+
 ## Quality Checks
 Before finalizing, ensure code quality:
 - Run `npm run build` to verify the build succeeds
