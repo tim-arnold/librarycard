@@ -17,19 +17,33 @@ cd librarycard
 npm install
 ```
 
-### 3. Set Up Environment
+### 3. Set Up Local Development Environment
 
 ```bash
+# Copy environment template
 cp .env.example .env.local
+
+# Set up local database with sample data
+node scripts/setup-local-db.js
 ```
 
-### 4. Start Development Server
+This automated setup will:
+- Initialize the database schema
+- Apply all migrations
+- Seed with 4 sample users and 3 locations
+- Add 60 sample books (20 per location, across 2 shelves each)
+
+### 4. Start Development Servers
 
 ```bash
+# In terminal 1: Start Next.js frontend
 npm run dev
+
+# In terminal 2: Start Cloudflare Worker backend
+npx wrangler dev --local
 ```
 
-Visit `http://localhost:3000` to see the app running locally.
+Visit `http://localhost:3000` to see the app running locally with full sample data.
 
 ## Local vs Production Setup
 
