@@ -75,11 +75,33 @@ All destructive database scripts must include:
 
 ### 7. Recommended Development Workflow
 
-1. **Local Development**: Use `seed-local-data.js` for local testing
-2. **Staging Testing**: Use `seed-staging-data.js` for staging demos
+1. **Local Development**: Use `seed-local-data.js` for local testing (includes comprehensive safety checks)
+2. **Staging Testing**: Use `seed-staging-data.js` for staging demos (includes comprehensive safety checks)
 3. **Production**: Create separate production-specific scripts with enhanced safety measures
 
-### 8. Production Database Operations
+### 8. Script Safety Features
+
+Both `seed-local-data.js` and `seed-staging-data.js` now include comprehensive safety measures:
+
+#### ✅ Multi-Layer Protection
+- **Database Connection Verification**: Tests target database before execution
+- **Environment Variable Checks**: Prevents execution with `NODE_ENV=production`
+- **Script Content Scanning**: Detects dangerous database references in script code
+- **Command-Line Validation**: Prevents accidental staging/production targeting with CLI flags
+
+#### ✅ Local Script Safety Features (`seed-local-data.js`)
+- Hardcoded to target `libarycard-db-local` only
+- Prevents `--env staging` or `--env production` usage
+- Scans for staging/production database references in script
+- Requires `--local` flag for wrangler d1 commands
+
+#### ✅ Staging Script Safety Features (`seed-staging-data.js`)  
+- Hardcoded to target `librarycard-db-staging` only
+- Multiple environment verification layers
+- Production database ID detection and prevention
+- Comprehensive safety warnings and confirmations
+
+### 9. Production Database Operations
 
 For production database changes:
 - Create migration scripts instead of seed scripts
