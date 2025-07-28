@@ -1,7 +1,16 @@
 #!/usr/bin/env node
 
 /**
- * Enhanced Local Development Data Seeding Script
+ * ⚠️  LOCAL DEVELOPMENT DATA SEEDING SCRIPT ⚠️
+ * 
+ * 🚨 CRITICAL WARNING: This script DELETES ALL DATA and reseeds the database!
+ * 🚨 ONLY for local development - NEVER run against staging or production!
+ * 
+ * Safety features:
+ * - Hardcoded to local database only (libarycard-db-local)
+ * - Multiple environment checks to prevent production accidents
+ * - Explicit database name validation before execution
+ * - Command-line argument validation to prevent staging/production targeting
  * 
  * This script seeds the local development database with comprehensive sample data:
  * - Multiple users (admin, regular user, super admin)
@@ -10,6 +19,11 @@
  * - 20 books per location (10 books per shelf)
  * - Rich book metadata with covers, descriptions, ratings
  * - Sample checkout history and ratings
+ * 
+ * Usage: node scripts/seed-local-data.js
+ * 
+ * For staging seeding, use scripts/seed-staging-data.js
+ * For production seeding, create a separate production-safe script!
  */
 
 const { execSync } = require('child_process');
@@ -1107,6 +1121,62 @@ function main() {
     logError('wrangler.toml not found. Please run this script from the project root.');
     process.exit(1);
   }
+  
+  // CRITICAL SAFETY CHECK: Prevent accidental production runs
+  log(`${colors.bright}${colors.yellow}⚠️  SAFETY CHECK: Verifying local development environment...${colors.reset}`);
+  
+  // SAFETY: Verify we're targeting local database
+  const targetDatabase = 'libarycard-db-local';
+  const stagingDatabase = 'librarycard-db-staging';
+  const productionDatabase = 'librarycard-db';
+  
+  try {
+    // Test connection to local database
+    execSync(`npx wrangler d1 execute ${targetDatabase} --local --command "SELECT 1"`, { stdio: 'pipe' });
+    log(`✅ Confirmed targeting local database: ${targetDatabase}`, 'green');
+  } catch (error) {
+    logError(`SAFETY ERROR: Could not connect to local database '${targetDatabase}'`);
+    logError('This script is designed ONLY for local development environment');
+    logError('Ensure wrangler.toml is configured and local database exists');
+    process.exit(1);
+  }
+  
+  // DOUBLE SAFETY: Explicit production environment check
+  if (process.env.NODE_ENV === 'production') {
+    logError('CRITICAL SAFETY ERROR: NODE_ENV=production detected!');
+    logError('This seed script must NEVER run in production environment');
+    logError('Production data seeding requires separate production-safe scripts');
+    process.exit(1);
+  }
+  
+  // TRIPLE SAFETY: Check for production/staging database references in script
+  const scriptContent = require('fs').readFileSync(__filename, 'utf8');
+  
+  if (scriptContent.includes(productionDatabase) && !scriptContent.includes('productionDatabase =')) {
+    logError('CRITICAL SAFETY ERROR: Production database references detected in script!');
+    logError('Script contains production database identifiers - this is unsafe');
+    logError('Local script should only reference local development database');
+    process.exit(1);
+  }
+  
+  if (scriptContent.includes(stagingDatabase) && !scriptContent.includes('stagingDatabase =')) {
+    logError('CRITICAL SAFETY ERROR: Staging database references detected in script!');
+    logError('Script contains staging database identifiers - this is unsafe');
+    logError('Local script should only reference local development database');
+    process.exit(1);
+  }
+  
+  // QUADRUPLE SAFETY: Verify we're not accidentally using staging/production flags
+  const commandLineArgs = process.argv.join(' ');
+  if (commandLineArgs.includes('--env staging') || commandLineArgs.includes('--env production')) {
+    logError('CRITICAL SAFETY ERROR: Staging or production environment flags detected!');
+    logError('Local seed script should only use --local flag, never --env staging or --env production');
+    logError('Command line: ' + commandLineArgs);
+    process.exit(1);
+  }
+  
+  log('✅ Safety checks passed - proceeding with local development seeding', 'green');
+  log('');
   
   const startTime = Date.now();
   
