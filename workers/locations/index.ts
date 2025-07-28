@@ -38,16 +38,50 @@ export async function getUserLocations(userId: string, env: Env, corsHeaders: Re
   
   let stmt;
   if (isSuperAdmin) {
-    // Super admins can see all locations
+    // Super admins can see all locations with counts and owner info
     stmt = env.DB.prepare(`
-      SELECT * FROM locations l
+      SELECT 
+        l.*,
+        COALESCE(shelf_counts.shelf_count, 0) as shelf_count,
+        COALESCE(book_counts.book_count, 0) as book_count,
+        u.first_name || ' ' || u.last_name as owner_name
+      FROM locations l
+      LEFT JOIN users u ON l.owner_id = u.id
+      LEFT JOIN (
+        SELECT location_id, COUNT(*) as shelf_count 
+        FROM shelves 
+        GROUP BY location_id
+      ) shelf_counts ON l.id = shelf_counts.location_id
+      LEFT JOIN (
+        SELECT s.location_id, COUNT(b.id) as book_count
+        FROM shelves s
+        LEFT JOIN books b ON s.id = b.shelf_id
+        GROUP BY s.location_id
+      ) book_counts ON l.id = book_counts.location_id
       ORDER BY l.created_at DESC
     `);
   } else {
-    // Regular users see only locations they own or are members of
+    // Regular users see only locations they own or are members of with counts
     stmt = env.DB.prepare(`
-      SELECT DISTINCT l.* FROM locations l
+      SELECT DISTINCT 
+        l.*,
+        COALESCE(shelf_counts.shelf_count, 0) as shelf_count,
+        COALESCE(book_counts.book_count, 0) as book_count,
+        u.first_name || ' ' || u.last_name as owner_name
+      FROM locations l
+      LEFT JOIN users u ON l.owner_id = u.id
       LEFT JOIN location_members lm ON l.id = lm.location_id
+      LEFT JOIN (
+        SELECT location_id, COUNT(*) as shelf_count 
+        FROM shelves 
+        GROUP BY location_id
+      ) shelf_counts ON l.id = shelf_counts.location_id
+      LEFT JOIN (
+        SELECT s.location_id, COUNT(b.id) as book_count
+        FROM shelves s
+        LEFT JOIN books b ON s.id = b.shelf_id
+        GROUP BY s.location_id
+      ) book_counts ON l.id = book_counts.location_id
       WHERE l.owner_id = ? OR lm.user_id = ?
       ORDER BY l.created_at DESC
     `);
@@ -263,9 +297,17 @@ export async function getLocationShelves(locationId: number, userId: string, env
   }
 
   const stmt = env.DB.prepare(`
-    SELECT * FROM shelves
-    WHERE location_id = ? 
-    ORDER BY name
+    SELECT 
+      s.*,
+      COALESCE(book_counts.book_count, 0) as book_count
+    FROM shelves s
+    LEFT JOIN (
+      SELECT shelf_id, COUNT(*) as book_count 
+      FROM books 
+      GROUP BY shelf_id
+    ) book_counts ON s.id = book_counts.shelf_id
+    WHERE s.location_id = ? 
+    ORDER BY s.name
   `);
 
   const result = await stmt.bind(locationId).all();
