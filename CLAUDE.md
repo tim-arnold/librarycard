@@ -61,17 +61,25 @@ npm run lint
 
 # Worker deployment
 npm run deploy:staging               # Deploy to staging (safe)
-npm run deploy:prod                  # Deploy to production (SAFE - requires confirmations)
+npm run deploy:prod                  # Deploy to production (SAFE - requires confirmations + uses wrangler.prod.toml)
 
 # Database migrations  
 npx wrangler d1 execute librarycard-db-staging --file=migrations/migration.sql --env=staging --remote
-npm run migrate:prod                 # Production migrations (SAFE - with backup validation)
+npm run migrate:prod                 # Production migrations (SAFE - automated backup + validation)
+
+# Database backup operations (Phase 2)
+npm run backup:create                # Create manual production backup
+npm run backup:list                  # List all available backups  
+npm run backup:verify                # Verify backup integrity
+npm run backup:restore               # Emergency database restore (EXTREME CAUTION)
 
 # Environment validation
 npm run validate:env                 # Validate environment before production operations
 
-# CRITICAL SAFETY NOTES:
-# - NEVER use direct wrangler commands for production deployments
+# CRITICAL SAFETY NOTES (Updated Phase 2):
+# - NEVER use direct wrangler commands for production deployments/migrations
+# - Production operations use separate wrangler.prod.toml configuration
+# - All production database changes create automatic backups with verification
 # - ALWAYS use safety wrapper scripts (npm run deploy:prod, migrate:prod)
 # - All production operations require multiple confirmations
 # - Production scripts validate environment and create audit logs

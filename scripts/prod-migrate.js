@@ -120,34 +120,43 @@ class ProductionMigrator {
   async createBackup() {
     console.log('💾 Step 3: Creating Production Backup');
     
-    // Ensure backup directory exists
-    if (!existsSync(BACKUP_DIR)) {
-      execSync(`mkdir -p ${BACKUP_DIR}`);
-    }
-    
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const backupFile = `${BACKUP_DIR}/production-backup-${timestamp}.sql`;
-    
     try {
-      console.log('Creating database backup...');
+      console.log('Creating automated database backup...');
       
-      // For D1 databases, we need to export the data
-      // This is a simplified approach - in reality, D1 doesn't have a direct backup export
-      // We would need to implement a data export script or use Cloudflare's backup features
-      console.log('⚠️  Note: Automated D1 backup not implemented yet');
-      console.log('Please ensure you have verified that production data is backed up through Cloudflare');
+      // Import the backup system
+      const { DatabaseBackup } = require('./auto-backup.js');
+      const backupSystem = new DatabaseBackup();
       
-      const confirm = await this.askQuestion('Confirm that production backup exists (yes/no): ');
+      // Create backup with migration reason
+      const result = await backupSystem.createProductionBackup('pre-migration');
+      
+      this.logAudit(`BACKUP_CREATED: ${result.backupId} | Tables: ${result.metadata.total_tables} | Rows: ${result.metadata.total_rows}`);
+      
+      console.log('✅ Automated backup completed successfully');
+      console.log(`📁 Backup ID: ${result.backupId}`);
+      console.log(`📊 Backed up ${result.metadata.total_tables} tables with ${result.metadata.total_rows} rows\n`);
+      
+      // Verify the backup
+      console.log('🔍 Verifying backup integrity...');
+      await backupSystem.verifyBackup(result.backupId);
+      console.log('✅ Backup verification successful\n');
+      
+      return result.backupId;
+      
+    } catch (error) {
+      console.error('❌ Automated backup failed:', error.message);
+      console.log('\n⚠️  Fallback: Manual backup confirmation required');
+      
+      const confirm = await this.askQuestion('Confirm that production backup exists through other means (yes/no): ');
       if (confirm.toLowerCase() !== 'yes') {
         throw new Error('Cannot proceed without confirmed backup');
       }
       
-      this.logAudit(`BACKUP_CONFIRMED: ${timestamp} | Note: Manual backup verification`);
-      console.log('✅ Backup confirmed\n');
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      this.logAudit(`BACKUP_MANUAL_CONFIRMED: ${timestamp} | Note: Automated backup failed, manual confirmation provided`);
+      console.log('✅ Manual backup confirmation accepted\n');
       
-    } catch (error) {
-      console.error('❌ Backup creation failed');
-      throw error;
+      return `manual-${timestamp}`;
     }
   }
 
@@ -211,8 +220,8 @@ class ProductionMigrator {
       console.log(`Applying migration: ${migrationFile}`);
       console.log('This may take several minutes...\n');
       
-      // Execute the migration
-      const command = `npx wrangler d1 execute librarycard-db --file=migrations/${migrationFile} --env=production --remote`;
+      // Execute the migration using production-specific configuration
+      const command = `npx wrangler d1 execute librarycard-db --config=wrangler.prod.toml --file=migrations/${migrationFile} --env=production --remote`;
       execSync(command, { 
         stdio: 'inherit',
         cwd: process.cwd()
