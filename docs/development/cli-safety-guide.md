@@ -23,6 +23,7 @@ This guide provides safe procedures for production operations, preventing accide
 ❌ **DANGEROUS** (Never use):
 ```bash
 npx wrangler deploy --env=production
+npx wrangler deploy --config=wrangler.prod.toml --env=production
 ```
 
 ✅ **SAFE** (Always use):
@@ -35,6 +36,8 @@ node scripts/prod-deploy.js
 **What the safe script does**:
 - Validates you're on the main branch
 - Checks working directory is clean
+- Uses production-specific configuration (wrangler.prod.toml)
+- Verifies production-only environment isolation
 - Requires double confirmation
 - Logs all deployment attempts
 - Provides post-deployment checklist
@@ -44,6 +47,7 @@ node scripts/prod-deploy.js
 ❌ **DANGEROUS** (Never use):
 ```bash
 npx wrangler d1 execute librarycard-db --file=migrations/file.sql --env=production --remote
+npx wrangler d1 execute librarycard-db --config=wrangler.prod.toml --file=migrations/file.sql --env=production --remote
 ```
 
 ✅ **SAFE** (Always use):
@@ -56,10 +60,28 @@ node scripts/prod-migrate.js
 **What the safe script does**:
 - Lists available migration files
 - Validates SQL for dangerous operations
-- Confirms backup exists
+- Creates automatic database backup with verification
+- Uses production-specific configuration (wrangler.prod.toml)
 - Shows migration preview
 - Requires triple confirmation
 - Provides rollback guidance
+
+### Database Backup Operations
+
+✅ **Available backup commands**:
+```bash
+npm run backup:create      # Create manual backup
+npm run backup:list        # List all available backups
+npm run backup:verify      # Verify backup integrity
+npm run backup:restore     # Restore from backup (EXTREME CAUTION)
+```
+
+**Backup features**:
+- Automated pre-migration backups
+- Complete data export with schema preservation
+- Backup verification and integrity checking
+- Timestamped backup storage with metadata
+- Emergency restore capability
 
 ### Environment Validation
 

@@ -14,6 +14,10 @@
     "deploy:prod": "node scripts/prod-deploy.js",
     "migrate:prod": "node scripts/prod-migrate.js",
     "validate:env": "node scripts/validate-environment.js",
+    "backup:create": "node scripts/auto-backup.js create",
+    "backup:list": "node scripts/auto-backup.js list",
+    "backup:verify": "node scripts/auto-backup.js verify",
+    "backup:restore": "node scripts/restore-backup.js",
     "deploy:staging": "wrangler deploy --env=staging"
   },
   "dependencies": {

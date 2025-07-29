@@ -60,18 +60,24 @@ class ProductionDeployer {
     }
     console.log('✅ Working directory clean');
     
-    // Check for wrangler.toml
-    if (!existsSync('./wrangler.toml')) {
-      throw new Error('wrangler.toml not found in current directory');
+    // Check for production-specific configuration
+    if (!existsSync('./wrangler.prod.toml')) {
+      throw new Error('wrangler.prod.toml not found - production configuration missing');
     }
-    console.log('✅ Configuration file found');
+    console.log('✅ Production configuration file found');
     
     // Verify production environment exists in config
-    const wranglerConfig = readFileSync('./wrangler.toml', 'utf8');
+    const wranglerConfig = readFileSync('./wrangler.prod.toml', 'utf8');
     if (!wranglerConfig.includes('[env.production]')) {
-      throw new Error('Production environment not configured in wrangler.toml');
+      throw new Error('Production environment not configured in wrangler.prod.toml');
     }
-    console.log('✅ Production environment configured\n');
+    console.log('✅ Production environment configured');
+    
+    // Verify this is production-only config
+    if (wranglerConfig.includes('[env.local]') || wranglerConfig.includes('[env.staging]')) {
+      throw new Error('Production config contains non-production environments - unsafe configuration');
+    }
+    console.log('✅ Production-only configuration verified\n');
   }
 
   async performPreChecks() {
@@ -130,8 +136,8 @@ class ProductionDeployer {
     try {
       console.log('Deploying to production...');
       
-      // Execute the actual deployment
-      execSync('npx wrangler deploy --env=production', { 
+      // Execute the actual deployment using production-specific configuration
+      execSync('npx wrangler deploy --config=wrangler.prod.toml --env=production', { 
         stdio: 'inherit',
         cwd: process.cwd()
       });

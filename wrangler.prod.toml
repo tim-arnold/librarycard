@@ -1,0 +1,55 @@
+# PRODUCTION-ONLY WRANGLER CONFIGURATION
+# 
+# This file is for PRODUCTION DEPLOYMENTS ONLY
+# It requires different command syntax to prevent accidental usage
+#
+# USAGE: wrangler deploy --config=wrangler.prod.toml --env=production
+#
+# CRITICAL SAFETY NOTES:
+# - This configuration ONLY contains production environment
+# - No local or staging environments to prevent accidents
+# - Requires explicit --config flag to use
+# - Should only be used by automated systems (GitHub Actions)
+# - Manual usage should go through safety wrapper scripts
+
+name = "librarycard-api-production"
+main = "workers/index.ts"
+compatibility_date = "2024-01-01"
+
+# PRODUCTION ACCOUNT ID - SEPARATE FROM DEVELOPMENT
+# This should be a different Cloudflare account for maximum isolation
+account_id = "4bef1453ad78da6e3bb7e83b421e26df"  # TODO: Replace with separate production account
+
+[vars]
+ENVIRONMENT = "production"
+APP_URL = "https://librarycard.tim52.io/"
+FROM_EMAIL = "LibraryCard <librarian@tim52.io>"
+
+# Production Database - LIVE DATA
+[[d1_databases]]
+binding = "DB"
+database_name = "librarycard-db"
+database_id = "368ab7bc-fb42-4607-a4cf-761dc7795284"
+
+# Production KV Cache
+[[kv_namespaces]]
+binding = "CACHE"
+id = "8f5a86fc82a64b10ba946d749f2dc8f4"
+
+# ONLY production environment - no local/staging to prevent confusion
+[env.production]
+name = "librarycard-api-production"
+
+[env.production.vars]
+ENVIRONMENT = "production"
+APP_URL = "https://librarycard.tim52.io/"
+FROM_EMAIL = "LibraryCard <librarian@tim52.io>"
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "librarycard-db"
+database_id = "368ab7bc-fb42-4607-a4cf-761dc7795284"
+
+[[env.production.kv_namespaces]]
+binding = "CACHE"
+id = "8f5a86fc82a64b10ba946d749f2dc8f4"
