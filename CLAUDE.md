@@ -60,7 +60,8 @@ npm run build
 npm run lint
 
 # Worker deployment
-npm run deploy:staging               # Deploy to staging (safe)
+npm run deploy:staging               # Deploy to staging (original account)
+npm run deploy:staging-new           # Deploy to staging (NEW isolated account)
 npm run deploy:prod                  # Deploy to production (SAFE - requires confirmations + uses wrangler.prod.toml)
 
 # Database migrations  
@@ -75,6 +76,11 @@ npm run backup:restore               # Emergency database restore (EXTREME CAUTI
 
 # Environment validation
 npm run validate:env                 # Validate environment before production operations
+
+# Required Environment Variables (.env.local):
+# CLOUDFLARE_API_TOKEN_STAGING_NEW=your-token  # For staging environment in new isolated account
+# SCREENSHOT_USER=test-username                # For screenshot testing  
+# SCREENSHOT_PASSWORD=test-password            # For screenshot testing
 
 # CRITICAL SAFETY NOTES (Updated Phase 2):
 # - NEVER use direct wrangler commands for production deployments/migrations
