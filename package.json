@@ -10,7 +10,11 @@
     "typecheck": "tsc --noEmit",
     "seed-local": "node scripts/seed-local-data.js",
     "setup-local": "node scripts/setup-local-db.js",
-    "dev-worker": "npx wrangler dev --env local --port 8787"
+    "dev-worker": "npx wrangler dev --env local --port 8787",
+    "deploy:prod": "node scripts/prod-deploy.js",
+    "migrate:prod": "node scripts/prod-migrate.js",
+    "validate:env": "node scripts/validate-environment.js",
+    "deploy:staging": "wrangler deploy --env=staging"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
