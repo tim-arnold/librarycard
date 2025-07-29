@@ -2,6 +2,7 @@ import { Env } from '../types';
 import { isUserAdmin, isUserSuperAdmin } from '../auth';
 import { getCachedIsUserAdmin, getCachedIsUserSuperAdmin, getCachedUserPermissions } from '../auth/cached';
 import { invalidateAllAdminAnalytics } from '../admin/cached';
+import { applyDefaultPermissionsToUser } from '../locations';
 
 // Extended admin functions extracted from main worker
 
@@ -647,6 +648,14 @@ export async function assignLocationToUser(targetUserId: string, locationId: str
       INSERT INTO location_members (location_id, user_id, joined_at)
       VALUES (?, ?, datetime('now'))
     `).bind(locationId, targetUserId).run();
+
+    // Apply default permissions to the new user
+    try {
+      await applyDefaultPermissionsToUser(parseInt(locationId), targetUserId, adminUserId, env);
+    } catch (error) {
+      console.warn('Failed to apply default permissions to user:', error);
+      // Don't fail the assignment if permission application fails
+    }
 
     return new Response(JSON.stringify({ 
       message: `User successfully assigned to location "${(location as any).name}"`,

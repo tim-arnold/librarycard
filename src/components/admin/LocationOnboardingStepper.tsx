@@ -1,6 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback, useMemo } from 'react'
+import { flushSync } from 'react-dom'
+import { useSession } from 'next-auth/react'
+import { getApiBaseUrl } from '@/lib/apiConfig'
 import {
   Dialog,
   DialogTitle,
@@ -22,7 +25,6 @@ import {
   ListItemText,
   ListItemSecondaryAction,
   IconButton,
-  Divider,
 } from '@mui/material'
 import {
   Add,
@@ -36,6 +38,7 @@ import {
   People,
   Preview,
 } from '@mui/icons-material'
+import PermissionsStep from './PermissionsStep'
 
 interface LocationOnboardingStepperProps {
   open: boolean
@@ -62,12 +65,19 @@ const steps = [
   { label: 'Review & Create', icon: <Preview /> },
 ]
 
-const availableCapabilities = [
-  { id: 'can_add_books', label: 'Add Books', description: 'Allow adding new books to shelves' },
-  { id: 'can_edit_books', label: 'Edit Books', description: 'Allow editing book information' },
-  { id: 'can_delete_books', label: 'Delete Books', description: 'Allow removing books from shelves' },
-  { id: 'can_checkout_books', label: 'Checkout Books', description: 'Allow checking out books to users' },
-  { id: 'can_manage_shelves', label: 'Manage Shelves', description: 'Add, edit, and delete shelves' },
+const adminCapabilities = [
+  { id: 'can_control_user_capabilities', label: 'Control User Permissions', description: 'Grant/revoke user permissions' },
+  { id: 'can_invite_users', label: 'Invite Users', description: 'Send location invitations' },
+  { id: 'can_manage_shelves', label: 'Manage Shelves', description: 'Advanced shelf operations' },
+  { id: 'can_manage_location_settings', label: 'Manage Location', description: 'Edit location details' },
+]
+
+const userPermissions = [
+  { id: 'can_add_books', label: 'Add Books', description: 'Add new books to the location' },
+  { id: 'can_delete_books', label: 'Delete Books', description: 'Remove books from the location' },
+  { id: 'can_move_books', label: 'Move Books', description: 'Move books between shelves' },
+  { id: 'can_create_shelves', label: 'Create Shelves', description: 'Create new shelves in the location' },
+  { id: 'can_edit_genres', label: 'Edit Genres', description: 'Manage genre assignments' },
 ]
 
 export default function LocationOnboardingStepper({
@@ -76,6 +86,7 @@ export default function LocationOnboardingStepper({
   onLocationCreated,
   userRole,
 }: LocationOnboardingStepperProps) {
+  const { data: session } = useSession()
   const [activeStep, setActiveStep] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -87,8 +98,8 @@ export default function LocationOnboardingStepper({
     singleShelfLocation: false,
     initialShelves: [],
     adminEmail: '',
-    adminCapabilities: ['can_add_books', 'can_edit_books', 'can_manage_shelves'],
-    userCapabilities: ['can_add_books', 'can_checkout_books'],
+    adminCapabilities: ['can_control_user_capabilities', 'can_invite_users', 'can_manage_shelves', 'can_manage_location_settings'],
+    userCapabilities: ['can_add_books', 'can_delete_books'],
   })
 
   const handleNext = () => {
@@ -111,8 +122,8 @@ export default function LocationOnboardingStepper({
       singleShelfLocation: false,
       initialShelves: [],
       adminEmail: '',
-      adminCapabilities: ['can_add_books', 'can_edit_books', 'can_manage_shelves'],
-      userCapabilities: ['can_add_books', 'can_checkout_books'],
+      adminCapabilities: ['can_control_user_capabilities', 'can_invite_users', 'can_manage_shelves', 'can_manage_location_settings'],
+      userCapabilities: ['can_add_books', 'can_delete_books'],
     })
     setError('')
     setNewShelfName('')
@@ -158,31 +169,132 @@ export default function LocationOnboardingStepper({
     }))
   }
 
-  const toggleCapability = (capability: string, type: 'admin' | 'user') => {
+  const toggleCapability = useCallback((capability: string, type: 'admin' | 'user') => {
     const field = type === 'admin' ? 'adminCapabilities' : 'userCapabilities'
-    setLocationData(prev => ({
-      ...prev,
-      [field]: prev[field].includes(capability)
-        ? prev[field].filter(cap => cap !== capability)
-        : [...prev[field], capability]
-    }))
-  }
+    
+    flushSync(() => {
+      setLocationData(prev => {
+        const currentCapabilities = prev[field]
+        const hasCapability = currentCapabilities.includes(capability)
+        
+        return {
+          ...prev,
+          [field]: hasCapability
+            ? currentCapabilities.filter(cap => cap !== capability)
+            : [...currentCapabilities, capability]
+        }
+      })
+    })
+  }, [])
 
   const handleCreateLocation = async () => {
     setLoading(true)
     setError('')
 
+    if (!session?.user?.email) {
+      setError('Authentication required to create location')
+      setLoading(false)
+      return
+    }
+
     try {
-      // TODO: Implement actual API call to create location with all settings
-      console.log('Creating location with data:', locationData)
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
+      // Step 1: Create the basic location
+      const response = await fetch(`${getApiBaseUrl()}/api/locations`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.user.email}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: locationData.name.trim(),
+          description: locationData.description.trim() || null,
+          single_shelf_location: locationData.singleShelfLocation,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to create location')
+      }
+
+      const newLocation = await response.json()
+      console.log('Location created successfully:', newLocation)
+
+      // Step 2: Create initial shelves (if not single shelf and shelves specified)
+      if (!locationData.singleShelfLocation && locationData.initialShelves.length > 0) {
+        for (const shelfName of locationData.initialShelves) {
+          try {
+            const shelfResponse = await fetch(`${getApiBaseUrl()}/api/locations/${newLocation.id}/shelves`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${session.user.email}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                name: shelfName.trim(),
+              }),
+            })
+            
+            if (!shelfResponse.ok) {
+              console.warn(`Failed to create shelf "${shelfName}":`, await shelfResponse.text())
+            }
+          } catch (shelfError) {
+            console.warn(`Error creating shelf "${shelfName}":`, shelfError)
+          }
+        }
+      }
+
+      // Step 3: Set up default permissions for the location
+      for (const permission of locationData.userCapabilities) {
+        try {
+          const permissionResponse = await fetch(`${getApiBaseUrl()}/api/locations/${newLocation.id}/default-permissions`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${session.user.email}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              permission: permission,
+              permission_type: 'user'
+            }),
+          })
+          
+          if (!permissionResponse.ok) {
+            console.warn(`Failed to set default permission "${permission}":`, await permissionResponse.text())
+          }
+        } catch (permissionError) {
+          console.warn(`Error setting default permission "${permission}":`, permissionError)
+        }
+      }
+
+      // Set admin capabilities as default admin permissions for future reference
+      for (const capability of locationData.adminCapabilities) {
+        try {
+          const capabilityResponse = await fetch(`${getApiBaseUrl()}/api/locations/${newLocation.id}/default-permissions`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${session.user.email}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              permission: capability,
+              permission_type: 'admin'
+            }),
+          })
+          
+          if (!capabilityResponse.ok) {
+            console.warn(`Failed to set default admin capability "${capability}":`, await capabilityResponse.text())
+          }
+        } catch (capabilityError) {
+          console.warn(`Error setting default admin capability "${capability}":`, capabilityError)
+        }
+      }
+
       onLocationCreated()
       handleClose()
     } catch (error) {
-      setError('Failed to create location. Please try again.')
+      console.error('Error creating location:', error)
+      setError(error instanceof Error ? error.message : 'Failed to create location. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -314,66 +426,8 @@ export default function LocationOnboardingStepper({
         )
       
       case 3:
-        return (
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Set default permissions
-            </Typography>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              These will be the default capabilities for users in this location
-            </Typography>
-            
-            <Typography variant="subtitle1" sx={{ mt: 2, mb: 1 }}>
-              Admin Capabilities
-            </Typography>
-            {availableCapabilities.map((capability) => (
-              <FormControlLabel
-                key={capability.id}
-                control={
-                  <Checkbox
-                    checked={locationData.adminCapabilities.includes(capability.id)}
-                    onChange={() => toggleCapability(capability.id, 'admin')}
-                  />
-                }
-                label={
-                  <Box>
-                    <Typography variant="body2">{capability.label}</Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {capability.description}
-                    </Typography>
-                  </Box>
-                }
-                sx={{ display: 'block', mb: 1 }}
-              />
-            ))}
-            
-            <Divider sx={{ my: 2 }} />
-            
-            <Typography variant="subtitle1" sx={{ mb: 1 }}>
-              Regular User Capabilities
-            </Typography>
-            {availableCapabilities.map((capability) => (
-              <FormControlLabel
-                key={capability.id}
-                control={
-                  <Checkbox
-                    checked={locationData.userCapabilities.includes(capability.id)}
-                    onChange={() => toggleCapability(capability.id, 'user')}
-                  />
-                }
-                label={
-                  <Box>
-                    <Typography variant="body2">{capability.label}</Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {capability.description}
-                    </Typography>
-                  </Box>
-                }
-                sx={{ display: 'block', mb: 1 }}
-              />
-            ))}
-          </Box>
-        )
+        // Don't render permissions here - it's handled separately below
+        return null
       
       case 4:
         return (
@@ -432,7 +486,19 @@ export default function LocationOnboardingStepper({
   }
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
+    <Dialog 
+      open={open} 
+      onClose={undefined}
+      disableEscapeKeyDown
+      maxWidth="md" 
+      fullWidth
+      sx={{
+        '& .MuiDialog-paper': {
+          overflowY: 'auto',
+          scrollBehavior: 'auto'
+        }
+      }}
+    >
       <DialogTitle>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Home />
@@ -457,7 +523,15 @@ export default function LocationOnboardingStepper({
           </Alert>
         )}
         
-        {renderStepContent(activeStep)}
+        {activeStep === 3 ? (
+          <PermissionsStep
+            adminCapabilities={locationData.adminCapabilities}
+            userCapabilities={locationData.userCapabilities}
+            onToggleCapability={toggleCapability}
+          />
+        ) : (
+          renderStepContent(activeStep)
+        )}
       </DialogContent>
       
       <DialogActions>
