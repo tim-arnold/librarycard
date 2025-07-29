@@ -1,0 +1,112 @@
+{
+  "exportTimestamp": "2025-07-29T17:58:00.914Z",
+  "sourceAccount": "unknown",
+  "sourceDatabase": "librarycard-db-staging",
+  "environment": "staging",
+  "tables": [
+    {
+      "name": "users",
+      "recordCount": 0,
+      "filename": "users.json",
+      "exportedAt": "2025-07-29T17:58:02.863Z"
+    },
+    {
+      "name": "signup_approval_requests",
+      "recordCount": 0,
+      "filename": "signup_approval_requests.json",
+      "exportedAt": "2025-07-29T17:58:03.858Z"
+    },
+    {
+      "name": "locations",
+      "recordCount": 0,
+      "filename": "locations.json",
+      "exportedAt": "2025-07-29T17:58:04.488Z"
+    },
+    {
+      "name": "location_members",
+      "recordCount": 0,
+      "filename": "location_members.json",
+      "exportedAt": "2025-07-29T17:58:05.125Z"
+    },
+    {
+      "name": "location_invitations",
+      "recordCount": 0,
+      "filename": "location_invitations.json",
+      "exportedAt": "2025-07-29T17:58:05.819Z"
+    },
+    {
+      "name": "shelves",
+      "recordCount": 0,
+      "filename": "shelves.json",
+      "exportedAt": "2025-07-29T17:58:06.453Z"
+    },
+    {
+      "name": "books",
+      "recordCount": 0,
+      "filename": "books.json",
+      "exportedAt": "2025-07-29T17:58:07.167Z"
+    },
+    {
+      "name": "book_checkout_history",
+      "recordCount": 0,
+      "filename": "book_checkout_history.json",
+      "exportedAt": "2025-07-29T17:58:07.808Z"
+    },
+    {
+      "name": "book_ratings",
+      "recordCount": 0,
+      "filename": "book_ratings.json",
+      "exportedAt": "2025-07-29T17:58:08.979Z"
+    },
+    {
+      "name": "book_removal_requests",
+      "recordCount": 0,
+      "filename": "book_removal_requests.json",
+      "exportedAt": "2025-07-29T17:58:09.756Z"
+    },
+    {
+      "name": "location_admin_capabilities",
+      "recordCount": 0,
+      "filename": "location_admin_capabilities.json",
+      "exportedAt": "2025-07-29T17:58:10.396Z"
+    },
+    {
+      "name": "location_user_permissions",
+      "recordCount": 0,
+      "filename": "location_user_permissions.json",
+      "exportedAt": "2025-07-29T17:58:11.014Z"
+    },
+    {
+      "name": "curated_genres",
+      "recordCount": 0,
+      "filename": "curated_genres.json",
+      "exportedAt": "2025-07-29T17:58:11.799Z"
+    },
+    {
+      "name": "book_genres",
+      "recordCount": 0,
+      "filename": "book_genres.json",
+      "exportedAt": "2025-07-29T17:58:12.644Z"
+    },
+    {
+      "name": "genre_suggestions",
+      "recordCount": 0,
+      "filename": "genre_suggestions.json",
+      "exportedAt": "2025-07-29T17:58:13.285Z"
+    },
+    {
+      "name": "user_global_permissions",
+      "recordCount": 0,
+      "filename": "user_global_permissions.json",
+      "exportedAt": "2025-07-29T17:58:13.941Z"
+    },
+    {
+      "name": "location_default_permissions",
+      "recordCount": 0,
+      "filename": "location_default_permissions.json",
+      "exportedAt": "2025-07-29T17:58:15.056Z"
+    }
+  ],
+  "totalRecords": 0,
+  "checksum": "bf2cc732b46f0ff9e36c933d14c2b8daa947fbbfb005707e30408f3c47fb2a85"
+}
