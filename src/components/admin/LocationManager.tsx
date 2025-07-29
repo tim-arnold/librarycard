@@ -89,6 +89,7 @@ export default function LocationManager() {
   const [userRole, setUserRole] = useState<string | null>(null)
   const [canManageLocationPermissions, setCanManageLocationPermissions] = useState<boolean>(false)
   const [locationPermissions, setLocationPermissions] = useState<Record<number, boolean>>({})
+  const [deletingLocationId, setDeletingLocationId] = useState<number | null>(null)
   const [showOnboardingStepper, setShowOnboardingStepper] = useState(false)
 
   useEffect(() => {
@@ -269,7 +270,7 @@ export default function LocationManager() {
     const confirmed = await confirmAsync(
       {
         title: 'Delete Location',
-        message: `Are you sure you want to delete &quot;${locationName}&quot;? This will permanently delete all shelves and books in this location. This action cannot be undone.`,
+        message: `Are you sure you want to delete "${locationName}"? This will permanently delete all shelves and books in this location. This action cannot be undone.`,
         confirmText: 'Delete Location',
         variant: 'error'
       },
@@ -285,17 +286,19 @@ export default function LocationManager() {
         })
 
         if (response.ok) {
-          const updatedLocations = locations.filter(loc => loc.id !== locationId)
-          setLocations(updatedLocations)
-          if (selectedLocation?.id === locationId) {
-            setSelectedLocation(updatedLocations[0] || null)
-            setShelves([])
-          }
-          await alert({
-            title: 'Location Deleted',
-            message: `&quot;${locationName}&quot; and all its contents have been successfully deleted.`,
-            variant: 'success'
-          })
+          // Start the deletion animation
+          setDeletingLocationId(locationId)
+          
+          // Wait for animation to complete before removing from state
+          setTimeout(() => {
+            const updatedLocations = locations.filter(loc => loc.id !== locationId)
+            setLocations(updatedLocations)
+            if (selectedLocation?.id === locationId) {
+              setSelectedLocation(updatedLocations[0] || null)
+              setShelves([])
+            }
+            setDeletingLocationId(null)
+          }, 1200) // Animation duration
         } else {
           const errorData = await response.json()
           throw new Error(errorData.error || 'Failed to delete location')
@@ -587,15 +590,53 @@ export default function LocationManager() {
             <Paper variant="outlined">
               <List>
                 {locations.map((location, index) => (
-                  <Box key={location.id}>
+                  <Box 
+                    key={location.id}
+                    sx={{
+                      position: 'relative',
+                      overflow: 'hidden',
+                      ...(deletingLocationId === location.id && {
+                        animation: 'deleteLocation 1.2s ease-in-out forwards',
+                        '@keyframes deleteLocation': {
+                          '0%': {
+                            transform: 'scale(1)',
+                            opacity: 1,
+                          },
+                          '30%': {
+                            transform: 'scale(1.05)',
+                            opacity: 1,
+                          },
+                          '60%': {
+                            transform: 'scale(1.05)',
+                            opacity: 1,
+                          },
+                          '80%': {
+                            transform: 'scale(0.1)',
+                            opacity: 0.8,
+                            transformOrigin: 'center center',
+                          },
+                          '100%': {
+                            transform: 'scale(0)',
+                            opacity: 0,
+                            height: 0,
+                            marginBottom: 0,
+                            paddingTop: 0,
+                            paddingBottom: 0,
+                            transformOrigin: 'center center',
+                          }
+                        },
+                      })
+                    }}
+                  >
                     <ListItem
                       sx={{
-                        cursor: 'pointer',
+                        cursor: deletingLocationId === location.id ? 'default' : 'pointer',
                         backgroundColor: selectedLocation?.id === location.id ? 'action.selected' : 'transparent',
-                        '&:hover': { backgroundColor: 'action.hover' },
+                        '&:hover': { backgroundColor: deletingLocationId === location.id ? 'transparent' : 'action.hover' },
                         transition: 'background-color 0.2s',
+                        pointerEvents: deletingLocationId === location.id ? 'none' : 'auto',
                       }}
-                      onClick={() => setSelectedLocation(location)}
+                      onClick={() => deletingLocationId !== location.id && setSelectedLocation(location)}
                     >
                       <ListItemAvatar>
                         <Avatar sx={{ bgcolor: 'primary.main' }}>
@@ -608,7 +649,7 @@ export default function LocationManager() {
                             <Typography variant="h6" component="span">
                               {location.name}
                             </Typography>
-                            {location.single_shelf_location && (
+                            {Boolean(location.single_shelf_location) && (
                               <Chip 
                                 label="Single Shelf" 
                                 size="small" 
@@ -629,13 +670,13 @@ export default function LocationManager() {
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                                 <Book fontSize="small" />
                                 <Typography variant="body2" color="text.secondary">
-                                  {location.book_count || 0} books
+                                  {(location.book_count ?? 0)} books
                                 </Typography>
                               </Box>
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                                 <Shelves fontSize="small" />
                                 <Typography variant="body2" color="text.secondary">
-                                  {location.shelf_count || 0} shelves
+                                  {(location.shelf_count ?? 0)} shelves
                                 </Typography>
                               </Box>
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -726,7 +767,7 @@ export default function LocationManager() {
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                                 <Book fontSize="small" />
                                 <Typography variant="body2" color="text.secondary">
-                                  {shelf.book_count || 0} books
+                                  {(shelf.book_count ?? 0)} books
                                 </Typography>
                               </Box>
                               <Typography variant="body2" color="text.secondary">
@@ -769,7 +810,7 @@ export default function LocationManager() {
                   locationId={selectedLocation.id}
                   locationName={selectedLocation.name}
                   userRole={userRole}
-                  singleShelfLocation={selectedLocation.single_shelf_location}
+                  singleShelfLocation={Boolean(selectedLocation.single_shelf_location)}
                 />
               )}
 

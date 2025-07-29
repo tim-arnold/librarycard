@@ -94,6 +94,12 @@ export default function LocationPermissionManager({ locationId, locationName, us
   const [canManagePermissions, setCanManagePermissions] = useState<boolean>(false)
   const [bulkUpdating, setBulkUpdating] = useState<string>('')
   const [bulkControlsLocked, setBulkControlsLocked] = useState<boolean>(true)
+  const [defaultPermissions, setDefaultPermissions] = useState<{userPermissions: string[], adminCapabilities: string[]}>({
+    userPermissions: [],
+    adminCapabilities: []
+  })
+  const [defaultPermissionsLoading, setDefaultPermissionsLoading] = useState(false)
+  const [defaultPermissionsError, setDefaultPermissionsError] = useState('')
 
   const isSuperAdmin = userRole === 'super_admin'
 
@@ -119,18 +125,89 @@ export default function LocationPermissionManager({ locationId, locationName, us
       
       // Always try to load permissions - location admins can view even without manage capability
       await loadPermissions()
+      await loadDefaultPermissions()
     } catch (err) {
       console.error('Error checking permission access:', err)
       setCanManagePermissions(false)
       // Still try to load permissions in case user can view but not manage
       try {
         await loadPermissions()
+        await loadDefaultPermissions()
       } catch (loadErr) {
         console.error('Error loading permissions:', loadErr)
       }
     } finally {
       setLoading(false)
     }
+  }
+
+  const loadDefaultPermissions = async () => {
+    try {
+      setDefaultPermissionsLoading(true)
+      setDefaultPermissionsError('')
+
+      const result = await authenticatedFetch(session, `/api/locations/${locationId}/default-permissions`)
+      
+      if (result.success && result.data && typeof result.data === 'object' && 'userPermissions' in result.data && 'adminCapabilities' in result.data) {
+        setDefaultPermissions(result.data as { userPermissions: string[], adminCapabilities: string[] })
+      } else {
+        // If no default permissions are set, use empty arrays
+        setDefaultPermissions({ userPermissions: [], adminCapabilities: [] })
+      }
+    } catch (err) {
+      console.error('Error loading default permissions:', err)
+      setDefaultPermissionsError('Failed to load default permissions')
+      setDefaultPermissions({ userPermissions: [], adminCapabilities: [] })
+    } finally {
+      setDefaultPermissionsLoading(false)
+    }
+  }
+
+  const saveDefaultPermissions = async (userPermissions: string[], adminCapabilities: string[]) => {
+    try {
+      setDefaultPermissionsLoading(true)
+      setDefaultPermissionsError('')
+
+      const result = await authenticatedFetch(session, `/api/locations/${locationId}/default-permissions`, {
+        method: 'PUT',
+        body: { userPermissions, adminCapabilities }
+      })
+      
+      if (result.success) {
+        setDefaultPermissions({ userPermissions, adminCapabilities })
+      } else {
+        throw new Error(result.error || 'Failed to save default permissions')
+      }
+    } catch (err) {
+      console.error('Error saving default permissions:', err)
+      setDefaultPermissionsError(err instanceof Error ? err.message : 'Failed to save default permissions')
+    } finally {
+      setDefaultPermissionsLoading(false)
+    }
+  }
+
+  const toggleDefaultPermission = (permission: string, type: 'user' | 'admin') => {
+    const newDefaultPermissions = { 
+      userPermissions: defaultPermissions.userPermissions ?? [],
+      adminCapabilities: defaultPermissions.adminCapabilities ?? []
+    }
+    
+    if (type === 'user') {
+      if (newDefaultPermissions.userPermissions.includes(permission)) {
+        newDefaultPermissions.userPermissions = newDefaultPermissions.userPermissions.filter(p => p !== permission)
+      } else {
+        newDefaultPermissions.userPermissions = [...newDefaultPermissions.userPermissions, permission]
+      }
+    } else {
+      if (newDefaultPermissions.adminCapabilities.includes(permission)) {
+        newDefaultPermissions.adminCapabilities = newDefaultPermissions.adminCapabilities.filter(p => p !== permission)
+      } else {
+        newDefaultPermissions.adminCapabilities = [...newDefaultPermissions.adminCapabilities, permission]
+      }
+    }
+    
+    console.log('🔍 Frontend: Saving default permissions:', newDefaultPermissions)
+    saveDefaultPermissions(newDefaultPermissions.userPermissions, newDefaultPermissions.adminCapabilities)
   }
 
   const loadPermissions = async () => {
@@ -543,6 +620,137 @@ export default function LocationPermissionManager({ locationId, locationName, us
                 </TableBody>
               </Table>
             </TableContainer>
+          )}
+        </AccordionDetails>
+      </Accordion>
+
+      {/* Default Permissions Section */}
+      <Accordion sx={{ mt: 2 }}>
+        <AccordionSummary expandIcon={<ExpandMore />}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Security />
+            <Typography variant="h6">
+              Default Permissions
+            </Typography>
+            <Chip 
+              label={`${defaultPermissions.userPermissions.length + defaultPermissions.adminCapabilities.length} set`}
+              size="small" 
+              color="primary" 
+              variant="outlined" 
+            />
+          </Box>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Configure the default permissions that will be automatically granted to new users joining this location.
+          </Typography>
+
+          {defaultPermissionsError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {defaultPermissionsError}
+            </Alert>
+          )}
+
+          {defaultPermissionsLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <>
+              {/* Admin Capabilities */}
+              <Typography variant="subtitle1" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <AdminPanelSettings fontSize="small" />
+                Default Admin Capabilities
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                These capabilities will be automatically granted to admin users when they join this location.
+              </Typography>
+
+              <Box sx={{ display: 'grid', gap: 1, mb: 3 }}>
+                {ADMIN_CAPABILITIES.map(cap => (
+                  <Box key={cap.key} sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between',
+                    p: 1,
+                    border: 1,
+                    borderColor: 'divider',
+                    borderRadius: 1
+                  }}>
+                    <Box>
+                      <Typography variant="body2" fontWeight="medium">
+                        {cap.label}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {cap.description}
+                      </Typography>
+                    </Box>
+                    <Switch
+                      checked={defaultPermissions.adminCapabilities.includes(cap.key)}
+                      onChange={() => toggleDefaultPermission(cap.key, 'admin')}
+                      disabled={!canManagePermissions}
+                      size="small"
+                      color="primary"
+                    />
+                  </Box>
+                ))}
+              </Box>
+
+              {/* User Permissions */}
+              <Typography variant="subtitle1" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <People fontSize="small" />
+                Default User Permissions
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                These permissions will be automatically granted to all users when they join this location.
+              </Typography>
+
+              <Box sx={{ display: 'grid', gap: 1 }}>
+                {USER_PERMISSIONS.map(perm => {
+                  const isIrrelevantInSingleShelf = singleShelfLocation && (perm.key === 'can_create_shelves' || perm.key === 'can_move_books')
+                  
+                  return (
+                    <Box key={perm.key} sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between',
+                      p: 1,
+                      border: 1,
+                      borderColor: 'divider',
+                      borderRadius: 1,
+                      opacity: isIrrelevantInSingleShelf ? 0.5 : 1
+                    }}>
+                      <Box>
+                        <Typography variant="body2" fontWeight="medium">
+                          {perm.label}
+                          {isIrrelevantInSingleShelf && (
+                            <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                              (N/A for single shelf)
+                            </Typography>
+                          )}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {perm.description}
+                        </Typography>
+                      </Box>
+                      <Switch
+                        checked={isIrrelevantInSingleShelf ? false : defaultPermissions.userPermissions.includes(perm.key)}
+                        onChange={() => toggleDefaultPermission(perm.key, 'user')}
+                        disabled={!canManagePermissions || isIrrelevantInSingleShelf}
+                        size="small"
+                        color="primary"
+                      />
+                    </Box>
+                  )
+                })}
+              </Box>
+
+              {!canManagePermissions && (
+                <Alert severity="info" sx={{ mt: 2 }}>
+                  You can view default permissions but cannot modify them. Only super administrators or location admins with "Control User Permissions" capability can make changes.
+                </Alert>
+              )}
+            </>
           )}
         </AccordionDetails>
       </Accordion>
