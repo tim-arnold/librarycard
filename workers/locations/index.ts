@@ -204,10 +204,23 @@ export async function deleteLocation(userId: string, env: Env, corsHeaders: Reco
     });
   }
 
-  // Delete associated shelves and books first (cascading delete)
+  // Delete associated data in correct order to avoid foreign key constraint violations
+  // 1. Delete books first (they reference shelves)
   await env.DB.prepare('DELETE FROM books WHERE shelf_id IN (SELECT id FROM shelves WHERE location_id = ?)').bind(id).run();
+  
+  // 2. Delete shelves (they reference locations)
   await env.DB.prepare('DELETE FROM shelves WHERE location_id = ?').bind(id).run();
+  
+  // 3. Delete location-specific permission and capability data
+  await env.DB.prepare('DELETE FROM location_user_permissions WHERE location_id = ?').bind(id).run();
+  await env.DB.prepare('DELETE FROM location_admin_capabilities WHERE location_id = ?').bind(id).run();
+  await env.DB.prepare('DELETE FROM location_default_permissions WHERE location_id = ?').bind(id).run();
+  
+  // 4. Delete location membership and invitation data
   await env.DB.prepare('DELETE FROM location_members WHERE location_id = ?').bind(id).run();
+  await env.DB.prepare('DELETE FROM location_invitations WHERE location_id = ?').bind(id).run();
+  
+  // 5. Finally delete the location itself
   await env.DB.prepare('DELETE FROM locations WHERE id = ?').bind(id).run();
 
   return new Response(JSON.stringify({ success: true }), {
