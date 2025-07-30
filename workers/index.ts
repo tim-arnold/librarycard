@@ -11,7 +11,12 @@ import {
   getLocationShelves,
   createShelf,
   updateShelf,
-  deleteShelf
+  deleteShelf,
+  setLocationDefaultPermission,
+  getLocationDefaultPermissions,
+  getLocationDefaultPermissionsAPI,
+  updateLocationDefaultPermissions,
+  applyDefaultPermissionsToUser
 } from './locations';
 import {
   getUserBooks,
@@ -234,6 +239,22 @@ export default {
         return await createLocation(request, userId, env, corsHeaders);
       }
 
+      // Location default permissions endpoints (must come before general location routes)
+      if (path.match(/^\/api\/locations\/\d+\/default-permissions$/) && request.method === 'POST') {
+        const locationId = parseInt(path.split('/')[3]);
+        return await setLocationDefaultPermission(request, locationId, userId, env, corsHeaders);
+      }
+
+      if (path.match(/^\/api\/locations\/\d+\/default-permissions$/) && request.method === 'GET') {
+        const locationId = parseInt(path.split('/')[3]);
+        return await getLocationDefaultPermissionsAPI(locationId, userId, env, corsHeaders);
+      }
+
+      if (path.match(/^\/api\/locations\/\d+\/default-permissions$/) && request.method === 'PUT') {
+        const locationId = parseInt(path.split('/')[3]);
+        return await updateLocationDefaultPermissions(request, locationId, userId, env, corsHeaders);
+      }
+
       if (path.startsWith('/api/locations/') && path !== '/api/locations' && request.method === 'PUT') {
         const id = parseInt(path.split('/')[3]);
         return await updateLocation(request, userId, env, corsHeaders, id);
@@ -285,6 +306,7 @@ export default {
         const id = parseInt(path.split('/')[3]);
         return await deleteShelf(request, userId, env, corsHeaders, id);
       }
+
 
       // Signup approval endpoints (admin only)
       if (path === '/api/signup-requests' && request.method === 'GET') {

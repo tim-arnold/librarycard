@@ -2,6 +2,7 @@ import { Env } from '../types';
 import { sendInvitationEmail } from '../email';
 import { isUserAdmin, canManageLocation } from '../auth';
 import { generateUUID } from '../auth-core';
+import { applyDefaultPermissionsToUser } from '../locations';
 
 // Invitation functions extracted from main worker
 
@@ -187,6 +188,14 @@ export async function acceptLocationInvitation(request: Request, userId: string,
     userId, 
     (invitation as any).invited_by
   ).run();
+
+  // Apply default permissions to the new user
+  try {
+    await applyDefaultPermissionsToUser((invitation as any).location_id, userId, (invitation as any).invited_by, env);
+  } catch (error) {
+    console.warn('Failed to apply default permissions to user:', error);
+    // Don't fail the invitation acceptance if permission application fails
+  }
 
   // Mark invitation as used
   const updateInvitationStmt = env.DB.prepare(`
