@@ -235,7 +235,7 @@ export default function HelpModal({ open, onClose }: HelpModalProps) {
 
                   {!userIsAdmin && (
                     <Alert severity="info" sx={{ mt: 2 }}>
-                      If you don&apos;t have any locations available, contact an administrator to set up locations and shelves.
+                      If you don&apos;t have any locations available, contact a super administrator to set up locations and shelves.
                     </Alert>
                   )}
                 </AccordionDetails>
