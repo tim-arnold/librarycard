@@ -221,7 +221,7 @@ This file tracks active development tasks and future enhancements for the Librar
 
 ### High Priority - Next Session Focus
 
-- [x] **Dynamic Genre Management System - COMPLETE!** (See [detailed plan](../specs/genre-classifier-plan.md))
+- [x] **Dynamic Genre Management System - COMPLETE!** (See [detailed plan](../specs/complete-genre-classifier-plan.md))
   - [x] Transform static genre classification into dynamic, user-manageable system
   - [x] Create global curated_genres table with admin-controlled genre creation
   - [x] Implement interactive genre selection in Add Books workflow
