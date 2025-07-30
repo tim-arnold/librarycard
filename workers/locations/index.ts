@@ -646,11 +646,11 @@ export async function getLocationDefaultPermissionsAPI(locationId: number, userI
 }
 
 export async function updateLocationDefaultPermissions(request: Request, locationId: number, userId: string, env: Env, corsHeaders: Record<string, string>) {
-  const requestBody = await request.json();
+  const requestBody = await request.json() as any;
   console.log('🔍 Default permissions request body:', requestBody);
   
-  const userPermissions = Array.isArray(requestBody.userPermissions) ? requestBody.userPermissions : [];
-  const adminCapabilities = Array.isArray(requestBody.adminCapabilities) ? requestBody.adminCapabilities : [];
+  const userPermissions = Array.isArray(requestBody?.userPermissions) ? requestBody.userPermissions : [];
+  const adminCapabilities = Array.isArray(requestBody?.adminCapabilities) ? requestBody.adminCapabilities : [];
   
   console.log('🔍 Processed arrays:', { userPermissions, adminCapabilities });
 
