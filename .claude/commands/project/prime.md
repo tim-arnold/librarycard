@@ -16,8 +16,7 @@ First, check the current git status and recent activity:
 ## Read Key Documentation
 Read these essential project files:
 - README.md
-- CLAUDE.md  
-- docs/reference/TODO.md
+- CLAUDE.md
 - docs/reference/CHANGELOG.md
 - docs/development/architecture.md
 - docs/guides/getting-started.md
