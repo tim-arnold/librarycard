@@ -196,12 +196,22 @@ export async function updateLocation(request: Request, userId: string, env: Env,
 }
 
 export async function deleteLocation(userId: string, env: Env, corsHeaders: Record<string, string>, id: number) {
-  // Check if user is super admin (only super admins can delete locations)
-  if (!(await isUserSuperAdmin(userId, env))) {
-    return new Response(JSON.stringify({ error: 'Super admin privileges required to delete locations' }), {
-      status: 403,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+  // Check if user can delete this location:
+  // 1. Super admins can delete any location
+  // 2. Regular admins can only delete locations they created themselves
+  const isSuperAdmin = await isUserSuperAdmin(userId, env);
+  
+  if (!isSuperAdmin) {
+    // Check if user is the owner of this location
+    const ownerStmt = env.DB.prepare('SELECT owner_id FROM locations WHERE id = ?');
+    const ownerResult = await ownerStmt.bind(id).first() as any;
+    
+    if (!ownerResult || ownerResult.owner_id !== userId) {
+      return new Response(JSON.stringify({ error: 'You can only delete locations you created yourself' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
   }
 
   // Delete associated data in correct order to avoid foreign key constraint violations
