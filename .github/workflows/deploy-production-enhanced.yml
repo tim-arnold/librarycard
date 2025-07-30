@@ -248,7 +248,8 @@ jobs:
         run: |
           echo "🚨 APPLYING DATABASE MIGRATION TO PRODUCTION"
           echo "Migration file: ${{ github.event.inputs.migration_file }}"
-          npm run migrate:prod "${{ github.event.inputs.migration_file }}"
+          echo "🔄 Executing migration directly via wrangler..."
+          npx wrangler d1 execute librarycard-db --config=wrangler.prod.toml --file=migrations/${{ github.event.inputs.migration_file }} --env=production --remote
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
