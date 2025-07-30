@@ -154,8 +154,18 @@ jobs:
         id: backup
         run: |
           echo "🔄 Creating pre-deployment backup..."
-          BACKUP_ID="pre-deployment-${{ env.DEPLOYMENT_TIMESTAMP }}"
-          npm run backup:create "$BACKUP_ID"
+          BACKUP_REASON="pre-deployment-${{ env.DEPLOYMENT_TIMESTAMP }}"
+          BACKUP_OUTPUT=$(npm run backup:create "$BACKUP_REASON" 2>&1)
+          echo "$BACKUP_OUTPUT"
+          
+          # Extract the actual backup ID from the output
+          BACKUP_ID=$(echo "$BACKUP_OUTPUT" | grep -o 'prod-backup-[0-9T:-]*Z' | head -1)
+          if [ -z "$BACKUP_ID" ]; then
+            echo "❌ Failed to extract backup ID from output"
+            exit 1
+          fi
+          
+          echo "✅ Backup created with ID: $BACKUP_ID"
           echo "backup_id=$BACKUP_ID" >> $GITHUB_OUTPUT
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
