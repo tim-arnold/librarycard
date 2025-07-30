@@ -146,6 +146,17 @@ export default {
     }
 
     try {
+      // Health check endpoint (no authentication required)
+      if (path === '/health' && request.method === 'GET') {
+        return new Response(JSON.stringify({ 
+          status: 'healthy', 
+          timestamp: new Date().toISOString(),
+          environment: env.ENVIRONMENT 
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
       // Public auth endpoints (no authentication required)
       if (path === '/api/users' && request.method === 'POST') {
         return await createOrUpdateUser(request, env, corsHeaders);
