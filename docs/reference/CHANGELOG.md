@@ -2,6 +2,22 @@
 
 This file documents all completed features, fixes, and improvements to the LibraryCard project.
 
+## July 30, 2025 - Location Permission Security Fixes
+
+### Location Creation & Permission UI Fixes - GitHub Issue #147 COMPLETE!
+- **RESTRICTED**: Location creation buttons to super admins only (removed from regular admin access)
+- **UPDATED**: All UI messaging to clearly distinguish between "super administrators" and "location administrators"  
+- **FIXED**: Location creation automatic form display logic to only trigger for super admins
+- **ENHANCED**: Permission management messages to guide users to appropriate contact (super admin vs location admin)
+- **SECURED**: Frontend permission boundaries to match backend security model where only super admins can create locations
+- **CLARIFIED**: User guidance throughout application for who to contact based on needed capability type
+
+### UI Message Consistency Improvements
+- **UPDATED**: HelpModal messaging to specify "super administrator" for location setup requests
+- **MAINTAINED**: Correct "location administrator" references for location-specific permissions (book editing, genres, etc.)
+- **IMPROVED**: LocationPermissionManager alerts to clearly indicate super admin vs location admin capabilities
+- **STANDARDIZED**: Permission messaging across all components for consistent user experience
+
 ## July 29, 2025 - Enhanced Location Management & Default Permissions System
 
 ### Enhanced Location Management with Default Permissions - GitHub Issues #88 & #127 COMPLETE!

@@ -142,7 +142,7 @@ export default function LocationManager() {
         // Check permissions for each location
         await checkAllLocationPermissions(data)
         
-        if (data.length === 0 && isAdmin(userRole)) {
+        if (data.length === 0 && userRole === 'super_admin') {
           setShowCreateForm(true)
         } else {
           setSelectedLocation(data[0])
@@ -555,12 +555,12 @@ export default function LocationManager() {
       {locations.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '2rem' }}>
           <p style={{ marginBottom: '1rem', color: '#666' }}>
-            {isAdmin(userRole) 
+            {userRole === 'super_admin'
               ? "You don't have any locations yet. Create your first location to start organizing your books!"
-              : "No locations are available. Contact an administrator to create locations."
+              : "No locations are available. Contact a super administrator to create locations."
             }
           </p>
-          {isAdmin(userRole) && (
+          {userRole === 'super_admin' && (
             <Button 
               variant="contained"
               startIcon={<Add />}
@@ -575,7 +575,7 @@ export default function LocationManager() {
           <div style={{ marginBottom: '2rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <h3>Your Locations</h3>
-              {isAdmin(userRole) && (
+              {userRole === 'super_admin' && (
                 <Button 
                   variant="contained"
                   startIcon={<Add />}
@@ -709,17 +709,19 @@ export default function LocationManager() {
                                 <Edit />
                               </IconButton>
                             )}
-                            <IconButton
-                              edge="end"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                deleteLocation(location.id, location.name)
-                              }}
-                              size="small"
-                              color="error"
-                            >
-                              <Delete />
-                            </IconButton>
+                            {(userRole === 'super_admin' || location.owner_id === session?.user?.email) && (
+                              <IconButton
+                                edge="end"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  deleteLocation(location.id, location.name)
+                                }}
+                                size="small"
+                                color="error"
+                              >
+                                <Delete />
+                              </IconButton>
+                            )}
                           </Box>
                         </ListItemSecondaryAction>
                       )}
