@@ -221,7 +221,7 @@ This file tracks active development tasks and future enhancements for the Librar
 
 ### High Priority - Next Session Focus
 
-- [x] **Dynamic Genre Management System - COMPLETE!** (See [detailed plan](../specs/complete-genre-classifier-plan.md))
+- [x] **Dynamic Genre Management System - COMPLETE!** (See [detailed plan](../specs/complete/genre-classifier-plan.md))
   - [x] Transform static genre classification into dynamic, user-manageable system
   - [x] Create global curated_genres table with admin-controlled genre creation
   - [x] Implement interactive genre selection in Add Books workflow
@@ -234,7 +234,7 @@ This file tracks active development tasks and future enhancements for the Librar
 
 ### Low Priority - Future Enhancements
 
-- [ ] **User Invitation System Refactoring - Remaining Phases** (See [detailed plan](../specs/complete-user-invitation-refactor-plan.md))
+- [ ] **User Invitation System Refactoring - Remaining Phases** (See [detailed plan](../specs/user-invitation-refactor-plan.md))
   - [ ] **Phase 2**: Implement global invitation overview across all locations with filtering and search
   - [ ] **Phase 4**: Create new API endpoints for admin-level invitation management and analytics
 
