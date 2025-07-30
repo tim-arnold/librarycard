@@ -53,15 +53,18 @@ curl https://librarycard-api-staging.tim-arnold.workers.dev/health
 ```
 
 ### Production Deployment
+
+⚠️ **CRITICAL SAFETY NOTE**: Production deployments require safety procedures. NEVER use direct wrangler commands.
+
 ```bash
-# Deploy worker to production
-npx wrangler deploy --env=production
+# SAFE production worker deployment (with confirmations and validation)
+npm run deploy:prod
 
 # Deploy frontend - automatic via GitHub push to main branch
 git push origin main
 
-# Run database migrations on production (after testing on staging)
-npx wrangler d1 execute librarycard-db --file=migrations/your-migration.sql --env=production --remote
+# SAFE database migrations on production (with backup validation and confirmations)
+npm run migrate:prod
 
 # Verify production deployment
 curl https://librarycard-api-production.tim-arnold.workers.dev/health
