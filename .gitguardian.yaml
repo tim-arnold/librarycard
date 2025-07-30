@@ -1,0 +1,33 @@
+# GitGuardian Configuration
+# https://docs.gitguardian.com/secrets-detection/detectors/generics/generic_password
+
+version: v1
+
+# Ignore staging test credentials
+paths-ignore:
+  - "scripts/seed-staging-data.js"  # Contains staging test credentials
+  - "**/test/**"                    # Test directories
+  - "**/*test*"                     # Test files
+  - "**/*.example"                  # Example files
+  - "**/*.sample"                   # Sample files
+
+# Configuration for secret detection
+secrets-config:
+  # Ignore known test patterns
+  ignore-known-secrets: true
+  
+  # Custom validity patterns for test credentials
+  validities:
+    - "TEST_CREDENTIAL"
+    - "STAGING_ONLY"
+    - "DEVELOPMENT_SEED"
+
+# Specific patterns to ignore (for password hashes in staging seed)
+ignore-default-excludes: false
+
+# Additional ignore patterns for common development scenarios
+ignore-paths:
+  - "docs/**/*.md"          # Documentation files
+  - "**/*.md"               # Markdown files (may contain example credentials)
+  - ".env.example"          # Environment example files
+  - ".env.local.example"    # Local environment examples
