@@ -20,6 +20,14 @@ import {
   DialogActions,
   FormControlLabel,
   Checkbox,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemSecondaryAction,
+  ListItemAvatar,
+  Avatar,
+  Chip,
+  Divider,
 } from '@mui/material'
 import {
   Add,
@@ -29,11 +37,15 @@ import {
   Cancel,
   Save,
   Home,
+  LocationOn,
+  Book,
+  Schedule,
 } from '@mui/icons-material'
 import ConfirmationModal from '../modals/ConfirmationModal'
 import AlertModal from '../modals/AlertModal'
 import { useModal } from '@/hooks/useModal'
 import LocationPermissionManager from './LocationPermissionManager'
+import LocationOnboardingStepper from './LocationOnboardingStepper'
 
 
 interface Location {
@@ -43,6 +55,9 @@ interface Location {
   owner_id: string
   created_at: string
   single_shelf_location?: boolean
+  book_count?: number
+  shelf_count?: number
+  owner_name?: string
 }
 
 interface Shelf {
@@ -50,6 +65,7 @@ interface Shelf {
   name: string
   location_id: number
   created_at: string
+  book_count?: number
 }
 
 
@@ -73,6 +89,8 @@ export default function LocationManager() {
   const [userRole, setUserRole] = useState<string | null>(null)
   const [canManageLocationPermissions, setCanManageLocationPermissions] = useState<boolean>(false)
   const [locationPermissions, setLocationPermissions] = useState<Record<number, boolean>>({})
+  const [deletingLocationId, setDeletingLocationId] = useState<number | null>(null)
+  const [showOnboardingStepper, setShowOnboardingStepper] = useState(false)
 
   useEffect(() => {
     if (session?.user) {
@@ -252,7 +270,7 @@ export default function LocationManager() {
     const confirmed = await confirmAsync(
       {
         title: 'Delete Location',
-        message: `Are you sure you want to delete &quot;${locationName}&quot;? This will permanently delete all shelves and books in this location. This action cannot be undone.`,
+        message: `Are you sure you want to delete "${locationName}"? This will permanently delete all shelves and books in this location. This action cannot be undone.`,
         confirmText: 'Delete Location',
         variant: 'error'
       },
@@ -268,17 +286,19 @@ export default function LocationManager() {
         })
 
         if (response.ok) {
-          const updatedLocations = locations.filter(loc => loc.id !== locationId)
-          setLocations(updatedLocations)
-          if (selectedLocation?.id === locationId) {
-            setSelectedLocation(updatedLocations[0] || null)
-            setShelves([])
-          }
-          await alert({
-            title: 'Location Deleted',
-            message: `&quot;${locationName}&quot; and all its contents have been successfully deleted.`,
-            variant: 'success'
-          })
+          // Start the deletion animation
+          setDeletingLocationId(locationId)
+          
+          // Wait for animation to complete before removing from state
+          setTimeout(() => {
+            const updatedLocations = locations.filter(loc => loc.id !== locationId)
+            setLocations(updatedLocations)
+            if (selectedLocation?.id === locationId) {
+              setSelectedLocation(updatedLocations[0] || null)
+              setShelves([])
+            }
+            setDeletingLocationId(null)
+          }, 1200) // Animation duration
         } else {
           const errorData = await response.json()
           throw new Error(errorData.error || 'Failed to delete location')
@@ -544,7 +564,7 @@ export default function LocationManager() {
             <Button 
               variant="contained"
               startIcon={<Add />}
-              onClick={() => setShowCreateForm(true)}
+              onClick={() => setShowOnboardingStepper(true)}
             >
               Create Your First Location
             </Button>
@@ -559,63 +579,156 @@ export default function LocationManager() {
                 <Button 
                   variant="contained"
                   startIcon={<Add />}
-                  onClick={() => setShowCreateForm(true)}
+                  onClick={() => setShowOnboardingStepper(true)}
                   size="small"
                 >
-                  Add Location
+                  Create Location
                 </Button>
               )}
             </div>
             
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
-              {locations.map(location => (
-                <div 
-                  key={location.id}
-                  style={{
-                    padding: '1rem',
-                    border: selectedLocation?.id === location.id ? '2px solid #0070f3' : '1px solid #e0e0e0',
-                    borderRadius: '0.5rem',
-                    transition: 'border-color 0.2s'
-                  }}
-                >
-                  <div onClick={() => setSelectedLocation(location)} style={{ cursor: 'pointer', marginBottom: '0.5rem' }}>
-                    <h4 style={{ margin: '0 0 0.5rem 0' }}>{location.name}</h4>
-                    {location.description && (
-                      <p style={{ fontSize: '0.9em', color: '#666', margin: 0 }}>{location.description}</p>
-                    )}
-                  </div>
-                  {isAdmin(userRole) && (
-                    <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
-                      {(userRole === 'super_admin' || locationPermissions[location.id]) && (
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          startIcon={<Edit />}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            startEditLocation(location)
-                          }}
-                        >
-                          Edit
-                        </Button>
+            <Paper variant="outlined">
+              <List>
+                {locations.map((location, index) => (
+                  <Box 
+                    key={location.id}
+                    sx={{
+                      position: 'relative',
+                      overflow: 'hidden',
+                      ...(deletingLocationId === location.id && {
+                        animation: 'deleteLocation 1.2s ease-in-out forwards',
+                        '@keyframes deleteLocation': {
+                          '0%': {
+                            transform: 'scale(1)',
+                            opacity: 1,
+                          },
+                          '30%': {
+                            transform: 'scale(1.05)',
+                            opacity: 1,
+                          },
+                          '60%': {
+                            transform: 'scale(1.05)',
+                            opacity: 1,
+                          },
+                          '80%': {
+                            transform: 'scale(0.1)',
+                            opacity: 0.8,
+                            transformOrigin: 'center center',
+                          },
+                          '100%': {
+                            transform: 'scale(0)',
+                            opacity: 0,
+                            height: 0,
+                            marginBottom: 0,
+                            paddingTop: 0,
+                            paddingBottom: 0,
+                            transformOrigin: 'center center',
+                          }
+                        },
+                      })
+                    }}
+                  >
+                    <ListItem
+                      sx={{
+                        cursor: deletingLocationId === location.id ? 'default' : 'pointer',
+                        backgroundColor: selectedLocation?.id === location.id ? 'action.selected' : 'transparent',
+                        '&:hover': { backgroundColor: deletingLocationId === location.id ? 'transparent' : 'action.hover' },
+                        transition: 'background-color 0.2s',
+                        pointerEvents: deletingLocationId === location.id ? 'none' : 'auto',
+                      }}
+                      onClick={() => deletingLocationId !== location.id && setSelectedLocation(location)}
+                    >
+                      <ListItemAvatar>
+                        <Avatar sx={{ bgcolor: 'primary.main' }}>
+                          <LocationOn />
+                        </Avatar>
+                      </ListItemAvatar>
+                      <ListItemText
+                        primary={
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Typography variant="h6" component="span">
+                              {location.name}
+                            </Typography>
+                            {Boolean(location.single_shelf_location) && (
+                              <Chip 
+                                label="Single Shelf" 
+                                size="small" 
+                                color="primary" 
+                                variant="outlined" 
+                              />
+                            )}
+                          </Box>
+                        }
+                        secondary={
+                          <Box sx={{ mt: 0.5 }}>
+                            {location.description && (
+                              <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                                {location.description}
+                              </Typography>
+                            )}
+                            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                <Book fontSize="small" />
+                                <Typography variant="body2" color="text.secondary">
+                                  {(location.book_count ?? 0)} books
+                                </Typography>
+                              </Box>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                <Shelves fontSize="small" />
+                                <Typography variant="body2" color="text.secondary">
+                                  {(location.shelf_count ?? 0)} shelves
+                                </Typography>
+                              </Box>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                <Schedule fontSize="small" />
+                                <Typography variant="body2" color="text.secondary">
+                                  {new Date(location.created_at).toLocaleDateString()}
+                                </Typography>
+                              </Box>
+                              {location.owner_name && (
+                                <Typography variant="body2" color="text.secondary">
+                                  Owner: {location.owner_name}
+                                </Typography>
+                              )}
+                            </Box>
+                          </Box>
+                        }
+                      />
+                      {isAdmin(userRole) && (
+                        <ListItemSecondaryAction>
+                          <Box sx={{ display: 'flex', gap: 0.5 }}>
+                            {(userRole === 'super_admin' || locationPermissions[location.id]) && (
+                              <IconButton
+                                edge="end"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  startEditLocation(location)
+                                }}
+                                size="small"
+                              >
+                                <Edit />
+                              </IconButton>
+                            )}
+                            <IconButton
+                              edge="end"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                deleteLocation(location.id, location.name)
+                              }}
+                              size="small"
+                              color="error"
+                            >
+                              <Delete />
+                            </IconButton>
+                          </Box>
+                        </ListItemSecondaryAction>
                       )}
-                      <Button
-                        variant="contained"
-                        color="error"
-                        size="small"
-                        startIcon={<Delete />}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          deleteLocation(location.id, location.name)
-                        }}
-                      >
-                        Delete
-                      </Button>
-                    </Box>
-                  )}
-                </div>
-              ))}
-            </div>
+                    </ListItem>
+                    {index < locations.length - 1 && <Divider />}
+                  </Box>
+                ))}
+              </List>
+            </Paper>
           </div>
 
           {selectedLocation && (
@@ -637,47 +750,59 @@ export default function LocationManager() {
                   )}
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.5rem' }}>
-                {shelves.map(shelf => (
-                  <Paper key={shelf.id} sx={{ 
-                    p: 1.5,
-                    borderRadius: 1,
-                    position: 'relative',
-                    border: '1px solid #e0e0e0'
-                  }}>
-                    <div style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
-                      <strong>{shelf.name}</strong>
-                    </div>
-                    {isAdmin(userRole) && (
-                      <Box sx={{ display: 'flex', gap: 0.25, justifyContent: 'center' }}>
-                        <IconButton
-                          size="small"
-                          onClick={() => startEditShelf(shelf)}
-                          sx={{ 
-                            p: 0.5,
-                            backgroundColor: 'action.hover',
-                            '&:hover': { backgroundColor: 'action.selected' }
-                          }}
-                        >
-                          <Edit fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          onClick={() => deleteShelf(shelf.id, shelf.name)}
-                          sx={{ 
-                            p: 0.5,
-                            backgroundColor: 'error.main',
-                            color: 'white',
-                            '&:hover': { backgroundColor: 'error.dark' }
-                          }}
-                        >
-                          <Delete fontSize="small" />
-                        </IconButton>
-                      </Box>
-                    )}
-                  </Paper>
-                ))}
-              </div>
+              <Paper variant="outlined">
+                <List>
+                  {shelves.map((shelf, index) => (
+                    <Box key={shelf.id}>
+                      <ListItem>
+                        <ListItemAvatar>
+                          <Avatar sx={{ bgcolor: 'secondary.main' }}>
+                            <Shelves />
+                          </Avatar>
+                        </ListItemAvatar>
+                        <ListItemText
+                          primary={shelf.name}
+                          secondary={
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                <Book fontSize="small" />
+                                <Typography variant="body2" color="text.secondary">
+                                  {(shelf.book_count ?? 0)} books
+                                </Typography>
+                              </Box>
+                              <Typography variant="body2" color="text.secondary">
+                                Created {new Date(shelf.created_at).toLocaleDateString()}
+                              </Typography>
+                            </Box>
+                          }
+                        />
+                        {isAdmin(userRole) && (
+                          <ListItemSecondaryAction>
+                            <Box sx={{ display: 'flex', gap: 0.5 }}>
+                              <IconButton
+                                edge="end"
+                                onClick={() => startEditShelf(shelf)}
+                                size="small"
+                              >
+                                <Edit />
+                              </IconButton>
+                              <IconButton
+                                edge="end"
+                                onClick={() => deleteShelf(shelf.id, shelf.name)}
+                                size="small"
+                                color="error"
+                              >
+                                <Delete />
+                              </IconButton>
+                            </Box>
+                          </ListItemSecondaryAction>
+                        )}
+                      </ListItem>
+                      {index < shelves.length - 1 && <Divider />}
+                    </Box>
+                  ))}
+                </List>
+              </Paper>
 
               {/* Permission Management Section */}
               {selectedLocation && userRole && (
@@ -685,7 +810,7 @@ export default function LocationManager() {
                   locationId={selectedLocation.id}
                   locationName={selectedLocation.name}
                   userRole={userRole}
-                  singleShelfLocation={selectedLocation.single_shelf_location}
+                  singleShelfLocation={Boolean(selectedLocation.single_shelf_location)}
                 />
               )}
 
@@ -850,6 +975,17 @@ export default function LocationManager() {
             buttonText={modalState.options.buttonText}
           />
         )}
+
+        {/* Location Onboarding Stepper */}
+        <LocationOnboardingStepper
+          open={showOnboardingStepper}
+          onClose={() => setShowOnboardingStepper(false)}
+          onLocationCreated={() => {
+            loadLocations()
+            setShowOnboardingStepper(false)
+          }}
+          userRole={userRole}
+        />
       </Paper>
     </Container>
   )

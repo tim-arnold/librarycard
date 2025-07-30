@@ -38,16 +38,50 @@ export async function getUserLocations(userId: string, env: Env, corsHeaders: Re
   
   let stmt;
   if (isSuperAdmin) {
-    // Super admins can see all locations
+    // Super admins can see all locations with counts and owner info
     stmt = env.DB.prepare(`
-      SELECT * FROM locations l
+      SELECT 
+        l.*,
+        COALESCE(shelf_counts.shelf_count, 0) as shelf_count,
+        COALESCE(book_counts.book_count, 0) as book_count,
+        u.first_name || ' ' || u.last_name as owner_name
+      FROM locations l
+      LEFT JOIN users u ON l.owner_id = u.id
+      LEFT JOIN (
+        SELECT location_id, COUNT(*) as shelf_count 
+        FROM shelves 
+        GROUP BY location_id
+      ) shelf_counts ON l.id = shelf_counts.location_id
+      LEFT JOIN (
+        SELECT s.location_id, COUNT(b.id) as book_count
+        FROM shelves s
+        LEFT JOIN books b ON s.id = b.shelf_id
+        GROUP BY s.location_id
+      ) book_counts ON l.id = book_counts.location_id
       ORDER BY l.created_at DESC
     `);
   } else {
-    // Regular users see only locations they own or are members of
+    // Regular users see only locations they own or are members of with counts
     stmt = env.DB.prepare(`
-      SELECT DISTINCT l.* FROM locations l
+      SELECT DISTINCT 
+        l.*,
+        COALESCE(shelf_counts.shelf_count, 0) as shelf_count,
+        COALESCE(book_counts.book_count, 0) as book_count,
+        u.first_name || ' ' || u.last_name as owner_name
+      FROM locations l
+      LEFT JOIN users u ON l.owner_id = u.id
       LEFT JOIN location_members lm ON l.id = lm.location_id
+      LEFT JOIN (
+        SELECT location_id, COUNT(*) as shelf_count 
+        FROM shelves 
+        GROUP BY location_id
+      ) shelf_counts ON l.id = shelf_counts.location_id
+      LEFT JOIN (
+        SELECT s.location_id, COUNT(b.id) as book_count
+        FROM shelves s
+        LEFT JOIN books b ON s.id = b.shelf_id
+        GROUP BY s.location_id
+      ) book_counts ON l.id = book_counts.location_id
       WHERE l.owner_id = ? OR lm.user_id = ?
       ORDER BY l.created_at DESC
     `);
@@ -263,9 +297,17 @@ export async function getLocationShelves(locationId: number, userId: string, env
   }
 
   const stmt = env.DB.prepare(`
-    SELECT * FROM shelves
-    WHERE location_id = ? 
-    ORDER BY name
+    SELECT 
+      s.*,
+      COALESCE(book_counts.book_count, 0) as book_count
+    FROM shelves s
+    LEFT JOIN (
+      SELECT shelf_id, COUNT(*) as book_count 
+      FROM books 
+      GROUP BY shelf_id
+    ) book_counts ON s.id = book_counts.shelf_id
+    WHERE s.location_id = ? 
+    ORDER BY s.name
   `);
 
   const result = await stmt.bind(locationId).all();
@@ -468,4 +510,241 @@ export async function deleteShelf(request: Request, userId: string, env: Env, co
   return new Response(JSON.stringify({ success: true }), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
+}
+
+// Default permissions functions
+export async function setLocationDefaultPermission(request: Request, locationId: number, userId: string, env: Env, corsHeaders: Record<string, string>) {
+  const { permission, permission_type }: { permission: string; permission_type: 'user' | 'admin' } = await request.json();
+  
+  // Check if user is super admin (only super admins can create locations and set their default permissions)
+  if (!(await isUserSuperAdmin(userId, env))) {
+    return new Response(JSON.stringify({ error: 'Super admin privileges required to set default permissions' }), {
+      status: 403,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  // Validate permission type and values
+  const validUserPermissions = ['can_add_books', 'can_delete_books', 'can_move_books', 'can_create_shelves', 'can_edit_genres'];
+  const validAdminCapabilities = ['can_control_user_capabilities', 'can_invite_users', 'can_manage_shelves', 'can_manage_location_settings'];
+  
+  if (permission_type === 'user' && !validUserPermissions.includes(permission)) {
+    return new Response(JSON.stringify({ error: 'Invalid user permission' }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+  
+  if (permission_type === 'admin' && !validAdminCapabilities.includes(permission)) {
+    return new Response(JSON.stringify({ error: 'Invalid admin capability' }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  try {
+    // Insert or ignore if already exists
+    const stmt = env.DB.prepare(`
+      INSERT OR IGNORE INTO location_default_permissions (location_id, permission, permission_type)
+      VALUES (?, ?, ?)
+    `);
+    
+    await stmt.bind(locationId, permission, permission_type).run();
+    
+    return new Response(JSON.stringify({ 
+      message: 'Default permission set successfully',
+      locationId,
+      permission,
+      permission_type
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Error setting default permission:', error);
+    return new Response(JSON.stringify({ error: 'Failed to set default permission' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+export async function getLocationDefaultPermissions(locationId: number, env: Env): Promise<{ userPermissions: string[], adminCapabilities: string[] }> {
+  const stmt = env.DB.prepare(`
+    SELECT permission, permission_type FROM location_default_permissions WHERE location_id = ?
+  `);
+  
+  const result = await stmt.bind(locationId).all();
+  
+  const userPermissions: string[] = [];
+  const adminCapabilities: string[] = [];
+  
+  result.results.forEach((row: any) => {
+    if (row.permission_type === 'user') {
+      userPermissions.push(row.permission);
+    } else if (row.permission_type === 'admin') {
+      adminCapabilities.push(row.permission);
+    }
+  });
+  
+  return { userPermissions, adminCapabilities };
+}
+
+export async function getLocationDefaultPermissionsAPI(locationId: number, userId: string, env: Env, corsHeaders: Record<string, string>) {
+  // Check if user is super admin or has can_manage_location_settings capability
+  const isSuperAdmin = await isUserSuperAdmin(userId, env);
+  
+  if (!isSuperAdmin) {
+    const hasLocationSettingsCapability = await env.DB.prepare(`
+      SELECT 1 FROM location_admin_capabilities 
+      WHERE location_id = ? AND user_id = ? AND capability = 'can_manage_location_settings'
+    `).bind(locationId, userId).first();
+
+    if (!hasLocationSettingsCapability) {
+      return new Response(JSON.stringify({ error: 'Permission required to view default permissions' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+  }
+
+  try {
+    const defaultPermissions = await getLocationDefaultPermissions(locationId, env);
+    
+    return new Response(JSON.stringify(defaultPermissions), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Error getting default permissions:', error);
+    return new Response(JSON.stringify({ error: 'Failed to get default permissions' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+export async function updateLocationDefaultPermissions(request: Request, locationId: number, userId: string, env: Env, corsHeaders: Record<string, string>) {
+  const requestBody = await request.json();
+  console.log('🔍 Default permissions request body:', requestBody);
+  
+  const userPermissions = Array.isArray(requestBody.userPermissions) ? requestBody.userPermissions : [];
+  const adminCapabilities = Array.isArray(requestBody.adminCapabilities) ? requestBody.adminCapabilities : [];
+  
+  console.log('🔍 Processed arrays:', { userPermissions, adminCapabilities });
+
+  // Check if user is super admin or has can_manage_location_settings capability
+  const isSuperAdmin = await isUserSuperAdmin(userId, env);
+  
+  if (!isSuperAdmin) {
+    const hasLocationSettingsCapability = await env.DB.prepare(`
+      SELECT 1 FROM location_admin_capabilities 
+      WHERE location_id = ? AND user_id = ? AND capability = 'can_manage_location_settings'
+    `).bind(locationId, userId).first();
+
+    if (!hasLocationSettingsCapability) {
+      return new Response(JSON.stringify({ error: 'Permission required to modify default permissions' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+  }
+
+  // Validate permissions
+  const validUserPermissions = ['can_add_books', 'can_delete_books', 'can_move_books', 'can_create_shelves', 'can_edit_genres'];
+  const validAdminCapabilities = ['can_control_user_capabilities', 'can_invite_users', 'can_manage_shelves', 'can_manage_location_settings'];
+  
+  for (const permission of userPermissions) {
+    if (!validUserPermissions.includes(permission)) {
+      return new Response(JSON.stringify({ error: `Invalid user permission: ${permission}` }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+  }
+  
+  for (const capability of adminCapabilities) {
+    if (!validAdminCapabilities.includes(capability)) {
+      return new Response(JSON.stringify({ error: `Invalid admin capability: ${capability}` }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+  }
+
+  try {
+    // Remove all existing default permissions for this location
+    await env.DB.prepare(`
+      DELETE FROM location_default_permissions WHERE location_id = ?
+    `).bind(locationId).run();
+
+    // Add new user permissions
+    for (const permission of userPermissions) {
+      await env.DB.prepare(`
+        INSERT INTO location_default_permissions (location_id, permission, permission_type)
+        VALUES (?, ?, 'user')
+      `).bind(locationId, permission).run();
+    }
+
+    // Add new admin capabilities
+    for (const capability of adminCapabilities) {
+      await env.DB.prepare(`
+        INSERT INTO location_default_permissions (location_id, permission, permission_type)
+        VALUES (?, ?, 'admin')
+      `).bind(locationId, capability).run();
+    }
+
+    return new Response(JSON.stringify({ 
+      message: 'Default permissions updated successfully',
+      userPermissions,
+      adminCapabilities
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Error updating default permissions:', error);
+    return new Response(JSON.stringify({ error: 'Failed to update default permissions' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+export async function applyDefaultPermissionsToUser(locationId: number, targetUserId: string, granterUserId: string, env: Env): Promise<void> {
+  console.log(`🔍 Applying default permissions for user ${targetUserId} in location ${locationId}`);
+  
+  // Get default permissions for this location
+  const defaultPermissions = await getLocationDefaultPermissions(locationId, env);
+  console.log(`🔍 Found default permissions:`, defaultPermissions);
+  
+  // Apply default user permissions
+  for (const permission of defaultPermissions.userPermissions) {
+    try {
+      console.log(`🔍 Granting user permission: ${permission}`);
+      await env.DB.prepare(`
+        INSERT OR IGNORE INTO location_user_permissions (location_id, user_id, permission, granted_by)
+        VALUES (?, ?, ?, ?)
+      `).bind(locationId, targetUserId, permission, granterUserId).run();
+    } catch (error) {
+      console.warn(`Failed to grant default permission "${permission}" to user ${targetUserId}:`, error);
+    }
+  }
+
+  // Check if the target user is an admin, and if so, apply default admin capabilities
+  const userStmt = env.DB.prepare(`SELECT user_role FROM users WHERE id = ?`);
+  const user = await userStmt.bind(targetUserId).first();
+  console.log(`🔍 User role for ${targetUserId}:`, (user as any)?.user_role);
+  
+  if (user && (user as any).user_role === 'admin') {
+    // Apply default admin capabilities
+    for (const capability of defaultPermissions.adminCapabilities) {
+      try {
+        console.log(`🔍 Granting admin capability: ${capability}`);
+        await env.DB.prepare(`
+          INSERT OR IGNORE INTO location_admin_capabilities (location_id, user_id, capability, granted_by)
+          VALUES (?, ?, ?, ?)
+        `).bind(locationId, targetUserId, capability, granterUserId).run();
+      } catch (error) {
+        console.warn(`Failed to grant default admin capability "${capability}" to user ${targetUserId}:`, error);
+      }
+    }
+  }
 }
