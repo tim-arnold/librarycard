@@ -144,23 +144,36 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
       - name: Create automated backup
+        id: backup
         run: |
           echo "🔄 Creating pre-deployment backup..."
-          npm run backup:create "pre-deployment-${{ env.DEPLOYMENT_TIMESTAMP }}"
+          BACKUP_REASON="pre-deployment-${{ env.DEPLOYMENT_TIMESTAMP }}"
+          BACKUP_OUTPUT=$(npm run backup:create "$BACKUP_REASON" 2>&1)
+          echo "$BACKUP_OUTPUT"
+          
+          # Extract the actual backup ID from the output
+          BACKUP_ID=$(echo "$BACKUP_OUTPUT" | grep -o 'prod-backup-[0-9T:-]*Z' | head -1)
+          if [ -z "$BACKUP_ID" ]; then
+            echo "❌ Failed to extract backup ID from output"
+            exit 1
+          fi
+          
+          echo "✅ Backup created with ID: $BACKUP_ID"
+          echo "backup_id=$BACKUP_ID" >> $GITHUB_OUTPUT
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
       - name: Verify backup integrity
         run: |
           echo "🔍 Verifying backup integrity..."
-          npm run backup:verify
+          npm run backup:verify "${{ steps.backup.outputs.backup_id }}"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
@@ -178,7 +191,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
 
       - name: Install dependencies
@@ -225,7 +238,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
 
       - name: Install dependencies
@@ -235,7 +248,8 @@ jobs:
         run: |
           echo "🚨 APPLYING DATABASE MIGRATION TO PRODUCTION"
           echo "Migration file: ${{ github.event.inputs.migration_file }}"
-          npm run migrate:prod "${{ github.event.inputs.migration_file }}"
+          echo "🔄 Executing migration directly via wrangler..."
+          npx wrangler d1 execute librarycard-db --config=wrangler.prod.toml --file=migrations/${{ github.event.inputs.migration_file }} --env=production --remote
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
