@@ -1,0 +1,53 @@
+# NEW STAGING ACCOUNT WRANGLER CONFIGURATION
+# 
+# This file is for deploying staging to the SEPARATE isolated account
+# It requires different command syntax to prevent accidental usage
+#
+# USAGE: wrangler deploy --config=wrangler.staging-new.toml --env=staging
+#
+# SAFETY NOTES:
+# - This configuration ONLY contains staging environment for new account
+# - No production environment to prevent accidents
+# - Requires explicit --config flag to use
+# - Used for testing new account setup before any production consideration
+
+name = "librarycard-api-staging"
+main = "workers/index.ts"
+compatibility_date = "2024-01-01"
+
+# NEW ISOLATED ACCOUNT ID
+account_id = "18394f148930f0f3933fee06ecef99d0"
+
+[vars]
+ENVIRONMENT = "staging"
+APP_URL = "https://librarycard-staging.tim52.io/"
+FROM_EMAIL = "LibraryCard <librarian@tim52.io>"
+
+# Staging Database - NEW ACCOUNT
+[[d1_databases]]
+binding = "DB"
+database_name = "librarycard-db-staging-new"
+database_id = "4283d8af-c667-4673-8505-108f02b4609c"
+
+# Staging KV Cache - NEW ACCOUNT  
+[[kv_namespaces]]
+binding = "CACHE"
+id = "a7451e32dc8740efb83e3c0751ea3c08"
+
+# ONLY staging environment - isolated account
+[env.staging]
+name = "librarycard-api-staging"
+
+[env.staging.vars]
+ENVIRONMENT = "staging"
+APP_URL = "https://librarycard-staging.tim52.io/"
+FROM_EMAIL = "LibraryCard <librarian@tim52.io>"
+
+[[env.staging.d1_databases]]
+binding = "DB"
+database_name = "librarycard-db-staging-new"
+database_id = "4283d8af-c667-4673-8505-108f02b4609c"
+
+[[env.staging.kv_namespaces]]
+binding = "CACHE"
+id = "a7451e32dc8740efb83e3c0751ea3c08"
