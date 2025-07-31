@@ -70,6 +70,6 @@ ORDER BY user_role DESC, email;`);
 }
 
 console.log('📚 Documentation:');
-console.log('- See docs/specs/complete-librarian-plan.md for full implementation details');
+console.log('- See docs/specs/complete/librarian-plan.md for full implementation details');
 console.log('- Regular admins retain all location management capabilities');
 console.log('- Super admins have additional global system administration functions');
