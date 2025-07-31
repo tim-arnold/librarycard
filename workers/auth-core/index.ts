@@ -2,11 +2,30 @@ import { Env } from '../types';
 import { sendVerificationEmail, notifyAdminsOfSignupRequest, sendPasswordResetEmail } from '../email';
 import { generateJWT } from '../auth/jwt';
 import { getUserRole } from '../auth/index';
+import { parseAndValidateJSON, AuthSchemas, validatePasswordStrength } from '../validation';
 
 // Core authentication functions extracted from main worker
 
 export async function createOrUpdateUser(request: Request, env: Env, corsHeaders: Record<string, string>) {
-  const user: any = await request.json();
+  // This endpoint is used by OAuth flows - validate basic user structure
+  const userSchema = {
+    id: { required: true, type: 'string' as const, maxLength: 255 },
+    email: { required: true, type: 'email' as const, maxLength: 255 },
+    first_name: { required: false, type: 'string' as const, maxLength: 50, sanitize: true },
+    last_name: { required: false, type: 'string' as const, maxLength: 50, sanitize: true },
+    auth_provider: { required: false, type: 'string' as const, allowedValues: ['email', 'google'] },
+    email_verified: { required: false, type: 'boolean' as const }
+  };
+  
+  const validation = await parseAndValidateJSON(request, userSchema);
+  if (!validation.isValid) {
+    return new Response(JSON.stringify({ error: validation.error }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+  
+  const user = validation.data!;
   
   const stmt = env.DB.prepare(`
     INSERT OR REPLACE INTO users (id, email, first_name, last_name, auth_provider, email_verified, updated_at)
@@ -28,13 +47,15 @@ export async function createOrUpdateUser(request: Request, env: Env, corsHeaders
 }
 
 export async function registerUser(request: Request, env: Env, corsHeaders: Record<string, string>) {
-  const { email, password, first_name, last_name, invitation_token }: {
-    email: string;
-    password: string;
-    first_name: string;
-    last_name?: string;
-    invitation_token?: string;
-  } = await request.json();
+  const validation = await parseAndValidateJSON(request, AuthSchemas.register);
+  if (!validation.isValid) {
+    return new Response(JSON.stringify({ error: validation.error }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+  
+  const { email, password, first_name, last_name, invitation_token } = validation.data!;
   
   
   // Validate password strength
@@ -204,10 +225,15 @@ export async function registerUser(request: Request, env: Env, corsHeaders: Reco
 }
 
 export async function verifyCredentials(request: Request, env: Env, corsHeaders: Record<string, string>) {
-  const { email, password }: {
-    email: string;
-    password: string;
-  } = await request.json();
+  const validation = await parseAndValidateJSON(request, AuthSchemas.login);
+  if (!validation.isValid) {
+    return new Response(JSON.stringify({ error: validation.error }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+  
+  const { email, password } = validation.data!;
   
   const user = await env.DB.prepare(`
     SELECT id, email, first_name, last_name, password_hash, email_verified, auth_provider
@@ -328,30 +354,7 @@ export async function verifyEmail(request: Request, env: Env, corsHeaders: Recor
 }
 
 // Utility functions for authentication
-export function validatePasswordStrength(password: string): { isValid: boolean; error?: string } {
-  const minLength = 8;
-  const hasUpperCase = /[A-Z]/.test(password);
-  const hasLowerCase = /[a-z]/.test(password);
-  const hasNumbers = /\d/.test(password);
-  const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-
-  if (password.length < minLength) {
-    return { isValid: false, error: `Password must be at least ${minLength} characters long` };
-  }
-  if (!hasUpperCase) {
-    return { isValid: false, error: 'Password must contain at least one uppercase letter' };
-  }
-  if (!hasLowerCase) {
-    return { isValid: false, error: 'Password must contain at least one lowercase letter' };
-  }
-  if (!hasNumbers) {
-    return { isValid: false, error: 'Password must contain at least one number' };
-  }
-  if (!hasSpecialChar) {
-    return { isValid: false, error: 'Password must contain at least one special character (!@#$%^&*(),.?":{}|<>)' };
-  }
-  return { isValid: true };
-}
+// Note: Password validation is now handled by the validation module
 
 export async function hashPassword(password: string): Promise<string> {
   // Generate a random salt
@@ -491,7 +494,15 @@ export function generateUUID(): string {
 }
 
 export async function forgotPassword(request: Request, env: Env, corsHeaders: Record<string, string>) {
-  const { email }: { email: string } = await request.json();
+  const validation = await parseAndValidateJSON(request, AuthSchemas.forgotPassword);
+  if (!validation.isValid) {
+    return new Response(JSON.stringify({ error: validation.error }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+  
+  const { email } = validation.data!;
   
   // Look up user by email
   const user = await env.DB.prepare(`
@@ -577,7 +588,15 @@ export async function verifyResetToken(request: Request, env: Env, corsHeaders: 
 }
 
 export async function resetPassword(request: Request, env: Env, corsHeaders: Record<string, string>) {
-  const { token, password }: { token: string; password: string } = await request.json();
+  const validation = await parseAndValidateJSON(request, AuthSchemas.resetPassword);
+  if (!validation.isValid) {
+    return new Response(JSON.stringify({ error: validation.error }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+  
+  const { token, password } = validation.data!;
   
   // Validate password strength
   const passwordValidation = validatePasswordStrength(password);
@@ -636,11 +655,15 @@ export async function resetPassword(request: Request, env: Env, corsHeaders: Rec
 }
 
 export async function changePassword(request: Request, env: Env, corsHeaders: Record<string, string>) {
-  const { currentPassword, newPassword, email }: { 
-    currentPassword: string; 
-    newPassword: string; 
-    email: string;
-  } = await request.json();
+  const validation = await parseAndValidateJSON(request, AuthSchemas.changePassword);
+  if (!validation.isValid) {
+    return new Response(JSON.stringify({ error: validation.error }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+  
+  const { old_password: currentPassword, new_password: newPassword, email } = validation.data!;
   
   // Validate new password strength
   const passwordValidation = validatePasswordStrength(newPassword);
