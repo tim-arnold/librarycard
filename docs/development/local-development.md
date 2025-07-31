@@ -36,10 +36,22 @@ npm install -g wrangler
 cp .env.example .env.local
 ```
 
-For local development, use:
+The `.env.local` file is configured to use the local worker by default:
 ```env
+# API URL for your Cloudflare Worker - Local development (default)
 NEXT_PUBLIC_API_URL=http://localhost:8787
+
+# For production testing - uncomment the line below and replace with your worker URL
+# NEXT_PUBLIC_API_URL=https://your-worker-name.your-subdomain.workers.dev
 ```
+
+### 5. Environment Variables
+
+The local development environment uses these key environment variables:
+- `ENVIRONMENT=local`
+- `APP_URL=http://localhost:3000`
+- `FROM_EMAIL=LibraryCard <noreply@localhost>`
+- `NEXT_PUBLIC_API_URL=http://localhost:8787`
 
 ## Development Modes
 
@@ -78,7 +90,7 @@ npm run dev-worker
 
 ## Database Setup (Local)
 
-⚠️ **Important**: Use the automated setup process documented in [Local Development Setup Guide](./local-development-setup.md) for the complete isolated local environment.
+⚠️ **Important**: The project includes automated local database setup with development safeguards and sample data.
 
 ### Quick Setup
 
@@ -103,6 +115,14 @@ After seeding, you can log in with these test accounts:
 
 **Note**: Local development uses email verification tokens for authentication. Check the worker logs for magic login links when testing authentication.
 
+### Sample Data Seeded
+
+The seeding process creates:
+- **Sample users**: `developer@localhost` (admin role), `testuser@localhost` (user role)
+- **Sample locations**: Home Library, Office Library  
+- **Sample shelves**: Programming Books, Technical References, Management Books
+- **Sample books**: The Pragmatic Programmer, Clean Code, Design Patterns
+
 ### Manual Database Setup
 
 If you need to manually create the local database:
@@ -122,12 +142,27 @@ The local environment configuration is already set up in `wrangler.toml`:
 [env.local.vars]
 ENVIRONMENT = "local"
 APP_URL = "http://localhost:3000"
+FROM_EMAIL = "LibraryCard <noreply@localhost>"
 
 [[env.local.d1_databases]]
 binding = "DB"
 database_name = "libarycard-db-local"
-database_id = "5365a633-7869-4993-990a-90aa12e9974e"
+database_id = "0141eafd-6cf5-4053-b014-ae1556e01633"
 ```
+
+### Development Safeguards
+
+The local development environment includes several safeguards:
+
+#### Environment Detection
+- **Environment utilities** (`workers/environment.ts`) provide environment detection
+- **Enhanced logging** for development environments
+- **Detailed error messages** in non-production environments
+
+#### Development Settings
+- **Increased limits** for local development (more books/locations per user)
+- **Test data allowed** in development environments
+- **Debug logging enabled** for troubleshooting
 
 ## Development Workflow
 
