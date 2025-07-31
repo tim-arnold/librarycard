@@ -1,6 +1,8 @@
 # Cloudflare Setup Guide
 
-This guide walks you through setting up the complete Cloudflare infrastructure for LibraryCard, including D1 database, Workers API, and Pages deployment.
+This guide walks you through setting up the complete Cloudflare infrastructure for LibraryCard, including D1 database, Workers API, and enhanced deployment safety features.
+
+> **⚠️ Important**: For production deployments, use the enhanced GitHub Actions workflows. This guide covers initial setup and development environments.
 
 ## Prerequisites
 

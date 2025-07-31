@@ -2,62 +2,44 @@
 
 LibraryCard is a personal book library management system that lets you scan ISBN barcodes to automatically catalog your books with location tracking and custom tagging.
 
-## Quick Start
+## For End Users
 
-### 1. Clone the Repository
+### Sign Up & Access
 
-```bash
-git clone https://github.com/tim-arnold/librarycard.git
-cd librarycard
-```
+1. **Visit LibraryCard**: Go to your LibraryCard instance URL
+2. **Create Account**: Choose from Google OAuth or email/password registration
+3. **Verify Email**: Check your inbox and click the verification link (email accounts only)
+4. **Sign In**: Access your personal library dashboard
 
-### 2. Install Dependencies
+### First Steps
 
-```bash
-npm install
-```
+1. **Create Your First Location**: Set up a location like "Home Library" or "Office"
+2. **Add Shelves**: Create shelves within your location (e.g., "Living Room", "Bedroom")
+3. **Start Adding Books**: Use the barcode scanner or manual entry to catalog your collection
 
-### 3. Set Up Local Development Environment
+## For Developers
 
-```bash
-# Copy environment template
-cp .env.example .env.local
+> **Developer Setup**: For local development and deployment, see the [Local Development Guide](../development/local-development.md)
 
-# Set up local database with sample data
-node scripts/setup-local-db.js
-```
+## Using LibraryCard
 
-This automated setup will:
-- Initialize the database schema
-- Apply all migrations
-- Seed with 4 sample users and 3 locations
-- Add 60 sample books (20 per location, across 2 shelves each)
+### Adding Books
 
-### 4. Start Development Servers
+**ISBN Scanning** (Recommended)
+1. Click "Add Books" from the main navigation
+2. Select "Scan ISBN Barcode"
+3. Allow camera permissions
+4. Point camera at book barcode
+5. Book details auto-populate from Google Books API
+6. Choose location and shelf
+7. Click "Add to Library"
 
-```bash
-# In terminal 1: Start Next.js frontend
-npm run dev
-
-# In terminal 2: Start Cloudflare Worker backend
-npx wrangler dev --local
-```
-
-Visit `http://localhost:3000` to see the app running locally with full sample data.
-
-## Local vs Production Setup
-
-### Local Development
-- Uses localStorage for data persistence
-- Works offline
-- Good for testing and development
-- Camera scanning works on localhost
-
-### Production Setup
-- Uses Cloudflare D1 database
-- Data synced across devices
-- Requires Cloudflare Workers deployment
-- Better performance and reliability
+**Manual Entry**
+1. Click "Add Books" → "Manual Entry"
+2. Enter ISBN number
+3. Book details auto-populate
+4. Choose location and shelf
+5. Click "Add to Library"
 
 ## Core Features
 
@@ -114,7 +96,7 @@ LibraryCard is a sophisticated library management platform with comprehensive fe
 ## Next Steps
 
 1. **Test locally**: Try scanning a book or entering an ISBN
-2. **Deploy to production**: Follow the [Cloudflare Setup Guide](./cloudflare-setup.md)
+2. **Deploy to production**: Follow the [Cloudflare Setup Guide](../setup/cloudflare-setup.md)
 3. **Customize locations**: Update location lists in the components
 4. **Add books**: Start building your digital library!
 

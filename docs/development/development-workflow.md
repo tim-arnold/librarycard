@@ -362,7 +362,7 @@ npx wrangler dev --env local --port 8787 --inspect
 ## Support and Resources
 
 ### Documentation
-- [Local Development Setup](./local-development-setup.md)
+- [Local Development Setup](./local-development.md)
 - [API Reference](./api-reference.md)
 - [Troubleshooting Guide](./troubleshooting.md)
 - [Architecture Overview](./architecture.md)
