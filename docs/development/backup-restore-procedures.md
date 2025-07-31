@@ -1,14 +1,22 @@
 # Backup and Restore Procedures
 
-Complete guide for backing up and restoring LibraryCard's frontend and backend infrastructure.
+Complete guide for backing up and restoring LibraryCard's frontend and backend infrastructure with automated and manual backup capabilities.
 
 ## Overview
 
-LibraryCard uses a hybrid backup strategy:
-- **Automated Daily Backups**: GitHub Actions create daily backups
-- **Manual Backup Scripts**: On-demand backup creation
-- **Version Control**: Source code backed up via Git
-- **Release Storage**: Backups stored as GitHub Releases
+LibraryCard implements a comprehensive backup strategy covering both frontend (Netlify) and backend (Cloudflare Workers + D1) infrastructure:
+
+### Backup Strategy
+- **Automated Daily Backups**: GitHub Actions workflows create scheduled backups
+- **Manual On-Demand Backups**: Shell scripts for immediate backup creation
+- **Source Code Protection**: Git version control with GitHub repository
+- **Multiple Recovery Points**: Historical backups stored as GitHub Releases
+
+### What Gets Backed Up
+- **Frontend**: Complete source code, build artifacts, configuration files
+- **Backend**: Worker source code, database schema, configuration files
+- **Data**: Database schema, statistics, and manual export scripts
+- **Configuration**: Environment variable documentation and deployment guides
 
 ## Backup Architecture
 
@@ -32,19 +40,32 @@ LibraryCard Backup System
 
 ## Automated Backup System
 
+### Daily Backup Schedule
+- **2:00 AM UTC**: Netlify frontend backup (GitHub Actions)
+- **3:00 AM UTC**: Cloudflare Workers & D1 backup (GitHub Actions)
+
 ### GitHub Actions Workflows
 
-**Daily Schedule**:
-- **2:00 AM UTC**: Netlify frontend backup
-- **3:00 AM UTC**: Cloudflare Workers & D1 backup
+#### Frontend Backup (`.github/workflows/netlify-backup.yml`)
+- **Triggers**: Daily at 2 AM UTC + manual trigger
+- **Creates**: Complete source code backup with build artifacts
+- **Stores**: GitHub Releases with tag `backup-{run-number}-{date}`
+- **Includes**: Deployment instructions and environment variable documentation
+
+#### Backend Backup (`.github/workflows/cloudflare-backup.yml`)
+- **Triggers**: Daily at 3 AM UTC + manual trigger  
+- **Creates**: Worker source + database schema backup
+- **Stores**: GitHub Releases with tag `cf-backup-{run-number}-{date}`
+- **Includes**: Database statistics and restoration guides
 
 **Manual Triggers**: Both workflows can be triggered manually from GitHub Actions tab.
 
 ### Backup Storage
-- **Location**: GitHub Releases
+- **Location**: GitHub Releases (attached as assets)
+- **Format**: Compressed tar.gz archives
 - **Retention**: Manual cleanup (no automatic deletion)
+- **Access**: Available to repository collaborators
 - **Naming**: `backup-{run-number}-{date}` and `cf-backup-{run-number}-{date}`
-- **Format**: Compressed archives with metadata
 
 ## Manual Backup Procedures
 
@@ -395,7 +416,7 @@ wrangler whoami     # Verify authentication
 ### Documentation
 - [Development Workflow](./development-workflow.md)
 - [Troubleshooting Guide](./troubleshooting.md)
-- [Local Development Setup](./local-development-setup.md)
+- [Local Development Setup](./local-development.md)
 
 ---
 
