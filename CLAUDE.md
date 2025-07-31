@@ -62,11 +62,11 @@ npm run lint
 # Worker deployment
 npm run deploy:staging               # Deploy to staging (original account)
 npm run deploy:staging-new           # Deploy to staging (NEW isolated account)
-npm run deploy:prod                  # Deploy to production (SAFE - requires confirmations + uses wrangler.prod.toml)
+npm run deploy:prod                  # ⚠️ BLOCKED - redirects to GitHub Actions for safety
 
 # Database migrations  
-npx wrangler d1 execute librarycard-db-staging --file=migrations/migration.sql --env=staging --remote
-npm run migrate:prod                 # Production migrations (SAFE - automated backup + validation)
+npx wrangler d1 execute librarycard-db-staging-new --file=migrations/migration.sql --env=staging-new --remote
+npm run migrate:prod                 # ⚠️ BLOCKED - redirects to GitHub Actions for safety
 
 # Database backup operations (Phase 2)
 npm run backup:create                # Create manual production backup
@@ -82,13 +82,13 @@ npm run validate:env                 # Validate environment before production op
 # SCREENSHOT_USER=test-username                # For screenshot testing  
 # SCREENSHOT_PASSWORD=test-password            # For screenshot testing
 
-# CRITICAL SAFETY NOTES (Updated Phase 2):
-# - NEVER use direct wrangler commands for production deployments/migrations
-# - Production operations use separate wrangler.prod.toml configuration
-# - All production database changes create automatic backups with verification
-# - ALWAYS use safety wrapper scripts (npm run deploy:prod, migrate:prod)
-# - All production operations require multiple confirmations
-# - Production scripts validate environment and create audit logs
+# CRITICAL SAFETY NOTES (Updated Phase 3 - GitHub Actions Required):
+# - PRODUCTION DEPLOYMENT: MUST use GitHub Actions workflows (local commands blocked for safety)
+# - Staging: Use isolated account with npm run deploy:staging-new or GitHub Actions
+# - Production: GitHub Actions "Deploy to Production (Enhanced Safety)" workflow ONLY
+# - All production operations require manual GitHub Actions trigger + confirmation
+# - Production scripts include automated backups and validation
+# - Local direct wrangler commands are blocked for production environment
 ```
 
 ## Current Technical State
