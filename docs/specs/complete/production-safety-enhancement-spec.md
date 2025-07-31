@@ -85,7 +85,7 @@ This specification addresses critical production deployment safety vulnerabiliti
 - **Note**: GitHub environment protection replaced with equivalent workflow-based safety measures
 
 ### ⏳ Phase 4: Documentation Security (25% COMPLETE)
-- [x] **COMPLETED**: Complete documentation audit and cleanup (docs/deployment/deployment.md updated)
+- [x] **COMPLETED**: Complete documentation audit and cleanup (docs/development/deployment.md updated)
 - [ ] Secure production runbook creation
 - [ ] Developer safety training materials
 - [ ] Production access procedure documentation
@@ -302,7 +302,7 @@ jobs:
 #### 4.1 Documentation Audit and Cleanup
 
 **Files to Update**:
-- `docs/deployment/deployment.md` - Remove production examples
+- `docs/development/deployment.md` - Remove production examples
 - `CLAUDE.md` - Update with safe deployment procedures
 - `docs/development/troubleshooting.md` - Remove production commands
 - All other documentation with production references

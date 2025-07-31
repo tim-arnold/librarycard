@@ -416,7 +416,7 @@ wrangler whoami     # Verify authentication
 ### Documentation
 - [Development Workflow](./development-workflow.md)
 - [Troubleshooting Guide](./troubleshooting.md)
-- [Local Development Setup](./local-development-setup.md)
+- [Local Development Setup](./local-development.md)
 
 ---
 
