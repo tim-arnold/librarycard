@@ -1,5 +1,7 @@
 import { Env } from '../types';
 import { sendVerificationEmail, notifyAdminsOfSignupRequest, sendPasswordResetEmail } from '../email';
+import { generateJWT } from '../auth/jwt';
+import { getUserRole } from '../auth/index';
 
 // Core authentication functions extracted from main worker
 
@@ -245,12 +247,23 @@ export async function verifyCredentials(request: Request, env: Env, corsHeaders:
     // Continue with login even if cache clearing fails
   }
   
+  // Get user role for JWT payload
+  const userRole = await getUserRole(user.id as string, env);
+  
+  // Generate JWT token
+  const jwt = await generateJWT({
+    userId: user.id as string,
+    email: user.email as string,
+    role: userRole
+  }, env);
+  
   return new Response(JSON.stringify({
     id: user.id,
     email: user.email,
     first_name: user.first_name,
     last_name: user.last_name,
-    auth_provider: user.auth_provider
+    auth_provider: user.auth_provider,
+    access_token: jwt
   }), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });

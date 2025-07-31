@@ -124,6 +124,7 @@ import {
   grantGlobalPermission,
   revokeGlobalPermission
 } from './permissions';
+import { RateLimiter } from './auth/rate-limiter';
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -135,15 +136,48 @@ export default {
     console.log('📝 Headers:', Object.fromEntries(request.headers.entries()));
 
 
+    // Secure CORS configuration - only allow trusted frontend domain
+    const getAllowedOrigin = (requestOrigin: string | null, frontendUrl: string): string => {
+      // If no origin header (server-to-server requests), allow
+      if (!requestOrigin) {
+        return frontendUrl;
+      }
+      
+      // Check if the request origin matches our frontend URL
+      if (requestOrigin === frontendUrl) {
+        return requestOrigin;
+      }
+      
+      // For local development, also allow localhost variations
+      if (env.ENVIRONMENT === 'local') {
+        const localOrigins = ['http://localhost:3000', 'http://127.0.0.1:3000'];
+        if (localOrigins.includes(requestOrigin)) {
+          return requestOrigin;
+        }
+      }
+      
+      // Default to frontend URL if origin doesn't match
+      return frontendUrl;
+    };
+
+    const frontendUrl = env.APP_URL;
+    const origin = request.headers.get('Origin');
+    const allowedOrigin = getAllowedOrigin(origin, frontendUrl);
+
     const corsHeaders = {
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': allowedOrigin,
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Credentials': 'true',
     };
 
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: corsHeaders });
     }
+
+    // Initialize rate limiter
+    const rateLimiter = new RateLimiter(env);
+    const clientId = rateLimiter.getClientIdentifier(request);
 
     try {
       // Health check endpoint (no authentication required)
@@ -163,10 +197,32 @@ export default {
       }
 
       if (path === '/api/auth/register' && request.method === 'POST') {
+        // Rate limit registration attempts
+        const rateLimitResult = await rateLimiter.checkRateLimit(clientId, 'auth-register');
+        if (!rateLimitResult.allowed) {
+          const response = rateLimiter.createRateLimitResponse(rateLimitResult.resetTime!);
+          // Add CORS headers to rate limit response
+          Object.entries(corsHeaders).forEach(([key, value]) => {
+            response.headers.set(key, value);
+          });
+          return response;
+        }
+        
         return await registerUser(request, env, corsHeaders);
       }
 
       if (path === '/api/auth/verify' && request.method === 'POST') {
+        // Rate limit login attempts
+        const rateLimitResult = await rateLimiter.checkRateLimit(clientId, 'auth-login');
+        if (!rateLimitResult.allowed) {
+          const response = rateLimiter.createRateLimitResponse(rateLimitResult.resetTime!);
+          // Add CORS headers to rate limit response
+          Object.entries(corsHeaders).forEach(([key, value]) => {
+            response.headers.set(key, value);
+          });
+          return response;
+        }
+        
         return await verifyCredentials(request, env, corsHeaders);
       }
 
@@ -184,6 +240,17 @@ export default {
 
       // Password reset endpoints (public)
       if (path === '/api/auth/forgot-password' && request.method === 'POST') {
+        // Rate limit forgot password attempts
+        const rateLimitResult = await rateLimiter.checkRateLimit(clientId, 'auth-forgot-password');
+        if (!rateLimitResult.allowed) {
+          const response = rateLimiter.createRateLimitResponse(rateLimitResult.resetTime!);
+          // Add CORS headers to rate limit response
+          Object.entries(corsHeaders).forEach(([key, value]) => {
+            response.headers.set(key, value);
+          });
+          return response;
+        }
+        
         return await forgotPassword(request, env, corsHeaders);
       }
 
@@ -192,6 +259,17 @@ export default {
       }
 
       if (path === '/api/auth/reset-password' && request.method === 'POST') {
+        // Rate limit password reset attempts
+        const rateLimitResult = await rateLimiter.checkRateLimit(clientId, 'auth-reset-password');
+        if (!rateLimitResult.allowed) {
+          const response = rateLimiter.createRateLimitResponse(rateLimitResult.resetTime!);
+          // Add CORS headers to rate limit response
+          Object.entries(corsHeaders).forEach(([key, value]) => {
+            response.headers.set(key, value);
+          });
+          return response;
+        }
+        
         return await resetPassword(request, env, corsHeaders);
       }
 
