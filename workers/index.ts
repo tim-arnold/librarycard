@@ -125,6 +125,7 @@ import {
   revokeGlobalPermission
 } from './permissions';
 import { RateLimiter } from './auth/rate-limiter';
+import { requireCSRFToken, getCSRFTokenEndpoint, shouldProtectWithCSRF } from './csrf';
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -167,7 +168,7 @@ export default {
     const corsHeaders = {
       'Access-Control-Allow-Origin': allowedOrigin,
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-CSRF-Token, X-Requested-With',
       'Access-Control-Allow-Credentials': 'true',
     };
 
@@ -317,6 +318,19 @@ export default {
           status: 401,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
+      }
+
+      // CSRF token endpoint (for frontend to obtain tokens)
+      if (path === '/api/csrf-token' && request.method === 'GET') {
+        return await getCSRFTokenEndpoint(env, userId, corsHeaders);
+      }
+
+      // CSRF protection for state-changing operations
+      if (shouldProtectWithCSRF(path, request.method)) {
+        const csrfCheck = await requireCSRFToken(request, env, userId, corsHeaders);
+        if (csrfCheck) {
+          return csrfCheck; // CSRF check failed
+        }
       }
 
       // Location endpoints
