@@ -28,8 +28,8 @@ cat wrangler.toml | grep -A 10 "env.production"
 
 | Environment | Database Name | Database ID | Purpose |
 |------------|---------------|-------------|----------|
-| **local** | `libarycard-db-local` | `5365a633-7869-4993-990a-90aa12e9974e` | Local development |
-| **staging** | `librarycard-db-staging` | `eb3d7f44-754e-4354-a3ce-8077c2572946` | Testing & demos |
+| **local** | `libarycard-db-local` | `0141eafd-6cf5-4053-b014-ae1556e01633` | Local development |
+| **staging** | `librarycard-db-staging-new` | `4283d8af-c667-4673-8505-108f02b4609c` | Testing & demos (isolated account) |
 | **production** | `librarycard-db` | `368ab7bc-fb42-4607-a4cf-761dc7795284` | ⚠️ **LIVE DATA** |
 
 ### 4. Safe Script Practices
