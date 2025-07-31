@@ -8,7 +8,10 @@ function generateUUID(): string {
 // Email and notification functions extracted from main worker
 
 export async function sendPasswordResetEmail(env: Env, email: string, firstName: string, resetToken: string) {
-  const appUrl = env.APP_URL || 'https://librarycard.tim52.io';
+  if (!env.APP_URL) {
+    throw new Error('APP_URL environment variable is required for password reset emails');
+  }
+  const appUrl = env.APP_URL;
   const resetUrl = `${appUrl.replace(/\/$/, '')}/auth/reset-password?token=${resetToken}`;
   
   // Use Resend for production email sending
@@ -140,7 +143,7 @@ This is an automated message from LibraryCard.
           'X-Postmark-Server-Token': env.POSTMARK_API_TOKEN,
         },
         body: JSON.stringify({
-          From: env.FROM_EMAIL || 'noreply@librarycard.tim52.io',
+          From: env.FROM_EMAIL || 'LibraryCard <noreply@tim52.io>',
           To: email,
           Subject: 'Reset Your LibraryCard Password',
           HtmlBody: `
@@ -221,7 +224,10 @@ This is an automated message from LibraryCard.
 
 export async function sendInvitationEmail(env: Env, email: string, locationName: string, token: string, invitedBy: string) {
   console.log('DEBUG: env.APP_URL =', env.APP_URL);
-  const appUrl = env.APP_URL || 'https://librarycard.tim52.io';
+  if (!env.APP_URL) {
+    throw new Error('APP_URL environment variable is required for invitation emails');
+  }
+  const appUrl = env.APP_URL;
   console.log('DEBUG: appUrl =', appUrl);
   
   // Extra defensive check
@@ -315,7 +321,10 @@ export async function sendInvitationEmail(env: Env, email: string, locationName:
 }
 
 export async function sendVerificationEmail(env: Env, email: string, firstName: string, token: string) {
-  const appUrl = env.APP_URL || 'https://librarycard.tim52.io';
+  if (!env.APP_URL) {
+    throw new Error('APP_URL environment variable is required for verification emails');
+  }
+  const appUrl = env.APP_URL;
   const verificationUrl = `${appUrl.replace(/\/$/, '')}/api/auth/verify-email?token=${token}`;
   
   // Use Resend for production email sending
@@ -454,7 +463,7 @@ export async function notifyAdminsOfSignupRequest(env: Env, email: string, first
                     </p>
                     
                     <div style="text-align: center; margin: 30px 0;">
-                      <a href="${env.FRONTEND_URL || env.APP_URL || 'https://librarycard.tim52.io'}" 
+                      <a href="${env.APP_URL}" 
                          style="display: inline-block; background-color: #673ab7; color: white; padding: 15px 30px; 
                                 text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px;
                                 transition: background-color 0.3s ease;">
@@ -490,7 +499,7 @@ Requested At: ${new Date().toLocaleString()}
 
 Please log in to the LibraryCard admin panel to review and approve or deny this signup request.
 
-Visit: ${env.FRONTEND_URL || 'https://librarycard.tim52.io'}
+Visit: ${env.APP_URL}
 
 This is an automated message from LibraryCard. This user cannot access the system until approved by an admin.
             `
@@ -523,7 +532,10 @@ export async function sendSignupApprovalEmail(env: Env, email: string, firstName
   try {
     if (env.RESEND_API_KEY) {
       const isProduction = env.ENVIRONMENT === 'production';
-      const baseUrl = env.FRONTEND_URL || 'https://librarycard.tim52.io';
+      if (!env.APP_URL) {
+        throw new Error('APP_URL environment variable is required for admin notifications');
+      }
+      const baseUrl = env.APP_URL;
       
       let subject: string;
       let htmlBody: string;
