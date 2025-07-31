@@ -5,9 +5,6 @@ import { verifyJWT } from './jwt';
 export async function getUserFromRequest(request: Request, env: Env): Promise<string | null> {
   const authHeader = request.headers.get('Authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    if (env.ENVIRONMENT === 'local') {
-      console.log('🔍 Auth: No valid Authorization header found');
-    }
     return null;
   }
   
@@ -16,9 +13,6 @@ export async function getUserFromRequest(request: Request, env: Env): Promise<st
   // First try to verify as JWT
   const jwtPayload = await verifyJWT(token, env);
   if (jwtPayload) {
-    if (env.ENVIRONMENT === 'local') {
-      console.log('🔍 Auth: Valid JWT token for user:', jwtPayload.userId);
-    }
     return jwtPayload.userId;
   }
   
@@ -29,23 +23,13 @@ export async function getUserFromRequest(request: Request, env: Env): Promise<st
         SELECT id FROM users WHERE email = ?
       `).bind(token).first();
       
-      if (env.ENVIRONMENT === 'local') {
-        console.log('🔍 Auth: Email lookup result (legacy):', { email: token, found: !!user });
-      }
-      
       return user ? user.id as string : null;
     } catch (error) {
-      if (env.ENVIRONMENT === 'local') {
-        console.error('🔍 Auth: Database error:', error);
-      }
       return null;
     }
   }
   
   // Last fallback: assume it's already a user ID
-  if (env.ENVIRONMENT === 'local') {
-    console.log('🔍 Auth: Using token as user ID (legacy):', token);
-  }
   return token;
 }
 

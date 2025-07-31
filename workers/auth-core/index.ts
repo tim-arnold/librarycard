@@ -3,6 +3,7 @@ import { sendVerificationEmail, notifyAdminsOfSignupRequest, sendPasswordResetEm
 import { generateJWT } from '../auth/jwt';
 import { getUserRole } from '../auth/index';
 import { parseAndValidateJSON, AuthSchemas, validatePasswordStrength } from '../validation';
+import { ErrorCategory, createSecureErrorResponse, withDatabaseErrorHandling } from '../errors';
 
 // Core authentication functions extracted from main worker
 
@@ -101,11 +102,12 @@ export async function registerUser(request: Request, env: Env, corsHeaders: Reco
       }
     }
   } catch (error) {
-    console.error('Error checking signup approval requests:', error);
-    return new Response(JSON.stringify({ error: 'Unable to process signup request. Please try again later.' }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return createSecureErrorResponse(
+      env,
+      error,
+      ErrorCategory.DATABASE_ERROR,
+      { endpoint: '/api/auth/register' }
+    );
   }
   
   // Check if user has a valid invitation
