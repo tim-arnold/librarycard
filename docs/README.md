@@ -17,10 +17,10 @@ This directory contains comprehensive documentation for the LibraryCard project,
 - **[Troubleshooting](./development/troubleshooting.md)** - Common development issues and solutions
 
 ### 🚀 [Deployment](./deployment/) - Infrastructure & Setup
-- **[Deployment Guide](./deployment/deployment.md)** - Complete deployment procedures
-- **[Netlify Setup](./deployment/netlify-setup.md)** - Frontend deployment guide
-- **[Cloudflare Setup](./development/cloudflare-setup.md)** - Workers and D1 configuration
-- **[Email Verification Setup](./development/email-verification-setup.md)** - Email system configuration
+- **[Deployment Guide](./development/deployment.md)** - Complete deployment procedures
+- **[Netlify Setup](./setup/netlify-setup.md)** - Frontend deployment guide
+- **[Cloudflare Setup](./setup/cloudflare-setup.md)** - Workers and D1 configuration
+- **[Email Verification Setup](./setup/email-verification-setup.md)** - Email system configuration
 
 ### 📋 [Reference](./reference/) - Project Tracking
 - **[Active TODOs](./reference/TODO.md)** - Current development priorities and upcoming features
@@ -40,9 +40,9 @@ This directory contains comprehensive documentation for the LibraryCard project,
 4. [Database Schema](./development/database-schema.md) - Understand the data model
 
 ### 🚀 **For Deployment**
-1. [Deployment Guide](./deployment/deployment.md) - Complete deployment procedures
-2. [Cloudflare Setup](./development/cloudflare-setup.md) - Configure Workers and D1
-3. [Netlify Setup](./deployment/netlify-setup.md) - Deploy frontend
+1. [Deployment Guide](./development/deployment.md) - Complete deployment procedures
+2. [Cloudflare Setup](./setup/cloudflare-setup.md) - Configure Workers and D1
+3. [Netlify Setup](./setup/netlify-setup.md) - Deploy frontend
 
 ### 📊 **For Project Management**
 1. [Active TODOs](./reference/TODO.md) - Current development priorities

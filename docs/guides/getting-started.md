@@ -96,7 +96,7 @@ LibraryCard is a sophisticated library management platform with comprehensive fe
 ## Next Steps
 
 1. **Test locally**: Try scanning a book or entering an ISBN
-2. **Deploy to production**: Follow the [Cloudflare Setup Guide](./cloudflare-setup.md)
+2. **Deploy to production**: Follow the [Cloudflare Setup Guide](../setup/cloudflare-setup.md)
 3. **Customize locations**: Update location lists in the components
 4. **Add books**: Start building your digital library!
 
