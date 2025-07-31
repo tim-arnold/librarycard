@@ -34,9 +34,7 @@ export async function verifyJWT(token: string, env: Env): Promise<JWTPayload | n
     
     return payload as JWTPayload;
   } catch (error) {
-    if (env.ENVIRONMENT === 'local') {
-      console.log('🔍 JWT: Token verification failed:', error);
-    }
+    // JWT verification failed - silent failure for security
     return null;
   }
 }

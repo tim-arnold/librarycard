@@ -126,15 +126,17 @@ import {
 } from './permissions';
 import { RateLimiter } from './auth/rate-limiter';
 import { requireCSRFToken, getCSRFTokenEndpoint, shouldProtectWithCSRF } from './csrf';
+import { CommonErrors, withGlobalErrorHandling, ErrorCategory, createSecureErrorResponse } from './errors';
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);  
     const path = url.pathname;
     
-    console.log('🚀 Worker request:', request.method, path);
-    console.log('🔍 Full URL:', request.url);
-    console.log('📝 Headers:', Object.fromEntries(request.headers.entries()));
+    // Only log requests in local development
+    if (env.ENVIRONMENT === 'local') {
+      console.log('🚀 Worker request:', request.method, path);
+    }
 
 
     // Secure CORS configuration - only allow trusted frontend domain
@@ -281,11 +283,15 @@ export default {
 
       // Public genre endpoints (read-only access)
       if (path === '/api/genres' && request.method === 'GET') {
-        console.log('Worker: handling /genres request');
+        if (env.ENVIRONMENT === 'local') {
+          console.log('Worker: handling /genres request');
+        }
         const genreService = new GenreService(env.DB);
         try {
           const genres = await genreService.getAllActiveGenres();
-          console.log('Worker: returning', genres.length, 'genres');
+          if (env.ENVIRONMENT === 'local') {
+            console.log('Worker: returning', genres.length, 'genres');
+          }
           return new Response(JSON.stringify(genres), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
@@ -303,21 +309,12 @@ export default {
       
       // Debug logging for authentication in local environment
       if (env.ENVIRONMENT === 'local') {
-        console.log('🔍 Auth Debug:', {
-          path,
-          method: request.method,
-          hasAuth: !!request.headers.get('Authorization'),
-          userId,
-          userAgent: request.headers.get('User-Agent')
-        });
+        console.log('🔍 Auth Debug: User authenticated for', path);
       }
       
       // All other endpoints require authentication
       if (!userId) {
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return CommonErrors.UNAUTHORIZED(env, corsHeaders);
       }
 
       // CSRF token endpoint (for frontend to obtain tokens)
@@ -429,24 +426,30 @@ export default {
       // Book endpoints
       if (path === '/api/books' && request.method === 'GET') {
         if (env.ENVIRONMENT === 'local') {
-          console.log('🔍 Books Debug: Fetching books for user', userId);
+          if (env.ENVIRONMENT === 'local') {
+            console.log('🔍 Books Debug: Fetching books for user', userId);
+          }
         }
         
         try {
           const result = await getCachedUserBooks(userId, env, corsHeaders);
           
           if (env.ENVIRONMENT === 'local') {
-            console.log('🔍 Books Debug: Result status', result.status);
-            if (!result.ok) {
-              const errorText = await result.text();
-              console.log('🔍 Books Debug: Error response', errorText);
+            if (env.ENVIRONMENT === 'local') {
+              console.log('🔍 Books Debug: Result status', result.status);
+              if (!result.ok) {
+                const errorText = await result.text();
+                console.log('🔍 Books Debug: Error response', errorText);
+              }
             }
           }
           
           return result;
         } catch (error) {
           if (env.ENVIRONMENT === 'local') {
-            console.error('🔍 Books Debug: Exception caught', error);
+            if (env.ENVIRONMENT === 'local') {
+              console.error('🔍 Books Debug: Exception caught', error);
+            }
           }
           throw error;
         }
@@ -1010,16 +1013,14 @@ export default {
         }
       }
 
-      return new Response('Not Found', { 
-        status: 404, 
-        headers: corsHeaders 
-      });
+      return CommonErrors.NOT_FOUND(env, corsHeaders);
     } catch (error) {
-      console.error('API Error:', error);
-      return new Response(`Error: ${error}`, { 
-        status: 500, 
-        headers: corsHeaders 
-      });
+      return createSecureErrorResponse(
+        env,
+        error,
+        ErrorCategory.SERVER_ERROR,
+        { endpoint: path, userId }
+      );
     }
   },
 };

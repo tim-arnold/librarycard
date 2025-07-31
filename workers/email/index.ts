@@ -214,21 +214,25 @@ This is an automated message from LibraryCard.
     }
   }
   
-  // Development fallback - log to console
-  console.log('=== PASSWORD RESET EMAIL ===');
-  console.log(`To: ${email}`);
-  console.log(`Reset URL: ${resetUrl}`);
-  console.log(`Token: ${resetToken}`);
-  console.log('==========================');
+  // Development fallback - log to console (sanitized)
+  if (env.ENVIRONMENT === 'local') {
+    console.log('=== PASSWORD RESET EMAIL ===');
+    console.log(`To: ${email}`);
+    console.log(`Reset URL: [URL_REDACTED]`);
+    console.log('==========================');
+  }
 }
 
 export async function sendInvitationEmail(env: Env, email: string, locationName: string, token: string, invitedBy: string) {
-  console.log('DEBUG: env.APP_URL =', env.APP_URL);
+  // Removed sensitive debug logging
   if (!env.APP_URL) {
     throw new Error('APP_URL environment variable is required for invitation emails');
   }
   const appUrl = env.APP_URL;
-  console.log('DEBUG: appUrl =', appUrl);
+  // Debug logging only in local environment
+  if (env.ENVIRONMENT === 'local') {
+    console.log('DEBUG: appUrl =', appUrl);
+  }
   
   // Extra defensive check
   if (!appUrl || typeof appUrl !== 'string') {
@@ -247,9 +251,11 @@ export async function sendInvitationEmail(env: Env, email: string, locationName:
   // Use Resend for production email sending
   if (env.RESEND_API_KEY) {
     try {
-      console.log('DEBUG: About to send email via Resend');
-      console.log('DEBUG: FROM_EMAIL =', env.FROM_EMAIL);
-      console.log('DEBUG: RESEND_API_KEY exists =', !!env.RESEND_API_KEY);
+      if (env.ENVIRONMENT === 'local') {
+        console.log('DEBUG: About to send email via Resend');
+        console.log('DEBUG: FROM_EMAIL =', env.FROM_EMAIL);
+        console.log('DEBUG: RESEND_API_KEY exists =', !!env.RESEND_API_KEY);
+      }
       
       const response = await fetch('https://api.resend.com/emails', {
         method: 'POST',
@@ -311,12 +317,9 @@ export async function sendInvitationEmail(env: Env, email: string, locationName:
     }
   } else {
     // Fallback for development/staging without email service
-    console.log(`
-      Invitation email would be sent to: ${email}
-      Location: ${locationName}
-      Invited by: ${inviterName}
-      Invitation URL: ${invitationUrl}
-    `);
+    if (env.ENVIRONMENT === 'local') {
+      console.log(`Invitation email fallback: ${email} invited to ${locationName}`);
+    }
   }
 }
 
@@ -387,11 +390,9 @@ export async function sendVerificationEmail(env: Env, email: string, firstName: 
     }
   } else {
     // Fallback for development/staging without email service
-    console.log(`
-      Email verification would be sent to: ${email}
-      Name: ${firstName}
-      Verification URL: ${verificationUrl}
-    `);
+    if (env.ENVIRONMENT === 'local') {
+      console.log(`Verification email fallback: ${email}`);
+    }
   }
 }
 
@@ -515,11 +516,9 @@ This is an automated message from LibraryCard. This user cannot access the syste
         }
       } else {
         // Fallback for development/staging without email service
-        console.log(`
-          Signup request notification would be sent to admin: ${adminEmail}
-          Admin Name: ${adminFirstName}
-          Requesting User: ${firstName}${lastName ? ` ${lastName}` : ''} (${email})
-        `);
+        if (env.ENVIRONMENT === 'local') {
+          console.log(`Signup notification fallback to admin: ${adminEmail}`);
+        }
       }
     } catch (error) {
       console.error(`Error sending signup notification to admin ${adminEmail}:`, error);
@@ -663,12 +662,9 @@ This is an automated message from LibraryCard.
       }
     } else {
       // Fallback for development/staging without email service
-      console.log(`
-        Signup approval email would be sent to: ${email}
-        Name: ${firstName}
-        Approved: ${approved}
-        ${approved && verificationToken ? `Verification Token: ${verificationToken}` : ''}
-        ${comment ? `Comment: ${comment}` : ''}
+      if (env.ENVIRONMENT === 'local') {
+        console.log(`Signup approval email fallback: ${email} - Approved: ${approved}`);
+      }
       `);
     }
   } catch (error) {
@@ -772,11 +768,9 @@ export async function sendContactEmail(request: Request, env: Env, corsHeaders: 
       }
     } else {
       // Fallback for development without email service
-      console.log(`
-        Contact form submission (development mode):
-        From: ${name} (${email})
-        Message: ${message}
-      `);
+      if (env.ENVIRONMENT === 'local') {
+        console.log(`Contact form fallback from: ${name} (${email})`);
+      }
       
       return new Response(JSON.stringify({ 
         message: 'Message received! (Development mode - no email sent)'
