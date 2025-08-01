@@ -665,7 +665,6 @@ This is an automated message from LibraryCard.
       if (env.ENVIRONMENT === 'local') {
         console.log(`Signup approval email fallback: ${email} - Approved: ${approved}`);
       }
-      `);
     }
   } catch (error) {
     console.error('Error sending signup approval email:', error);
