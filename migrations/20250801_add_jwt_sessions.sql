@@ -5,18 +5,18 @@
 CREATE TABLE IF NOT EXISTS jwt_sessions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id TEXT NOT NULL,
-  session_id TEXT UNIQUE NOT NULL, -- JWT session identifier (jti claim)
-  token_hash TEXT NOT NULL, -- SHA-256 hash of the JWT token (for revocation without storing full token)
-  issued_at DATETIME NOT NULL, -- When the token was issued
-  expires_at DATETIME NOT NULL, -- When the token expires
-  last_accessed_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- Track session activity
-  user_agent TEXT, -- Client user agent (for security auditing)
-  ip_address TEXT, -- Client IP address (for security auditing)
-  revoked BOOLEAN DEFAULT FALSE, -- Manual token revocation
-  revoked_at DATETIME, -- When the token was revoked
-  revoked_by TEXT, -- Who revoked the token (admin user ID)
-  revoked_reason TEXT, -- Reason for revocation
-  auth_method TEXT DEFAULT 'password', -- 'password', 'google', 'password_reset'
+  session_id TEXT UNIQUE NOT NULL,
+  token_hash TEXT NOT NULL,
+  issued_at DATETIME NOT NULL,
+  expires_at DATETIME NOT NULL,
+  last_accessed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  user_agent TEXT,
+  ip_address TEXT,
+  revoked BOOLEAN DEFAULT FALSE,
+  revoked_at DATETIME,
+  revoked_by TEXT,
+  revoked_reason TEXT,
+  auth_method TEXT DEFAULT 'password',
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (revoked_by) REFERENCES users(id)
@@ -25,15 +25,15 @@ CREATE TABLE IF NOT EXISTS jwt_sessions (
 -- Security audit log for authentication events
 CREATE TABLE IF NOT EXISTS auth_audit_log (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id TEXT, -- NULL for failed login attempts
-  email TEXT NOT NULL, -- Email used in auth attempt
-  event_type TEXT NOT NULL, -- 'login_success', 'login_failure', 'logout', 'token_refresh', 'password_reset'
+  user_id TEXT,
+  email TEXT NOT NULL,
+  event_type TEXT NOT NULL,
   ip_address TEXT,
   user_agent TEXT,
-  auth_method TEXT, -- 'password', 'google', 'jwt_refresh'
-  failure_reason TEXT, -- For failed attempts: 'invalid_password', 'user_not_found', 'account_locked', etc.
-  session_id TEXT, -- Link to jwt_sessions table
-  additional_data TEXT, -- JSON for additional context
+  auth_method TEXT,
+  failure_reason TEXT,
+  session_id TEXT,
+  additional_data TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
@@ -57,36 +57,15 @@ CREATE INDEX IF NOT EXISTS idx_auth_audit_session_id ON auth_audit_log(session_i
 -- Note: This would typically be run by a scheduled job
 -- DELETE FROM jwt_sessions WHERE expires_at < datetime('now') AND revoked = FALSE;
 
--- Optional views for security monitoring
-CREATE VIEW IF NOT EXISTS active_sessions AS
-SELECT 
-  js.user_id,
-  u.email,
-  u.first_name,
-  u.last_name,
-  js.session_id,
-  js.issued_at,
-  js.expires_at,
-  js.last_accessed_at,
-  js.ip_address,
-  js.user_agent,
-  js.auth_method
-FROM jwt_sessions js
-JOIN users u ON js.user_id = u.id
-WHERE js.revoked = FALSE 
-  AND js.expires_at > datetime('now');
-
-CREATE VIEW IF NOT EXISTS recent_auth_events AS
-SELECT 
-  aal.email,
-  aal.event_type,
-  aal.auth_method,
-  aal.ip_address,
-  aal.failure_reason,
-  aal.created_at,
-  u.first_name,
-  u.last_name
-FROM auth_audit_log aal
-LEFT JOIN users u ON aal.user_id = u.id
-WHERE aal.created_at > datetime('now', '-7 days')
-ORDER BY aal.created_at DESC;
+-- Note: Views are not supported in Cloudflare D1, so they have been removed
+-- Security monitoring queries can be run manually when needed:
+-- 
+-- Active sessions query:
+-- SELECT js.user_id, u.email, js.session_id, js.issued_at, js.expires_at, js.last_accessed_at
+-- FROM jwt_sessions js JOIN users u ON js.user_id = u.id
+-- WHERE js.revoked = FALSE AND js.expires_at > datetime('now');
+--
+-- Recent auth events query:
+-- SELECT aal.email, aal.event_type, aal.auth_method, aal.ip_address, aal.created_at
+-- FROM auth_audit_log aal LEFT JOIN users u ON aal.user_id = u.id
+-- WHERE aal.created_at > datetime('now', '-7 days') ORDER BY aal.created_at DESC;
