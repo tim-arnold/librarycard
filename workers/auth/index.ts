@@ -1,6 +1,18 @@
 import { Env } from '../types';
 import { verifyJWT } from './jwt';
 
+interface UserIdRow {
+  id: string;
+}
+
+interface UserRoleRow {
+  user_role?: string;
+}
+
+interface LocationAccessRow {
+  [key: string]: any;
+}
+
 // Enhanced authentication helper with JWT support
 export async function getUserFromRequest(request: Request, env: Env): Promise<string | null> {
   const authHeader = request.headers.get('Authorization');
@@ -23,7 +35,7 @@ export async function getUserFromRequest(request: Request, env: Env): Promise<st
         SELECT id FROM users WHERE email = ?
       `).bind(token).first();
       
-      return user ? user.id as string : null;
+      return user ? (user as UserIdRow).id : null;
     } catch (error) {
       return null;
     }
@@ -39,7 +51,7 @@ export async function getUserRole(userId: string, env: Env): Promise<string> {
     SELECT user_role FROM users WHERE id = ?
   `).bind(userId).first();
   
-  return (user as any)?.user_role || 'user';
+  return (user as UserRoleRow | null)?.user_role || 'user';
 }
 
 export async function isUserAdmin(userId: string, env: Env): Promise<boolean> {
@@ -66,7 +78,7 @@ export async function canManageLocation(userId: string, locationId: number, env:
       SELECT 1 FROM locations WHERE id = ? AND owner_id = ?
       UNION
       SELECT 1 FROM location_members WHERE location_id = ? AND user_id = ?
-    `).bind(locationId, userId, locationId, userId).first();
+    `).bind(locationId, userId, locationId, userId).first() as LocationAccessRow | null;
     
     return !!locationAccess;
   }

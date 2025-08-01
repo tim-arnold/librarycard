@@ -47,8 +47,15 @@ export async function POST(request: NextRequest) {
     })
 
     if (response.ok) {
-      const user = await response.json()
-      return NextResponse.json(user)
+      const result = await response.json()
+      
+      // Check if 2FA is required
+      if (result.requires_2fa) {
+        return NextResponse.json(result, { status: 200 })
+      }
+      
+      // Normal login (no 2FA required)
+      return NextResponse.json(result)
     } else {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
     }

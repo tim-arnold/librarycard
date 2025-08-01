@@ -2,6 +2,18 @@ import { Env } from '../types';
 import { CacheManager, CacheKeys, CacheTTL } from '../cache/kv';
 import { getUserRole, isUserAdmin, isUserSuperAdmin, canManageLocation } from './index';
 
+interface LocationRow {
+  id: number;
+  name: string;
+  description?: string;
+  isOwner?: number;
+  owner_id?: string;
+}
+
+interface LocationMemberRow {
+  id: number;
+}
+
 /**
  * Cached authentication functions with automatic fallback to database
  */
@@ -108,7 +120,7 @@ export async function getCachedUserPermissions(userId: string, env: Env): Promis
     const allLocations = await env.DB.prepare(`
       SELECT id FROM locations ORDER BY id
     `).all();
-    locationIds = (allLocations.results as any[]).map(loc => loc.id);
+    locationIds = (allLocations.results as LocationMemberRow[]).map(loc => loc.id);
   } else {
     // Regular users and admins - get their specific location access
     const userLocations = await env.DB.prepare(`
@@ -118,7 +130,7 @@ export async function getCachedUserPermissions(userId: string, env: Env): Promis
       WHERE l.owner_id = ? OR lm.user_id = ?
       ORDER BY l.id
     `).bind(userId, userId).all();
-    locationIds = (userLocations.results as any[]).map(loc => loc.id);
+    locationIds = (userLocations.results as LocationMemberRow[]).map(loc => loc.id);
   }
   
   const permissions = {
@@ -196,7 +208,7 @@ export async function getCachedUserLocations(userId: string, env: Env): Promise<
       FROM locations 
       ORDER BY name
     `).bind(userId).all();
-    locations = (allLocations.results as any[]).map(loc => ({
+    locations = (allLocations.results as LocationRow[]).map(loc => ({
       id: loc.id,
       name: loc.name,
       description: loc.description,
@@ -212,7 +224,7 @@ export async function getCachedUserLocations(userId: string, env: Env): Promise<
       WHERE l.owner_id = ? OR lm.user_id = ?
       ORDER BY l.name
     `).bind(userId, userId, userId).all();
-    locations = (userLocations.results as any[]).map(loc => ({
+    locations = (userLocations.results as LocationRow[]).map(loc => ({
       id: loc.id,
       name: loc.name,
       description: loc.description,
