@@ -19,6 +19,7 @@ declare module 'next-auth' {
     email: string
     name?: string
     authProvider?: string
+    access_token?: string
   }
 }
 
@@ -41,7 +42,10 @@ const handler = NextAuth({
 
         try {
           // Call our API to verify credentials
-          const baseUrl = process.env.NEXTAUTH_URL || 'https://librarycard.tim52.io'
+          const baseUrl = process.env.NEXTAUTH_URL
+          if (!baseUrl) {
+            throw new Error('NEXTAUTH_URL environment variable is required')
+          }
           const response = await fetch(`${baseUrl}/api/auth/verify`, {
             method: 'POST',
             headers: {
@@ -59,7 +63,8 @@ const handler = NextAuth({
               id: user.id,
               email: user.email,
               name: `${user.first_name} ${user.last_name}`.trim(),
-              authProvider: 'email'
+              authProvider: 'email',
+              access_token: user.access_token // Capture JWT token from API response
             }
           }
         } catch (error) {
@@ -73,7 +78,9 @@ const handler = NextAuth({
   callbacks: {
     async jwt({ token, user, account }) {
       if (account && user) {
-        token.accessToken = account.access_token
+        // For OAuth providers (Google), use account access token
+        // For credentials provider, use our JWT token
+        token.accessToken = (user as any).access_token || account.access_token
         token.userId = user.id
         token.authProvider = (user as { authProvider?: string }).authProvider || 'google'
       }
@@ -89,6 +96,9 @@ const handler = NextAuth({
         session.user.id = token.userId as string
         session.user.authProvider = token.authProvider as string
         session.accessToken = token.accessToken as string
+        
+        // Add access_token to session for use in authenticatedFetch
+        ;(session as any).access_token = token.accessToken
       }
       return session
     },
@@ -100,7 +110,11 @@ const handler = NextAuth({
 
 async function storeUserIfNotExists(user: { email: string; name?: string | null }, userId: string) {
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL
+    if (!apiUrl) {
+      console.error('NEXT_PUBLIC_API_URL environment variable is required')
+      return
+    }
     
     // First check if user exists
     const checkResponse = await fetch(`${apiUrl}/api/users/check?email=${encodeURIComponent(user.email)}`)
