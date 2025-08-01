@@ -1,4 +1,4 @@
-import { authenticator } from '@otplib/preset-browser';
+import { authenticator } from '@otplib/preset-default';
 import { hash, compare } from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import * as QRCode from 'qrcode';
