@@ -58,13 +58,29 @@ const handler = NextAuth({
           })
 
           if (response.ok) {
-            const user = await response.json()
+            const result = await response.json()
+            
+            // Check if 2FA is required
+            if (result.requires_2fa) {
+              // Store the 2FA state in a way that can be accessed by the signin page
+              // We return a special user object that indicates 2FA is needed
+              return {
+                id: result.user_id,
+                email: result.email,
+                name: result.email, // Temporary name until 2FA is complete
+                authProvider: 'email',
+                requires_2fa: true,
+                // Don't include access_token since 2FA is not complete
+              }
+            }
+            
+            // Normal login (no 2FA required)
             return {
-              id: user.id,
-              email: user.email,
-              name: `${user.first_name} ${user.last_name}`.trim(),
+              id: result.id,
+              email: result.email,
+              name: `${result.first_name} ${result.last_name}`.trim(),
               authProvider: 'email',
-              access_token: user.access_token // Capture JWT token from API response
+              access_token: result.access_token // Capture JWT token from API response
             }
           }
         } catch (error) {

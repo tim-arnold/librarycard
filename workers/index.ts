@@ -72,7 +72,8 @@ import {
   forgotPassword,
   verifyResetToken,
   resetPassword,
-  changePassword
+  changePassword,
+  complete2FALogin
 } from './auth-core';
 import {
   createLocationInvitation,
@@ -125,6 +126,7 @@ import {
   revokeGlobalPermission
 } from './permissions';
 import { RateLimiter } from './auth/rate-limiter';
+import { TwoFactorAuth } from './auth/two-factor';
 import { requireCSRFToken, getCSRFTokenEndpoint, shouldProtectWithCSRF } from './csrf';
 import { CommonErrors, withGlobalErrorHandling, ErrorCategory, createSecureErrorResponse } from './errors';
 
@@ -181,6 +183,9 @@ export default {
     // Initialize rate limiter
     const rateLimiter = new RateLimiter(env);
     const clientId = rateLimiter.getClientIdentifier(request);
+
+    // Declare userId at function scope so it's accessible in catch block
+    let userId: string | null = null;
 
     try {
       // Health check endpoint (no authentication required)
@@ -281,6 +286,21 @@ export default {
         return await sendContactEmail(request, env, corsHeaders);
       }
 
+      // 2FA login completion endpoint (public - for completing login)
+      if (path === '/api/auth/2fa/complete-login' && request.method === 'POST') {
+        // Rate limit 2FA completion attempts
+        const rateLimitResult = await rateLimiter.checkRateLimit(clientId, 'auth-2fa-verify');
+        if (!rateLimitResult.allowed) {
+          const response = rateLimiter.createRateLimitResponse(rateLimitResult.resetTime!);
+          Object.entries(corsHeaders).forEach(([key, value]) => {
+            response.headers.set(key, value);
+          });
+          return response;
+        }
+        
+        return await complete2FALogin(request, env, corsHeaders);
+      }
+
       // Public genre endpoints (read-only access)
       if (path === '/api/genres' && request.method === 'GET') {
         if (env.ENVIRONMENT === 'local') {
@@ -305,7 +325,7 @@ export default {
       }
 
       // Get user from session/token for protected endpoints
-      const userId = await getUserFromRequest(request, env);
+      userId = await getUserFromRequest(request, env);
       
       // Debug logging for authentication in local environment
       if (env.ENVIRONMENT === 'local') {
@@ -328,6 +348,77 @@ export default {
         if (csrfCheck) {
           return csrfCheck; // CSRF check failed
         }
+      }
+
+      // 2FA/Two-Factor Authentication endpoints
+      const twoFactorAuth = new TwoFactorAuth(env);
+
+      if (path === '/api/auth/2fa/status' && request.method === 'GET') {
+        return await twoFactorAuth.getStatus(userId, corsHeaders);
+      }
+
+      if (path === '/api/auth/2fa/setup' && request.method === 'GET') {
+        return await twoFactorAuth.initializeSetup(userId, corsHeaders);
+      }
+
+      if (path === '/api/auth/2fa/setup' && request.method === 'POST') {
+        // Rate limit 2FA setup attempts
+        const rateLimitResult = await rateLimiter.checkRateLimit(clientId, 'auth-2fa-setup');
+        if (!rateLimitResult.allowed) {
+          const response = rateLimiter.createRateLimitResponse(rateLimitResult.resetTime!);
+          Object.entries(corsHeaders).forEach(([key, value]) => {
+            response.headers.set(key, value);
+          });
+          return response;
+        }
+        
+        return await twoFactorAuth.completeSetup(request, userId, corsHeaders);
+      }
+
+      if (path === '/api/auth/2fa/verify' && request.method === 'POST') {
+        // Rate limit 2FA verification attempts
+        const rateLimitResult = await rateLimiter.checkRateLimit(clientId, 'auth-2fa-verify');
+        if (!rateLimitResult.allowed) {
+          const response = rateLimiter.createRateLimitResponse(rateLimitResult.resetTime!);
+          Object.entries(corsHeaders).forEach(([key, value]) => {
+            response.headers.set(key, value);
+          });
+          return response;
+        }
+        
+        return await twoFactorAuth.verifyTOTP(request, userId, corsHeaders);
+      }
+
+      if (path === '/api/auth/2fa/verify-backup' && request.method === 'POST') {
+        // Rate limit backup code verification attempts
+        const rateLimitResult = await rateLimiter.checkRateLimit(clientId, 'auth-2fa-verify');
+        if (!rateLimitResult.allowed) {
+          const response = rateLimiter.createRateLimitResponse(rateLimitResult.resetTime!);
+          Object.entries(corsHeaders).forEach(([key, value]) => {
+            response.headers.set(key, value);
+          });
+          return response;
+        }
+        
+        return await twoFactorAuth.verifyBackupCode(request, userId, corsHeaders);
+      }
+
+      if (path === '/api/auth/2fa/disable' && request.method === 'POST') {
+        // Rate limit 2FA disable attempts
+        const rateLimitResult = await rateLimiter.checkRateLimit(clientId, 'auth-2fa-disable');
+        if (!rateLimitResult.allowed) {
+          const response = rateLimiter.createRateLimitResponse(rateLimitResult.resetTime!);
+          Object.entries(corsHeaders).forEach(([key, value]) => {
+            response.headers.set(key, value);
+          });
+          return response;
+        }
+        
+        return await twoFactorAuth.disable2FA(request, userId, corsHeaders);
+      }
+
+      if (path === '/api/auth/2fa/backup-codes' && request.method === 'POST') {
+        return await twoFactorAuth.regenerateBackupCodes(userId, corsHeaders);
       }
 
       // Location endpoints
@@ -1015,11 +1106,13 @@ export default {
 
       return CommonErrors.NOT_FOUND(env, corsHeaders);
     } catch (error) {
+      // Note: userId might be null or undefined if error occurs before authentication
+      const userContext = userId || undefined;
       return createSecureErrorResponse(
         env,
         error,
         ErrorCategory.SERVER_ERROR,
-        { endpoint: path, userId }
+        { endpoint: path, userId: userContext }
       );
     }
   },

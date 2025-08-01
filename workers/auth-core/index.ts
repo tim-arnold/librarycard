@@ -238,7 +238,7 @@ export async function verifyCredentials(request: Request, env: Env, corsHeaders:
   const { email, password } = validation.data!;
   
   const user = await env.DB.prepare(`
-    SELECT id, email, first_name, last_name, password_hash, email_verified, auth_provider
+    SELECT id, email, first_name, last_name, password_hash, email_verified, auth_provider, totp_enabled
     FROM users 
     WHERE email = ? AND auth_provider = 'email'
   `).bind(email).first();
@@ -275,6 +275,23 @@ export async function verifyCredentials(request: Request, env: Env, corsHeaders:
     // Continue with login even if cache clearing fails
   }
   
+  // Check if 2FA is enabled for this user
+  const is2FAEnabled = user.totp_enabled === 1 || user.totp_enabled === true;
+  
+  if (is2FAEnabled) {
+    // 2FA is enabled - return partial authentication requiring TOTP verification
+    return new Response(JSON.stringify({
+      requires_2fa: true,
+      user_id: user.id,
+      email: user.email,
+      message: 'Password verified. Please provide your 2FA code to complete login.'
+    }), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+  
+  // 2FA not enabled - proceed with normal login
   // Get user role for JWT payload
   const userRole = await getUserRole(user.id as string, env);
   
@@ -728,6 +745,72 @@ export async function changePassword(request: Request, env: Env, corsHeaders: Re
   
   return new Response(JSON.stringify({ 
     message: 'Password changed successfully!' 
+  }), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
+
+export async function complete2FALogin(request: Request, env: Env, corsHeaders: Record<string, string>) {
+  const validation = await parseAndValidateJSON(request, {
+    user_id: { required: true, type: 'string' as const, maxLength: 255 },
+    totp_code: { required: true, type: 'string' as const, pattern: /^\d{6}$/ }
+  });
+  
+  if (!validation.isValid) {
+    return new Response(JSON.stringify({ error: validation.error }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+  
+  const { user_id, totp_code } = validation.data!;
+  
+  // Get user and verify 2FA is enabled
+  const user = await env.DB.prepare(`
+    SELECT id, email, first_name, last_name, auth_provider, totp_enabled, totp_secret
+    FROM users 
+    WHERE id = ? AND totp_enabled = 1
+  `).bind(user_id).first();
+  
+  if (!user) {
+    return new Response(JSON.stringify({ error: 'User not found or 2FA not enabled' }), {
+      status: 404,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+  
+  // Import the TOTP service
+  const { TOTPService } = await import('../auth/totp');
+  const totpService = new TOTPService(env);
+  
+  // Verify the TOTP code
+  const isValidTOTP = totpService.verifyToken(user.totp_secret as string, totp_code);
+  
+  if (!isValidTOTP) {
+    return new Response(JSON.stringify({ error: 'Invalid 2FA code' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+  
+  // 2FA verification successful - complete login
+  // Get user role for JWT payload
+  const userRole = await getUserRole(user.id as string, env);
+  
+  // Generate JWT token
+  const jwt = await generateJWT({
+    userId: user.id as string,
+    email: user.email as string,
+    role: userRole
+  }, env);
+  
+  return new Response(JSON.stringify({
+    id: user.id,
+    email: user.email,
+    first_name: user.first_name,
+    last_name: user.last_name,
+    auth_provider: user.auth_provider,
+    access_token: jwt
   }), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });

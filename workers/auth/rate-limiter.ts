@@ -16,6 +16,9 @@ const RATE_LIMITS: Record<string, RateLimitConfig> = {
   'auth-register': { windowMs: 60 * 60 * 1000, maxAttempts: 3 }, // 3 attempts per hour
   'auth-forgot-password': { windowMs: 60 * 60 * 1000, maxAttempts: 3 }, // 3 attempts per hour
   'auth-reset-password': { windowMs: 60 * 60 * 1000, maxAttempts: 5 }, // 5 attempts per hour
+  'auth-2fa-verify': { windowMs: 15 * 60 * 1000, maxAttempts: 10 }, // 10 attempts per 15 minutes for TOTP
+  'auth-2fa-setup': { windowMs: 60 * 60 * 1000, maxAttempts: 5 }, // 5 setup attempts per hour
+  'auth-2fa-disable': { windowMs: 60 * 60 * 1000, maxAttempts: 3 }, // 3 disable attempts per hour
   'api-general': { windowMs: 60 * 1000, maxAttempts: 100 }, // 100 requests per minute for general API
 };
 
@@ -34,6 +37,11 @@ export class RateLimiter {
     identifier: string, 
     type: keyof typeof RATE_LIMITS
   ): Promise<{ allowed: boolean; resetTime?: number; remaining?: number }> {
+    // Disable rate limiting in development
+    if (this.env.ENVIRONMENT === 'development' || this.env.ENVIRONMENT === 'local') {
+      return { allowed: true };
+    }
+
     const config = RATE_LIMITS[type];
     if (!config) {
       // If no rate limit configured, allow the request
@@ -44,6 +52,12 @@ export class RateLimiter {
     const now = Date.now();
 
     try {
+      // Check if CACHE is available
+      if (!this.env.CACHE) {
+        // If no cache available, allow the request
+        return { allowed: true };
+      }
+
       // Get current rate limit data
       const dataStr = await this.env.CACHE.get(key);
       let data: RateLimitData;
