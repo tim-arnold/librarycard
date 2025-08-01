@@ -19,7 +19,8 @@ Read these essential project files:
 - CLAUDE.md
 - docs/reference/CHANGELOG.md
 - docs/development/architecture.md
-- docs/guides/getting-started.md
+- docs/development/development-workflow.md
+- docs/development/deployment.md
 
 ## Read Configuration Files
 Examine the project configuration:
