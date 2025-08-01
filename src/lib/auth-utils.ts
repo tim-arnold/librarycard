@@ -27,8 +27,11 @@ export async function authenticatedFetch<T = unknown>(
 
   const { method = 'GET', body, additionalHeaders = {} } = options
 
+  // Use JWT token if available, fallback to email for backward compatibility
+  const token = (session as any)?.access_token || session.user.email;
+
   const headers = {
-    'Authorization': `Bearer ${session.user.email}`,
+    'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json',
     ...additionalHeaders
   }

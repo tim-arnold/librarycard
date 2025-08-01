@@ -1,41 +1,35 @@
 import { Env } from '../types';
+import { verifyJWT } from './jwt';
 
-// Authentication helper (simplified - in production you'd verify JWT)
+// Enhanced authentication helper with JWT support
 export async function getUserFromRequest(request: Request, env: Env): Promise<string | null> {
   const authHeader = request.headers.get('Authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    if (env.ENVIRONMENT === 'local') {
-      console.log('🔍 Auth: No valid Authorization header found');
-    }
     return null;
   }
   
   const token = authHeader.substring(7);
   
-  // If token looks like an email, look up the user ID
+  // First try to verify as JWT
+  const jwtPayload = await verifyJWT(token, env);
+  if (jwtPayload) {
+    return jwtPayload.userId;
+  }
+  
+  // Fallback: If token looks like an email, look up the user ID (backward compatibility)
   if (token.includes('@')) {
     try {
       const user = await env.DB.prepare(`
         SELECT id FROM users WHERE email = ?
       `).bind(token).first();
       
-      if (env.ENVIRONMENT === 'local') {
-        console.log('🔍 Auth: Email lookup result:', { email: token, found: !!user });
-      }
-      
       return user ? user.id as string : null;
     } catch (error) {
-      if (env.ENVIRONMENT === 'local') {
-        console.error('🔍 Auth: Database error:', error);
-      }
       return null;
     }
   }
   
-  // Otherwise, assume it's already a user ID
-  if (env.ENVIRONMENT === 'local') {
-    console.log('🔍 Auth: Using token as user ID:', token);
-  }
+  // Last fallback: assume it's already a user ID
   return token;
 }
 
