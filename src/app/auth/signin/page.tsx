@@ -20,13 +20,13 @@ import {
   Email,
   PersonAdd,
   Login,
-  LibraryBooks,
   CheckCircle,
   CreditCard,
 } from '@mui/icons-material'
 import Footer from '@/components/layout/Footer'
 import { Turnstile, TurnstileInstance } from '@marsidev/react-turnstile'
 import { getApiBaseUrl } from '@/lib/apiConfig'
+import TOTPInput from '@/components/auth/TOTPInput'
 
 function SignInForm() {
   const [loading, setLoading] = useState(false)
@@ -34,15 +34,18 @@ function SignInForm() {
   const [showEmailForm, setShowEmailForm] = useState(false)
   const [showRegisterForm, setShowRegisterForm] = useState(false)
   const [showForgotPasswordForm, setShowForgotPasswordForm] = useState(false)
+  const [show2FAForm, setShow2FAForm] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
+  const [totpCode, setTotpCode] = useState('')
   const [error, setError] = useState('')
   const [message, setMessage] = useState<string | React.ReactNode>('')
   const [invitationToken, setInvitationToken] = useState<string | null>(null)
   const [invitationDetails, setInvitationDetails] = useState<{invited_email: string, location_name: string} | null>(null)
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
+  const [pendingUserId, setPendingUserId] = useState<string | null>(null)
   const turnstileRef = useRef<TurnstileInstance>()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -172,6 +175,35 @@ function SignInForm() {
     setError('')
     
     try {
+      // First, check if user needs 2FA
+      const verifyResponse = await fetch('/api/auth/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      })
+
+      if (verifyResponse.ok) {
+        const verifyResult = await verifyResponse.json()
+        
+        if (verifyResult.requires_2fa) {
+          // 2FA is required - show 2FA form
+          setPendingUserId(verifyResult.user_id)
+          setShow2FAForm(true)
+          setShowEmailForm(false)
+          setError('')
+          return
+        }
+      } else if (verifyResponse.status === 429) {
+        // Rate limited
+        const errorData = await verifyResponse.json()
+        setError(errorData.error || 'Too many login attempts. Please try again later.')
+        setEmailLoading(false)
+        return
+      }
+
+      // No 2FA required or verification failed - proceed with normal NextAuth signin
       const result = await signIn('credentials', {
         email,
         password,
@@ -375,6 +407,69 @@ function SignInForm() {
     }
   }
 
+  const handle2FASignIn = async (code: string) => {
+    if (!pendingUserId) {
+      setError('Session expired. Please sign in again.')
+      setShow2FAForm(false)
+      setShowEmailForm(true)
+      return
+    }
+
+    setEmailLoading(true)
+    setError('')
+
+    try {
+      // Complete 2FA login with the backend
+      const response = await fetch(`${getApiBaseUrl()}/api/auth/2fa/complete-login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: pendingUserId,
+          totp_code: code,
+        }),
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        
+        // Now sign in with NextAuth using the access token
+        const signInResult = await signIn('credentials', {
+          email: result.email,
+          password, // We still need the password for NextAuth
+          redirect: false,
+        })
+
+        if (signInResult?.ok) {
+          // Handle invitation acceptance after successful sign-in
+          if (invitationToken) {
+            await handleInvitationAcceptance(invitationToken)
+          } else {
+            router.push('/')
+          }
+        } else {
+          setError('Sign in failed after 2FA verification. Please try again.')
+        }
+      } else if (response.status === 429) {
+        // Rate limited
+        const errorData = await response.json()
+        setError(errorData.error || 'Too many 2FA attempts. Please try again later.')
+        setTotpCode('')
+      } else {
+        const errorData = await response.json()
+        setError(errorData.error || 'Invalid 2FA code. Please try again.')
+        setTotpCode('')
+      }
+    } catch (error) {
+      console.error('2FA sign in error:', error)
+      setError('2FA verification failed. Please try again.')
+      setTotpCode('')
+    } finally {
+      setEmailLoading(false)
+    }
+  }
+
   return (
     <Container maxWidth="sm" sx={{ py: 4 }}>
       <Paper sx={{ p: 4, textAlign: 'center' }}>
@@ -416,7 +511,7 @@ function SignInForm() {
           </Alert>
         )}
 
-        {!showEmailForm && !showRegisterForm && !showForgotPasswordForm && !(typeof message === 'string' && message.includes('verification')) && (
+        {!showEmailForm && !showRegisterForm && !showForgotPasswordForm && !show2FAForm && !(typeof message === 'string' && message.includes('verification')) && (
           <Box sx={{ width: '100%' }}>
             <Button
               onClick={handleGoogleSignIn}
@@ -652,6 +747,56 @@ function SignInForm() {
               sx={{ cursor: 'pointer' }}
             >
               Back to sign in options
+            </Link>
+          </Box>
+        )}
+
+        {show2FAForm && (
+          <Box>
+            <Typography variant="h5" component="h2" sx={{ mb: 2, textAlign: 'center' }}>
+              Two-Factor Authentication
+            </Typography>
+            
+            <Typography variant="body2" sx={{ mb: 3, textAlign: 'center', color: 'text.secondary' }}>
+              Enter the 6-digit code from your authenticator app to complete sign in.
+            </Typography>
+
+            <Box sx={{ mb: 3 }}>
+              <TOTPInput
+                value={totpCode}
+                onChange={setTotpCode}
+                onComplete={handle2FASignIn}
+                disabled={emailLoading}
+                error={!!error}
+                helperText={error || 'Enter your 6-digit authentication code'}
+              />
+            </Box>
+
+            <Button
+              onClick={() => handle2FASignIn(totpCode)}
+              variant="contained"
+              fullWidth
+              disabled={emailLoading || totpCode.length !== 6}
+              startIcon={emailLoading ? <CircularProgress size={16} color="inherit" /> : <Login />}
+              sx={{ py: 1.5, mb: 2 }}
+            >
+              {emailLoading ? 'Verifying...' : 'Complete Sign In'}
+            </Button>
+
+            <Link
+              component="button"
+              onClick={() => {
+                setShow2FAForm(false)
+                setShowEmailForm(true)
+                setError('')
+                setTotpCode('')
+                setPendingUserId(null)
+              }}
+              variant="body2"
+              color="text.secondary"
+              sx={{ cursor: 'pointer' }}
+            >
+              Back to sign in
             </Link>
           </Box>
         )}

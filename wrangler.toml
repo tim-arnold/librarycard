@@ -2,7 +2,8 @@
 # Use: npm run dev (frontend) + npx wrangler dev (worker)
 name = "librarycard-api-local"
 main = "workers/index.ts"
-compatibility_date = "2024-01-01"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
 account_id = "4bef1453ad78da6e3bb7e83b421e26df"
 
 [vars]
