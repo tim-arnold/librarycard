@@ -22,9 +22,11 @@ import {
   DarkMode,
   LightMode,
   Palette,
+  Security,
 } from '@mui/icons-material'
 import Footer from '@/components/layout/Footer'
 import { useTheme } from '@/lib/ThemeContext'
+import SecuritySettings from '@/components/settings/SecuritySettings'
 
 export default function SettingsPage() {
   const { data: session, status } = useSession()
@@ -108,6 +110,15 @@ export default function SettingsPage() {
             </Box>
           </CardContent>
         </Card>
+
+        <Divider sx={{ my: 3 }} />
+
+        {/* Security Settings */}
+        <Typography variant="h5" component="h2" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Security /> Security
+        </Typography>
+        
+        <SecuritySettings />
 
         <Divider sx={{ my: 3 }} />
 
