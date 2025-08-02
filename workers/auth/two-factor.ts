@@ -1,5 +1,5 @@
 import { TOTPService } from './totp';
-import { compare } from 'bcryptjs';
+// Removed bcryptjs import - using Web Crypto API instead
 import { verifyPassword } from '../auth-core';
 import { 
   Env, 

@@ -1,5 +1,5 @@
 import { authenticator } from '@otplib/preset-default';
-import { hash, compare } from 'bcryptjs';
+// Using Web Crypto API for performance instead of bcryptjs
 import { v4 as uuidv4 } from 'uuid';
 import * as QRCode from 'qrcode';
 import { Env } from '../types';
@@ -113,14 +113,13 @@ export class TOTPService {
   }
 
   /**
-   * Hash backup codes for secure storage
+   * Hash backup codes for secure storage using Web Crypto API
    */
   async hashBackupCodes(codes: BackupCode[]): Promise<BackupCode[]> {
     const hashedCodes: BackupCode[] = [];
     
     for (const backupCode of codes) {
-      const saltRounds = 12; // High security for backup codes
-      const codeHash = await hash(backupCode.code, saltRounds);
+      const codeHash = await this.hashPassword(backupCode.code);
       
       hashedCodes.push({
         code: backupCode.code,
@@ -129,6 +128,72 @@ export class TOTPService {
     }
     
     return hashedCodes;
+  }
+
+  /**
+   * Hash a password using Web Crypto API with salt
+   */
+  private async hashPassword(password: string): Promise<string> {
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password);
+    
+    // Combine salt and password
+    const combined = new Uint8Array(salt.length + data.length);
+    combined.set(salt);
+    combined.set(data, salt.length);
+    
+    // Hash using SHA-256
+    const hashBuffer = await crypto.subtle.digest('SHA-256', combined);
+    const hashArray = new Uint8Array(hashBuffer);
+    
+    // Combine salt and hash for storage
+    const result = new Uint8Array(salt.length + hashArray.length);
+    result.set(salt);
+    result.set(hashArray, salt.length);
+    
+    // Convert to base64 for storage
+    return btoa(String.fromCharCode(...result));
+  }
+
+  /**
+   * Verify a password against a hash using Web Crypto API
+   */
+  private async verifyPassword(password: string, hash: string): Promise<boolean> {
+    try {
+      // Decode the stored hash
+      const stored = new Uint8Array(atob(hash).split('').map(char => char.charCodeAt(0)));
+      
+      // Extract salt (first 16 bytes)
+      const salt = stored.slice(0, 16);
+      const storedHash = stored.slice(16);
+      
+      // Hash the provided password with the same salt
+      const encoder = new TextEncoder();
+      const data = encoder.encode(password);
+      
+      const combined = new Uint8Array(salt.length + data.length);
+      combined.set(salt);
+      combined.set(data, salt.length);
+      
+      const hashBuffer = await crypto.subtle.digest('SHA-256', combined);
+      const hashArray = new Uint8Array(hashBuffer);
+      
+      // Compare hashes
+      if (hashArray.length !== storedHash.length) {
+        return false;
+      }
+      
+      for (let i = 0; i < hashArray.length; i++) {
+        if (hashArray[i] !== storedHash[i]) {
+          return false;
+        }
+      }
+      
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   /**
@@ -152,7 +217,7 @@ export class TOTPService {
 
       // Check each code
       for (const row of codes.results as BackupCodeRow[]) {
-        const isValid = await compare(cleanCode, row.code_hash);
+        const isValid = await this.verifyPassword(cleanCode, row.code_hash);
         
         if (isValid) {
           // Mark the code as used
