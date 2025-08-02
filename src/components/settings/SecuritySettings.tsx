@@ -7,8 +7,6 @@ import {
   Typography,
   Button,
   Box,
-  Switch,
-  FormControlLabel,
   Alert,
   Chip,
   Dialog,
@@ -17,16 +15,20 @@ import {
   DialogActions,
   TextField,
   CircularProgress,
-  Divider
+  Divider,
+  InputAdornment,
+  IconButton
 } from '@mui/material'
 import {
   Security,
   Shield,
-  VpnKey,
   Warning,
   CheckCircle,
   Add,
-  Refresh
+  Refresh,
+  Lock,
+  Visibility,
+  VisibilityOff
 } from '@mui/icons-material'
 import { useSession } from 'next-auth/react'
 import { twoFactorAPI } from '@/lib/twoFactorApi'
@@ -45,6 +47,19 @@ export default function SecuritySettings() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [newBackupCodes, setNewBackupCodes] = useState<string[]>([])
+  
+  // Password change state
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  })
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [passwordLoading, setPasswordLoading] = useState(false)
+  const [passwordError, setPasswordError] = useState('')
+  const [passwordSuccess, setPasswordSuccess] = useState('')
 
   useEffect(() => {
     loadTwoFactorStatus()
@@ -125,6 +140,67 @@ export default function SecuritySettings() {
     setRegenerateOpen(false)
     setNewBackupCodes([])
     setError('')
+  }
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setPasswordData(prev => ({
+      ...prev,
+      [name]: value
+    }))
+  }
+
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setPasswordLoading(true)
+    setPasswordError('')
+    setPasswordSuccess('')
+
+    // Validation
+    if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+      setPasswordError('All password fields are required')
+      setPasswordLoading(false)
+      return
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setPasswordError('New passwords do not match')
+      setPasswordLoading(false)
+      return
+    }
+
+    if (passwordData.newPassword.length < 8) {
+      setPasswordError('New password must be at least 8 characters long')
+      setPasswordLoading(false)
+      return
+    }
+
+    try {
+      const response = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword
+        })
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setPasswordSuccess('Password changed successfully!')
+        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })
+        setTimeout(() => setPasswordSuccess(''), 5000)
+      } else {
+        setPasswordError(data.error || 'Failed to change password')
+      }
+    } catch {
+      setPasswordError('Failed to change password')
+    } finally {
+      setPasswordLoading(false)
+    }
   }
 
   if (loading) {
@@ -242,6 +318,114 @@ export default function SecuritySettings() {
                 Enabling 2FA here adds an additional layer specific to LibraryCard.
               </Typography>
             </Alert>
+          )}
+
+          {/* Password Change Section - Only for email/password users */}
+          {session?.user?.authProvider !== 'google' && (
+            <>
+              <Divider sx={{ my: 3 }} />
+              
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="subtitle1" sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                  <Lock />
+                  Change Password
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  Update your account password to keep your library secure.
+                </Typography>
+
+                <Box component="form" onSubmit={handlePasswordSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  {passwordError && (
+                    <Alert severity="error" onClose={() => setPasswordError('')}>
+                      {passwordError}
+                    </Alert>
+                  )}
+
+                  {passwordSuccess && (
+                    <Alert severity="success" onClose={() => setPasswordSuccess('')}>
+                      {passwordSuccess}
+                    </Alert>
+                  )}
+
+                  <TextField
+                    fullWidth
+                    type={showCurrentPassword ? 'text' : 'password'}
+                    label="Current Password"
+                    name="currentPassword"
+                    value={passwordData.currentPassword}
+                    onChange={handlePasswordChange}
+                    required
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                            edge="end"
+                          >
+                            {showCurrentPassword ? <VisibilityOff /> : <Visibility />}
+                          </IconButton>
+                        </InputAdornment>
+                      )
+                    }}
+                  />
+
+                  <TextField
+                    fullWidth
+                    type={showNewPassword ? 'text' : 'password'}
+                    label="New Password"
+                    name="newPassword"
+                    value={passwordData.newPassword}
+                    onChange={handlePasswordChange}
+                    required
+                    helperText="Password must be at least 8 characters long and contain uppercase, lowercase, number, and special character"
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            onClick={() => setShowNewPassword(!showNewPassword)}
+                            edge="end"
+                          >
+                            {showNewPassword ? <VisibilityOff /> : <Visibility />}
+                          </IconButton>
+                        </InputAdornment>
+                      )
+                    }}
+                  />
+
+                  <TextField
+                    fullWidth
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    label="Confirm New Password"
+                    name="confirmPassword"
+                    value={passwordData.confirmPassword}
+                    onChange={handlePasswordChange}
+                    required
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            edge="end"
+                          >
+                            {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                          </IconButton>
+                        </InputAdornment>
+                      )
+                    }}
+                  />
+
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    sx={{ alignSelf: 'flex-start' }}
+                    disabled={passwordLoading}
+                    startIcon={passwordLoading ? <CircularProgress size={16} color="inherit" /> : <Lock />}
+                  >
+                    {passwordLoading ? 'Changing Password...' : 'Change Password'}
+                  </Button>
+                </Box>
+              </Box>
+            </>
           )}
         </CardContent>
       </Card>
