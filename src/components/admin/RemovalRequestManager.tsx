@@ -30,6 +30,7 @@ import ConfirmationModal from '../modals/ConfirmationModal'
 import AlertModal from '../modals/AlertModal'
 import { useModal } from '@/hooks/useModal'
 import { getApiBaseUrl } from '@/lib/apiConfig'
+import { authenticatedApiCall } from '@/lib/api'
 
 interface BookRemovalRequest {
   id: number
@@ -106,12 +107,8 @@ export default function RemovalRequestManager() {
         variant: 'error'
       },
       async () => {
-        const response = await fetch(`${getApiBaseUrl()}/api/book-removal-requests/${requestId}/approve`, {
+        const response = await authenticatedApiCall(`/api/book-removal-requests/${requestId}/approve`, {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session?.user?.email}`,
-            'Content-Type': 'application/json',
-          },
         })
 
         if (response.ok) {
@@ -150,12 +147,8 @@ export default function RemovalRequestManager() {
         variant: 'warning'
       },
       async () => {
-        const response = await fetch(`${getApiBaseUrl()}/api/book-removal-requests/${requestId}/deny`, {
+        const response = await authenticatedApiCall(`/api/book-removal-requests/${requestId}/deny`, {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session?.user?.email}`,
-            'Content-Type': 'application/json',
-          },
           body: JSON.stringify({
             review_comment: comment || null
           })
@@ -193,12 +186,8 @@ export default function RemovalRequestManager() {
         variant: 'info'
       },
       async () => {
-        const response = await fetch(`${getApiBaseUrl()}/api/books/${bookId}/email-overdue-user`, {
+        const response = await authenticatedApiCall(`/api/books/${bookId}/email-overdue-user`, {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session?.user?.email}`,
-            'Content-Type': 'application/json',
-          },
         })
 
         if (response.ok) {

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { isAdmin } from '@/lib/permissions'
 import { useSession } from 'next-auth/react'
 import { getApiBaseUrl } from '@/lib/apiConfig'
+import { authenticatedApiCall } from '@/lib/api'
 import {
   Container,
   Paper,
@@ -193,12 +194,8 @@ export default function LocationManager() {
     if (!session?.user?.email) return
     
     try {
-      const response = await fetch(`${getApiBaseUrl()}/api/locations`, {
+      const response = await authenticatedApiCall('/api/locations', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.user.email}`,
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           name: newLocationName.trim(),
           description: newLocationDescription.trim() || null,
@@ -231,12 +228,8 @@ export default function LocationManager() {
     if (!session?.user?.email) return
     
     try {
-      const response = await fetch(`${getApiBaseUrl()}/api/locations/${editingLocation.id}`, {
+      const response = await authenticatedApiCall(`/api/locations/${editingLocation.id}`, {
         method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${session.user.email}`,
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           name: newLocationName.trim(),
           description: newLocationDescription.trim() || null,
@@ -277,12 +270,8 @@ export default function LocationManager() {
       async () => {
         if (!session?.user?.email) throw new Error('Not authenticated')
         
-        const response = await fetch(`${getApiBaseUrl()}/api/locations/${locationId}`, {
+        const response = await authenticatedApiCall(`/api/locations/${locationId}`, {
           method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${session.user.email}`,
-            'Content-Type': 'application/json',
-          },
         })
 
         if (response.ok) {
@@ -396,12 +385,8 @@ export default function LocationManager() {
     if (!session?.user?.email) return
     
     try {
-      const response = await fetch(`${getApiBaseUrl()}/api/locations/${selectedLocation.id}/shelves`, {
+      const response = await authenticatedApiCall(`/api/locations/${selectedLocation.id}/shelves`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.user.email}`,
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           name: newShelfName.trim(),
         }),
@@ -428,12 +413,8 @@ export default function LocationManager() {
     if (!session?.user?.email) return
     
     try {
-      const response = await fetch(`${getApiBaseUrl()}/api/shelves/${editingShelf.id}`, {
+      const response = await authenticatedApiCall(`/api/shelves/${editingShelf.id}`, {
         method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${session.user.email}`,
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           name: newShelfName.trim(),
         }),
@@ -467,13 +448,8 @@ export default function LocationManager() {
       async () => {
         if (!selectedLocation || !session?.user?.email) throw new Error('Invalid state')
         
-        const response = await fetch(`${getApiBaseUrl()}/api/shelves/${shelfId}`, {
+        const response = await authenticatedApiCall(`/api/shelves/${shelfId}`, {
           method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${session.user.email}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({}),
         })
 
         if (response.ok) {

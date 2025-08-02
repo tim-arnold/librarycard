@@ -46,6 +46,7 @@ import {
   Button,
 } from '@mui/material'
 import { getApiBaseUrl } from '@/lib/apiConfig'
+import { authenticatedApiCall } from '@/lib/api'
 
 // More Details Modal Component
 interface MoreDetailsModalProps {
@@ -479,12 +480,8 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
           if (savedBook) {
             // Assign each selected genre to the book
             for (const genre of selectedGenres) {
-              const response = await fetch(`${getApiBaseUrl()}/books/${savedBook.id}/genres`, {
+              const response = await authenticatedApiCall(`/books/${savedBook.id}/genres`, {
                 method: 'POST',
-                headers: { 
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${session?.user?.email}`
-                },
                 body: JSON.stringify({ genreId: genre.id, isAutoAssigned: false })
               })
               

@@ -22,7 +22,7 @@ import {
 } from '@mui/material'
 import { LocationOn, LibraryBooks } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
-import { getApiBaseUrl } from '@/lib/apiConfig'
+import { authenticatedApiCall } from '@/lib/api'
 
 interface Shelf {
   id: number
@@ -81,12 +81,8 @@ export default function BookRelocateModal({
       }
 
       // Create the new shelf
-      const response = await fetch(`${getApiBaseUrl()}/api/locations/${locationId}/shelves`, {
+      const response = await authenticatedApiCall(`/api/locations/${locationId}/shelves`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.user.email}`,
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({ name: newShelfName.trim() }),
       })
 
