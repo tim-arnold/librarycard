@@ -48,7 +48,7 @@ name = "librarycard-api-staging"
 
 [env.staging.vars]
 ENVIRONMENT = "staging"
-APP_URL = "https://librarycard-staging.tim52.io/"
+APP_URL = "https://staging--libarycard.netlify.app"
 FROM_EMAIL = "LibraryCard <librarian@tim52.io>"
 # JWT_SECRET should be set as a secure environment variable for staging
 
@@ -68,7 +68,7 @@ name = "librarycard-api-production"
 
 [env.production.vars]
 ENVIRONMENT = "production"
-APP_URL = "https://librarycard.tim52.io/"
+APP_URL = "https://librarycard.tim52.io"
 FROM_EMAIL = "LibraryCard <librarian@tim52.io>"
 # JWT_SECRET should be set as a secure environment variable for production
 
