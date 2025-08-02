@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { getApiBaseUrl } from '@/lib/apiConfig'
+import { authenticatedApiCall } from '@/lib/api'
 import {
   Container,
   Paper,
@@ -125,12 +126,8 @@ export default function ProfilePage() {
         updateData.email = formData.email
       }
 
-      const response = await fetch(`${getApiBaseUrl()}/api/profile`, {
+      const response = await authenticatedApiCall('/api/profile', {
         method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${session?.user?.email}`,
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(updateData)
       })
 

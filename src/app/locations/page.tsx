@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { getApiBaseUrl } from '@/lib/apiConfig'
+import { authenticatedApiCall } from '@/lib/api'
 import {
   Container,
   Paper,
@@ -104,12 +105,8 @@ export default function LocationsPage() {
         variant: 'error'
       },
       async () => {
-        const response = await fetch(`${getApiBaseUrl()}/api/locations/${locationId}/leave`, {
+        const response = await authenticatedApiCall(`/api/locations/${locationId}/leave`, {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session?.user?.email}`,
-            'Content-Type': 'application/json',
-          },
         })
 
         if (response.ok) {
