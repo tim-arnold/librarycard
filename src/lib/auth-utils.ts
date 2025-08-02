@@ -13,6 +13,24 @@ export interface AuthenticatedApiResult<T = unknown> {
   error?: string
 }
 
+async function getCSRFToken(userEmail: string): Promise<string | null> {
+  try {
+    const response = await fetch(`${getApiBaseUrl()}/api/csrf-token`, {
+      headers: {
+        'Authorization': `Bearer ${userEmail}`
+      }
+    })
+    
+    if (response.ok) {
+      const data = await response.json()
+      return data.csrfToken
+    }
+  } catch (error) {
+    console.error('Failed to fetch CSRF token:', error)
+  }
+  return null
+}
+
 export async function authenticatedFetch<T = unknown>(
   session: Session | null,
   endpoint: string,
@@ -30,10 +48,18 @@ export async function authenticatedFetch<T = unknown>(
   // Use JWT token if available, fallback to email for backward compatibility
   const token = (session as any)?.access_token || session.user.email;
 
-  const headers = {
+  const headers: Record<string, string> = {
     'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json',
     ...additionalHeaders
+  }
+
+  // Add CSRF token for state-changing operations
+  if (method !== 'GET') {
+    const csrfToken = await getCSRFToken(session.user.email)
+    if (csrfToken) {
+      headers['X-CSRF-Token'] = csrfToken
+    }
   }
 
   const fetchOptions: RequestInit = {

@@ -3,7 +3,7 @@
 import { useState, useCallback, useMemo } from 'react'
 import { flushSync } from 'react-dom'
 import { useSession } from 'next-auth/react'
-import { getApiBaseUrl } from '@/lib/apiConfig'
+import { authenticatedApiCall } from '@/lib/api'
 import {
   Dialog,
   DialogTitle,
@@ -199,12 +199,8 @@ export default function LocationOnboardingStepper({
 
     try {
       // Step 1: Create the basic location
-      const response = await fetch(`${getApiBaseUrl()}/api/locations`, {
+      const response = await authenticatedApiCall('/api/locations', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.user.email}`,
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           name: locationData.name.trim(),
           description: locationData.description.trim() || null,
@@ -224,12 +220,8 @@ export default function LocationOnboardingStepper({
       if (!locationData.singleShelfLocation && locationData.initialShelves.length > 0) {
         for (const shelfName of locationData.initialShelves) {
           try {
-            const shelfResponse = await fetch(`${getApiBaseUrl()}/api/locations/${newLocation.id}/shelves`, {
+            const shelfResponse = await authenticatedApiCall(`/api/locations/${newLocation.id}/shelves`, {
               method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${session.user.email}`,
-                'Content-Type': 'application/json',
-              },
               body: JSON.stringify({
                 name: shelfName.trim(),
               }),
@@ -247,12 +239,8 @@ export default function LocationOnboardingStepper({
       // Step 3: Set up default permissions for the location
       for (const permission of locationData.userCapabilities) {
         try {
-          const permissionResponse = await fetch(`${getApiBaseUrl()}/api/locations/${newLocation.id}/default-permissions`, {
+          const permissionResponse = await authenticatedApiCall(`/api/locations/${newLocation.id}/default-permissions`, {
             method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${session.user.email}`,
-              'Content-Type': 'application/json',
-            },
             body: JSON.stringify({
               permission: permission,
               permission_type: 'user'
@@ -270,12 +258,8 @@ export default function LocationOnboardingStepper({
       // Set admin capabilities as default admin permissions for future reference
       for (const capability of locationData.adminCapabilities) {
         try {
-          const capabilityResponse = await fetch(`${getApiBaseUrl()}/api/locations/${newLocation.id}/default-permissions`, {
+          const capabilityResponse = await authenticatedApiCall(`/api/locations/${newLocation.id}/default-permissions`, {
             method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${session.user.email}`,
-              'Content-Type': 'application/json',
-            },
             body: JSON.stringify({
               permission: capability,
               permission_type: 'admin'

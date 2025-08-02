@@ -2,7 +2,7 @@ import { getApiBaseUrl } from './apiConfig'
 import { TOTPSetupResponse, TwoFactorStatus } from './types'
 
 class TwoFactorAuthAPI {
-  private async getAuthHeaders(): Promise<Headers> {
+  private async getAuthHeaders(includeCSRF: boolean = false): Promise<Headers> {
     const headers = new Headers()
     headers.set('Content-Type', 'application/json')
     
@@ -12,6 +12,26 @@ class TwoFactorAuthAPI {
     
     if (session?.user?.email) {
       headers.set('Authorization', `Bearer ${session.user.email}`)
+      
+      // Add CSRF token for state-changing operations
+      if (includeCSRF) {
+        try {
+          const csrfResponse = await fetch(`${getApiBaseUrl()}/api/csrf-token`, {
+            headers: {
+              'Authorization': `Bearer ${session.user.email}`
+            }
+          })
+          
+          if (csrfResponse.ok) {
+            const data = await csrfResponse.json()
+            if (data.csrfToken) {
+              headers.set('X-CSRF-Token', data.csrfToken)
+            }
+          }
+        } catch (error) {
+          console.error('Failed to fetch CSRF token:', error)
+        }
+      }
     }
     
     return headers
@@ -50,7 +70,7 @@ class TwoFactorAuthAPI {
   async completeSetup(secret: string, totpCode: string, backupCodes: string[]): Promise<{ message: string }> {
     const response = await fetch(`${getApiBaseUrl()}/api/auth/2fa/setup`, {
       method: 'POST',
-      headers: await this.getAuthHeaders(),
+      headers: await this.getAuthHeaders(true),
       credentials: 'include',
       body: JSON.stringify({
         secret,
@@ -70,7 +90,7 @@ class TwoFactorAuthAPI {
   async verifyTOTP(totpCode: string): Promise<{ message: string }> {
     const response = await fetch(`${getApiBaseUrl()}/api/auth/2fa/verify`, {
       method: 'POST',
-      headers: await this.getAuthHeaders(),
+      headers: await this.getAuthHeaders(true),
       credentials: 'include',
       body: JSON.stringify({ totpCode })
     })
@@ -86,7 +106,7 @@ class TwoFactorAuthAPI {
   async verifyBackupCode(backupCode: string): Promise<{ message: string; warning?: string }> {
     const response = await fetch(`${getApiBaseUrl()}/api/auth/2fa/verify-backup`, {
       method: 'POST',
-      headers: await this.getAuthHeaders(),
+      headers: await this.getAuthHeaders(true),
       credentials: 'include',
       body: JSON.stringify({ backupCode })
     })
@@ -102,7 +122,7 @@ class TwoFactorAuthAPI {
   async disable2FA(password: string): Promise<{ message: string }> {
     const response = await fetch(`${getApiBaseUrl()}/api/auth/2fa/disable`, {
       method: 'POST',
-      headers: await this.getAuthHeaders(),
+      headers: await this.getAuthHeaders(true),
       credentials: 'include',
       body: JSON.stringify({ password })
     })
@@ -118,7 +138,7 @@ class TwoFactorAuthAPI {
   async regenerateBackupCodes(): Promise<{ message: string; backupCodes: string[] }> {
     const response = await fetch(`${getApiBaseUrl()}/api/auth/2fa/backup-codes`, {
       method: 'POST',
-      headers: await this.getAuthHeaders(),
+      headers: await this.getAuthHeaders(true),
       credentials: 'include'
     })
 

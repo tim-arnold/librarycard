@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getApiBaseUrl } from '@/lib/apiConfig'
+import { authenticatedApiCall } from '@/lib/api'
 import { isAdmin } from '@/lib/permissions'
 import {
   Container,
@@ -123,12 +124,8 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
   const handleInvitationAcceptance = async (token: string) => {
     
     try {
-      const response = await fetch(`${getApiBaseUrl()}/api/invitations/accept`, {
+      const response = await authenticatedApiCall('/api/invitations/accept', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session?.user?.email}`,
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           invitation_token: token,
         }),
