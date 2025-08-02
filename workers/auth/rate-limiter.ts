@@ -17,7 +17,7 @@ const RATE_LIMITS: Record<string, RateLimitConfig> = {
   'auth-forgot-password': { windowMs: 60 * 60 * 1000, maxAttempts: 3 }, // 3 attempts per hour
   'auth-reset-password': { windowMs: 60 * 60 * 1000, maxAttempts: 5 }, // 5 attempts per hour
   'auth-2fa-verify': { windowMs: 15 * 60 * 1000, maxAttempts: 10 }, // 10 attempts per 15 minutes for TOTP
-  'auth-2fa-setup': { windowMs: 60 * 60 * 1000, maxAttempts: 5 }, // 5 setup attempts per hour
+  // Removed rate limiting for 2FA setup since users must be authenticated
   'auth-2fa-disable': { windowMs: 60 * 60 * 1000, maxAttempts: 3 }, // 3 disable attempts per hour
   'api-general': { windowMs: 60 * 1000, maxAttempts: 100 }, // 100 requests per minute for general API
 };
