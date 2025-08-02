@@ -1,0 +1,70 @@
+name: Staging Database Migration
+
+on:
+  workflow_dispatch:
+    inputs:
+      migration_file:
+        description: 'Migration file to apply (e.g., 20250722_add_user_global_permissions.sql)'
+        required: true
+        type: string
+      reason:
+        description: 'Reason for migration (optional)'
+        required: false
+        type: string
+
+jobs:
+  migrate-staging:
+    name: Apply Database Migration to Staging
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate migration file exists
+        run: |
+          if [ ! -f "migrations/${{ github.event.inputs.migration_file }}" ]; then
+            echo "❌ Migration file not found: migrations/${{ github.event.inputs.migration_file }}"
+            exit 1
+          fi
+          echo "✅ Migration file found: migrations/${{ github.event.inputs.migration_file }}"
+
+      - name: Apply database migration to staging
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN_STAGING_NEW }}
+          command: d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --file=migrations/${{ github.event.inputs.migration_file }} --env=staging --remote
+
+      - name: Verify migration success
+        run: |
+          echo "🔍 Verifying staging migration was applied successfully..."
+          sleep 5
+          STAGING_API_URL="https://librarycard-api-staging.librarycard-staging.workers.dev"
+          if curl -f -s --max-time 15 "$STAGING_API_URL/health" > /dev/null; then
+            echo "✅ Staging database migration completed successfully"
+          else
+            echo "❌ Staging API unresponsive after migration"
+            exit 1
+          fi
+
+      - name: Log migration info
+        run: |
+          echo "📋 STAGING MIGRATION COMPLETED"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Migration file: ${{ github.event.inputs.migration_file }}"
+          echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "Actor: ${{ github.actor }}"
+          echo "Commit: ${{ github.sha }}"
+          if [ -n "${{ github.event.inputs.reason }}" ]; then
+            echo "Reason: ${{ github.event.inputs.reason }}"
+          fi
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
