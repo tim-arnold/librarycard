@@ -6,6 +6,10 @@ compatibility_date = "2024-12-01"
 compatibility_flags = ["nodejs_compat"]
 account_id = "4bef1453ad78da6e3bb7e83b421e26df"
 
+[build]
+command = ""
+cwd = ""
+
 [vars]
 ENVIRONMENT = "local"
 APP_URL = "http://localhost:3000"
