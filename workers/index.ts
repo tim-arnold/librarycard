@@ -362,16 +362,7 @@ export default {
       }
 
       if (path === '/api/auth/2fa/setup' && request.method === 'POST') {
-        // Rate limit 2FA setup attempts
-        const rateLimitResult = await rateLimiter.checkRateLimit(clientId, 'auth-2fa-setup');
-        if (!rateLimitResult.allowed) {
-          const response = rateLimiter.createRateLimitResponse(rateLimitResult.resetTime!);
-          Object.entries(corsHeaders).forEach(([key, value]) => {
-            response.headers.set(key, value);
-          });
-          return response;
-        }
-        
+        // No rate limiting for 2FA setup since user is already authenticated
         return await twoFactorAuth.completeSetup(request, userId, corsHeaders);
       }
 
