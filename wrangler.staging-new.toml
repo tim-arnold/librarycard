@@ -19,10 +19,6 @@ compatibility_flags = ["nodejs_compat"]
 # NEW ISOLATED ACCOUNT ID
 account_id = "18394f148930f0f3933fee06ecef99d0"
 
-[build]
-command = ""
-cwd = ""
-
 [vars]
 ENVIRONMENT = "staging"
 APP_URL = "https://librarycard-staging.tim52.io/"
