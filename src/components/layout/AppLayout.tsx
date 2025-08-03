@@ -5,7 +5,8 @@ import { useSession, signOut } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getApiBaseUrl } from '@/lib/apiConfig'
 import { authenticatedApiCall } from '@/lib/api'
-import { isAdmin } from '@/lib/permissions'
+import { isAdmin, isSuperAdmin } from '@/lib/permissions'
+import { authenticatedFetch } from '@/lib/auth-utils'
 import {
   Container,
   Paper,
@@ -49,6 +50,7 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
   const [userFirstName, setUserFirstName] = useState<string | null>(null)
   const [userLocation, setUserLocation] = useState<string | null>(null)
   const [userDataLoaded, setUserDataLoaded] = useState(false)
+  const [canAddBooks, setCanAddBooks] = useState<boolean>(true) // Assume true initially to avoid flash
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [helpModalOpen, setHelpModalOpen] = useState(false)
   const dataLoadedRef = useRef(false)
@@ -66,6 +68,7 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
 
       // Load user data only once
       loadUserData()
+      checkAddBooksPermission()
     }
   }, [session]) // Only depend on session
   
@@ -77,6 +80,7 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
       setUserRole(null)
       setUserFirstName(null)
       setUserLocation(null)
+      setCanAddBooks(true) // Reset to default
     }
   }, [session])
 
@@ -118,6 +122,46 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
       console.error('Failed to fetch user data:', err)
       // Still mark as loaded even on error to prevent infinite loading
       setUserDataLoaded(true)
+    }
+  }
+
+  const checkAddBooksPermission = async () => {
+    if (!session?.user?.email) return
+    
+    try {
+      // Get all user's locations for permission checking
+      const locationsResponse = await authenticatedFetch(session, '/api/locations')
+      
+      if (locationsResponse.success && Array.isArray(locationsResponse.data) && locationsResponse.data.length > 0) {
+        const locations = locationsResponse.data as { id: number; name: string }[]
+        
+        // Check if user has can_add_books permission for ANY location
+        let hasPermissionInAnyLocation = false
+        
+        for (const location of locations) {
+          const permissionResult = await authenticatedFetch(
+            session, 
+            `/api/permissions/check?locationId=${location.id}&permission=can_add_books`
+          )
+          
+          if (permissionResult.success) {
+            const permissionData = permissionResult.data as { hasPermission: boolean }
+            if (permissionData?.hasPermission) {
+              hasPermissionInAnyLocation = true
+              break // Found permission in at least one location, no need to check more
+            }
+          }
+        }
+        
+        setCanAddBooks(hasPermissionInAnyLocation)
+      } else {
+        // If no locations, they can't add books
+        setCanAddBooks(false)
+      }
+    } catch (err) {
+      console.error('Error checking add books permission:', err)
+      // On error, assume they can add books (fail open for better UX)
+      setCanAddBooks(true)
     }
   }
 
@@ -279,13 +323,15 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
               iconPosition="start"
               onClick={() => handleTabChange('/library')}
             />
-            <Tab 
-              value="add-books" 
-              label="Add Books"
-              icon={<QrCodeScanner />}
-              iconPosition="start"
-              onClick={() => handleTabChange('/add-books')}
-            />
+            {(isAdmin(userRole) || canAddBooks) && (
+              <Tab 
+                value="add-books" 
+                label="Add Books"
+                icon={<QrCodeScanner />}
+                iconPosition="start"
+                onClick={() => handleTabChange('/add-books')}
+              />
+            )}
             {isAdmin(userRole) && (
               <Tab 
                 value="admin" 
