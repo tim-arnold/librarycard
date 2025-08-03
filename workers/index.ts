@@ -727,7 +727,7 @@ export default {
 
       // Change password endpoint (authenticated users only)
       if (path === '/api/auth/change-password' && request.method === 'POST') {
-        return await changePassword(request, env, corsHeaders);
+        return await changePassword(request, userId, env, corsHeaders);
       }
       
       // Logout endpoint (authenticated users only) - clears user cache
