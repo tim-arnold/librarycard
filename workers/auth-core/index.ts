@@ -673,7 +673,7 @@ export async function resetPassword(request: Request, env: Env, corsHeaders: Rec
   });
 }
 
-export async function changePassword(request: Request, env: Env, corsHeaders: Record<string, string>) {
+export async function changePassword(request: Request, userId: string, env: Env, corsHeaders: Record<string, string>) {
   const validation = await parseAndValidateJSON(request, AuthSchemas.changePassword);
   if (!validation.isValid) {
     return new Response(JSON.stringify({ error: validation.error }), {
@@ -682,7 +682,7 @@ export async function changePassword(request: Request, env: Env, corsHeaders: Re
     });
   }
   
-  const { old_password: currentPassword, new_password: newPassword, email } = validation.data!;
+  const { old_password: currentPassword, new_password: newPassword } = validation.data!;
   
   // Validate new password strength
   const passwordValidation = validatePasswordStrength(newPassword);
@@ -693,12 +693,12 @@ export async function changePassword(request: Request, env: Env, corsHeaders: Re
     });
   }
   
-  // Get user by email
+  // Get user by ID (from JWT token)
   const user = await env.DB.prepare(`
     SELECT id, password_hash, auth_provider
     FROM users 
-    WHERE email = ?
-  `).bind(email).first();
+    WHERE id = ?
+  `).bind(userId).first();
   
   if (!user) {
     return new Response(JSON.stringify({ error: 'User not found' }), {

@@ -230,6 +230,7 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
   const [showBulkReviewModal, setShowBulkReviewModal] = useState(false)
   const [canAddBooks, setCanAddBooks] = useState<boolean>(true) // Assume true initially to avoid flash
   const [permissionChecked, setPermissionChecked] = useState<boolean>(false)
+  const [allowedLocationIds, setAllowedLocationIds] = useState<Set<number>>(new Set()) // Track locations user can add books to
   const [fadeIn, setFadeIn] = useState(true)
 
   // Refs for scroll targets
@@ -314,20 +315,7 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
         }
         setAllShelves(allShelvesData)
         
-        // Smart UI: Auto-select shelf if only one available
-        if (allShelvesData.length === 1) {
-          setSelectedShelfId(allShelvesData[0].id)
-        } else {
-          // For multi-shelf users, restore the last selected shelf if it still exists
-          const lastSelectedShelfId = getStorageItem('lastSelectedShelfId', 'functional')
-          if (lastSelectedShelfId) {
-            const shelfId = parseInt(lastSelectedShelfId)
-            const shelfExists = allShelvesData.some(shelf => shelf.id === shelfId)
-            if (shelfExists) {
-              setSelectedShelfId(shelfId)
-            }
-          }
-        }
+        // Auto-selection will happen after permissions are loaded to ensure we only select from allowed locations
       }
       
       // Load existing books for duplicate detection
@@ -344,34 +332,75 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
     if (!session?.user?.email) return
     
     try {
-      // Get user's current location for permission checking
-      // We'll use the first location they have access to
+      // Get all user's locations for permission checking
       const locationsResponse = await authenticatedFetch(session, '/api/locations')
       
       if (locationsResponse.success && Array.isArray(locationsResponse.data) && locationsResponse.data.length > 0) {
-        const firstLocation = locationsResponse.data[0] as { id: number; name: string }
+        const locations = locationsResponse.data as { id: number; name: string }[]
         
-        // Check if user has can_add_books permission for this location
-        const permissionResult = await authenticatedFetch(
-          session, 
-          `/api/permissions/check?locationId=${firstLocation.id}&permission=can_add_books`
-        )
+        // Check permissions for each location and track which ones allow adding books
+        let hasPermissionInAnyLocation = false
+        const allowedIds = new Set<number>()
         
-        if (permissionResult.success) {
-          const permissionData = permissionResult.data as { hasPermission: boolean }
-          setCanAddBooks(permissionData?.hasPermission || false)
-        } else {
-          // If permission check fails, assume they can add books (default behavior)
-          setCanAddBooks(true)
+        for (const location of locations) {
+          const permissionResult = await authenticatedFetch(
+            session, 
+            `/api/permissions/check?locationId=${location.id}&permission=can_add_books`
+          )
+          
+          if (permissionResult.success) {
+            const permissionData = permissionResult.data as { hasPermission: boolean }
+            if (permissionData?.hasPermission) {
+              hasPermissionInAnyLocation = true
+              allowedIds.add(location.id)
+            }
+          }
+        }
+        
+        setCanAddBooks(hasPermissionInAnyLocation)
+        setAllowedLocationIds(allowedIds)
+        
+        // Smart UI: Auto-select shelf after permissions are loaded
+        // Filter shelves to only those from allowed locations
+        const allowedShelves = allShelves.filter(shelf => allowedIds.has(shelf.location_id))
+        
+        if (allowedShelves.length === 1) {
+          setSelectedShelfId(allowedShelves[0].id)
+        } else if (allowedShelves.length > 1) {
+          // For multi-shelf users, restore the last selected shelf if it still exists and is from an allowed location
+          const lastSelectedShelfId = getStorageItem('lastSelectedShelfId', 'functional')
+          if (lastSelectedShelfId) {
+            const shelfId = parseInt(lastSelectedShelfId)
+            const shelfExists = allowedShelves.some(shelf => shelf.id === shelfId)
+            if (shelfExists) {
+              setSelectedShelfId(shelfId)
+            }
+          }
         }
       } else {
         // If no locations, they can't add books
         setCanAddBooks(false)
+        setAllowedLocationIds(new Set())
       }
     } catch (err) {
       console.error('Error checking add books permission:', err)
       // On error, assume they can add books (fail open for better UX)
       setCanAddBooks(true)
+      setAllowedLocationIds(new Set()) // Don't filter anything on error
+      
+      // Fallback auto-selection when permissions fail
+      if (allShelves.length === 1) {
+        setSelectedShelfId(allShelves[0].id)
+      } else if (allShelves.length > 1) {
+        const lastSelectedShelfId = getStorageItem('lastSelectedShelfId', 'functional')
+        if (lastSelectedShelfId) {
+          const shelfId = parseInt(lastSelectedShelfId)
+          const shelfExists = allShelves.some(shelf => shelf.id === shelfId)
+          if (shelfExists) {
+            setSelectedShelfId(shelfId)
+          }
+        }
+      }
     } finally {
       setPermissionChecked(true)
     }
@@ -834,8 +863,8 @@ try {
             {/* Shelf selector */}
             <Box sx={{ mt: { xs: 2, sm: 3 }, mb: { xs: 1.5, sm: 2 } }}>
               <ShelfSelector
-                shelves={allShelves}
-                locations={locations}
+                shelves={allowedLocationIds.size > 0 ? allShelves.filter(shelf => allowedLocationIds.has(shelf.location_id)) : allShelves}
+                locations={allowedLocationIds.size > 0 ? locations.filter(location => allowedLocationIds.has(location.id)) : locations}
                 selectedShelfId={selectedShelfId}
                 onShelfChange={setSelectedShelfId}
                 isLoading={loadingData}
@@ -925,8 +954,8 @@ try {
           isOpen={showBulkReviewModal}
           onClose={() => setShowBulkReviewModal(false)}
           onBulkSave={handleBulkSave}
-          locations={locations}
-          shelves={allShelves}
+          locations={allowedLocationIds.size > 0 ? locations.filter(location => allowedLocationIds.has(location.id)) : locations}
+          shelves={allowedLocationIds.size > 0 ? allShelves.filter(shelf => allowedLocationIds.has(shelf.location_id)) : allShelves}
           selectedShelfId={selectedShelfId}
           onShelfChange={setSelectedShelfId}
         />
