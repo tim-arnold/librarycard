@@ -74,7 +74,7 @@ export default function BookRelocateModal({
 
     try {
       // Determine the location ID for the new shelf
-      let locationId = allLocations.length > 0 ? allLocations[0].id : null
+      const locationId = allLocations.length > 0 ? allLocations[0].id : null
 
       if (!locationId) {
         throw new Error('No location available for shelf creation')
