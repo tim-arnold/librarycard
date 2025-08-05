@@ -34,6 +34,7 @@ import { useSession } from 'next-auth/react'
 import { twoFactorAPI } from '@/lib/twoFactorApi'
 import { TwoFactorStatus } from '@/lib/types'
 import TwoFactorSetup from '@/components/auth/TwoFactorSetup'
+import PasskeyManager from '@/components/auth/PasskeyManager'
 
 export default function SecuritySettings() {
   const { data: session } = useSession()
@@ -429,6 +430,23 @@ export default function SecuritySettings() {
           )}
         </CardContent>
       </Card>
+
+      {/* Passkeys Section */}
+      {session?.user?.email && (
+        <Box sx={{ mt: 3 }}>
+          <PasskeyManager 
+            userEmail={session.user.email}
+            onError={(error) => {
+              setError(error)
+              setTimeout(() => setError(''), 5000)
+            }}
+            onSuccess={(message) => {
+              setSuccess(message)
+              setTimeout(() => setSuccess(''), 5000)
+            }}
+          />
+        </Box>
+      )}
 
       {/* 2FA Setup Dialog */}
       <TwoFactorSetup

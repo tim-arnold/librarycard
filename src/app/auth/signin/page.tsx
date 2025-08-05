@@ -27,6 +27,7 @@ import Footer from '@/components/layout/Footer'
 import { Turnstile, TurnstileInstance } from '@marsidev/react-turnstile'
 import { getApiBaseUrl } from '@/lib/apiConfig'
 import TOTPInput from '@/components/auth/TOTPInput'
+import PasskeySignIn from '@/components/auth/PasskeySignIn'
 
 function SignInForm() {
   const [loading, setLoading] = useState(false)
@@ -530,6 +531,13 @@ function SignInForm() {
             >
               {loading ? 'Signing in...' : (invitationToken ? 'Continue with Google and Accept Invitation' : 'Continue with Google')}
             </Button>
+
+            <PasskeySignIn
+              disabled={loading}
+              onError={setError}
+              onSuccess={setMessage}
+              invitationToken={invitationToken}
+            />
 
             <Divider sx={{ my: 2 }}>
               <Typography variant="body2" color="text.secondary">or</Typography>
