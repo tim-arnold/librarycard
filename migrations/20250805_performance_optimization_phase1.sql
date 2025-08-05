@@ -12,12 +12,11 @@ CREATE INDEX IF NOT EXISTS idx_books_shelf_status ON books(shelf_id, status);
 -- Composite index for date-ordered queries by shelf
 CREATE INDEX IF NOT EXISTS idx_books_created_shelf ON books(created_at DESC, shelf_id);
 
--- Index for book genre relationships (for assigned_genres subquery)
-CREATE INDEX IF NOT EXISTS idx_book_genres_book ON book_genres(book_id);
-CREATE INDEX IF NOT EXISTS idx_book_genres_genre ON book_genres(genre_id);
-
--- Composite index for curated genres (active genres first)
-CREATE INDEX IF NOT EXISTS idx_curated_genres_active ON curated_genres(is_active, id);
+-- Index for book genre relationships (only if tables exist)
+-- These tables are created by the dynamic genre system migration
+-- CREATE INDEX IF NOT EXISTS idx_book_genres_book ON book_genres(book_id);
+-- CREATE INDEX IF NOT EXISTS idx_book_genres_genre ON book_genres(genre_id);
+-- CREATE INDEX IF NOT EXISTS idx_curated_genres_active ON curated_genres(is_active, id);
 
 -- Optimize rating calculations with covering indexes
 CREATE INDEX IF NOT EXISTS idx_book_ratings_book_user ON book_ratings(book_id, user_id, rating);
@@ -39,21 +38,23 @@ CREATE INDEX IF NOT EXISTS idx_books_checked_out_user ON books(checked_out_by) W
 -- =============================================
 
 -- Create a view for efficient book genre aggregation
-DROP VIEW IF EXISTS book_genres_agg;
-CREATE VIEW book_genres_agg AS
-SELECT 
-  bg.book_id,
-  json_group_array(
-    json_object(
-      'id', cg.id, 
-      'name', cg.name, 
-      'description', cg.description
-    )
-  ) as assigned_genres
-FROM book_genres bg 
-JOIN curated_genres cg ON bg.genre_id = cg.id 
-WHERE cg.is_active = 1
-GROUP BY bg.book_id;
+-- NOTE: This view requires the dynamic genre system to be migrated first
+-- If book_genres/curated_genres tables don't exist, this view creation will be skipped
+-- DROP VIEW IF EXISTS book_genres_agg;
+-- CREATE VIEW book_genres_agg AS
+-- SELECT 
+--   bg.book_id,
+--   json_group_array(
+--     json_object(
+--       'id', cg.id, 
+--       'name', cg.name, 
+--       'description', cg.description
+--     )
+--   ) as assigned_genres
+-- FROM book_genres bg 
+-- JOIN curated_genres cg ON bg.genre_id = cg.id 
+-- WHERE cg.is_active = 1
+-- GROUP BY bg.book_id;
 
 -- Create a view for efficient library rating calculations
 DROP VIEW IF EXISTS library_ratings_agg;
@@ -90,7 +91,7 @@ PRAGMA optimize;
 -- Update table statistics for better query planning
 ANALYZE books;
 ANALYZE book_ratings;
-ANALYZE book_genres;
+-- ANALYZE book_genres;  -- Only if dynamic genre system is migrated
 ANALYZE shelves;
 ANALYZE locations;
 ANALYZE location_members;
@@ -103,6 +104,6 @@ ANALYZE location_members;
 -- EXPLAIN QUERY PLAN SELECT * FROM books WHERE shelf_id = 1 AND status = 'available';
 -- EXPLAIN QUERY PLAN SELECT * FROM books ORDER BY created_at DESC, shelf_id;
 
--- Test the new views
--- SELECT COUNT(*) FROM book_genres_agg;
+-- Test the new views (only if they exist)
+-- SELECT COUNT(*) FROM book_genres_agg;  -- Only if dynamic genre system is migrated
 -- SELECT COUNT(*) FROM library_ratings_agg;
