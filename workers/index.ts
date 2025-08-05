@@ -75,6 +75,8 @@ import {
   changePassword,
   complete2FALogin
 } from './auth-core';
+import { WebAuthnService } from './auth/webauthn';
+import { generateJWT } from './auth/jwt';
 import {
   createLocationInvitation,
   acceptLocationInvitation,
@@ -301,6 +303,89 @@ export default {
         return await complete2FALogin(request, env, corsHeaders);
       }
 
+      // WebAuthn endpoints (public for authentication, some require auth for registration)
+      
+      // WebAuthn authentication start (public - for login)
+      if (path === '/api/auth/webauthn/authenticate/begin' && request.method === 'POST') {
+        try {
+          const url = new URL(request.url);
+          const rpName = 'LibraryCard';
+          // For local development, use localhost as rpID and frontend origin
+          const rpID = 'localhost';
+          const origin = env.ENVIRONMENT === 'local' ? 'http://localhost:3000' : url.origin;
+          
+          const webAuthnService = new WebAuthnService(env.DB, rpName, rpID, origin);
+          
+          const body = await request.json() as { email?: string };
+          const options = await webAuthnService.generateAuthenticationOptions(undefined, body.email);
+          
+          return new Response(JSON.stringify(options), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error: any) {
+          console.error('WebAuthn authentication begin error:', error);
+          return new Response(JSON.stringify({ error: 'Failed to generate authentication options' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      // WebAuthn authentication complete (public - for login)  
+      if (path === '/api/auth/webauthn/authenticate/finish' && request.method === 'POST') {
+        try {
+          const url = new URL(request.url);
+          const rpName = 'LibraryCard';
+          // For local development, use localhost as rpID and frontend origin
+          const rpID = 'localhost';
+          const origin = env.ENVIRONMENT === 'local' ? 'http://localhost:3000' : url.origin;
+          
+          const webAuthnService = new WebAuthnService(env.DB, rpName, rpID, origin);
+          
+          const response = await request.json();
+          const verification = await webAuthnService.verifyAuthenticationResponse(response);
+          
+          if (verification.success && verification.userId) {
+            // Get user information for JWT payload
+            const userStmt = env.DB.prepare('SELECT email, user_role FROM users WHERE id = ?');
+            const user = await userStmt.bind(verification.userId).first() as { email: string; user_role: string } | null;
+            
+            if (!user) {
+              return new Response(JSON.stringify({ error: 'User not found' }), {
+                status: 404,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              });
+            }
+
+            // Generate JWT token for successful authentication
+            const token = await generateJWT({ 
+              userId: verification.userId, 
+              email: user.email, 
+              role: user.user_role 
+            }, env);
+            
+            return new Response(JSON.stringify({ 
+              success: true, 
+              token,
+              userId: verification.userId 
+            }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          } else {
+            return new Response(JSON.stringify({ success: false, error: 'Authentication failed' }), {
+              status: 401,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+        } catch (error: any) {
+          console.error('WebAuthn authentication finish error:', error);
+          return new Response(JSON.stringify({ error: 'Authentication failed' }), {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
       // Public genre endpoints (read-only access)
       if (path === '/api/genres' && request.method === 'GET') {
         if (env.ENVIRONMENT === 'local') {
@@ -410,6 +495,160 @@ export default {
 
       if (path === '/api/auth/2fa/backup-codes' && request.method === 'POST') {
         return await twoFactorAuth.regenerateBackupCodes(userId, corsHeaders);
+      }
+
+      // WebAuthn/Passkey endpoints (protected - require authentication)
+      
+      // WebAuthn registration start (protected)
+      if (path === '/api/auth/webauthn/register/begin' && request.method === 'POST') {
+        try {
+          const url = new URL(request.url);
+          const rpName = 'LibraryCard';
+          // For local development, use localhost as rpID and frontend origin
+          const rpID = 'localhost';
+          const origin = env.ENVIRONMENT === 'local' ? 'http://localhost:3000' : url.origin;
+          
+          const webAuthnService = new WebAuthnService(env.DB, rpName, rpID, origin);
+          
+          // Get user details for registration
+          const userStmt = env.DB.prepare('SELECT email, first_name, last_name FROM users WHERE id = ?');
+          const user = await userStmt.bind(userId).first() as any;
+          
+          if (!user) {
+            return new Response(JSON.stringify({ error: 'User not found' }), {
+              status: 404,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+          
+          const displayName = user.first_name && user.last_name 
+            ? `${user.first_name} ${user.last_name}` 
+            : user.email;
+          
+          const options = await webAuthnService.generateRegistrationOptions(
+            userId, 
+            user.email, 
+            displayName
+          );
+          
+          return new Response(JSON.stringify(options), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error: any) {
+          console.error('WebAuthn registration begin error:', error);
+          return new Response(JSON.stringify({ error: 'Failed to generate registration options' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      // WebAuthn registration complete (protected)
+      if (path === '/api/auth/webauthn/register/finish' && request.method === 'POST') {
+        try {
+          const url = new URL(request.url);
+          const rpName = 'LibraryCard';
+          // For local development, use localhost as rpID and frontend origin
+          const rpID = 'localhost';
+          const origin = env.ENVIRONMENT === 'local' ? 'http://localhost:3000' : url.origin;
+          
+          const webAuthnService = new WebAuthnService(env.DB, rpName, rpID, origin);
+          
+          const body = await request.json() as { response: any; deviceName?: string };
+          const verification = await webAuthnService.verifyRegistrationResponse(
+            userId, 
+            body.response,
+            body.deviceName
+          );
+          
+          if (verification.success) {
+            return new Response(JSON.stringify({ 
+              success: true, 
+              credentialId: verification.credentialId 
+            }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          } else {
+            return new Response(JSON.stringify({ success: false, error: 'Registration failed' }), {
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+        } catch (error: any) {
+          console.error('WebAuthn registration finish error:', error);
+          return new Response(JSON.stringify({ error: 'Registration failed' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      // Get user's WebAuthn credentials (protected)
+      if (path === '/api/auth/webauthn/credentials' && request.method === 'GET') {
+        try {
+          const url = new URL(request.url);
+          const rpName = 'LibraryCard';
+          // For local development, use localhost as rpID and frontend origin
+          const rpID = 'localhost';
+          const origin = env.ENVIRONMENT === 'local' ? 'http://localhost:3000' : url.origin;
+          
+          const webAuthnService = new WebAuthnService(env.DB, rpName, rpID, origin);
+          const credentials = await webAuthnService.getUserCredentials(userId);
+          
+          // Return safe credential data (exclude sensitive information)
+          const safeCredentials = credentials.map(cred => ({
+            id: cred.id,
+            device_name: cred.device_name,
+            device_type: cred.device_type,
+            created_at: cred.created_at,
+            last_used_at: cred.last_used_at
+          }));
+          
+          return new Response(JSON.stringify(safeCredentials), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error: any) {
+          console.error('WebAuthn get credentials error:', error);
+          return new Response(JSON.stringify({ error: 'Failed to get credentials' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      // Delete WebAuthn credential (protected)
+      if (path.match(/^\/api\/auth\/webauthn\/credentials\/(.+)$/) && request.method === 'DELETE') {
+        try {
+          const rawCredentialId = path.split('/')[5];
+          // Convert base64url to standard base64 if needed
+          const credentialId = rawCredentialId.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - rawCredentialId.length % 4) % 4);
+          
+          const url = new URL(request.url);
+          const rpName = 'LibraryCard';
+          // For local development, use localhost as rpID and frontend origin
+          const rpID = 'localhost';
+          const origin = env.ENVIRONMENT === 'local' ? 'http://localhost:3000' : url.origin;
+          
+          const webAuthnService = new WebAuthnService(env.DB, rpName, rpID, origin);
+          const success = await webAuthnService.deleteCredential(userId, credentialId);
+          
+          if (success) {
+            return new Response(JSON.stringify({ success: true }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          } else {
+            return new Response(JSON.stringify({ error: 'Credential not found' }), {
+              status: 404,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+        } catch (error: any) {
+          console.error('WebAuthn delete credential error:', error);
+          return new Response(JSON.stringify({ error: 'Failed to delete credential' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
       }
 
       // Location endpoints
