@@ -12,95 +12,69 @@ export async function getUserBooks(userId: string, env: Env, corsHeaders: Record
   let result;
   
   if (isSuperAdmin) {
-    // Super admins can see all books
+    // Super admins can see all books - OPTIMIZED QUERY
     stmt = env.DB.prepare(`
-      SELECT DISTINCT b.id, b.isbn, b.title, b.authors, b.description, b.thumbnail, b.published_date,
-             b.categories, b.shelf_id, b.tags, b.added_by, b.created_at, b.status,
-             b.checked_out_by, b.checked_out_date, b.due_date,
-             b.extended_description, b.subjects, b.page_count, b.google_average_rating, b.google_ratings_count, b.rating_updated_at,
-             b.publisher_info, b.open_library_key, b.enhanced_genres, b.series, b.series_number,
-             s.name as shelf_name, l.name as location_name,
-             br.rating as user_rating, br.review_text as user_review,
-             -- Get assigned genres as JSON array
-             (SELECT json_group_array(json_object('id', cg.id, 'name', cg.name, 'description', cg.description))
-              FROM book_genres bg 
-              JOIN curated_genres cg ON bg.genre_id = cg.id 
-              WHERE bg.book_id = b.id AND cg.is_active = 1
-             ) as assigned_genres,
-             -- Calculate library-specific average rating from book_ratings table
-             (SELECT AVG(CAST(rating AS REAL)) FROM book_ratings 
-              WHERE book_id = b.id AND user_id IN (
-                SELECT DISTINCT u.id FROM users u
-                LEFT JOIN location_members lm2 ON u.id = lm2.user_id
-                LEFT JOIN locations l2 ON lm2.location_id = l2.id OR l2.owner_id = u.id
-                WHERE l2.id = l.id
-              )
-             ) as library_average_rating,
-             -- Calculate library-specific rating count from book_ratings table
-             (SELECT COUNT(*) FROM book_ratings 
-              WHERE book_id = b.id AND user_id IN (
-                SELECT DISTINCT u.id FROM users u
-                LEFT JOIN location_members lm2 ON u.id = lm2.user_id
-                LEFT JOIN locations l2 ON lm2.location_id = l2.id OR l2.owner_id = u.id
-                WHERE l2.id = l.id
-              )
-             ) as library_rating_count,
-             CASE 
-               WHEN b.checked_out_by IS NOT NULL THEN 
-                 (SELECT first_name FROM users WHERE id = b.checked_out_by)
-               ELSE NULL 
-             END as checked_out_by_name
+      SELECT DISTINCT 
+        b.id, b.isbn, b.title, b.authors, b.description, b.thumbnail, b.published_date,
+        b.categories, b.shelf_id, b.tags, b.added_by, b.created_at, b.status,
+        b.checked_out_by, b.checked_out_date, b.due_date,
+        b.extended_description, b.subjects, b.page_count, b.google_average_rating, 
+        b.google_ratings_count, b.rating_updated_at, b.publisher_info, b.open_library_key, 
+        b.enhanced_genres, b.series, b.series_number,
+        s.name as shelf_name, 
+        l.name as location_name,
+        br.rating as user_rating, 
+        br.review_text as user_review,
+        COALESCE((
+          SELECT json_group_array(json_object('id', cg.id, 'name', cg.name, 'description', cg.description))
+          FROM book_genres bg 
+          JOIN curated_genres cg ON bg.genre_id = cg.id 
+          WHERE bg.book_id = b.id AND cg.is_active = 1
+        ), '[]') as assigned_genres,
+        COALESCE(lra.library_average_rating, 0) as library_average_rating,
+        COALESCE(lra.library_rating_count, 0) as library_rating_count,
+        u_checkout.first_name as checked_out_by_name
       FROM books b
       LEFT JOIN shelves s ON b.shelf_id = s.id
       LEFT JOIN locations l ON s.location_id = l.id
       LEFT JOIN book_ratings br ON b.id = br.book_id AND br.user_id = ?
+      -- LEFT JOIN book_genres_agg bga ON b.id = bga.book_id  -- Genre view not available yet
+      LEFT JOIN library_ratings_agg lra ON b.id = lra.book_id AND l.id = lra.location_id
+      LEFT JOIN users u_checkout ON b.checked_out_by = u_checkout.id
       ORDER BY b.created_at DESC
     `);
     result = await stmt.bind(userId).all();
   } else {
-    // Regular admins and users see books based on ownership/membership
+    // Regular admins and users see books based on ownership/membership - OPTIMIZED QUERY
     stmt = env.DB.prepare(`
-      SELECT DISTINCT b.id, b.isbn, b.title, b.authors, b.description, b.thumbnail, b.published_date,
-             b.categories, b.shelf_id, b.tags, b.added_by, b.created_at, b.status,
-             b.checked_out_by, b.checked_out_date, b.due_date,
-             b.extended_description, b.subjects, b.page_count, b.google_average_rating, b.google_ratings_count, b.rating_updated_at,
-             b.publisher_info, b.open_library_key, b.enhanced_genres, b.series, b.series_number,
-             s.name as shelf_name, l.name as location_name,
-             br.rating as user_rating, br.review_text as user_review,
-             -- Get assigned genres as JSON array
-             (SELECT json_group_array(json_object('id', cg.id, 'name', cg.name, 'description', cg.description))
-              FROM book_genres bg 
-              JOIN curated_genres cg ON bg.genre_id = cg.id 
-              WHERE bg.book_id = b.id AND cg.is_active = 1
-             ) as assigned_genres,
-             -- Calculate library-specific average rating from book_ratings table
-             (SELECT AVG(CAST(rating AS REAL)) FROM book_ratings 
-              WHERE book_id = b.id AND user_id IN (
-                SELECT DISTINCT u.id FROM users u
-                LEFT JOIN location_members lm2 ON u.id = lm2.user_id
-                LEFT JOIN locations l2 ON lm2.location_id = l2.id OR l2.owner_id = u.id
-                WHERE l2.id = l.id
-              )
-             ) as library_average_rating,
-             -- Calculate library-specific rating count from book_ratings table
-             (SELECT COUNT(*) FROM book_ratings 
-              WHERE book_id = b.id AND user_id IN (
-                SELECT DISTINCT u.id FROM users u
-                LEFT JOIN location_members lm2 ON u.id = lm2.user_id
-                LEFT JOIN locations l2 ON lm2.location_id = l2.id OR l2.owner_id = u.id
-                WHERE l2.id = l.id
-              )
-             ) as library_rating_count,
-             CASE 
-               WHEN b.checked_out_by IS NOT NULL THEN 
-                 (SELECT first_name FROM users WHERE id = b.checked_out_by)
-               ELSE NULL 
-             END as checked_out_by_name
+      SELECT DISTINCT 
+        b.id, b.isbn, b.title, b.authors, b.description, b.thumbnail, b.published_date,
+        b.categories, b.shelf_id, b.tags, b.added_by, b.created_at, b.status,
+        b.checked_out_by, b.checked_out_date, b.due_date,
+        b.extended_description, b.subjects, b.page_count, b.google_average_rating, 
+        b.google_ratings_count, b.rating_updated_at, b.publisher_info, b.open_library_key, 
+        b.enhanced_genres, b.series, b.series_number,
+        s.name as shelf_name, 
+        l.name as location_name,
+        br.rating as user_rating, 
+        br.review_text as user_review,
+        COALESCE((
+          SELECT json_group_array(json_object('id', cg.id, 'name', cg.name, 'description', cg.description))
+          FROM book_genres bg 
+          JOIN curated_genres cg ON bg.genre_id = cg.id 
+          WHERE bg.book_id = b.id AND cg.is_active = 1
+        ), '[]') as assigned_genres,
+        COALESCE(lra.library_average_rating, 0) as library_average_rating,
+        COALESCE(lra.library_rating_count, 0) as library_rating_count,
+        u_checkout.first_name as checked_out_by_name
       FROM books b
       LEFT JOIN shelves s ON b.shelf_id = s.id
       LEFT JOIN locations l ON s.location_id = l.id
       LEFT JOIN location_members lm ON l.id = lm.location_id
       LEFT JOIN book_ratings br ON b.id = br.book_id AND br.user_id = ?
+      -- LEFT JOIN book_genres_agg bga ON b.id = bga.book_id  -- Genre view not available yet
+      LEFT JOIN library_ratings_agg lra ON b.id = lra.book_id AND l.id = lra.location_id
+      LEFT JOIN users u_checkout ON b.checked_out_by = u_checkout.id
       WHERE l.owner_id = ? OR lm.user_id = ?
       ORDER BY b.created_at DESC
     `);
