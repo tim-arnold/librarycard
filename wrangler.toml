@@ -65,6 +65,7 @@ id = "22522f1582fc4b45b8b59446fca5c791"
 # Use: npx wrangler deploy --env=production
 [env.production]
 name = "librarycard-api-production"
+compatibility_flags = ["nodejs_compat"]
 
 [env.production.vars]
 ENVIRONMENT = "production"
