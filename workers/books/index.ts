@@ -25,7 +25,12 @@ export async function getUserBooks(userId: string, env: Env, corsHeaders: Record
         l.name as location_name,
         br.rating as user_rating, 
         br.review_text as user_review,
-        COALESCE(bga.assigned_genres, '[]') as assigned_genres,
+        COALESCE((
+          SELECT json_group_array(json_object('id', cg.id, 'name', cg.name, 'description', cg.description))
+          FROM book_genres bg 
+          JOIN curated_genres cg ON bg.genre_id = cg.id 
+          WHERE bg.book_id = b.id AND cg.is_active = 1
+        ), '[]') as assigned_genres,
         COALESCE(lra.library_average_rating, 0) as library_average_rating,
         COALESCE(lra.library_rating_count, 0) as library_rating_count,
         u_checkout.first_name as checked_out_by_name
@@ -33,7 +38,7 @@ export async function getUserBooks(userId: string, env: Env, corsHeaders: Record
       LEFT JOIN shelves s ON b.shelf_id = s.id
       LEFT JOIN locations l ON s.location_id = l.id
       LEFT JOIN book_ratings br ON b.id = br.book_id AND br.user_id = ?
-      LEFT JOIN book_genres_agg bga ON b.id = bga.book_id
+      -- LEFT JOIN book_genres_agg bga ON b.id = bga.book_id  -- Genre view not available yet
       LEFT JOIN library_ratings_agg lra ON b.id = lra.book_id AND l.id = lra.location_id
       LEFT JOIN users u_checkout ON b.checked_out_by = u_checkout.id
       ORDER BY b.created_at DESC
@@ -53,7 +58,12 @@ export async function getUserBooks(userId: string, env: Env, corsHeaders: Record
         l.name as location_name,
         br.rating as user_rating, 
         br.review_text as user_review,
-        COALESCE(bga.assigned_genres, '[]') as assigned_genres,
+        COALESCE((
+          SELECT json_group_array(json_object('id', cg.id, 'name', cg.name, 'description', cg.description))
+          FROM book_genres bg 
+          JOIN curated_genres cg ON bg.genre_id = cg.id 
+          WHERE bg.book_id = b.id AND cg.is_active = 1
+        ), '[]') as assigned_genres,
         COALESCE(lra.library_average_rating, 0) as library_average_rating,
         COALESCE(lra.library_rating_count, 0) as library_rating_count,
         u_checkout.first_name as checked_out_by_name
@@ -62,7 +72,7 @@ export async function getUserBooks(userId: string, env: Env, corsHeaders: Record
       LEFT JOIN locations l ON s.location_id = l.id
       LEFT JOIN location_members lm ON l.id = lm.location_id
       LEFT JOIN book_ratings br ON b.id = br.book_id AND br.user_id = ?
-      LEFT JOIN book_genres_agg bga ON b.id = bga.book_id
+      -- LEFT JOIN book_genres_agg bga ON b.id = bga.book_id  -- Genre view not available yet
       LEFT JOIN library_ratings_agg lra ON b.id = lra.book_id AND l.id = lra.location_id
       LEFT JOIN users u_checkout ON b.checked_out_by = u_checkout.id
       WHERE l.owner_id = ? OR lm.user_id = ?
