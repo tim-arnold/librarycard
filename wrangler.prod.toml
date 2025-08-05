@@ -23,7 +23,7 @@ account_id = "4bef1453ad78da6e3bb7e83b421e26df"  # TODO: Replace with separate p
 
 [vars]
 ENVIRONMENT = "production"
-APP_URL = "https://librarycard.tim52.io/"
+APP_URL = "https://librarycard.tim52.io"
 FROM_EMAIL = "LibraryCard <librarian@tim52.io>"
 
 # Production Database - LIVE DATA
@@ -43,7 +43,7 @@ name = "librarycard-api-production"
 
 [env.production.vars]
 ENVIRONMENT = "production"
-APP_URL = "https://librarycard.tim52.io/"
+APP_URL = "https://librarycard.tim52.io"
 FROM_EMAIL = "LibraryCard <librarian@tim52.io>"
 
 [[env.production.d1_databases]]
