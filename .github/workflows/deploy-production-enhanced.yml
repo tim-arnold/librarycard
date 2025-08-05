@@ -42,6 +42,16 @@ jobs:
       deployment-approved: ${{ steps.confirmation.outputs.approved }}
     
     steps:
+      - name: Validate branch
+        run: |
+          if [ "${{ github.ref_name }}" != "main" ]; then
+            echo "❌ This workflow can only be run from the 'main' branch"
+            echo "Current branch: ${{ github.ref_name }}"
+            echo "Required branch: main"
+            exit 1
+          fi
+          echo "✅ Branch validation passed: ${{ github.ref_name }}"
+
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -181,7 +191,7 @@ jobs:
     name: Deploy Worker to Production
     runs-on: ubuntu-latest
     needs: [safety-validation, pre-deployment-backup]
-    if: always() && needs.safety-validation.result == 'success' && (needs.pre-deployment-backup.result == 'success' || needs.pre-deployment-backup.result == 'skipped')
+    if: always() && needs.safety-validation.result == 'success' && (needs.pre-deployment-backup.result == 'success' || needs.pre-deployment-backup.result == 'skipped') && (github.event.inputs.deployment_type == 'worker-only' || github.event.inputs.deployment_type == 'full-deployment')
     environment: production
     
     steps:
@@ -228,7 +238,7 @@ jobs:
     name: Deploy Database Migration
     runs-on: ubuntu-latest
     needs: [safety-validation, pre-deployment-backup, deploy-worker]
-    if: always() && needs.safety-validation.result == 'success' && needs.deploy-worker.result == 'success' && (github.event.inputs.deployment_type == 'database-migration' || github.event.inputs.deployment_type == 'full-deployment')
+    if: always() && needs.safety-validation.result == 'success' && (needs.pre-deployment-backup.result == 'success') && (needs.deploy-worker.result == 'success' || needs.deploy-worker.result == 'skipped') && (github.event.inputs.deployment_type == 'database-migration' || github.event.inputs.deployment_type == 'full-deployment')
     environment: production
     
     steps:
@@ -271,7 +281,7 @@ jobs:
     name: Post-Deployment Verification
     runs-on: ubuntu-latest
     needs: [deploy-worker, deploy-database]
-    if: always() && (needs.deploy-worker.result == 'success') && (needs.deploy-database.result == 'success' || needs.deploy-database.result == 'skipped')
+    if: always() && (needs.deploy-worker.result == 'success' || needs.deploy-worker.result == 'skipped') && (needs.deploy-database.result == 'success' || needs.deploy-database.result == 'skipped') && (needs.deploy-worker.result == 'success' || needs.deploy-database.result == 'success')
     environment: production
     
     steps:
