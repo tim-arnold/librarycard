@@ -233,3 +233,28 @@ export interface CoverMetadata {
   google_id?: string
   selection_reason?: string
 }
+
+// 2FA/TOTP Types
+export interface TOTPSetupResponse {
+  secret: string
+  qrCodeUrl: string
+  backupCodes: string[]
+}
+
+export interface TwoFactorStatus {
+  enabled: boolean
+  enabledAt: string | null
+  backupCodes: {
+    total: number
+    used: number
+    remaining: number
+  }
+}
+
+export interface TOTPVerifyRequest {
+  totpCode: string
+}
+
+export interface BackupCodeVerifyRequest {
+  backupCode: string
+}

@@ -14,6 +14,11 @@ CREATE TABLE IF NOT EXISTS users (
   user_role TEXT DEFAULT 'user', -- 'admin' or 'user'
   password_reset_token TEXT,
   password_reset_expires DATETIME,
+  -- 2FA support columns
+  totp_secret TEXT,
+  totp_enabled BOOLEAN DEFAULT FALSE,
+  totp_enabled_at DATETIME,
+  backup_codes TEXT, -- JSON array of hashed backup codes
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -170,6 +175,45 @@ CREATE TABLE IF NOT EXISTS book_removal_requests (
   FOREIGN KEY (reviewed_by) REFERENCES users(id)
 );
 
+-- 2FA recovery codes table for better management
+CREATE TABLE IF NOT EXISTS user_recovery_codes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id TEXT NOT NULL,
+  code_hash TEXT NOT NULL,
+  used_at DATETIME,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- JWT session management tables for enhanced security
+CREATE TABLE IF NOT EXISTS jwt_sessions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id TEXT NOT NULL,
+  session_token TEXT UNIQUE NOT NULL,
+  device_info TEXT, -- JSON: browser, OS, etc.
+  ip_address TEXT,
+  location TEXT, -- Country/city if available
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  last_used_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  expires_at DATETIME NOT NULL,
+  revoked_at DATETIME,
+  revoked_reason TEXT,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Security audit log for authentication events
+CREATE TABLE IF NOT EXISTS security_audit_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id TEXT,
+  event_type TEXT NOT NULL, -- 'login', 'logout', '2fa_enabled', '2fa_disabled', 'password_change', etc.
+  event_details TEXT, -- JSON with additional details
+  ip_address TEXT,
+  user_agent TEXT,
+  success BOOLEAN DEFAULT TRUE,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(user_role);
@@ -210,3 +254,19 @@ CREATE INDEX IF NOT EXISTS idx_removal_requests_reviewed_by ON book_removal_requ
 CREATE INDEX IF NOT EXISTS idx_signup_requests_email ON signup_approval_requests(email);
 CREATE INDEX IF NOT EXISTS idx_signup_requests_status ON signup_approval_requests(status);
 CREATE INDEX IF NOT EXISTS idx_signup_requests_reviewed_by ON signup_approval_requests(reviewed_by);
+
+-- 2FA and security indexes
+CREATE INDEX IF NOT EXISTS idx_users_2fa_enabled ON users(totp_enabled);
+
+CREATE INDEX IF NOT EXISTS idx_recovery_codes_user ON user_recovery_codes(user_id);
+CREATE INDEX IF NOT EXISTS idx_recovery_codes_used ON user_recovery_codes(used_at);
+
+CREATE INDEX IF NOT EXISTS idx_jwt_sessions_user ON jwt_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_jwt_sessions_token ON jwt_sessions(session_token);
+CREATE INDEX IF NOT EXISTS idx_jwt_sessions_expires ON jwt_sessions(expires_at);
+CREATE INDEX IF NOT EXISTS idx_jwt_sessions_revoked ON jwt_sessions(revoked_at);
+
+CREATE INDEX IF NOT EXISTS idx_audit_log_user ON security_audit_log(user_id);
+CREATE INDEX IF NOT EXISTS idx_audit_log_type ON security_audit_log(event_type);
+CREATE INDEX IF NOT EXISTS idx_audit_log_created ON security_audit_log(created_at);
+CREATE INDEX IF NOT EXISTS idx_audit_log_success ON security_audit_log(success);

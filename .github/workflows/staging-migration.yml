@@ -2,6 +2,7 @@ name: Staging Database Migration
 
 on:
   workflow_dispatch:
+    branches: [ staging ]
     inputs:
       migration_file:
         description: 'Migration file to apply (e.g., 20250722_add_user_global_permissions.sql)'

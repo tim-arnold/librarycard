@@ -1,10 +1,32 @@
 import { Env } from '../types';
 import { sendVerificationEmail, notifyAdminsOfSignupRequest, sendPasswordResetEmail } from '../email';
+import { generateJWT } from '../auth/jwt';
+import { getUserRole } from '../auth/index';
+import { parseAndValidateJSON, AuthSchemas, validatePasswordStrength } from '../validation';
+import { ErrorCategory, createSecureErrorResponse, withDatabaseErrorHandling } from '../errors';
 
 // Core authentication functions extracted from main worker
 
 export async function createOrUpdateUser(request: Request, env: Env, corsHeaders: Record<string, string>) {
-  const user: any = await request.json();
+  // This endpoint is used by OAuth flows - validate basic user structure
+  const userSchema = {
+    id: { required: true, type: 'string' as const, maxLength: 255 },
+    email: { required: true, type: 'email' as const, maxLength: 255 },
+    first_name: { required: false, type: 'string' as const, maxLength: 50, sanitize: true },
+    last_name: { required: false, type: 'string' as const, maxLength: 50, sanitize: true },
+    auth_provider: { required: false, type: 'string' as const, allowedValues: ['email', 'google'] },
+    email_verified: { required: false, type: 'boolean' as const }
+  };
+  
+  const validation = await parseAndValidateJSON(request, userSchema);
+  if (!validation.isValid) {
+    return new Response(JSON.stringify({ error: validation.error }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+  
+  const user = validation.data!;
   
   const stmt = env.DB.prepare(`
     INSERT OR REPLACE INTO users (id, email, first_name, last_name, auth_provider, email_verified, updated_at)
@@ -26,13 +48,15 @@ export async function createOrUpdateUser(request: Request, env: Env, corsHeaders
 }
 
 export async function registerUser(request: Request, env: Env, corsHeaders: Record<string, string>) {
-  const { email, password, first_name, last_name, invitation_token }: {
-    email: string;
-    password: string;
-    first_name: string;
-    last_name?: string;
-    invitation_token?: string;
-  } = await request.json();
+  const validation = await parseAndValidateJSON(request, AuthSchemas.register);
+  if (!validation.isValid) {
+    return new Response(JSON.stringify({ error: validation.error }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+  
+  const { email, password, first_name, last_name, invitation_token } = validation.data!;
   
   
   // Validate password strength
@@ -78,11 +102,12 @@ export async function registerUser(request: Request, env: Env, corsHeaders: Reco
       }
     }
   } catch (error) {
-    console.error('Error checking signup approval requests:', error);
-    return new Response(JSON.stringify({ error: 'Unable to process signup request. Please try again later.' }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return createSecureErrorResponse(
+      env,
+      error,
+      ErrorCategory.DATABASE_ERROR,
+      { endpoint: '/api/auth/register' }
+    );
   }
   
   // Check if user has a valid invitation
@@ -202,13 +227,18 @@ export async function registerUser(request: Request, env: Env, corsHeaders: Reco
 }
 
 export async function verifyCredentials(request: Request, env: Env, corsHeaders: Record<string, string>) {
-  const { email, password }: {
-    email: string;
-    password: string;
-  } = await request.json();
+  const validation = await parseAndValidateJSON(request, AuthSchemas.login);
+  if (!validation.isValid) {
+    return new Response(JSON.stringify({ error: validation.error }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+  
+  const { email, password } = validation.data!;
   
   const user = await env.DB.prepare(`
-    SELECT id, email, first_name, last_name, password_hash, email_verified, auth_provider
+    SELECT id, email, first_name, last_name, password_hash, email_verified, auth_provider, totp_enabled
     FROM users 
     WHERE email = ? AND auth_provider = 'email'
   `).bind(email).first();
@@ -245,12 +275,40 @@ export async function verifyCredentials(request: Request, env: Env, corsHeaders:
     // Continue with login even if cache clearing fails
   }
   
+  // Check if 2FA is enabled for this user
+  const is2FAEnabled = user.totp_enabled === 1 || user.totp_enabled === true;
+  
+  if (is2FAEnabled) {
+    // 2FA is enabled - return partial authentication requiring TOTP verification
+    return new Response(JSON.stringify({
+      requires_2fa: true,
+      user_id: user.id,
+      email: user.email,
+      message: 'Password verified. Please provide your 2FA code to complete login.'
+    }), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+  
+  // 2FA not enabled - proceed with normal login
+  // Get user role for JWT payload
+  const userRole = await getUserRole(user.id as string, env);
+  
+  // Generate JWT token
+  const jwt = await generateJWT({
+    userId: user.id as string,
+    email: user.email as string,
+    role: userRole
+  }, env);
+  
   return new Response(JSON.stringify({
     id: user.id,
     email: user.email,
     first_name: user.first_name,
     last_name: user.last_name,
-    auth_provider: user.auth_provider
+    auth_provider: user.auth_provider,
+    access_token: jwt
   }), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
@@ -315,30 +373,7 @@ export async function verifyEmail(request: Request, env: Env, corsHeaders: Recor
 }
 
 // Utility functions for authentication
-export function validatePasswordStrength(password: string): { isValid: boolean; error?: string } {
-  const minLength = 8;
-  const hasUpperCase = /[A-Z]/.test(password);
-  const hasLowerCase = /[a-z]/.test(password);
-  const hasNumbers = /\d/.test(password);
-  const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-
-  if (password.length < minLength) {
-    return { isValid: false, error: `Password must be at least ${minLength} characters long` };
-  }
-  if (!hasUpperCase) {
-    return { isValid: false, error: 'Password must contain at least one uppercase letter' };
-  }
-  if (!hasLowerCase) {
-    return { isValid: false, error: 'Password must contain at least one lowercase letter' };
-  }
-  if (!hasNumbers) {
-    return { isValid: false, error: 'Password must contain at least one number' };
-  }
-  if (!hasSpecialChar) {
-    return { isValid: false, error: 'Password must contain at least one special character (!@#$%^&*(),.?":{}|<>)' };
-  }
-  return { isValid: true };
-}
+// Note: Password validation is now handled by the validation module
 
 export async function hashPassword(password: string): Promise<string> {
   // Generate a random salt
@@ -478,7 +513,15 @@ export function generateUUID(): string {
 }
 
 export async function forgotPassword(request: Request, env: Env, corsHeaders: Record<string, string>) {
-  const { email }: { email: string } = await request.json();
+  const validation = await parseAndValidateJSON(request, AuthSchemas.forgotPassword);
+  if (!validation.isValid) {
+    return new Response(JSON.stringify({ error: validation.error }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+  
+  const { email } = validation.data!;
   
   // Look up user by email
   const user = await env.DB.prepare(`
@@ -564,7 +607,15 @@ export async function verifyResetToken(request: Request, env: Env, corsHeaders: 
 }
 
 export async function resetPassword(request: Request, env: Env, corsHeaders: Record<string, string>) {
-  const { token, password }: { token: string; password: string } = await request.json();
+  const validation = await parseAndValidateJSON(request, AuthSchemas.resetPassword);
+  if (!validation.isValid) {
+    return new Response(JSON.stringify({ error: validation.error }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+  
+  const { token, password } = validation.data!;
   
   // Validate password strength
   const passwordValidation = validatePasswordStrength(password);
@@ -622,12 +673,16 @@ export async function resetPassword(request: Request, env: Env, corsHeaders: Rec
   });
 }
 
-export async function changePassword(request: Request, env: Env, corsHeaders: Record<string, string>) {
-  const { currentPassword, newPassword, email }: { 
-    currentPassword: string; 
-    newPassword: string; 
-    email: string;
-  } = await request.json();
+export async function changePassword(request: Request, userId: string, env: Env, corsHeaders: Record<string, string>) {
+  const validation = await parseAndValidateJSON(request, AuthSchemas.changePassword);
+  if (!validation.isValid) {
+    return new Response(JSON.stringify({ error: validation.error }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+  
+  const { old_password: currentPassword, new_password: newPassword } = validation.data!;
   
   // Validate new password strength
   const passwordValidation = validatePasswordStrength(newPassword);
@@ -638,12 +693,12 @@ export async function changePassword(request: Request, env: Env, corsHeaders: Re
     });
   }
   
-  // Get user by email
+  // Get user by ID (from JWT token)
   const user = await env.DB.prepare(`
     SELECT id, password_hash, auth_provider
     FROM users 
-    WHERE email = ?
-  `).bind(email).first();
+    WHERE id = ?
+  `).bind(userId).first();
   
   if (!user) {
     return new Response(JSON.stringify({ error: 'User not found' }), {
@@ -690,6 +745,72 @@ export async function changePassword(request: Request, env: Env, corsHeaders: Re
   
   return new Response(JSON.stringify({ 
     message: 'Password changed successfully!' 
+  }), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
+
+export async function complete2FALogin(request: Request, env: Env, corsHeaders: Record<string, string>) {
+  const validation = await parseAndValidateJSON(request, {
+    user_id: { required: true, type: 'string' as const, maxLength: 255 },
+    totp_code: { required: true, type: 'string' as const, pattern: /^\d{6}$/ }
+  });
+  
+  if (!validation.isValid) {
+    return new Response(JSON.stringify({ error: validation.error }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+  
+  const { user_id, totp_code } = validation.data!;
+  
+  // Get user and verify 2FA is enabled
+  const user = await env.DB.prepare(`
+    SELECT id, email, first_name, last_name, auth_provider, totp_enabled, totp_secret
+    FROM users 
+    WHERE id = ? AND totp_enabled = 1
+  `).bind(user_id).first();
+  
+  if (!user) {
+    return new Response(JSON.stringify({ error: 'User not found or 2FA not enabled' }), {
+      status: 404,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+  
+  // Import the TOTP service
+  const { TOTPService } = await import('../auth/totp');
+  const totpService = new TOTPService(env);
+  
+  // Verify the TOTP code
+  const isValidTOTP = totpService.verifyToken(user.totp_secret as string, totp_code);
+  
+  if (!isValidTOTP) {
+    return new Response(JSON.stringify({ error: 'Invalid 2FA code' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+  
+  // 2FA verification successful - complete login
+  // Get user role for JWT payload
+  const userRole = await getUserRole(user.id as string, env);
+  
+  // Generate JWT token
+  const jwt = await generateJWT({
+    userId: user.id as string,
+    email: user.email as string,
+    role: userRole
+  }, env);
+  
+  return new Response(JSON.stringify({
+    id: user.id,
+    email: user.email,
+    first_name: user.first_name,
+    last_name: user.last_name,
+    auth_provider: user.auth_provider,
+    access_token: jwt
   }), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
