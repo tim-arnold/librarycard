@@ -117,76 +117,6 @@ export function useBookFilters({
     }
   }, [locationFilter, shelves, allLocations, shelfFilter])
 
-  // Helper function for dropdown generation - only check enhanced genres and categories
-  const bookHasGenreForDropdown = (book: EnhancedBook, curatedGenre: string): boolean => {
-    // Check assigned genres first (these are user-selected and highest priority)
-    if (book.assignedGenres) {
-      const curatedLower = curatedGenre.toLowerCase()
-      const hasMatch = book.assignedGenres.some(genre => genre.name.toLowerCase() === curatedLower)
-      if (hasMatch) {
-        return true
-      }
-    }
-    
-    // Check enhanced genres (these are already curated) - use case-insensitive matching
-    if (book.enhancedGenres) {
-      const curatedLower = curatedGenre.toLowerCase()
-      const hasMatch = book.enhancedGenres.some(genre => genre.toLowerCase() === curatedLower)
-      if (hasMatch) {
-        return true
-      }
-    }
-    
-    // For raw categories only, use flexible matching for compound genres
-    const rawGenres = book.categories || []
-    return rawGenres.some(rawGenre => {
-      const rawLower = rawGenre.toLowerCase()
-      const curatedLower = curatedGenre.toLowerCase()
-      
-      // Handle special compound genres FIRST to prevent incorrect matches
-      if (curatedGenre === 'Historical Fiction') {
-        // Only match explicit historical fiction references, never horror/fantasy/sci-fi
-        if (rawLower.includes('horror') || rawLower.includes('fantasy') || rawLower.includes('science fiction')) {
-          return false
-        }
-        return rawLower.includes('historical fiction') || 
-               (rawLower.includes('fiction') && rawLower.includes('historical'))
-      }
-      
-      if (curatedGenre === 'Literary Fiction') {
-        // Only match explicit literary fiction references, never horror/fantasy/sci-fi
-        if (rawLower.includes('horror') || rawLower.includes('fantasy') || rawLower.includes('science fiction')) {
-          return false
-        }
-        return rawLower.includes('literary fiction') ||
-               (rawLower.includes('fiction') && rawLower.includes('literary'))
-      }
-      
-      if (curatedGenre === 'Young Adult') {
-        return rawLower.includes('young adult') || rawLower.includes('juvenile') || 
-               (rawLower.includes('young') && rawLower.includes('adult'))
-      }
-      
-      // For multi-word genres, require ALL words to be present (not just any single word)
-      // This prevents "Science Fiction" from matching books that only have "Fiction"
-      if (curatedGenre.includes(' ')) {
-        const curatedWords = curatedLower.split(/\s+/).filter(word => word.length > 2)
-        const rawWords = rawLower.split(/\s+|[,&-]+/).filter(word => word.length > 2)
-        
-        // Require ALL words from the curated genre to be present in the raw text
-        return curatedWords.every(curatedWord => rawWords.includes(curatedWord))
-      }
-      
-      // Single-word genre matching - check both exact substring and word boundaries
-      if (rawLower.includes(curatedLower) || curatedLower.includes(rawLower)) {
-        return true
-      }
-      
-      // Fallback: exact word match in word boundaries for single words
-      const rawWords = rawLower.split(/\s+|[,&-]+/).filter(word => word.length > 2)
-      return rawWords.includes(curatedLower)
-    })
-  }
 
   // Helper function to check if a book matches a curated genre filter - includes subjects for comprehensive filtering
   const bookMatchesGenreFilter = (book: EnhancedBook, curatedGenre: string): boolean => {
@@ -259,34 +189,60 @@ export function useBookFilters({
     })
   }
 
-  // Use curated genres that actually have books mapped to them in the user's library (categories only for dropdown)
+  // Use only genres that are actually displayed as chips in the book listings (for dropdown)
+  // Note: Only the FIRST genre from getDisplayGenres is shown as a chip
+  // Filter by current location and shelf to show only relevant genres
   const allCategories = useMemo(() => {
-    // Get all assigned genres from books in the library
-    const assignedGenres = new Set<string>()
-    books.forEach(book => {
-      if (book.assignedGenres) {
-        book.assignedGenres.forEach(genre => assignedGenres.add(genre.name))
+    const allDisplayedGenres = new Set<string>()
+    
+    // Filter books by current location and shelf context
+    const contextFilteredBooks = books.filter(book => {
+      // Apply location filter if set
+      if (locationFilter) {
+        const shelf = shelves.find(s => s.id === book.shelf_id)
+        if (!shelf) return false
+        
+        // For admin users, use allLocations
+        if (isAdmin(userRole)) {
+          const location = allLocations.find(l => l.id === shelf.location_id)
+          if (location?.name !== locationFilter) return false
+        } else {
+          // For regular users, use userLocations
+          const location = userLocations?.find(l => l.id === shelf.location_id)
+          if (location?.name !== locationFilter) return false
+        }
+      } else if (!isAdmin(userRole) && currentLocation) {
+        // For regular users with no explicit location filter, show only books from current location
+        const shelf = shelves.find(s => s.id === book.shelf_id)
+        if (!shelf || shelf.location_id !== currentLocation.id) return false
+      }
+      
+      // Apply shelf filter if set
+      if (shelfFilter && book.shelf_name !== shelfFilter) {
+        return false
+      }
+      
+      return true
+    })
+    
+    contextFilteredBooks.forEach(book => {
+      // Get the first genre that would be displayed as a chip using the same logic as the UI
+      // Priority 1: First assigned curated genre
+      if (book.assignedGenres && book.assignedGenres.length > 0) {
+        allDisplayedGenres.add(book.assignedGenres[0].name)
+      }
+      // Priority 2: First enhanced auto-classified genre (only if no assigned genres)
+      else if (book.enhancedGenres && book.enhancedGenres.length > 0) {
+        allDisplayedGenres.add(book.enhancedGenres[0])
+      }
+      // Priority 3: First raw category from Google Books (only if no assigned or enhanced genres)
+      else if (book.categories && book.categories.length > 0) {
+        allDisplayedGenres.add(book.categories[0])
       }
     })
     
-    // Get enhanced genres (curated genres from classification)
-    const existingGenres = new Set<string>()
-    books.forEach(book => {
-      // Add enhanced genres (curated genres from classification)
-      if (book.enhancedGenres) {
-        book.enhancedGenres.forEach(genre => existingGenres.add(genre))
-      }
-    })
-    
-    // Combine all possible genres
-    const allPossibleGenres = new Set([...Array.from(assignedGenres), ...Array.from(existingGenres)])
-    
-    const finalGenres = Array.from(allPossibleGenres).filter(curatedGenre => {
-      return books.some(book => bookHasGenreForDropdown(book, curatedGenre))
-    }).sort()
-    
-    return finalGenres
-  }, [books])
+    return Array.from(allDisplayedGenres).sort()
+  }, [books, locationFilter, shelfFilter, shelves, allLocations, userLocations, currentLocation, userRole])
 
   // Generate URL path based on current filters
   const generateFilterUrl = useCallback(() => {
