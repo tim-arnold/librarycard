@@ -16,6 +16,16 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
+      - name: Validate branch
+        run: |
+          if [ "${{ github.ref_name }}" != "staging" ]; then
+            echo "❌ This workflow can only be run from the 'staging' branch"
+            echo "Current branch: ${{ github.ref_name }}"
+            echo "Required branch: staging"
+            exit 1
+          fi
+          echo "✅ Branch validation passed: ${{ github.ref_name }}"
+
       - name: Checkout code
         uses: actions/checkout@v4
 
