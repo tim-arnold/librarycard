@@ -310,9 +310,9 @@ export default {
         try {
           const url = new URL(request.url);
           const rpName = 'LibraryCard';
-          // Set rpID based on environment
-          const rpID = env.ENVIRONMENT === 'local' ? 'localhost' : url.hostname;
-          const origin = env.ENVIRONMENT === 'local' ? 'http://localhost:3000' : url.origin;
+          // Set rpID based on environment - use frontend hostname for WebAuthn
+          const rpID = env.ENVIRONMENT === 'local' ? 'localhost' : new URL(env.APP_URL).hostname;
+          const origin = env.ENVIRONMENT === 'local' ? 'http://localhost:3000' : env.APP_URL;
           
           const webAuthnService = new WebAuthnService(env.DB, rpName, rpID, origin);
           
@@ -336,9 +336,9 @@ export default {
         try {
           const url = new URL(request.url);
           const rpName = 'LibraryCard';
-          // Set rpID based on environment
-          const rpID = env.ENVIRONMENT === 'local' ? 'localhost' : url.hostname;
-          const origin = env.ENVIRONMENT === 'local' ? 'http://localhost:3000' : url.origin;
+          // Set rpID based on environment - use frontend hostname for WebAuthn
+          const rpID = env.ENVIRONMENT === 'local' ? 'localhost' : new URL(env.APP_URL).hostname;
+          const origin = env.ENVIRONMENT === 'local' ? 'http://localhost:3000' : env.APP_URL;
           
           const webAuthnService = new WebAuthnService(env.DB, rpName, rpID, origin);
           
@@ -504,9 +504,9 @@ export default {
         try {
           const url = new URL(request.url);
           const rpName = 'LibraryCard';
-          // Set rpID based on environment
-          const rpID = env.ENVIRONMENT === 'local' ? 'localhost' : url.hostname;
-          const origin = env.ENVIRONMENT === 'local' ? 'http://localhost:3000' : url.origin;
+          // Set rpID based on environment - use frontend hostname for WebAuthn
+          const rpID = env.ENVIRONMENT === 'local' ? 'localhost' : new URL(env.APP_URL).hostname;
+          const origin = env.ENVIRONMENT === 'local' ? 'http://localhost:3000' : env.APP_URL;
           
           const webAuthnService = new WebAuthnService(env.DB, rpName, rpID, origin);
           
@@ -548,9 +548,9 @@ export default {
         try {
           const url = new URL(request.url);
           const rpName = 'LibraryCard';
-          // Set rpID based on environment
-          const rpID = env.ENVIRONMENT === 'local' ? 'localhost' : url.hostname;
-          const origin = env.ENVIRONMENT === 'local' ? 'http://localhost:3000' : url.origin;
+          // Set rpID based on environment - use frontend hostname for WebAuthn
+          const rpID = env.ENVIRONMENT === 'local' ? 'localhost' : new URL(env.APP_URL).hostname;
+          const origin = env.ENVIRONMENT === 'local' ? 'http://localhost:3000' : env.APP_URL;
           
           const webAuthnService = new WebAuthnService(env.DB, rpName, rpID, origin);
           
@@ -588,9 +588,9 @@ export default {
         try {
           const url = new URL(request.url);
           const rpName = 'LibraryCard';
-          // Set rpID based on environment
-          const rpID = env.ENVIRONMENT === 'local' ? 'localhost' : url.hostname;
-          const origin = env.ENVIRONMENT === 'local' ? 'http://localhost:3000' : url.origin;
+          // Set rpID based on environment - use frontend hostname for WebAuthn
+          const rpID = env.ENVIRONMENT === 'local' ? 'localhost' : new URL(env.APP_URL).hostname;
+          const origin = env.ENVIRONMENT === 'local' ? 'http://localhost:3000' : env.APP_URL;
           
           const webAuthnService = new WebAuthnService(env.DB, rpName, rpID, origin);
           const credentials = await webAuthnService.getUserCredentials(userId);
@@ -625,9 +625,9 @@ export default {
           
           const url = new URL(request.url);
           const rpName = 'LibraryCard';
-          // Set rpID based on environment
-          const rpID = env.ENVIRONMENT === 'local' ? 'localhost' : url.hostname;
-          const origin = env.ENVIRONMENT === 'local' ? 'http://localhost:3000' : url.origin;
+          // Set rpID based on environment - use frontend hostname for WebAuthn
+          const rpID = env.ENVIRONMENT === 'local' ? 'localhost' : new URL(env.APP_URL).hostname;
+          const origin = env.ENVIRONMENT === 'local' ? 'http://localhost:3000' : env.APP_URL;
           
           const webAuthnService = new WebAuthnService(env.DB, rpName, rpID, origin);
           const success = await webAuthnService.deleteCredential(userId, credentialId);
