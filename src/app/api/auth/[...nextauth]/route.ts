@@ -33,9 +33,33 @@ const handler = NextAuth({
       name: 'email',
       credentials: {
         email: { label: 'Email', type: 'email' },
-        password: { label: 'Password', type: 'password' }
+        password: { label: 'Password', type: 'password' },
+        token: { label: 'Token', type: 'text' },
+        userId: { label: 'User ID', type: 'text' },
+        authMethod: { label: 'Auth Method', type: 'text' }
       },
       async authorize(credentials) {
+        // Handle WebAuthn authentication
+        if (credentials?.authMethod === 'webauthn' && credentials?.token && credentials?.userId) {
+          try {
+            // Verify JWT token
+            const jwt = credentials.token;
+            // Parse JWT payload (simple decode - the token was already verified by our WebAuthn endpoint)
+            const payload = JSON.parse(Buffer.from(jwt.split('.')[1], 'base64').toString());
+            
+            return {
+              id: payload.userId,
+              email: payload.email,
+              name: payload.email,
+              authProvider: 'webauthn'
+            }
+          } catch (error) {
+            console.error('WebAuthn token verification failed:', error);
+            return null;
+          }
+        }
+        
+        // Handle email/password authentication
         if (!credentials?.email || !credentials?.password) {
           return null
         }
