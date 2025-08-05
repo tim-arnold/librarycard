@@ -310,8 +310,8 @@ export default {
         try {
           const url = new URL(request.url);
           const rpName = 'LibraryCard';
-          // For local development, use localhost as rpID and frontend origin
-          const rpID = 'localhost';
+          // Set rpID based on environment
+          const rpID = env.ENVIRONMENT === 'local' ? 'localhost' : url.hostname;
           const origin = env.ENVIRONMENT === 'local' ? 'http://localhost:3000' : url.origin;
           
           const webAuthnService = new WebAuthnService(env.DB, rpName, rpID, origin);
@@ -336,8 +336,8 @@ export default {
         try {
           const url = new URL(request.url);
           const rpName = 'LibraryCard';
-          // For local development, use localhost as rpID and frontend origin
-          const rpID = 'localhost';
+          // Set rpID based on environment
+          const rpID = env.ENVIRONMENT === 'local' ? 'localhost' : url.hostname;
           const origin = env.ENVIRONMENT === 'local' ? 'http://localhost:3000' : url.origin;
           
           const webAuthnService = new WebAuthnService(env.DB, rpName, rpID, origin);
@@ -504,8 +504,8 @@ export default {
         try {
           const url = new URL(request.url);
           const rpName = 'LibraryCard';
-          // For local development, use localhost as rpID and frontend origin
-          const rpID = 'localhost';
+          // Set rpID based on environment
+          const rpID = env.ENVIRONMENT === 'local' ? 'localhost' : url.hostname;
           const origin = env.ENVIRONMENT === 'local' ? 'http://localhost:3000' : url.origin;
           
           const webAuthnService = new WebAuthnService(env.DB, rpName, rpID, origin);
@@ -548,8 +548,8 @@ export default {
         try {
           const url = new URL(request.url);
           const rpName = 'LibraryCard';
-          // For local development, use localhost as rpID and frontend origin
-          const rpID = 'localhost';
+          // Set rpID based on environment
+          const rpID = env.ENVIRONMENT === 'local' ? 'localhost' : url.hostname;
           const origin = env.ENVIRONMENT === 'local' ? 'http://localhost:3000' : url.origin;
           
           const webAuthnService = new WebAuthnService(env.DB, rpName, rpID, origin);
@@ -588,8 +588,8 @@ export default {
         try {
           const url = new URL(request.url);
           const rpName = 'LibraryCard';
-          // For local development, use localhost as rpID and frontend origin
-          const rpID = 'localhost';
+          // Set rpID based on environment
+          const rpID = env.ENVIRONMENT === 'local' ? 'localhost' : url.hostname;
           const origin = env.ENVIRONMENT === 'local' ? 'http://localhost:3000' : url.origin;
           
           const webAuthnService = new WebAuthnService(env.DB, rpName, rpID, origin);
@@ -625,8 +625,8 @@ export default {
           
           const url = new URL(request.url);
           const rpName = 'LibraryCard';
-          // For local development, use localhost as rpID and frontend origin
-          const rpID = 'localhost';
+          // Set rpID based on environment
+          const rpID = env.ENVIRONMENT === 'local' ? 'localhost' : url.hostname;
           const origin = env.ENVIRONMENT === 'local' ? 'http://localhost:3000' : url.origin;
           
           const webAuthnService = new WebAuthnService(env.DB, rpName, rpID, origin);
