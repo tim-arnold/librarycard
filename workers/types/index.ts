@@ -33,6 +33,11 @@ export interface User {
   email_verification_token?: string;
   email_verification_expires?: string;
   user_role?: string;
+  // 2FA fields
+  totp_secret?: string;
+  totp_enabled?: boolean;
+  totp_enabled_at?: string;
+  backup_codes?: string; // JSON array
 }
 
 export interface Location {
@@ -347,4 +352,39 @@ export interface MultiSourceBookData {
   mergedData: Book;
   sourceAttribution: SourceAttribution;
   allCovers: CoverOption[];
+}
+
+// 2FA/TOTP Types
+export interface TOTPSetupRequest {
+  totpCode: string; // For verification during setup
+}
+
+export interface TOTPSetupResponse {
+  secret: string;
+  qrCodeUrl: string;
+  backupCodes: string[];
+}
+
+export interface TOTPVerifyRequest {
+  totpCode: string;
+}
+
+export interface TOTPDisableRequest {
+  password: string; // Require password confirmation
+}
+
+export interface BackupCodeVerifyRequest {
+  backupCode: string;
+}
+
+export interface BackupCodesStatus {
+  total: number;
+  used: number;
+  remaining: number;
+}
+
+export interface TwoFactorStatus {
+  enabled: boolean;
+  enabledAt: string | null;
+  backupCodes: BackupCodesStatus;
 }

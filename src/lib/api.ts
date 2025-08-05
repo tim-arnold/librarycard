@@ -1,6 +1,28 @@
 import type { EnhancedBook } from '@/lib/types'
 import { getSession } from 'next-auth/react'
 
+async function getCSRFToken(): Promise<string | null> {
+  try {
+    const session = await getSession()
+    if (!session?.user?.email) return null
+    
+    const { getApiBaseUrl } = await import('@/lib/apiConfig')
+    const response = await fetch(`${getApiBaseUrl()}/api/csrf-token`, {
+      headers: {
+        'Authorization': `Bearer ${session.user.email}`
+      }
+    })
+    
+    if (response.ok) {
+      const data = await response.json()
+      return data.csrfToken
+    }
+  } catch (error) {
+    console.error('Failed to fetch CSRF token:', error)
+  }
+  return null
+}
+
 async function getAuthHeaders(): Promise<Record<string, string>> {
   const session = await getSession()
   const headers: Record<string, string> = {
@@ -9,9 +31,32 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   
   if (session?.user?.email) {
     headers['Authorization'] = `Bearer ${session.user.email}`
+    
+    // Add CSRF token for state-changing operations
+    const csrfToken = await getCSRFToken()
+    if (csrfToken) {
+      headers['X-CSRF-Token'] = csrfToken
+    }
   }
   
   return headers
+}
+
+// Export a generic CSRF-enabled fetch helper for use throughout the app
+export async function authenticatedApiCall(
+  url: string, 
+  options: RequestInit = {}
+): Promise<Response> {
+  const { getApiBaseUrl } = await import('@/lib/apiConfig')
+  const headers = await getAuthHeaders()
+  
+  return fetch(`${getApiBaseUrl()}${url}`, {
+    ...options,
+    headers: {
+      ...headers,
+      ...options.headers,
+    },
+  })
 }
 
 export async function saveBook(book: Omit<EnhancedBook, 'id'>): Promise<boolean> {

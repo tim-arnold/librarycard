@@ -2,13 +2,15 @@
 # Use: npm run dev (frontend) + npx wrangler dev (worker)
 name = "librarycard-api-local"
 main = "workers/index.ts"
-compatibility_date = "2024-01-01"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
 account_id = "4bef1453ad78da6e3bb7e83b421e26df"
 
 [vars]
 ENVIRONMENT = "local"
 APP_URL = "http://localhost:3000"
 FROM_EMAIL = "LibraryCard <noreply@localhost>"
+JWT_SECRET = "dev-jwt-secret-change-in-production-environments"
 
 [[d1_databases]]
 binding = "DB"
@@ -28,6 +30,7 @@ name = "librarycard-api-local"
 ENVIRONMENT = "local"
 APP_URL = "http://localhost:3000"
 FROM_EMAIL = "LibraryCard <noreply@localhost>"
+JWT_SECRET = "dev-jwt-secret-change-in-production-environments"
 
 [[env.local.d1_databases]]
 binding = "DB"
@@ -45,8 +48,9 @@ name = "librarycard-api-staging"
 
 [env.staging.vars]
 ENVIRONMENT = "staging"
-APP_URL = "https://librarycard-staging.tim52.io/"
+APP_URL = "https://staging--libarycard.netlify.app"
 FROM_EMAIL = "LibraryCard <librarian@tim52.io>"
+# JWT_SECRET should be set as a secure environment variable for staging
 
 [[env.staging.d1_databases]]
 binding = "DB"
@@ -64,8 +68,9 @@ name = "librarycard-api-production"
 
 [env.production.vars]
 ENVIRONMENT = "production"
-APP_URL = "https://librarycard.tim52.io/"
+APP_URL = "https://librarycard.tim52.io"
 FROM_EMAIL = "LibraryCard <librarian@tim52.io>"
+# JWT_SECRET should be set as a secure environment variable for production
 
 [[env.production.d1_databases]]
 binding = "DB"

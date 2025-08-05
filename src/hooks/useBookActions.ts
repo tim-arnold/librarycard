@@ -6,6 +6,39 @@ import type { EnhancedBook, CuratedGenre } from '@/lib/types'
 import { updateBook, deleteBook as deleteBookAPI } from '@/lib/api'
 import { getApiBaseUrl } from '@/lib/apiConfig'
 
+async function getCSRFToken(userEmail: string): Promise<string | null> {
+  try {
+    const response = await fetch(`${getApiBaseUrl()}/api/csrf-token`, {
+      headers: {
+        'Authorization': `Bearer ${userEmail}`
+      }
+    })
+    
+    if (response.ok) {
+      const data = await response.json()
+      return data.csrfToken
+    }
+  } catch (error) {
+    console.error('Failed to fetch CSRF token:', error)
+  }
+  return null
+}
+
+async function getAuthHeaders(userEmail: string): Promise<Record<string, string>> {
+  const headers: Record<string, string> = {
+    'Authorization': `Bearer ${userEmail}`,
+    'Content-Type': 'application/json',
+  }
+  
+  // Add CSRF token for state-changing operations
+  const csrfToken = await getCSRFToken(userEmail)
+  if (csrfToken) {
+    headers['X-CSRF-Token'] = csrfToken
+  }
+  
+  return headers
+}
+
 interface Shelf {
   id: number
   name: string
@@ -93,12 +126,10 @@ export function useBookActions({
       },
       async () => {
         try {
+          const headers = await getAuthHeaders(session.user.email!)
           const response = await fetch(`${getApiBaseUrl()}/api/book-removal-requests/${requestId}`, {
             method: 'DELETE',
-            headers: {
-              'Authorization': `Bearer ${session?.user?.email}`,
-              'Content-Type': 'application/json',
-            },
+            headers,
           })
 
           if (!response.ok) {
@@ -161,12 +192,10 @@ export function useBookActions({
       },
       async () => {
         try {
+          const headers = await getAuthHeaders(session.user.email!)
           const response = await fetch(`${getApiBaseUrl()}/api/book-removal-requests`, {
             method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${session?.user?.email}`,
-              'Content-Type': 'application/json',
-            },
+            headers,
             body: JSON.stringify({
               book_id: parseInt(bookId),
               reason: reason.value,
@@ -254,12 +283,10 @@ export function useBookActions({
       },
       async () => {
         try {
+          const headers = await getAuthHeaders(session.user.email!)
           const response = await fetch(`${getApiBaseUrl()}/api/books/${bookId}/checkout`, {
             method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${session?.user?.email}`,
-              'Content-Type': 'application/json',
-            },
+            headers,
           })
 
           if (!response.ok) {
@@ -335,12 +362,10 @@ export function useBookActions({
       },
       async () => {
         try {
+          const headers = await getAuthHeaders(session.user.email!)
           const response = await fetch(`${getApiBaseUrl()}/api/books/${bookId}/checkin`, {
             method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${session?.user?.email}`,
-              'Content-Type': 'application/json',
-            },
+            headers,
           })
 
           if (!response.ok) {
@@ -400,12 +425,10 @@ export function useBookActions({
     if (!session?.user?.email) return
 
     try {
+      const headers = await getAuthHeaders(session.user.email!)
       const response = await fetch(`${getApiBaseUrl()}/api/books/${bookId}/rate`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session?.user?.email}`,
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           rating,
           reviewText: reviewText || null
@@ -450,13 +473,13 @@ export function useBookActions({
   }
 
   const handleGenreUpdate = async (bookId: string, genres: CuratedGenre[]) => {
+    if (!session?.user?.email) return
+
     try {
+      const headers = await getAuthHeaders(session.user.email)
       const response = await fetch(`${getApiBaseUrl()}/api/books/${bookId}/genres`, {
         method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${session?.user?.email}`,
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({ genres }),
       })
 

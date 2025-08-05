@@ -10,23 +10,86 @@ https://your-worker-name.your-subdomain.workers.dev
 
 ## Authentication
 
-The API uses Bearer token authentication with user email as the token for development. In production, this would be replaced with proper JWT tokens from NextAuth.
-
-All endpoints (except public auth endpoints) require authentication:
+The API uses Bearer token authentication with JWT tokens issued by the authentication system. All endpoints (except public auth endpoints) require authentication:
 
 ```http
-Authorization: Bearer user@example.com
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
+
+**JWT Token Features:**
+- 24-hour expiration for security
+- Cryptographically signed for integrity
+- Includes user ID and session information
+- Automatic refresh through frontend authentication flow
+
+**Authentication Flow:**
+1. User signs in through NextAuth.js (Google OAuth or email/password)
+2. Backend issues JWT token upon successful authentication
+3. Frontend includes JWT in Authorization header for all API calls
+4. Backend validates JWT signature and expiration on each request
 
 ## Authorization
 
 LibraryCard implements role-based access control:
 
-- **Admin Users**: Can create, update, and delete locations and shelves
-- **Regular Users**: Can only add, update, and delete books
+- **Super Admin Users**: Global system administration and location creation
+- **Admin Users**: Can create, update, and delete locations and shelves they manage
+- **Regular Users**: Can only add, update, and delete books in assigned locations
 - All users can view locations and shelves they have access to
 
 The UI automatically hides admin-only buttons for regular users.
+
+## Security Features
+
+### CSRF Protection
+
+All state-changing operations (POST, PUT, PATCH, DELETE) require CSRF token validation:
+
+```http
+X-CSRF-Token: abc123...
+```
+
+**CSRF Token Workflow:**
+1. Frontend requests CSRF token: `GET /api/csrf-token`
+2. Backend returns cryptographically secure token with 24-hour expiration
+3. Frontend includes token in X-CSRF-Token header for state-changing requests
+4. Backend validates token using constant-time comparison
+
+**CSRF Exemptions:**
+- Authentication endpoints use alternative CSRF protection methods
+- AJAX requests with `X-Requested-With: XMLHttpRequest` header are exempted
+- Read-only operations (GET requests) do not require CSRF tokens
+
+### Rate Limiting
+
+The API implements intelligent rate limiting to prevent abuse:
+
+| Endpoint Type | Limit | Window |
+|---------------|-------|---------|
+| Authentication (login) | 5 attempts | 15 minutes |
+| Registration | 3 attempts | 1 hour |
+| Password Reset | 3 attempts | 1 hour |
+| 2FA Verification | 10 attempts | 15 minutes |
+| General API | 100 requests | 1 minute |
+
+**Rate Limiting Features:**
+- Per-IP address tracking using Cloudflare KV storage
+- Automatic sliding window implementation
+- Development environment bypass for testing
+- Graceful degradation when rate limiting service is unavailable
+
+### CORS Policy
+
+Cross-Origin Resource Sharing is restricted to authorized domains:
+
+```http
+Access-Control-Allow-Origin: https://librarycard.tim52.io
+```
+
+**Allowed Origins:**
+- Production: `https://librarycard.tim52.io`
+- Staging: `https://staging--libarycard.netlify.app`
+- Development: `http://localhost:3000`
 
 ## Authentication Endpoints
 

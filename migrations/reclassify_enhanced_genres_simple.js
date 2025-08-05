@@ -21,7 +21,12 @@
 // Import the classifier - this might need adjustment based on your setup
 import { classifyGenres } from '../src/lib/genreClassifier.js'
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://librarycard-api-production.tim-arnold.workers.dev'
+const API_BASE = process.env.NEXT_PUBLIC_API_URL
+if (!API_BASE) {
+  console.error('ERROR: NEXT_PUBLIC_API_URL environment variable is required')
+  console.error('Usage: NEXT_PUBLIC_API_URL=https://your-api.workers.dev node migrations/reclassify_enhanced_genres_simple.js')
+  process.exit(1)
+}
 
 // Mock authentication - you might need to adjust this
 const AUTH_EMAIL = 'your-admin-email@example.com'

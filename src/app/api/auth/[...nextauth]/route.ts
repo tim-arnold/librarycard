@@ -19,6 +19,7 @@ declare module 'next-auth' {
     email: string
     name?: string
     authProvider?: string
+    access_token?: string
   }
 }
 
@@ -41,7 +42,10 @@ const handler = NextAuth({
 
         try {
           // Call our API to verify credentials
-          const baseUrl = process.env.NEXTAUTH_URL || 'https://librarycard.tim52.io'
+          const baseUrl = process.env.NEXTAUTH_URL
+          if (!baseUrl) {
+            throw new Error('NEXTAUTH_URL environment variable is required')
+          }
           const response = await fetch(`${baseUrl}/api/auth/verify`, {
             method: 'POST',
             headers: {
@@ -54,12 +58,29 @@ const handler = NextAuth({
           })
 
           if (response.ok) {
-            const user = await response.json()
+            const result = await response.json()
+            
+            // Check if 2FA is required
+            if (result.requires_2fa) {
+              // Store the 2FA state in a way that can be accessed by the signin page
+              // We return a special user object that indicates 2FA is needed
+              return {
+                id: result.user_id,
+                email: result.email,
+                name: result.email, // Temporary name until 2FA is complete
+                authProvider: 'email',
+                requires_2fa: true,
+                // Don't include access_token since 2FA is not complete
+              }
+            }
+            
+            // Normal login (no 2FA required)
             return {
-              id: user.id,
-              email: user.email,
-              name: `${user.first_name} ${user.last_name}`.trim(),
-              authProvider: 'email'
+              id: result.id,
+              email: result.email,
+              name: `${result.first_name} ${result.last_name}`.trim(),
+              authProvider: 'email',
+              access_token: result.access_token // Capture JWT token from API response
             }
           }
         } catch (error) {
@@ -73,7 +94,9 @@ const handler = NextAuth({
   callbacks: {
     async jwt({ token, user, account }) {
       if (account && user) {
-        token.accessToken = account.access_token
+        // For OAuth providers (Google), use account access token
+        // For credentials provider, use our JWT token
+        token.accessToken = (user as any).access_token || account.access_token
         token.userId = user.id
         token.authProvider = (user as { authProvider?: string }).authProvider || 'google'
       }
@@ -89,6 +112,9 @@ const handler = NextAuth({
         session.user.id = token.userId as string
         session.user.authProvider = token.authProvider as string
         session.accessToken = token.accessToken as string
+        
+        // Add access_token to session for use in authenticatedFetch
+        ;(session as any).access_token = token.accessToken
       }
       return session
     },
@@ -100,7 +126,11 @@ const handler = NextAuth({
 
 async function storeUserIfNotExists(user: { email: string; name?: string | null }, userId: string) {
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.librarycard.tim52.io'
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL
+    if (!apiUrl) {
+      console.error('NEXT_PUBLIC_API_URL environment variable is required')
+      return
+    }
     
     // First check if user exists
     const checkResponse = await fetch(`${apiUrl}/api/users/check?email=${encodeURIComponent(user.email)}`)

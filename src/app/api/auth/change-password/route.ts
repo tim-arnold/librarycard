@@ -31,9 +31,8 @@ export async function POST(request: NextRequest) {
         'Authorization': `Bearer ${session.user.email}`,
       },
       body: JSON.stringify({
-        currentPassword,
-        newPassword,
-        email: session.user.email
+        old_password: currentPassword,
+        new_password: newPassword
       })
     })
 

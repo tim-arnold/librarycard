@@ -37,6 +37,7 @@ import {
   Assignment,
 } from '@mui/icons-material'
 import { getApiBaseUrl } from '@/lib/apiConfig'
+import { authenticatedApiCall } from '@/lib/api'
 
 interface SignupRequest {
   id: number
@@ -117,12 +118,12 @@ export default function AdminSignupManager() {
         ? `${getApiBaseUrl()}/api/signup-requests/${reviewRequest.id}/approve`
         : `${getApiBaseUrl()}/api/signup-requests/${reviewRequest.id}/deny`
 
-      const response = await fetch(endpoint, {
+      const apiPath = reviewAction === 'approve' 
+        ? `/api/signup-requests/${reviewRequest.id}/approve`
+        : `/api/signup-requests/${reviewRequest.id}/deny`
+
+      const response = await authenticatedApiCall(apiPath, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.user.email}`,
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           comment: reviewComment.trim() || undefined
         })

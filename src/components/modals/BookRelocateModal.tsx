@@ -22,7 +22,7 @@ import {
 } from '@mui/material'
 import { LocationOn, LibraryBooks } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
-import { getApiBaseUrl } from '@/lib/apiConfig'
+import { authenticatedApiCall } from '@/lib/api'
 
 interface Shelf {
   id: number
@@ -74,19 +74,15 @@ export default function BookRelocateModal({
 
     try {
       // Determine the location ID for the new shelf
-      let locationId = allLocations.length > 0 ? allLocations[0].id : null
+      const locationId = allLocations.length > 0 ? allLocations[0].id : null
 
       if (!locationId) {
         throw new Error('No location available for shelf creation')
       }
 
       // Create the new shelf
-      const response = await fetch(`${getApiBaseUrl()}/api/locations/${locationId}/shelves`, {
+      const response = await authenticatedApiCall(`/api/locations/${locationId}/shelves`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.user.email}`,
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({ name: newShelfName.trim() }),
       })
 

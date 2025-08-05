@@ -365,17 +365,34 @@ export async function checkoutBook(request: Request, bookId: number, userId: str
   }
 
   try {
-    // Check if user has access to this book and that it's available
-    const bookStmt = env.DB.prepare(`
-      SELECT b.*, s.location_id, l.name as location_name
-      FROM books b
-      LEFT JOIN shelves s ON b.shelf_id = s.id
-      LEFT JOIN locations l ON s.location_id = l.id
-      LEFT JOIN location_members lm ON l.id = lm.location_id
-      WHERE b.id = ? AND (b.added_by = ? OR l.owner_id = ? OR lm.user_id = ?)
-    `);
-
-    const book = await bookStmt.bind(bookId, userId, userId, userId).first();
+    // Check user role first
+    const userRoleStmt = env.DB.prepare(`SELECT user_role FROM users WHERE id = ?`);
+    const userRole = await userRoleStmt.bind(userId).first() as any;
+    const isAdmin = userRole?.user_role === 'admin' || userRole?.user_role === 'super_admin';
+    
+    // For admin/superadmin, just check if book exists and is available
+    let book;
+    if (isAdmin) {
+      const bookStmt = env.DB.prepare(`
+        SELECT b.*, s.location_id, l.name as location_name
+        FROM books b
+        LEFT JOIN shelves s ON b.shelf_id = s.id
+        LEFT JOIN locations l ON s.location_id = l.id
+        WHERE b.id = ?
+      `);
+      book = await bookStmt.bind(bookId).first();
+    } else {
+      // For regular users, check if user has access to this book and that it's available
+      const bookStmt = env.DB.prepare(`
+        SELECT b.*, s.location_id, l.name as location_name
+        FROM books b
+        LEFT JOIN shelves s ON b.shelf_id = s.id
+        LEFT JOIN locations l ON s.location_id = l.id
+        LEFT JOIN location_members lm ON l.id = lm.location_id
+        WHERE b.id = ? AND (b.added_by = ? OR l.owner_id = ? OR lm.user_id = ?)
+      `);
+      book = await bookStmt.bind(bookId, userId, userId, userId).first();
+    }
     
     if (!book) {
       return new Response(JSON.stringify({ error: 'Book not found or access denied' }), {
