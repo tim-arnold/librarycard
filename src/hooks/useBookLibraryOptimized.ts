@@ -21,8 +21,18 @@ interface Location {
   created_at: string
 }
 
+interface UseBookLibraryProps {
+  initialFilters?: {
+    location?: string
+    shelf?: string
+    status?: string
+    searchTerm?: string
+    category?: string
+  }
+}
+
 // Optimized version using batched dashboard API
-export function useBookLibraryOptimized() {
+export function useBookLibraryOptimized({ initialFilters }: UseBookLibraryProps = {}) {
   const { data: session, status } = useSession()
   
   // Data state
