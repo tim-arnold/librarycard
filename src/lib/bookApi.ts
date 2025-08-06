@@ -248,6 +248,17 @@ export async function fetchEnhancedBookFromSearch(googleBookItem: GoogleBookItem
   return enhancedBook
 }
 
+// Type definitions for API responses
+interface GoogleBookData {
+  imageLinks?: {
+    [size: string]: string
+  }
+}
+
+interface OpenLibraryBookData {
+  covers?: number[]
+}
+
 // Library of Congress API integration
 const LOC_SRU_BASE = 'http://lx2.loc.gov:210/LCDB'
 
@@ -719,7 +730,7 @@ function aggregateAllCovers(google: GoogleBookData | null, openLibrary: OpenLibr
       covers.push({
         source: 'google',
         url: url as string,
-        size: size as string,
+        size: (size === 'extraLarge' || size === 'large' || size === 'medium' || size === 'small' || size === 'thumbnail') ? size : 'medium',
         metadata: {
           quality: size === 'extraLarge' ? 'high' : size === 'large' ? 'medium' : 'low'
         }
