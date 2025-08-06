@@ -72,6 +72,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
     handleCoverSelect,
     animatingCovers,
     handleCoverAnimationComplete,
+    startCoverAnimation,
     showRemovalReasonModal,
     handleRemovalReasonModalClose,
   } = useBookActions({
@@ -226,6 +227,12 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
     const success = await handleCoverSelect(selectedBookForCoverEdit.id, coverOption)
     if (success) {
       setSelectedBookForCoverEdit(null)
+    }
+  }
+
+  const handleCoverAnimationStart = () => {
+    if (selectedBookForCoverEdit) {
+      startCoverAnimation(selectedBookForCoverEdit.id)
     }
   }
 
@@ -506,6 +513,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
             currentCover={selectedBookForCoverEdit.thumbnail}
             onCoverSelect={handleCoverSelectWrapper}
             onClose={() => setSelectedBookForCoverEdit(null)}
+            onAnimationStart={handleCoverAnimationStart}
             open={true}
           />
         )}
