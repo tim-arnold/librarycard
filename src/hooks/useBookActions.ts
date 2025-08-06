@@ -508,8 +508,7 @@ export function useBookActions({
     try {
       const coverUrl = coverOption.covers.medium || coverOption.covers.small || coverOption.covers.thumbnail
       
-      // Start animation
-      setAnimatingCovers(prev => new Set(Array.from(prev).concat(bookId)))
+      // Note: Animation should already be started by the parent component for immediate feedback
       
       const success = await updateBook(bookId, {
         thumbnail: coverUrl,
@@ -575,6 +574,10 @@ export function useBookActions({
     })
   }
 
+  const startCoverAnimation = (bookId: string) => {
+    setAnimatingCovers(prev => new Set(Array.from(prev).concat(bookId)))
+  }
+
   return {
     // Actions
     deleteBook,
@@ -590,6 +593,7 @@ export function useBookActions({
     // Animation states
     animatingCovers,
     handleCoverAnimationComplete,
+    startCoverAnimation,
     
     // Modal states
     showRemovalReasonModal,
