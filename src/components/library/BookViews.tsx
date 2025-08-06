@@ -36,6 +36,11 @@ interface BookViewsProps {
   paginatedBooks: EnhancedBook[]
   booksByLocation: any[] | null
   locationFilter: string
+  shelfFilter: string
+  categoryFilter: string[]
+  checkoutFilter: string
+  authorFilter: string
+  searchTerm: string
   currentPage: number
   booksPerPage: number
   onCheckout: (bookId: string, bookTitle: string) => Promise<void>
@@ -70,6 +75,11 @@ export default function BookViews({
   paginatedBooks,
   booksByLocation,
   locationFilter,
+  shelfFilter,
+  categoryFilter,
+  checkoutFilter,
+  authorFilter,
+  searchTerm,
   currentPage,
   booksPerPage,
   onCheckout,
@@ -134,7 +144,7 @@ export default function BookViews({
           <Fade 
             in={true} 
             timeout={500}
-            key={`admin-list-${locationFilter}-${currentPage}`}
+            key={`admin-list-${locationFilter}-${shelfFilter}-${categoryFilter.join(',')}-${checkoutFilter}-${authorFilter}-${searchTerm}-${currentPage}`}
           >
             <Box>
               {getPaginatedBooksForView().map((location: any) => (
@@ -173,7 +183,7 @@ export default function BookViews({
           <Fade 
             in={true} 
             timeout={500}
-            key={`list-${locationFilter}-${currentPage}`}
+            key={`list-${locationFilter}-${shelfFilter}-${categoryFilter.join(',')}-${checkoutFilter}-${authorFilter}-${searchTerm}-${currentPage}`}
           >
             <Box>
               <BookList
@@ -208,7 +218,7 @@ export default function BookViews({
           <Fade 
             in={true} 
             timeout={500}
-            key={`admin-compact-${locationFilter}-${currentPage}`}
+            key={`admin-compact-${locationFilter}-${shelfFilter}-${categoryFilter.join(',')}-${checkoutFilter}-${authorFilter}-${searchTerm}-${currentPage}`}
           >
             <Box>
               {getPaginatedBooksForView().map((location: any) => (
@@ -249,7 +259,7 @@ export default function BookViews({
           <Fade 
             in={true} 
             timeout={500}
-            key={`compact-${locationFilter}-${currentPage}`}
+            key={`compact-${locationFilter}-${shelfFilter}-${categoryFilter.join(',')}-${checkoutFilter}-${authorFilter}-${searchTerm}-${currentPage}`}
           >
             <Box>
               <BookCompact
@@ -286,7 +296,7 @@ export default function BookViews({
           <Fade 
             in={true} 
             timeout={500}
-            key={`admin-card-${locationFilter}-${currentPage}`}
+            key={`admin-card-${locationFilter}-${shelfFilter}-${categoryFilter.join(',')}-${checkoutFilter}-${authorFilter}-${searchTerm}-${currentPage}`}
           >
             <Box>
               {getPaginatedBooksForView().map((location: any) => (
@@ -328,7 +338,7 @@ export default function BookViews({
           <Fade 
             in={true} 
             timeout={500}
-            key={`card-${locationFilter}-${currentPage}`}
+            key={`card-${locationFilter}-${shelfFilter}-${categoryFilter.join(',')}-${checkoutFilter}-${authorFilter}-${searchTerm}-${currentPage}`}
           >
             <Box>
               <BookGrid

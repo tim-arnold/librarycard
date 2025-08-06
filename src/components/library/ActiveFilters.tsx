@@ -34,13 +34,17 @@ export default function ActiveFilters({
 }: ActiveFiltersProps) {
   const hasActiveFilters = authorFilter || shelfFilter || categoryFilter.length > 0 || locationFilter || checkoutFilter
 
-  if (!hasActiveFilters) {
-    return null
-  }
-
   return (
-    <Box sx={{ mb: 3 }}>
-      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+    <Box sx={{ 
+      mb: 3, 
+      minHeight: 48, // Reserve space for one row of chips (32px height + 16px gap)
+      transition: 'opacity 0.3s ease-in-out, transform 0.3s ease-in-out',
+      opacity: hasActiveFilters ? 1 : 0,
+      transform: hasActiveFilters ? 'translateY(0)' : 'translateY(-8px)',
+      pointerEvents: hasActiveFilters ? 'auto' : 'none'
+    }}>
+      {hasActiveFilters && (
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
       {authorFilter && (
         <Chip
           label={`Author: ${authorFilter}`}
@@ -130,7 +134,8 @@ export default function ActiveFilters({
             Clear All
           </Button>
         )}
-      </Box>
+        </Box>
+      )}
     </Box>
   )
 }
