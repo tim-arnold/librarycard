@@ -238,13 +238,8 @@ export default function LocationManager() {
       })
 
       if (response.ok) {
-        const updatedLocation = await response.json()
-        setLocations(locations.map(loc => 
-          loc.id === editingLocation.id ? updatedLocation : loc
-        ))
-        if (selectedLocation?.id === editingLocation.id) {
-          setSelectedLocation(updatedLocation)
-        }
+        // Reload locations to get fresh data with correct counts and owner info
+        await loadLocations()
         setEditingLocation(null)
         setNewLocationName('')
         setNewLocationDescription('')
@@ -421,10 +416,8 @@ export default function LocationManager() {
       })
 
       if (response.ok) {
-        const updatedShelf = await response.json()
-        setShelves(shelves.map(shelf => 
-          shelf.id === editingShelf.id ? updatedShelf : shelf
-        ))
+        // Reload shelves to get fresh data with correct book counts
+        await loadShelves(selectedLocation.id)
         setEditingShelf(null)
         setNewShelfName('')
         setShowShelfForm(false)
