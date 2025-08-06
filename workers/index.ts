@@ -967,7 +967,8 @@ export default {
 
       // Batched dashboard endpoint - combines all initial page load data
       if (path === '/api/dashboard' && request.method === 'GET') {
-        return await getDashboardData(userId, env, corsHeaders);
+        const fields = url.searchParams.get('fields');
+        return await getDashboardData(userId, env, corsHeaders, fields || undefined);
       }
 
       // Change password endpoint (authenticated users only)

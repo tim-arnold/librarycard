@@ -83,8 +83,9 @@ export function useBookLibraryOptimized({ initialFilters }: UseBookLibraryProps 
       
       // Set locations based on user role (following the same logic as original)
       if (isAdmin(currentUserRole)) {
-        // Admin users: store all locations
+        // Admin users: store all locations in both places (needed for different logic paths)
         setAllLocations(locations || [])
+        setUserLocations(locations || [])
       } else {
         // Regular users: store accessible locations and set first as current
         setUserLocations(locations || [])

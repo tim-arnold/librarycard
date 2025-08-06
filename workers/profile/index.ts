@@ -77,7 +77,7 @@ export async function updateUserProfile(request: Request, userId: string, env: E
 }
 
 // Batched dashboard endpoint - combines existing working API calls
-export async function getDashboardData(userId: string, env: Env, corsHeaders: Record<string, string>) {
+export async function getDashboardData(userId: string, env: Env, corsHeaders: Record<string, string>, fields?: string) {
   try {
     // Import the actual working functions
     const { getUserLocations } = await import('../locations/index');
@@ -134,11 +134,26 @@ export async function getDashboardData(userId: string, env: Env, corsHeaders: Re
       });
     }
 
+    // Apply field selection if specified
+    let optimizedBooks = books;
+    if (fields && books && Array.isArray(books)) {
+      const requestedFields = fields.split(',').map(f => f.trim());
+      optimizedBooks = books.map((book: any) => {
+        const filteredBook: any = {};
+        for (const field of requestedFields) {
+          if (field in book) {
+            filteredBook[field] = book[field];
+          }
+        }
+        return filteredBook;
+      });
+    }
+
     // Return data in the same format the frontend expects
     return new Response(JSON.stringify({
       profile: profileData,
       locations: locations,
-      books: books,
+      books: optimizedBooks,
       shelves: allShelves,
       permissions: {
         global: globalPermissions.permissions || [],
