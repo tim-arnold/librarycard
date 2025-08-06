@@ -55,6 +55,7 @@ interface CoverSelectionModalProps {
   onCoverSelect: (cover: CoverOption) => void
   onClose: () => void
   open: boolean
+  onAnimationStart?: () => void // New prop for immediate animation feedback
 }
 
 export default function CoverSelectionModal({
@@ -63,7 +64,8 @@ export default function CoverSelectionModal({
   currentCover,
   onCoverSelect,
   onClose,
-  open
+  open,
+  onAnimationStart
 }: CoverSelectionModalProps) {
   const [editions, setEditions] = useState<CoverOption[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -121,6 +123,12 @@ export default function CoverSelectionModal({
   }, [open, title, author])
 
   const handleCoverSelect = (cover: CoverOption) => {
+    // Trigger immediate animation feedback
+    if (onAnimationStart) {
+      onAnimationStart()
+    }
+    
+    // Pass cover selection to parent
     onCoverSelect(cover)
     onClose()
   }
