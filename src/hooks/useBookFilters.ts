@@ -117,78 +117,6 @@ export function useBookFilters({
     }
   }, [locationFilter, shelves, allLocations, shelfFilter])
 
-
-  // Helper function to check if a book matches a curated genre filter - includes subjects for comprehensive filtering
-  const bookMatchesGenreFilter = (book: EnhancedBook, curatedGenre: string): boolean => {
-    // Check assigned genres first (these are user-selected and highest priority)
-    if (book.assignedGenres) {
-      const curatedLower = curatedGenre.toLowerCase()
-      const hasMatch = book.assignedGenres.some(genre => genre.name.toLowerCase() === curatedLower)
-      if (hasMatch) {
-        return true
-      }
-    }
-    
-    // Check enhanced genres (these are already curated) - use case-insensitive matching
-    if (book.enhancedGenres) {
-      const curatedLower = curatedGenre.toLowerCase()
-      const hasMatch = book.enhancedGenres.some(genre => genre.toLowerCase() === curatedLower)
-      if (hasMatch) {
-        return true
-      }
-    }
-    
-    // For raw categories and subjects, use flexible matching for compound genres
-    const rawGenres = [...(book.categories || []), ...(book.subjects || [])]
-    return rawGenres.some(rawGenre => {
-      const rawLower = rawGenre.toLowerCase()
-      const curatedLower = curatedGenre.toLowerCase()
-      
-      // Handle special compound genres FIRST to prevent incorrect matches
-      if (curatedGenre === 'Historical Fiction') {
-        // Only match explicit historical fiction references, never horror/fantasy/sci-fi
-        if (rawLower.includes('horror') || rawLower.includes('fantasy') || rawLower.includes('science fiction')) {
-          return false
-        }
-        return rawLower.includes('historical fiction') || 
-               (rawLower.includes('fiction') && rawLower.includes('historical'))
-      }
-      
-      if (curatedGenre === 'Literary Fiction') {
-        // Only match explicit literary fiction references, never horror/fantasy/sci-fi
-        if (rawLower.includes('horror') || rawLower.includes('fantasy') || rawLower.includes('science fiction')) {
-          return false
-        }
-        return rawLower.includes('literary fiction') ||
-               (rawLower.includes('fiction') && rawLower.includes('literary'))
-      }
-      
-      if (curatedGenre === 'Young Adult') {
-        return rawLower.includes('young adult') || rawLower.includes('juvenile') || 
-               (rawLower.includes('young') && rawLower.includes('adult'))
-      }
-      
-      // For multi-word genres, require ALL words to be present (not just any single word)
-      // This prevents "Science Fiction" from matching books that only have "Fiction"
-      if (curatedGenre.includes(' ')) {
-        const curatedWords = curatedLower.split(/\s+/).filter(word => word.length > 2)
-        const rawWords = rawLower.split(/\s+|[,&-]+/).filter(word => word.length > 2)
-        
-        // Require ALL words from the curated genre to be present in the raw text
-        return curatedWords.every(curatedWord => rawWords.includes(curatedWord))
-      }
-      
-      // Single-word genre matching - check both exact substring and word boundaries
-      if (rawLower.includes(curatedLower) || curatedLower.includes(rawLower)) {
-        return true
-      }
-      
-      // Fallback: exact word match in word boundaries for single words
-      const rawWords = rawLower.split(/\s+|[,&-]+/).filter(word => word.length > 2)
-      return rawWords.includes(curatedLower)
-    })
-  }
-
   // Use only genres that are actually displayed as chips in the book listings (for dropdown)
   // Note: Only the FIRST genre from getDisplayGenres is shown as a chip
   // Filter by current location and shelf to show only relevant genres
@@ -296,79 +224,177 @@ export function useBookFilters({
     }
   }, [generateFilterUrl, pathname, router, isLoading])
 
-  // Apply filters and sorting
-  useEffect(() => {
-    let filtered = books
-
-    if (searchTerm) {
-      filtered = filtered.filter(book =>
-        book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        book.authors.some(author => 
-          author.toLowerCase().includes(searchTerm.toLowerCase())
-        ) ||
-        book.isbn.includes(searchTerm)
-      )
+  // Memoized filter predicates for performance optimization
+  const filterPredicates = useMemo(() => {
+    // Create optimized search predicate with pre-computed lowercase terms
+    const createSearchPredicate = (searchTerm: string) => {
+      if (!searchTerm) return () => true
+      const searchLower = searchTerm.toLowerCase()
+      
+      return (book: EnhancedBook) => {
+        // Early return optimizations
+        if (book.isbn.includes(searchTerm)) return true
+        
+        const titleLower = book.title.toLowerCase()
+        if (titleLower.includes(searchLower)) return true
+        
+        return book.authors.some(author => 
+          author.toLowerCase().includes(searchLower)
+        )
+      }
     }
 
-    if (shelfFilter) {
-      filtered = filtered.filter(book => book.shelf_name === shelfFilter)
+    // Create optimized genre filter predicate
+    const createGenrePredicate = (categoryFilters: string[]) => {
+      if (categoryFilters.length === 0) return () => true
+      
+      // Pre-compute lowercase filters for performance
+      const filterLookup = new Set(categoryFilters.map(f => f.toLowerCase()))
+      
+      return (book: EnhancedBook) => {
+        // Quick check: assigned genres (highest priority)
+        if (book.assignedGenres) {
+          for (const genre of book.assignedGenres) {
+            if (filterLookup.has(genre.name.toLowerCase())) return true
+          }
+        }
+        
+        // Enhanced genres check
+        if (book.enhancedGenres) {
+          for (const genre of book.enhancedGenres) {
+            if (filterLookup.has(genre.toLowerCase())) return true
+          }
+        }
+        
+        // Raw categories and subjects with optimized compound genre logic
+        const rawGenres = [...(book.categories || []), ...(book.subjects || [])]
+        return categoryFilters.some(curatedGenre => {
+          const curatedLower = curatedGenre.toLowerCase()
+          
+          return rawGenres.some(rawGenre => {
+            const rawLower = rawGenre.toLowerCase()
+            
+            // Handle special compound genres FIRST to prevent incorrect matches
+            if (curatedGenre === 'Historical Fiction') {
+              // Only match explicit historical fiction references, never horror/fantasy/sci-fi
+              if (rawLower.includes('horror') || rawLower.includes('fantasy') || rawLower.includes('science fiction')) {
+                return false
+              }
+              return rawLower.includes('historical fiction') || 
+                     (rawLower.includes('fiction') && rawLower.includes('historical'))
+            }
+            
+            if (curatedGenre === 'Literary Fiction') {
+              // Only match explicit literary fiction references, never horror/fantasy/sci-fi
+              if (rawLower.includes('horror') || rawLower.includes('fantasy') || rawLower.includes('science fiction')) {
+                return false
+              }
+              return rawLower.includes('literary fiction') ||
+                     (rawLower.includes('fiction') && rawLower.includes('literary'))
+            }
+            
+            if (curatedGenre === 'Young Adult') {
+              return rawLower.includes('young adult') || rawLower.includes('juvenile') || 
+                     (rawLower.includes('young') && rawLower.includes('adult'))
+            }
+            
+            // For multi-word genres, require ALL words to be present
+            if (curatedGenre.includes(' ')) {
+              const curatedWords = curatedLower.split(/\s+/).filter(word => word.length > 2)
+              const rawWords = rawLower.split(/\s+|[,&-]+/).filter(word => word.length > 2)
+              return curatedWords.every(curatedWord => rawWords.includes(curatedWord))
+            }
+            
+            // Single-word genre matching
+            if (rawLower.includes(curatedLower) || curatedLower.includes(rawLower)) {
+              return true
+            }
+            
+            // Fallback: exact word match
+            const rawWords = rawLower.split(/\s+|[,&-]+/).filter(word => word.length > 2)
+            return rawWords.includes(curatedLower)
+          })
+        })
+      }
     }
 
-    if (categoryFilter.length > 0) {
-      filtered = filtered.filter(book => 
-        categoryFilter.some(genre => bookMatchesGenreFilter(book, genre))
-      )
-    }
-
-    // Location filter - applies to both admin and regular users
-    if (locationFilter) {
-      filtered = filtered.filter(book => {
+    // Create optimized location filter predicate
+    const createLocationPredicate = (locationFilter: string) => {
+      if (!locationFilter) {
+        // Handle default location filtering for non-admin users
+        if (!isAdmin(userRole) && currentLocation) {
+          return (book: EnhancedBook) => {
+            const shelf = shelves.find(s => s.id === book.shelf_id)
+            return shelf ? shelf.location_id === currentLocation.id : false
+          }
+        }
+        return () => true
+      }
+      
+      return (book: EnhancedBook) => {
         const shelf = shelves.find(s => s.id === book.shelf_id)
         if (!shelf) return false
         
-        // For admin users, use allLocations
         if (isAdmin(userRole)) {
           const location = allLocations.find(l => l.id === shelf.location_id)
           return location?.name === locationFilter
         } else {
-          // For regular users, use userLocations
           const location = userLocations?.find(l => l.id === shelf.location_id)
           return location?.name === locationFilter
         }
-      })
-    } else if (!isAdmin(userRole) && currentLocation) {
-      // For regular users with no explicit location filter, show only books from current location
-      filtered = filtered.filter(book => {
-        const shelf = shelves.find(s => s.id === book.shelf_id)
-        if (!shelf) return false
-        return shelf.location_id === currentLocation.id
-      })
+      }
     }
 
-    // Checkout status filter
-    if (checkoutFilter) {
-      filtered = filtered.filter(book => {
+    // Create optimized checkout status predicate
+    const createCheckoutPredicate = (checkoutFilter: string) => {
+      if (!checkoutFilter) return () => true
+      
+      return (book: EnhancedBook) => {
         const isCheckedOut = book.checked_out_by && book.checked_out_by !== ''
-        if (checkoutFilter === 'checked_out') {
-          return isCheckedOut
-        } else if (checkoutFilter === 'available') {
-          return !isCheckedOut
-        }
+        if (checkoutFilter === 'checked_out') return isCheckedOut
+        if (checkoutFilter === 'available') return !isCheckedOut
         return true
-      })
+      }
     }
 
-    // Author filter
-    if (authorFilter) {
-      filtered = filtered.filter(book =>
-        book.authors.some(author => 
-          author.toLowerCase().includes(authorFilter.toLowerCase())
+    // Create optimized author filter predicate
+    const createAuthorPredicate = (authorFilter: string) => {
+      if (!authorFilter) return () => true
+      const authorLower = authorFilter.toLowerCase()
+      
+      return (book: EnhancedBook) => {
+        return book.authors.some(author => 
+          author.toLowerCase().includes(authorLower)
         )
-      )
+      }
     }
 
-    // Apply sorting (create new array to ensure React detects the change)
-    filtered = [...filtered].sort((a, b) => {
+    return {
+      searchPredicate: createSearchPredicate(searchTerm),
+      genrePredicate: createGenrePredicate(categoryFilter),
+      shelfPredicate: shelfFilter ? (book: EnhancedBook) => book.shelf_name === shelfFilter : () => true,
+      locationPredicate: createLocationPredicate(locationFilter),
+      checkoutPredicate: createCheckoutPredicate(checkoutFilter),
+      authorPredicate: createAuthorPredicate(authorFilter)
+    }
+  }, [searchTerm, categoryFilter, shelfFilter, locationFilter, checkoutFilter, authorFilter, 
+      shelves, allLocations, userLocations, currentLocation, userRole])
+
+  // Optimized filtering and sorting with single pass and memoized predicates
+  const filteredAndSortedBooks = useMemo(() => {
+    // Single pass filtering with early returns for performance
+    const filtered = books.filter(book => {
+      // Apply all filter predicates with short-circuiting
+      return filterPredicates.searchPredicate(book) &&
+             filterPredicates.genrePredicate(book) &&
+             filterPredicates.shelfPredicate(book) &&
+             filterPredicates.locationPredicate(book) &&
+             filterPredicates.checkoutPredicate(book) &&
+             filterPredicates.authorPredicate(book)
+    })
+
+    // Apply sorting with optimized comparison functions
+    return [...filtered].sort((a, b) => {
       let comparison = 0
       
       switch (sortField) {
@@ -420,9 +446,12 @@ export function useBookFilters({
       
       return sortDirection === 'desc' ? -comparison : comparison
     })
+  }, [books, filterPredicates, sortField, sortDirection])
 
-    setFilteredBooks(filtered)
-  }, [books, searchTerm, shelfFilter, categoryFilter, locationFilter, checkoutFilter, authorFilter, userRole, shelves, allLocations, userLocations, currentLocation, sortField, sortDirection])
+  // Update state-based filteredBooks for backward compatibility
+  useEffect(() => {
+    setFilteredBooks(filteredAndSortedBooks)
+  }, [filteredAndSortedBooks])
 
   // Separate effect to reset pagination only when filter criteria change (not when book data changes)
   useEffect(() => {

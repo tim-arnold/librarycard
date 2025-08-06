@@ -248,6 +248,17 @@ export async function fetchEnhancedBookFromSearch(googleBookItem: GoogleBookItem
   return enhancedBook
 }
 
+// Type definitions for API responses
+interface GoogleBookData {
+  imageLinks?: {
+    [size: string]: string
+  }
+}
+
+interface OpenLibraryBookData {
+  covers?: number[]
+}
+
 // Library of Congress API integration
 const LOC_SRU_BASE = 'http://lx2.loc.gov:210/LCDB'
 
@@ -710,7 +721,7 @@ function mergeSubjects(google: any, openLibrary: any, loc: LocBookData | null): 
   return Array.from(new Set(subjects))
 }
 
-function aggregateAllCovers(google: any, openLibrary: any, loc: LocBookData | null): EnhancedCoverOption[] {
+function aggregateAllCovers(google: GoogleBookData | null, openLibrary: OpenLibraryBookData | null, loc: LocBookData | null): EnhancedCoverOption[] {
   const covers: EnhancedCoverOption[] = []
   
   // Google Books covers
@@ -719,7 +730,7 @@ function aggregateAllCovers(google: any, openLibrary: any, loc: LocBookData | nu
       covers.push({
         source: 'google',
         url: url as string,
-        size: size as any,
+        size: (size === 'extraLarge' || size === 'large' || size === 'medium' || size === 'small' || size === 'thumbnail') ? size : 'medium',
         metadata: {
           quality: size === 'extraLarge' ? 'high' : size === 'large' ? 'medium' : 'low'
         }
@@ -760,7 +771,7 @@ function aggregateAllCovers(google: any, openLibrary: any, loc: LocBookData | nu
   return covers
 }
 
-function getCoverSources(google: any, openLibrary: any, loc: LocBookData | null): DataSource[] {
+function getCoverSources(google: GoogleBookData | null, openLibrary: OpenLibraryBookData | null, loc: LocBookData | null): DataSource[] {
   const sources: DataSource[] = []
   
   if (google?.imageLinks && Object.keys(google.imageLinks).length > 0) {

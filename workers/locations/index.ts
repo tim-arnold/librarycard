@@ -180,17 +180,19 @@ export async function updateLocation(request: Request, userId: string, env: Env,
     id
   ).run();
 
-  // Return the updated location
-  const updatedLocation = {
-    id,
-    name: location.name,
-    description: location.description || null,
-    single_shelf_location: location.single_shelf_location || false,
-    owner_id: userId,
-    updated_at: new Date().toISOString()
-  };
+  // Get the updated location from the database to preserve original owner_id
+  const updatedLocationFromDB = await env.DB.prepare(`
+    SELECT * FROM locations WHERE id = ?
+  `).bind(id).first();
 
-  return new Response(JSON.stringify(updatedLocation), {
+  if (!updatedLocationFromDB) {
+    return new Response(JSON.stringify({ error: 'Location not found after update' }), {
+      status: 404,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  return new Response(JSON.stringify(updatedLocationFromDB), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
 }
