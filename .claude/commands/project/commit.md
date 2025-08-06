@@ -37,12 +37,6 @@ If working on a specific GitHub issue, update it with progress:
 - Mark issue resolution status (✅ Issue Resolved, 🚧 In Progress, etc.)
 - Provide clear documentation for future reference
 
-## Quality Checks
-Before finalizing, ensure code quality:
-- Run `npm run build` to verify the build succeeds
-- Run `npm run lint` to check for linting issues
-- Address any build or lint failures before creating the PR
-
 ## Branch Management
 Follow LibraryCard branch conventions:
 - Ensure you're not on main branch (never commit directly to main)
