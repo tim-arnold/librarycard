@@ -103,7 +103,8 @@ import {
 } from './admin/cached';
 import {
   getUserProfile,
-  updateUserProfile
+  updateUserProfile,
+  getDashboardData
 } from './profile';
 import {
   getUserFromRequest
@@ -962,6 +963,11 @@ export default {
 
       if (path === '/api/profile' && request.method === 'PUT') {
         return await updateUserProfile(request, userId, env, corsHeaders);
+      }
+
+      // Batched dashboard endpoint - combines all initial page load data
+      if (path === '/api/dashboard' && request.method === 'GET') {
+        return await getDashboardData(userId, env, corsHeaders);
       }
 
       // Change password endpoint (authenticated users only)

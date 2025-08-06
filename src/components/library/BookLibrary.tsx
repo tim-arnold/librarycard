@@ -5,7 +5,7 @@ import { Alert, Typography, Box, CircularProgress } from '@mui/material'
 import { LibraryBooks } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
 import { useModal } from '@/hooks/useModal'
-import { useBookLibrary } from '@/hooks/useBookLibrary'
+import { useBookLibraryOptimized as useBookLibrary } from '@/hooks/useBookLibraryOptimized'
 import { useBookActions } from '@/hooks/useBookActions'
 import { useBookFilters } from '@/hooks/useBookFilters'
 import { isAdmin } from '@/lib/permissions'
@@ -416,6 +416,11 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
           paginatedBooks={paginatedBooks}
           booksByLocation={booksByLocation}
           locationFilter={locationFilter}
+          shelfFilter={shelfFilter}
+          categoryFilter={categoryFilter}
+          checkoutFilter={checkoutFilter}
+          authorFilter={authorFilter}
+          searchTerm={searchTerm}
           currentPage={currentPage}
           booksPerPage={booksPerPage}
           onCheckout={checkoutBook}
