@@ -83,6 +83,37 @@ export async function saveBook(book: Omit<EnhancedBook, 'id'>): Promise<boolean>
   }
 }
 
+// Batched dashboard API call - replaces multiple sequential calls
+export async function getDashboardData(): Promise<{
+  profile: any,
+  locations: any[],
+  books: EnhancedBook[],
+  shelves: any[],
+  permissions: {
+    global: string[],
+    user: string[]
+  },
+  pendingRemovalRequests: Record<string, number>,
+  csrfToken: string
+} | null> {
+  try {
+    const { getApiBaseUrl } = await import('@/lib/apiConfig')
+    const headers = await getAuthHeaders()
+    
+    const response = await fetch(`${getApiBaseUrl()}/api/dashboard`, {
+      headers,
+    })
+    
+    if (response.ok) {
+      return await response.json()
+    }
+  } catch (error) {
+    console.error('Failed to fetch dashboard data:', error)
+  }
+  
+  return null
+}
+
 export async function getBooks(): Promise<EnhancedBook[]> {
   try {
     const { getApiBaseUrl } = await import('@/lib/apiConfig')
@@ -112,6 +143,13 @@ export async function updateBook(id: string | number, updates: Partial<EnhancedB
       headers,
       body: JSON.stringify(updates),
     })
+    
+    if (!response.ok) {
+      // Log the actual error response for debugging
+      const errorText = await response.text()
+      console.error(`Book update failed with status ${response.status}:`, errorText)
+    }
+    
     return response.ok
   } catch (error) {
     console.error('Failed to update book:', error)
