@@ -346,6 +346,9 @@ const BookCard = React.memo<BookCardProps>(({
   )
 })
 
+// Add display name for debugging
+BookCard.displayName = 'BookCard'
+
 // Optimized BookGrid component with React.memo
 const BookGrid = React.memo<BookGridProps>(({
   books,
@@ -409,5 +412,8 @@ const BookGrid = React.memo<BookGridProps>(({
     </Box>
   )
 })
+
+// Add display name for debugging
+BookGrid.displayName = 'BookGrid'
 
 export default BookGrid
