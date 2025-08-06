@@ -3,6 +3,7 @@
 import { useBookLibraryOptimized } from './useBookLibraryOptimized'
 import { useBookLibraryQuery, useBackgroundSync } from './useBookLibraryQuery'
 import type { EnhancedBook } from '@/lib/types'
+import type { FieldSet } from '@/lib/fieldSelection'
 
 interface UseBookLibraryProps {
   initialFilters?: {
@@ -14,12 +15,17 @@ interface UseBookLibraryProps {
   }
   // Feature flag to enable React Query implementation
   useReactQuery?: boolean
+  // Field selection optimization
+  fieldSet?: FieldSet
+  viewMode?: 'grid' | 'list' | 'detail'
 }
 
 // Enhanced hook that can use either the current implementation or React Query
 export function useBookLibraryEnhanced({ 
   initialFilters, 
-  useReactQuery = false 
+  useReactQuery = false,
+  fieldSet,
+  viewMode = 'grid'
 }: UseBookLibraryProps = {}) {
   
   // Always call all hooks to follow Rules of Hooks
@@ -31,6 +37,8 @@ export function useBookLibraryEnhanced({
     // Enable automatic background refetch every 3 minutes for active users
     refetchInterval: useReactQuery ? 3 * 60 * 1000 : undefined,
     enabled: useReactQuery, // Only enable the query when flag is set
+    fieldSet, // Pass field set optimization
+    viewMode, // Pass view mode context
   })
   
   const optimizedResult = useBookLibraryOptimized({ initialFilters })
