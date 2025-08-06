@@ -9,6 +9,8 @@ import { useBookLibraryOptimized as useBookLibrary } from '@/hooks/useBookLibrar
 import { useBookActions } from '@/hooks/useBookActions'
 import { useBookFilters } from '@/hooks/useBookFilters'
 import { isAdmin } from '@/lib/permissions'
+import { featureFlags } from '@/lib/featureFlags'
+import PerformanceMonitor from '../dev/PerformanceMonitor'
 import ConfirmationModal from '../modals/ConfirmationModal'
 import AlertModal from '../modals/AlertModal'
 import BookFilters from './BookFilters'
@@ -319,7 +321,8 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
   }
 
   return (
-    <PageContainer>
+    <PerformanceMonitor componentName="BookLibrary">
+      <PageContainer>
         <LibraryHeader
           userRole={userRole}
           currentLocation={currentLocation}
@@ -522,6 +525,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
             open={true}
           />
         )}
-    </PageContainer>
+      </PageContainer>
+    </PerformanceMonitor>
   )
 }
