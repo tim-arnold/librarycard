@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react'
 import { getDashboardData } from '@/lib/api'
 import { isAdmin } from '@/lib/permissions'
 import type { EnhancedBook } from '@/lib/types'
+import type { FieldSet } from '@/lib/fieldSelection'
 
 interface Shelf {
   id: number
@@ -36,9 +37,10 @@ interface DashboardData {
   pendingRemovalRequests: Record<string, number>
 }
 
-// Query Keys - Centralized for consistency
+// Query Keys - Centralized for consistency with field set support
 export const queryKeys = {
-  dashboard: ['dashboard'] as const,
+  dashboard: (fieldSet?: FieldSet) => 
+    fieldSet ? ['dashboard', fieldSet] : ['dashboard'] as const,
   books: ['books'] as const,
   locations: ['locations'] as const,
   shelves: (locationId?: number) => 
@@ -48,20 +50,46 @@ export const queryKeys = {
   profile: ['profile'] as const,
 }
 
-// Main dashboard query hook
+// Main dashboard query hook with field selection optimization
 export function useBookLibraryQuery(options?: {
   enabled?: boolean
   refetchInterval?: number
+  fieldSet?: FieldSet
+  viewMode?: 'grid' | 'list' | 'detail'
 }) {
   const { data: session } = useSession()
   
+  // Determine optimal field set based on context
+  const { getOptimalFieldSet } = require('@/lib/fieldSelection')
+  const fieldSet = options?.fieldSet || getOptimalFieldSet({
+    viewMode: options?.viewMode || 'grid',
+    userRole: session?.user?.role || 'user',
+    isAdmin: session?.user?.role === 'admin' || session?.user?.role === 'super_admin',
+    hasSearchQuery: false // TODO: Add search context support
+  })
+  
   return useQuery({
-    queryKey: queryKeys.dashboard,
+    queryKey: queryKeys.dashboard(fieldSet),
     queryFn: async () => {
-      const data = await getDashboardData()
+      // Log payload optimization stats in development
+      if (process.env.NODE_ENV === 'development') {
+        const { logPayloadStats } = await import('@/lib/fieldSelection')
+        console.group(`🚀 Dashboard API Call (${fieldSet} fields)`)
+        console.log(`📊 Query key:`, queryKeys.dashboard(fieldSet))
+      }
+      
+      const data = await getDashboardData(fieldSet)
       if (!data) {
         throw new Error('Failed to fetch dashboard data')
       }
+      
+      // Log payload statistics in development
+      if (process.env.NODE_ENV === 'development') {
+        const { logPayloadStats } = await import('@/lib/fieldSelection')
+        logPayloadStats(data.books || [], fieldSet)
+        console.groupEnd()
+      }
+      
       return data as DashboardData
     },
     enabled: !!session?.user?.email && (options?.enabled ?? true),
@@ -127,14 +155,14 @@ export function useBookMutations() {
       throw new Error('Update book mutation not implemented yet')
     },
     onMutate: async ({ bookId, updates }) => {
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: queryKeys.dashboard })
+      // Cancel any outgoing refetches for all dashboard variations
+      await queryClient.cancelQueries({ queryKey: ['dashboard'] })
       
-      // Snapshot the previous value
-      const previousDashboard = queryClient.getQueryData(queryKeys.dashboard)
+      // Snapshot the previous value (get the first matching dashboard cache)
+      const previousDashboard = queryClient.getQueriesData({ queryKey: ['dashboard'] })[0]?.[1]
       
-      // Optimistically update the cache
-      queryClient.setQueryData(queryKeys.dashboard, (old: any) => {
+      // Optimistically update all dashboard cache variations
+      queryClient.setQueriesData({ queryKey: ['dashboard'] }, (old: any) => {
         if (!old) return old
         
         return {
@@ -148,14 +176,12 @@ export function useBookMutations() {
       return { previousDashboard }
     },
     onError: (err, variables, context) => {
-      // Rollback on error
-      if (context?.previousDashboard) {
-        queryClient.setQueryData(queryKeys.dashboard, context.previousDashboard)
-      }
+      // Rollback on error - invalidate all dashboard caches to force refetch
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
     },
     onSettled: () => {
       // Always refetch after mutation
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
     },
   })
   
@@ -165,12 +191,12 @@ export function useBookMutations() {
       throw new Error('Delete book mutation not implemented yet')
     },
     onMutate: async (bookId) => {
-      await queryClient.cancelQueries({ queryKey: queryKeys.dashboard })
+      await queryClient.cancelQueries({ queryKey: ['dashboard'] })
       
-      const previousDashboard = queryClient.getQueryData(queryKeys.dashboard)
+      const previousDashboard = queryClient.getQueriesData({ queryKey: ['dashboard'] })[0]?.[1]
       
-      // Optimistically remove the book
-      queryClient.setQueryData(queryKeys.dashboard, (old: any) => {
+      // Optimistically remove the book from all dashboard cache variations
+      queryClient.setQueriesData({ queryKey: ['dashboard'] }, (old: any) => {
         if (!old) return old
         
         return {
@@ -182,12 +208,11 @@ export function useBookMutations() {
       return { previousDashboard }
     },
     onError: (err, variables, context) => {
-      if (context?.previousDashboard) {
-        queryClient.setQueryData(queryKeys.dashboard, context.previousDashboard)
-      }
+      // Rollback on error - invalidate all dashboard caches to force refetch
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
     },
   })
   
@@ -203,9 +228,9 @@ export function useLibraryRefresh() {
   
   const refreshLibrary = useMutation({
     mutationFn: async () => {
-      // Force refetch of dashboard data
-      await queryClient.invalidateQueries({ queryKey: queryKeys.dashboard })
-      return queryClient.refetchQueries({ queryKey: queryKeys.dashboard })
+      // Force refetch of all dashboard data variations
+      await queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      return queryClient.refetchQueries({ queryKey: ['dashboard'] })
     },
   })
   
@@ -224,7 +249,7 @@ export function useBackgroundSync(enabled: boolean = true) {
     queryKey: ['background-sync'],
     queryFn: async () => {
       // Invalidate and refetch critical data
-      await queryClient.invalidateQueries({ queryKey: queryKeys.dashboard })
+      await queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       return true
     },
     enabled,
