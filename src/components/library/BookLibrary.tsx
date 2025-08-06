@@ -5,10 +5,12 @@ import { Alert, Typography, Box, CircularProgress } from '@mui/material'
 import { LibraryBooks } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
 import { useModal } from '@/hooks/useModal'
-import { useBookLibraryOptimized as useBookLibrary } from '@/hooks/useBookLibraryOptimized'
+import { useBookLibraryEnhanced as useBookLibrary } from '@/hooks/useBookLibraryEnhanced'
 import { useBookActions } from '@/hooks/useBookActions'
 import { useBookFilters } from '@/hooks/useBookFilters'
 import { isAdmin } from '@/lib/permissions'
+import { featureFlags } from '@/lib/featureFlags'
+import PerformanceMonitor from '../dev/PerformanceMonitor'
 import ConfirmationModal from '../modals/ConfirmationModal'
 import AlertModal from '../modals/AlertModal'
 import BookFilters from './BookFilters'
@@ -57,7 +59,11 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
     setBooks,
     setShelves,
     setPendingRemovalRequests,
-  } = useBookLibrary({ initialFilters })
+  } = useBookLibrary({ 
+    initialFilters,
+    useReactQuery: featureFlags.enableReactQuery,
+    viewMode: 'grid' // Default viewMode for initial load
+  })
 
   // Book actions
   const {
@@ -238,6 +244,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
 
   // Group books by location for admin users
   const booksByLocation = useMemo(() => {
+
     if (!isAdmin(userRole)) {
       return null // Regular users don't need location grouping
     }
@@ -253,12 +260,14 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
     })
 
     // Group filtered books by their location
+    let booksGrouped = 0;
     filteredBooks.forEach(book => {
       const shelf = shelves.find(s => s.id === book.shelf_id)
       if (shelf) {
         const locationData = locationMap.get(shelf.location_id)
         if (locationData) {
           locationData.books.push(book)
+          booksGrouped++;
         }
       }
     })
@@ -268,6 +277,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
 
   // Get paginated books for current view
   const getPaginatedBooksForView = () => {
+    
     if (isAdmin(userRole) && booksByLocation) {
       // For admin view, we need to handle pagination across grouped locations
       // We'll flatten all books, paginate them, then regroup
@@ -296,8 +306,31 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
       
       return Array.from(locationMap.values()).filter(location => location.books.length > 0)
     } else {
-      // For regular users, simple pagination
-      return paginatedBooks
+      // For regular users, wrap paginated books in location structure for consistency
+      if (paginatedBooks.length === 0) {
+        return []
+      }
+      
+      // Group paginated books by location for consistent rendering
+      const locationMap = new Map()
+      userLocations.forEach(location => {
+        locationMap.set(location.id, {
+          ...location,
+          books: []
+        })
+      })
+      
+      paginatedBooks.forEach(book => {
+        const shelf = shelves.find(s => s.id === book.shelf_id)
+        if (shelf) {
+          const locationData = locationMap.get(shelf.location_id)
+          if (locationData) {
+            locationData.books.push(book)
+          }
+        }
+      })
+      
+      return Array.from(locationMap.values()).filter(location => location.books.length > 0)
     }
   }
 
@@ -319,7 +352,8 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
   }
 
   return (
-    <PageContainer>
+    <PerformanceMonitor componentName="BookLibrary">
+      <PageContainer>
         <LibraryHeader
           userRole={userRole}
           currentLocation={currentLocation}
@@ -522,6 +556,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
             open={true}
           />
         )}
-    </PageContainer>
+      </PageContainer>
+    </PerformanceMonitor>
   )
 }

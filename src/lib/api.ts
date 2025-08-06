@@ -83,8 +83,8 @@ export async function saveBook(book: Omit<EnhancedBook, 'id'>): Promise<boolean>
   }
 }
 
-// Batched dashboard API call - replaces multiple sequential calls
-export async function getDashboardData(): Promise<{
+// Batched dashboard API call - replaces multiple sequential calls with field selection optimization
+export async function getDashboardData(fieldSet: 'grid' | 'detail' | 'full' = 'grid'): Promise<{
   profile: any,
   locations: any[],
   books: EnhancedBook[],
@@ -98,9 +98,13 @@ export async function getDashboardData(): Promise<{
 } | null> {
   try {
     const { getApiBaseUrl } = await import('@/lib/apiConfig')
+    const { getFieldsParam } = await import('@/lib/fieldSelection')
     const headers = await getAuthHeaders()
     
-    const response = await fetch(`${getApiBaseUrl()}/api/dashboard`, {
+    // Get fields parameter for the specified field set
+    const fields = getFieldsParam(fieldSet)
+    
+    const response = await fetch(`${getApiBaseUrl()}/api/dashboard?fields=${encodeURIComponent(fields)}`, {
       headers,
     })
     
