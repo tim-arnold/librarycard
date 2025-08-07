@@ -102,7 +102,7 @@ export function selectBookFields<T extends FieldSet>(
    T extends 'search' ? SearchBook :
    FullBook {
   const fields = FIELD_SETS[fieldSet]
-  const selectedBook: any = {}
+  const selectedBook: Record<string, unknown> = {}
   
   for (const field of fields) {
     if (field in book) {
@@ -121,7 +121,7 @@ export function selectBooksFields<T extends FieldSet>(
           T extends 'detail' ? DetailBook :
           T extends 'search' ? SearchBook :
           FullBook> {
-  return books.map(book => selectBookFields(book, fieldSet)) as any
+  return books.map(book => selectBookFields(book, fieldSet)) as Array<T extends 'grid' ? GridBook : T extends 'detail' ? DetailBook : T extends 'search' ? SearchBook : FullBook>
 }
 
 // Generate URL query parameter for field selection
