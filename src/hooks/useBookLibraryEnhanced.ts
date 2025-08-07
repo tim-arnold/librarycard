@@ -4,6 +4,7 @@ import { useBookLibraryOptimized } from './useBookLibraryOptimized'
 import { useBookLibraryQuery, useBackgroundSync } from './useBookLibraryQuery'
 import type { EnhancedBook } from '@/lib/types'
 import type { FieldSet } from '@/lib/fieldSelection'
+import type { Dispatch, SetStateAction } from 'react'
 
 interface UseBookLibraryProps {
   initialFilters?: {
@@ -65,9 +66,9 @@ export function useBookLibraryEnhanced({
         handleManualRefresh: async () => ({ success: false }),
         loadPendingRemovalRequests: async () => {},
         switchToLocation: async () => ({ success: false }),
-        setBooks: () => {},
-        setShelves: () => {},
-        setPendingRemovalRequests: () => {},
+        setBooks: (() => {}) as Dispatch<SetStateAction<EnhancedBook[]>>,
+        setShelves: (() => {}) as Dispatch<SetStateAction<any[]>>,
+        setPendingRemovalRequests: (() => {}) as Dispatch<SetStateAction<Record<string, number>>>,
       }
     }
     
@@ -121,19 +122,19 @@ export function useBookLibraryEnhanced({
       },
       
       // Direct state setters (limited in React Query mode - data comes from server)
-      setBooks: (books: any[]) => {
+      setBooks: (() => {
         // In React Query mode, we'd use mutations to update server state
         // For now, this is a no-op to maintain compatibility
         console.warn('setBooks called in React Query mode - use mutations instead')
-      },
+      }) as Dispatch<SetStateAction<EnhancedBook[]>>,
       
-      setShelves: (shelves: any[]) => {
+      setShelves: (() => {
         console.warn('setShelves called in React Query mode - use mutations instead')
-      },
+      }) as Dispatch<SetStateAction<any[]>>,
       
-      setPendingRemovalRequests: (requests: Record<string, number>) => {
+      setPendingRemovalRequests: (() => {
         console.warn('setPendingRemovalRequests called in React Query mode - use mutations instead')
-      },
+      }) as Dispatch<SetStateAction<Record<string, number>>>,
     }
   }
   
