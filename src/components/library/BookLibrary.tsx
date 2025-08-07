@@ -61,7 +61,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
     setPendingRemovalRequests,
   } = useBookLibrary({ 
     initialFilters,
-    useReactQuery: featureFlags.enableReactQuery,
+    useReactQuery: featureFlags.useReactQuery,
     viewMode: 'grid' // Default viewMode for initial load
   })
 
@@ -200,7 +200,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
   }
 
   const handleCreateShelfSuccess = (newShelf: any) => {
-    setShelves(prevShelves => [...prevShelves, newShelf])
+    setShelves((prevShelves: any) => [...prevShelves, newShelf])
   }
 
   // Rating modal handlers
