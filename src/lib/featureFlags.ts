@@ -54,7 +54,7 @@ export const isFeatureEnabled = (feature: keyof FeatureFlags): boolean => {
 }
 
 // Performance monitoring helper
-export const withPerformanceTracking = <T extends (...args: any[]) => any>(
+export const withPerformanceTracking = <T extends (...args: unknown[]) => unknown>(
   fn: T,
   name: string
 ): T => {
@@ -62,7 +62,7 @@ export const withPerformanceTracking = <T extends (...args: any[]) => any>(
     return fn
   }
   
-  return ((...args: any[]) => {
+  return ((...args: unknown[]) => {
     const startTime = performance.now()
     const result = fn(...args)
     
@@ -81,7 +81,7 @@ export const withPerformanceTracking = <T extends (...args: any[]) => any>(
 }
 
 // Development helpers
-export const devLog = (...args: any[]) => {
+export const devLog = (...args: unknown[]) => {
   if (featureFlags.enableDevtools) {
     console.log('🔧 [Dev]', ...args)
   }
