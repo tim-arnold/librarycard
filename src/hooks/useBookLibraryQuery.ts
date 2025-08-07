@@ -63,8 +63,8 @@ export function useBookLibraryQuery(options?: {
   const { getOptimalFieldSet } = require('@/lib/fieldSelection')
   const fieldSet = options?.fieldSet || getOptimalFieldSet({
     viewMode: options?.viewMode || 'grid',
-    userRole: session?.user?.role || 'user',
-    isAdmin: session?.user?.role === 'admin' || session?.user?.role === 'super_admin',
+    userRole: (session?.user as any)?.role || 'user',
+    isAdmin: (session?.user as any)?.role === 'admin' || (session?.user as any)?.role === 'super_admin',
     hasSearchQuery: false // TODO: Add search context support
   })
   
