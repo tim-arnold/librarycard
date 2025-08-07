@@ -250,12 +250,27 @@ export async function fetchEnhancedBookFromSearch(googleBookItem: GoogleBookItem
 
 // Type definitions for API responses
 interface GoogleBookData {
+  title?: string
+  authors?: string[]
+  description?: string
+  categories?: string[]
+  publisher?: string
+  publishedDate?: string
+  pageCount?: number
+  averageRating?: number
+  ratingsCount?: number
   imageLinks?: {
     [size: string]: string
   }
 }
 
 interface OpenLibraryBookData {
+  title?: string
+  authors?: { name: string }[]
+  description?: string | { value: string }
+  subjects?: string[]
+  publishers?: string[]
+  publish_date?: string
   covers?: number[]
 }
 

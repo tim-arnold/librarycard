@@ -110,7 +110,7 @@ export function selectBookFields<T extends FieldSet>(
     }
   }
   
-  return selectedBook
+  return selectedBook as T extends 'grid' ? GridBook : T extends 'detail' ? DetailBook : T extends 'search' ? SearchBook : FullBook
 }
 
 // Filter array of books
