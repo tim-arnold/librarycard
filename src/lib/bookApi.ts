@@ -683,7 +683,7 @@ function getBestPublisher(google: any, openLibrary: any, loc: LocBookData | null
   }
 }
 
-function mergeCategories(google: any, openLibrary: any, loc: LocBookData | null): string[] {
+function mergeCategories(google: GoogleBookData | null, openLibrary: OpenLibraryBookData | null, loc: LocBookData | null): string[] {
   const categories: string[] = []
   
   if (google?.categories) {
@@ -702,7 +702,7 @@ function mergeCategories(google: any, openLibrary: any, loc: LocBookData | null)
   return Array.from(new Set(categories))
 }
 
-function mergeSubjects(google: any, openLibrary: any, loc: LocBookData | null): string[] {
+function mergeSubjects(google: GoogleBookData | null, openLibrary: OpenLibraryBookData | null, loc: LocBookData | null): string[] {
   const subjects: string[] = []
   
   if (google?.categories) {
