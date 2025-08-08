@@ -509,7 +509,7 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
           if (savedBook) {
             // Assign each selected genre to the book
             for (const genre of selectedGenres) {
-              const response = await authenticatedApiCall(`/books/${savedBook.id}/genres`, {
+              const response = await authenticatedApiCall(`/api/books/${savedBook.id}/genres`, {
                 method: 'POST',
                 body: JSON.stringify({ genreId: genre.id, isAutoAssigned: false })
               })
