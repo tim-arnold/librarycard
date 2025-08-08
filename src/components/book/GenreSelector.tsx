@@ -14,7 +14,6 @@ import {
   FormControl,
 } from '@mui/material'
 import {
-  Add,
   Check,
   Close,
 } from '@mui/icons-material'
@@ -38,6 +37,7 @@ export default function GenreSelector({
   const [suggestedGenres, setSuggestedGenres] = useState<CuratedGenre[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [autocompleteValue, setAutocompleteValue] = useState<CuratedGenre | null>(null)
+  const [inputValue, setInputValue] = useState('')
 
   // Load available genres from database
   useEffect(() => {
@@ -95,10 +95,13 @@ export default function GenreSelector({
     setSuggestedGenres(prev => prev.filter(g => g.id !== genre.id))
   }
 
-  const handleAddFromAutocomplete = () => {
-    if (autocompleteValue && !selectedGenres.find(g => g.id === autocompleteValue.id)) {
-      onGenresChange([...selectedGenres, autocompleteValue])
+  const handleAutocompleteChange = (newValue: CuratedGenre | null) => {
+    if (newValue && !selectedGenres.find(g => g.id === newValue.id)) {
+      onGenresChange([...selectedGenres, newValue])
       setAutocompleteValue(null)
+      setInputValue('')
+    } else {
+      setAutocompleteValue(newValue)
     }
   }
 
@@ -189,56 +192,40 @@ export default function GenreSelector({
 
       {/* Add Custom Genre */}
       <Box sx={{ pb: 2 }}>
-        <Box sx={{ display: 'flex', gap: 1, alignItems: 'stretch' }}>
-          <FormControl fullWidth size="small">
-            <Autocomplete
-              value={autocompleteValue}
-              onChange={(_, newValue) => setAutocompleteValue(newValue)}
-              options={availableForAutocomplete}
-              getOptionLabel={(option) => option.name}
-              renderOption={(props, option) => (
-                <li {...props}>
-                  <Box>
-                    <Typography variant="body2">{option.name}</Typography>
-                    {option.description && (
-                      <Typography variant="caption" color="text.secondary">
-                        {option.description}
-                      </Typography>
-                    )}
-                  </Box>
-                </li>
-              )}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Add Genres"
-                  variant="outlined"
-                  size="small"
-                  placeholder="Type to search..."
-                />
-              )}
-              sx={{ flexGrow: 1, minWidth: 200 }}
-              ListboxProps={{
-                style: { maxHeight: 200 }
-              }}
-            />
-          </FormControl>
-          <Button
-            variant="contained"
-            size="small"
-            startIcon={<Add />}
-            onClick={handleAddFromAutocomplete}
-            disabled={!autocompleteValue}
-            sx={{ 
-              whiteSpace: 'nowrap',
-              height: '40px', // Match the height of small TextField
-              minWidth: { xs: '120px', sm: 'auto' }, // Ensure minimum width on mobile
-              px: { xs: 2, sm: 1.5 } // More padding on mobile for better text fit
+        <FormControl fullWidth size="small">
+          <Autocomplete
+            value={autocompleteValue}
+            onChange={(_, newValue) => handleAutocompleteChange(newValue)}
+            inputValue={inputValue}
+            onInputChange={(_, newInputValue) => setInputValue(newInputValue)}
+            options={availableForAutocomplete}
+            getOptionLabel={(option) => option.name}
+            renderOption={(props, option) => (
+              <li {...props}>
+                <Box>
+                  <Typography variant="body2">{option.name}</Typography>
+                  {option.description && (
+                    <Typography variant="caption" color="text.secondary">
+                      {option.description}
+                    </Typography>
+                  )}
+                </Box>
+              </li>
+            )}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Add Genres"
+                variant="outlined"
+                size="small"
+                placeholder="Select genre to add instantly..."
+              />
+            )}
+            ListboxProps={{
+              style: { maxHeight: 200 }
             }}
-          >
-            Add Genre
-          </Button>
-        </Box>
+          />
+        </FormControl>
       </Box>
 
     </Box>
