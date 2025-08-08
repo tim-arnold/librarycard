@@ -871,6 +871,172 @@ export default {
         return await emailOverdueUser(id, userId, env, corsHeaders);
       }
 
+      // Book-Genre Management endpoints (must come before general book PUT/DELETE routes)
+      if (path.match(/^\/api\/books\/\d+\/genres$/) && request.method === 'GET') {
+        const bookId = parseInt(path.split('/')[3]);
+        const genreService = new GenreService(env.DB);
+        try {
+          const bookGenres = await genreService.getBookGenres(bookId);
+          return new Response(JSON.stringify(bookGenres), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error) {
+          console.error('Error fetching book genres:', error);
+          return new Response(JSON.stringify({ error: 'Failed to fetch book genres' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      if (path.match(/^\/api\/books\/\d+\/genres$/) && request.method === 'POST') {
+        const bookId = parseInt(path.split('/')[3]);
+        const genreService = new GenreService(env.DB);
+        try {
+          const body = await request.json() as any;
+          const bookGenre = await genreService.assignGenreToBook(bookId, body, userId);
+          return new Response(JSON.stringify(bookGenre), {
+            status: 201,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error: any) {
+          console.error('Error assigning genre to book:', error);
+          const status = error.message.includes('already assigned') ? 409 : 500;
+          return new Response(JSON.stringify({ error: error.message || 'Failed to assign genre' }), {
+            status,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      if (path.match(/^\/api\/books\/\d+\/genres$/) && request.method === 'PUT') {
+        const bookId = parseInt(path.split('/')[3]);
+        const genreService = new GenreService(env.DB);
+        try {
+          const body = await request.json() as any;
+          const { genreIds } = body;
+          
+          if (!Array.isArray(genreIds)) {
+            return new Response(JSON.stringify({ error: 'genreIds must be an array' }), {
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          // Check if user has access to this book (super admins have access to all books)
+          const userRole = await env.DB.prepare('SELECT user_role FROM users WHERE id = ?').bind(userId).first() as any;
+          const isSuperAdmin = userRole?.user_role === 'super_admin';
+          
+          if (!isSuperAdmin) {
+            const bookAccessStmt = env.DB.prepare(`
+              SELECT b.id FROM books b
+              LEFT JOIN shelves s ON b.shelf_id = s.id
+              LEFT JOIN locations l ON s.location_id = l.id
+              LEFT JOIN location_members lm ON l.id = lm.location_id
+              WHERE b.id = ? AND (b.added_by = ? OR l.owner_id = ? OR lm.user_id = ?)
+            `);
+            
+            const bookAccess = await bookAccessStmt.bind(bookId, userId, userId, userId).first();
+            if (!bookAccess) {
+              return new Response(JSON.stringify({ error: 'Book not found or access denied' }), {
+                status: 403,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              });
+            }
+          }
+
+          // Get current genres for this book
+          const currentGenres = await genreService.getBookGenres(bookId);
+          const currentGenreIds = currentGenres.map(bg => bg.genreId);
+          
+          // Remove genres that are no longer in the list
+          const genresToRemove = currentGenreIds.filter(id => !genreIds.includes(id));
+          for (const genreId of genresToRemove) {
+            await genreService.removeGenreFromBook(bookId, genreId);
+          }
+          
+          // Add new genres that aren't already assigned
+          const genresToAdd = genreIds.filter((id: number) => !currentGenreIds.includes(id));
+          for (const genreId of genresToAdd) {
+            try {
+              await genreService.assignGenreToBook(bookId, { genreId }, userId);
+            } catch (error: any) {
+              // Skip if already assigned (shouldn't happen but handle gracefully)
+              if (!error.message.includes('already assigned')) {
+                throw error;
+              }
+            }
+          }
+          
+          // Invalidate caches after genre changes
+          await invalidateBookCache(bookId.toString(), userId, env);
+          await invalidateAllAdminAnalytics(env);
+          
+          // Return updated book genres
+          const updatedBookGenres = await genreService.getBookGenres(bookId);
+          return new Response(JSON.stringify(updatedBookGenres), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error: any) {
+          console.error('Error updating book genres:', error);
+          return new Response(JSON.stringify({ error: error.message || 'Failed to update book genres' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      if (path.match(/^\/api\/books\/\d+\/genres\/\d+$/) && request.method === 'DELETE') {
+        const bookId = parseInt(path.split('/')[3]);
+        const genreId = parseInt(path.split('/')[5]);
+        const genreService = new GenreService(env.DB);
+        try {
+          // Check if user has access to this book (super admins have access to all books)
+          const userRole = await env.DB.prepare('SELECT user_role FROM users WHERE id = ?').bind(userId).first() as any;
+          const isSuperAdmin = userRole?.user_role === 'super_admin';
+          
+          if (!isSuperAdmin) {
+            const bookAccessStmt = env.DB.prepare(`
+              SELECT b.id FROM books b
+              LEFT JOIN shelves s ON b.shelf_id = s.id
+              LEFT JOIN locations l ON s.location_id = l.id
+              LEFT JOIN location_members lm ON l.id = lm.location_id
+              WHERE b.id = ? AND (b.added_by = ? OR l.owner_id = ? OR lm.user_id = ?)
+            `);
+            
+            const bookAccess = await bookAccessStmt.bind(bookId, userId, userId, userId).first();
+            if (!bookAccess) {
+              return new Response(JSON.stringify({ error: 'Book not found or access denied' }), {
+                status: 403,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              });
+            }
+          }
+
+          const success = await genreService.removeGenreFromBook(bookId, genreId);
+          if (!success) {
+            return new Response(JSON.stringify({ error: 'Genre assignment not found' }), {
+              status: 404,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+          
+          // Invalidate caches after genre removal
+          await invalidateBookCache(bookId.toString(), userId, env);
+          await invalidateAllAdminAnalytics(env);
+          
+          return new Response(JSON.stringify({ message: 'Genre removed successfully' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error: any) {
+          console.error('Error removing genre from book:', error);
+          return new Response(JSON.stringify({ error: error.message || 'Failed to remove genre' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
       if (path.startsWith('/api/books/') && request.method === 'PUT') {
         const id = parseInt(path.split('/')[3]);
         const response = await updateBook(request, userId, env, corsHeaders, id);
@@ -991,174 +1157,9 @@ export default {
         }
       }
 
-      // Book-Genre Management endpoints
-      if (path.match(/^\/books\/\d+\/genres$/) && request.method === 'GET') {
-        const bookId = parseInt(path.split('/')[2]);
-        const genreService = new GenreService(env.DB);
-        try {
-          const bookGenres = await genreService.getBookGenres(bookId);
-          return new Response(JSON.stringify(bookGenres), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        } catch (error) {
-          console.error('Error fetching book genres:', error);
-          return new Response(JSON.stringify({ error: 'Failed to fetch book genres' }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-      }
-
-      if (path.match(/^\/books\/\d+\/genres$/) && request.method === 'POST') {
-        const bookId = parseInt(path.split('/')[2]);
-        const genreService = new GenreService(env.DB);
-        try {
-          const body = await request.json() as any;
-          const bookGenre = await genreService.assignGenreToBook(bookId, body, userId);
-          return new Response(JSON.stringify(bookGenre), {
-            status: 201,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        } catch (error: any) {
-          console.error('Error assigning genre to book:', error);
-          const status = error.message.includes('already assigned') ? 409 : 500;
-          return new Response(JSON.stringify({ error: error.message || 'Failed to assign genre' }), {
-            status,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-      }
-
-      if (path.match(/^\/books\/\d+\/genres$/) && request.method === 'PUT') {
-        const bookId = parseInt(path.split('/')[2]);
-        const genreService = new GenreService(env.DB);
-        try {
-          const body = await request.json() as any;
-          const { genreIds } = body;
-          
-          if (!Array.isArray(genreIds)) {
-            return new Response(JSON.stringify({ error: 'genreIds must be an array' }), {
-              status: 400,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
-          }
-
-          // Check if user has access to this book (super admins have access to all books)
-          const userRole = await env.DB.prepare('SELECT user_role FROM users WHERE id = ?').bind(userId).first() as any;
-          const isSuperAdmin = userRole?.user_role === 'super_admin';
-          
-          if (!isSuperAdmin) {
-            const bookAccessStmt = env.DB.prepare(`
-              SELECT b.id FROM books b
-              LEFT JOIN shelves s ON b.shelf_id = s.id
-              LEFT JOIN locations l ON s.location_id = l.id
-              LEFT JOIN location_members lm ON l.id = lm.location_id
-              WHERE b.id = ? AND (b.added_by = ? OR l.owner_id = ? OR lm.user_id = ?)
-            `);
-            
-            const bookAccess = await bookAccessStmt.bind(bookId, userId, userId, userId).first();
-            if (!bookAccess) {
-              return new Response(JSON.stringify({ error: 'Book not found or access denied' }), {
-                status: 403,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              });
-            }
-          }
-
-          // Get current genres for this book
-          const currentGenres = await genreService.getBookGenres(bookId);
-          const currentGenreIds = currentGenres.map(bg => bg.genreId);
-          
-          // Remove genres that are no longer in the list
-          const genresToRemove = currentGenreIds.filter(id => !genreIds.includes(id));
-          for (const genreId of genresToRemove) {
-            await genreService.removeGenreFromBook(bookId, genreId);
-          }
-          
-          // Add new genres that aren't already assigned
-          const genresToAdd = genreIds.filter((id: number) => !currentGenreIds.includes(id));
-          for (const genreId of genresToAdd) {
-            try {
-              await genreService.assignGenreToBook(bookId, { genreId }, userId);
-            } catch (error: any) {
-              // Skip if already assigned (shouldn't happen but handle gracefully)
-              if (!error.message.includes('already assigned')) {
-                throw error;
-              }
-            }
-          }
-          
-          // Invalidate caches after genre changes
-          await invalidateBookCache(bookId.toString(), userId, env);
-          await invalidateAllAdminAnalytics(env);
-          
-          // Return updated book genres
-          const updatedBookGenres = await genreService.getBookGenres(bookId);
-          return new Response(JSON.stringify(updatedBookGenres), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        } catch (error: any) {
-          console.error('Error updating book genres:', error);
-          return new Response(JSON.stringify({ error: error.message || 'Failed to update book genres' }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-      }
-
-      if (path.match(/^\/books\/\d+\/genres\/\d+$/) && request.method === 'DELETE') {
-        const bookId = parseInt(path.split('/')[2]);
-        const genreId = parseInt(path.split('/')[4]);
-        const genreService = new GenreService(env.DB);
-        try {
-          // Check if user has access to this book (super admins have access to all books)
-          const userRole = await env.DB.prepare('SELECT user_role FROM users WHERE id = ?').bind(userId).first() as any;
-          const isSuperAdmin = userRole?.user_role === 'super_admin';
-          
-          if (!isSuperAdmin) {
-            const bookAccessStmt = env.DB.prepare(`
-              SELECT b.id FROM books b
-              LEFT JOIN shelves s ON b.shelf_id = s.id
-              LEFT JOIN locations l ON s.location_id = l.id
-              LEFT JOIN location_members lm ON l.id = lm.location_id
-              WHERE b.id = ? AND (b.added_by = ? OR l.owner_id = ? OR lm.user_id = ?)
-            `);
-            
-            const bookAccess = await bookAccessStmt.bind(bookId, userId, userId, userId).first();
-            if (!bookAccess) {
-              return new Response(JSON.stringify({ error: 'Book not found or access denied' }), {
-                status: 403,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              });
-            }
-          }
-
-          const success = await genreService.removeGenreFromBook(bookId, genreId);
-          if (!success) {
-            return new Response(JSON.stringify({ error: 'Genre assignment not found' }), {
-              status: 404,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
-          }
-          
-          // Invalidate caches after genre removal
-          await invalidateBookCache(bookId.toString(), userId, env);
-          await invalidateAllAdminAnalytics(env);
-          
-          return new Response(JSON.stringify({ message: 'Genre removed successfully' }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        } catch (error: any) {
-          console.error('Error removing genre from book:', error);
-          return new Response(JSON.stringify({ error: error.message || 'Failed to remove genre' }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-      }
 
       // Admin Genre Management endpoints
-      if (path === '/admin/genres' && request.method === 'POST') {
+      if (path === '/api/admin/genres' && request.method === 'POST') {
         const genreService = new GenreService(env.DB);
         try {
           // Check if user is super admin
