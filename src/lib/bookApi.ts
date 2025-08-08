@@ -250,12 +250,27 @@ export async function fetchEnhancedBookFromSearch(googleBookItem: GoogleBookItem
 
 // Type definitions for API responses
 interface GoogleBookData {
+  title?: string
+  authors?: string[]
+  description?: string
+  categories?: string[]
+  publisher?: string
+  publishedDate?: string
+  pageCount?: number
+  averageRating?: number
+  ratingsCount?: number
   imageLinks?: {
     [size: string]: string
   }
 }
 
 interface OpenLibraryBookData {
+  title?: string
+  authors?: { name: string }[]
+  description?: string | { value: string }
+  subjects?: string[]
+  publishers?: string[]
+  publish_date?: string
   covers?: number[]
 }
 
@@ -683,7 +698,7 @@ function getBestPublisher(google: any, openLibrary: any, loc: LocBookData | null
   }
 }
 
-function mergeCategories(google: any, openLibrary: any, loc: LocBookData | null): string[] {
+function mergeCategories(google: GoogleBookData | null, openLibrary: OpenLibraryBookData | null, loc: LocBookData | null): string[] {
   const categories: string[] = []
   
   if (google?.categories) {
@@ -702,7 +717,7 @@ function mergeCategories(google: any, openLibrary: any, loc: LocBookData | null)
   return Array.from(new Set(categories))
 }
 
-function mergeSubjects(google: any, openLibrary: any, loc: LocBookData | null): string[] {
+function mergeSubjects(google: GoogleBookData | null, openLibrary: OpenLibraryBookData | null, loc: LocBookData | null): string[] {
   const subjects: string[] = []
   
   if (google?.categories) {
