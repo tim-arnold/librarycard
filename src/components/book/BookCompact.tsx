@@ -7,6 +7,7 @@ import {
   Typography,
   Chip,
   Button,
+  Grow,
 } from '@mui/material'
 import { Info, Star, Edit, MenuBook } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
@@ -249,22 +250,36 @@ export default function BookList({
                   {(() => {
                     const { genres, source } = getDisplayGenres(book)
                     return genres.length > 0 && (
-                      <Chip 
-                        label={genres[0]} 
-                        size="small" 
-                        color={source === 'assigned' ? 'secondary' : source === 'enhanced' ? 'primary' : 'default'}
-                        onClick={undefined}
-                        sx={{ 
-                          fontSize: { xs: '0.7rem', sm: '0.75rem', md: '0.8125rem' },
-                          height: { xs: 20, sm: 24, md: 28 },
-                          maxWidth: '120px',
-                          '& .MuiChip-label': {
-                            textOverflow: 'ellipsis',
-                            overflow: 'hidden',
-                            whiteSpace: 'nowrap'
-                          }
-                        }} 
-                      />
+                      <Grow in={true} timeout={source === 'assigned' ? 800 : 0}>
+                        <Chip 
+                          label={genres[0]} 
+                          size="small" 
+                          color={source === 'assigned' ? 'secondary' : source === 'enhanced' ? 'primary' : 'default'}
+                          onClick={undefined}
+                          sx={{ 
+                            fontSize: { xs: '0.7rem', sm: '0.75rem', md: '0.8125rem' },
+                            height: { xs: 20, sm: 24, md: 28 },
+                            maxWidth: '120px',
+                            animation: source === 'assigned' ? 'pulse 2s ease-in-out' : undefined,
+                            '@keyframes pulse': {
+                              '0%': {
+                                boxShadow: '0 0 0 0 rgba(156, 39, 176, 0.4)'
+                              },
+                              '70%': {
+                                boxShadow: '0 0 0 10px rgba(156, 39, 176, 0)'
+                              },
+                              '100%': {
+                                boxShadow: '0 0 0 0 rgba(156, 39, 176, 0)'
+                              }
+                            },
+                            '& .MuiChip-label': {
+                              textOverflow: 'ellipsis',
+                              overflow: 'hidden',
+                              whiteSpace: 'nowrap'
+                            }
+                          }} 
+                        />
+                      </Grow>
                     )
                   })()}
                   
