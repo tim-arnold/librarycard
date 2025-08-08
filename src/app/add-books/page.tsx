@@ -2,9 +2,33 @@
 
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, lazy, Suspense } from 'react'
 import { Container, CircularProgress, Typography, Box } from '@mui/material'
-import AddBooks from '@/components/book/AddBooks'
+
+// Lazy load AddBooks component for better initial page load performance
+const AddBooks = lazy(() => import('@/components/book/AddBooks'))
+
+// Loading component for the AddBooks feature
+const AddBooksLoader = () => (
+  <Container maxWidth="lg" sx={{ py: 4 }}>
+    <Box 
+      display="flex" 
+      justifyContent="center" 
+      alignItems="center" 
+      minHeight={400}
+      flexDirection="column"
+      gap={2}
+    >
+      <CircularProgress size={40} />
+      <Typography variant="h6" color="text.secondary">
+        Loading book management tools...
+      </Typography>
+      <Typography variant="body2" color="text.secondary">
+        ISBN scanner and search functionality
+      </Typography>
+    </Box>
+  </Container>
+)
 
 export default function AddBooksPage() {
   const { data: session, status } = useSession()
@@ -32,5 +56,9 @@ export default function AddBooksPage() {
     return null
   }
 
-  return <AddBooks initialTab="search" />
+  return (
+    <Suspense fallback={<AddBooksLoader />}>
+      <AddBooks initialTab="search" />
+    </Suspense>
+  )
 }

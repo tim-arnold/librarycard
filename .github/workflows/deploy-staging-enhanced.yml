@@ -51,8 +51,8 @@ jobs:
       - name: Build and validate
         run: |
           echo "🔨 Building application..."
-          npx next build --no-lint
-          echo "🔍 Lint checks temporarily disabled for performance optimization deployment"
+          DISABLE_ESLINT_PLUGIN=true npx next build
+          echo "🔍 ESLint disabled for performance optimization deployment"
 
       - name: Deploy to Staging (Isolated Account)
         uses: cloudflare/wrangler-action@v3

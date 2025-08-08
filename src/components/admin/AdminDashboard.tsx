@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { useSession } from 'next-auth/react'
 import { usePathname, useRouter } from 'next/navigation'
 import {
@@ -12,6 +12,8 @@ import {
   Tab,
   Button,
   Fade,
+  Container,
+  Paper
 } from '@mui/material'
 import {
   Dashboard,
@@ -23,13 +25,31 @@ import {
   PersonAdd,
   BarChart,
 } from '@mui/icons-material'
-import AdminAnalytics from './AdminAnalytics'
-import AdminUserManager from './AdminUserManager'
-import AdminNotificationCenter from './AdminNotificationCenter'
-import AdminSignupManager from './AdminSignupManager'
-import LocationManager from './LocationManager'
-import { Container, Paper } from '@mui/material'
 import { getApiBaseUrl } from '@/lib/apiConfig'
+
+// Lazy load admin components for better performance
+const AdminAnalytics = lazy(() => import('./AdminAnalytics'))
+const AdminUserManager = lazy(() => import('./AdminUserManager'))
+const AdminNotificationCenter = lazy(() => import('./AdminNotificationCenter'))
+const AdminSignupManager = lazy(() => import('./AdminSignupManager'))
+const LocationManager = lazy(() => import('./LocationManager'))
+
+// Loading component for lazy-loaded admin components
+const AdminComponentLoader = () => (
+  <Box 
+    display="flex" 
+    justifyContent="center" 
+    alignItems="center" 
+    minHeight={400}
+    flexDirection="column"
+    gap={2}
+  >
+    <CircularProgress size={40} />
+    <Typography variant="body2" color="text.secondary">
+      Loading admin component...
+    </Typography>
+  </Box>
+)
 
 const TAB_NAMES = ['overview', 'analytics', 'users', 'locations', 'signup-requests', 'notifications']
 const TAB_INDEX_MAP: { [key: string]: number } = {
@@ -272,23 +292,33 @@ export default function AdminDashboard({ initialTab }: AdminDashboardProps = {})
             )}
 
             {activeTab === 1 && (
-              <AdminAnalytics />
+              <Suspense fallback={<AdminComponentLoader />}>
+                <AdminAnalytics />
+              </Suspense>
             )}
 
             {activeTab === 2 && (
-              <AdminUserManager />
+              <Suspense fallback={<AdminComponentLoader />}>
+                <AdminUserManager />
+              </Suspense>
             )}
 
             {activeTab === 3 && (
-              <LocationManager />
+              <Suspense fallback={<AdminComponentLoader />}>
+                <LocationManager />
+              </Suspense>
             )}
 
             {activeTab === 4 && (
-              <AdminSignupManager />
+              <Suspense fallback={<AdminComponentLoader />}>
+                <AdminSignupManager />
+              </Suspense>
             )}
 
             {activeTab === 5 && (
-              <AdminNotificationCenter />
+              <Suspense fallback={<AdminComponentLoader />}>
+                <AdminNotificationCenter />
+              </Suspense>
             )}
           </Box>
         </Fade>
