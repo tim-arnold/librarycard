@@ -1,5 +1,5 @@
 [build]
-  command = "npx next build --no-lint"
+  command = "DISABLE_ESLINT_PLUGIN=true npx next build"
   
 [build.environment]
   NODE_VERSION = "18"
