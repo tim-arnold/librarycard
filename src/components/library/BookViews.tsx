@@ -3,6 +3,7 @@
 import { Box, Typography, Pagination, Fade } from '@mui/material'
 import { LocationOn } from '@mui/icons-material'
 import BookGrid from '@/components/book/BookGrid'
+import VirtualizedBookGrid from '@/components/book/VirtualizedBookGrid'
 import BookCompact from '@/components/book/BookCompact'
 import BookList from '@/components/book/BookList'
 import type { EnhancedBook } from '@/lib/types'
@@ -60,6 +61,7 @@ interface BookViewsProps {
   onPageChange: (event: React.ChangeEvent<unknown>, page: number) => void
   getTotalPages: (books: EnhancedBook[]) => number
   getPaginatedBooksForView: () => any[]
+  enableVirtualization?: boolean
 }
 
 export default function BookViews({
@@ -98,8 +100,37 @@ export default function BookViews({
   onCoverAnimationComplete,
   onPageChange,
   getTotalPages,
-  getPaginatedBooksForView
+  getPaginatedBooksForView,
+  enableVirtualization = false
 }: BookViewsProps) {
+  // Choose between regular and virtualized BookGrid based on book count and setting
+  const shouldUseVirtualization = enableVirtualization || paginatedBooks.length > 100
+  const GridComponent = shouldUseVirtualization ? VirtualizedBookGrid : BookGrid
+  
+  // Common props for both grid components
+  const gridProps = {
+    userRole,
+    userPermissions,
+    userGlobalPermissions,
+    userLocations,
+    shelves,
+    pendingRemovalRequests,
+    onCheckout,
+    onCheckin,
+    onDelete,
+    onRelocate,
+    onRequestRemoval,
+    onCancelRemovalRequest,
+    onMoreDetailsClick,
+    onAuthorClick,
+    onSeriesClick,
+    onRateBook,
+    onGenreEdit,
+    onCoverEdit,
+    animatingCovers,
+    onCoverAnimationComplete
+  }
+
   if (filteredBooks.length === 0) {
     return (
       <Typography 
@@ -304,28 +335,10 @@ export default function BookViews({
                   {/* Only show location header when viewing all locations (no location filter active) */}
                   {!locationFilter && renderLocationHeader(location)}
                   
-                  <BookGrid
+                  <GridComponent
                     books={location.books || []}
-                    userRole={userRole}
-                    userPermissions={userPermissions}
-                    userGlobalPermissions={userGlobalPermissions}
-                    userLocations={userLocations}
-                    shelves={shelves}
-                    pendingRemovalRequests={pendingRemovalRequests}
-                    onCheckout={onCheckout}
-                    onCheckin={onCheckin}
-                    onDelete={onDelete}
-                    onRelocate={onRelocate}
-                    onRequestRemoval={onRequestRemoval}
-                    onCancelRemovalRequest={onCancelRemovalRequest}
-                    onMoreDetailsClick={onMoreDetailsClick}
-                    onAuthorClick={onAuthorClick}
-                    onSeriesClick={onSeriesClick}
-                    onRateBook={onRateBook}
-                    onGenreEdit={onGenreEdit}
-                    onCoverEdit={onCoverEdit}
-                    animatingCovers={animatingCovers}
-                    onCoverAnimationComplete={onCoverAnimationComplete}
+                    {...gridProps}
+                    containerHeight={shouldUseVirtualization ? 600 : undefined}
                   />
                 </div>
               ))}
@@ -341,28 +354,10 @@ export default function BookViews({
             key={`card-${locationFilter}-${shelfFilter}-${categoryFilter.join(',')}-${checkoutFilter}-${authorFilter}-${searchTerm}-${currentPage}`}
           >
             <Box>
-              <BookGrid
+              <GridComponent
                 books={paginatedBooks}
-                userRole={userRole}
-                userPermissions={userPermissions}
-                userGlobalPermissions={userGlobalPermissions}
-                userLocations={userLocations}
-                shelves={shelves}
-                pendingRemovalRequests={pendingRemovalRequests}
-                onCheckout={onCheckout}
-                onCheckin={onCheckin}
-                onDelete={onDelete}
-                onRelocate={onRelocate}
-                onRequestRemoval={onRequestRemoval}
-                onCancelRemovalRequest={onCancelRemovalRequest}
-                onMoreDetailsClick={onMoreDetailsClick}
-                onAuthorClick={onAuthorClick}
-                onSeriesClick={onSeriesClick}
-                onRateBook={onRateBook}
-                onGenreEdit={onGenreEdit}
-                onCoverEdit={onCoverEdit}
-                animatingCovers={animatingCovers}
-                onCoverAnimationComplete={onCoverAnimationComplete}
+                {...gridProps}
+                containerHeight={shouldUseVirtualization ? 600 : undefined}
               />
             </Box>
           </Fade>
