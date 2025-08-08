@@ -140,7 +140,6 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
   const [selectedBookForRating, setSelectedBookForRating] = useState<EnhancedBook | null>(null)
   const [selectedBookForGenreEdit, setSelectedBookForGenreEdit] = useState<EnhancedBook | null>(null)
   const [selectedBookForCoverEdit, setSelectedBookForCoverEdit] = useState<EnhancedBook | null>(null)
-  const [genreUpdateSuccessful, setGenreUpdateSuccessful] = useState(false)
 
   // Modal handlers
   const handleMoreDetailsClick = (book: EnhancedBook) => {
@@ -212,19 +211,6 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
   // Genre edit handlers
   const handleGenreEditModalClose = () => {
     setSelectedBookForGenreEdit(null)
-    if (genreUpdateSuccessful) {
-      alert({
-        title: 'Genres Updated',
-        message: 'Book genres have been updated successfully.',
-        variant: 'success'
-      })
-      setGenreUpdateSuccessful(false)
-    }
-  }
-
-  const handleGenreUpdateWrapper = async (bookId: string, genres: any[]) => {
-    await handleGenreUpdate(bookId, genres)
-    setGenreUpdateSuccessful(true)
   }
 
   // Cover edit handlers
@@ -541,7 +527,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
             book={selectedBookForGenreEdit}
             isOpen={true}
             onClose={handleGenreEditModalClose}
-            onGenreUpdate={handleGenreUpdateWrapper}
+            onGenreUpdate={handleGenreUpdate}
           />
         )}
 
