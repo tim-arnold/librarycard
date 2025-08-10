@@ -1,0 +1,50 @@
+name: Apply Genre Management Migration to Staging
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "APPLY MIGRATION" to confirm'
+        required: true
+        default: ''
+
+jobs:
+  apply-migration:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.confirm == 'APPLY MIGRATION'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Apply Genre Management Migration to Staging
+      env:
+        CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_STAGING_NEW }}
+      run: |
+        echo "🚀 Applying genre management migration to staging database..."
+        npx wrangler d1 execute librarycard-db-staging-new \
+          --file=migrations/add_dynamic_genre_system.sql \
+          --config=wrangler.staging-new.toml \
+          --env=staging \
+          --remote
+        echo "✅ Migration applied successfully!"
+
+    - name: Verify Migration
+      env:
+        CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_STAGING_NEW }}
+      run: |
+        echo "🔍 Verifying migration by checking table structure..."
+        npx wrangler d1 execute librarycard-db-staging-new \
+          --command="SELECT sql FROM sqlite_master WHERE name='book_genres';" \
+          --config=wrangler.staging-new.toml \
+          --env=staging \
+          --remote
