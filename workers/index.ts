@@ -43,6 +43,10 @@ import {
   invalidateUserBookCache
 } from './books/cached';
 import {
+  CacheManager,
+  CacheInvalidator
+} from './cache/kv';
+import {
   getCachedBookEditions
 } from './books/google-cached';
 import {
@@ -141,6 +145,7 @@ export default {
     // Only log requests in local development
     if (env.ENVIRONMENT === 'local') {
       console.log('🚀 Worker request:', request.method, path);
+// Removed debugging logs
     }
 
 
@@ -1159,12 +1164,37 @@ export default {
 
 
       // Admin Genre Management endpoints
+      if (path === '/api/admin/genres' && request.method === 'GET') {
+        const genreService = new GenreService(env.DB);
+        try {
+          // Check if user is super admin
+          const user = await env.DB.prepare('SELECT user_role FROM users WHERE id = ?').bind(userId).first() as any;
+          if (!user || user.user_role !== 'super_admin') {
+            return new Response(JSON.stringify({ error: 'Super admin access required' }), {
+              status: 403,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          const genres = await genreService.getAllGenres();
+          return new Response(JSON.stringify(genres), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error: any) {
+          console.error('Error fetching all genres for admin:', error);
+          return new Response(JSON.stringify({ error: 'Failed to fetch genres' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
       if (path === '/api/admin/genres' && request.method === 'POST') {
         const genreService = new GenreService(env.DB);
         try {
           // Check if user is super admin
           const user = await env.DB.prepare('SELECT user_role FROM users WHERE id = ?').bind(userId).first() as any;
-          if (!user || user.user_role !== 'admin') {
+          if (!user || user.user_role !== 'super_admin') {
             return new Response(JSON.stringify({ error: 'Super admin access required' }), {
               status: 403,
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -1182,6 +1212,375 @@ export default {
           const status = error.message.includes('UNIQUE constraint') ? 409 : 500;
           return new Response(JSON.stringify({ error: error.message || 'Failed to create genre' }), {
             status,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      if (path.match(/^\/api\/admin\/genres\/\d+$/) && request.method === 'PUT') {
+        const genreService = new GenreService(env.DB);
+        try {
+          // Check if user is super admin
+          const user = await env.DB.prepare('SELECT user_role FROM users WHERE id = ?').bind(userId).first() as any;
+          if (!user || user.user_role !== 'super_admin') {
+            return new Response(JSON.stringify({ error: 'Super admin access required' }), {
+              status: 403,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          const genreId = parseInt(path.split('/')[4]);
+          const body = await request.json() as any;
+          const updatedGenre = await genreService.updateGenre(genreId, body, userId);
+          
+          if (!updatedGenre) {
+            return new Response(JSON.stringify({ error: 'Genre not found' }), {
+              status: 404,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          return new Response(JSON.stringify(updatedGenre), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error: any) {
+          console.error('Error updating genre:', error);
+          const status = error.message.includes('UNIQUE constraint') ? 409 : 500;
+          return new Response(JSON.stringify({ error: error.message || 'Failed to update genre' }), {
+            status,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      if (path === '/api/admin/genre-request' && request.method === 'POST') {
+        try {
+          const body = await request.json() as any;
+          const { genreName, description, reason, requesterName, requesterEmail } = body;
+
+          if (!genreName || !reason || !requesterEmail) {
+            return new Response(JSON.stringify({ error: 'Genre name, reason, and email are required' }), {
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          // Get requester's user info
+          const userStmt = env.DB.prepare('SELECT first_name, last_name FROM users WHERE id = ?');
+          const user = await userStmt.bind(userId).first() as any;
+          const displayName = requesterName || (user?.first_name && user?.last_name ? `${user.first_name} ${user.last_name}` : requesterEmail);
+
+          // Save genre request to database
+          const insertStmt = env.DB.prepare(`
+            INSERT INTO genre_requests (genre_name, description, reason, requested_by, requester_name, requester_email)
+            VALUES (?, ?, ?, ?, ?, ?)
+            RETURNING id
+          `);
+          
+          const result = await insertStmt.bind(
+            genreName,
+            description || null,
+            reason,
+            userId,
+            displayName,
+            requesterEmail
+          ).first() as any;
+
+          if (!result) {
+            throw new Error('Failed to save genre request');
+          }
+
+          // Send email to super admins
+          await sendContactEmail({
+            name: displayName,
+            email: requesterEmail,
+            subject: `Genre Request: ${genreName}`,
+            message: `A genre request has been submitted:
+
+Genre Name: ${genreName}${description ? `
+Description: ${description}` : ''}
+Requested by: ${displayName} (${requesterEmail})
+Reason: ${reason}
+
+To review this request, log in as a super administrator and go to Admin Dashboard > Notifications > Genre Requests.`
+          } as any, env, corsHeaders);
+
+          return new Response(JSON.stringify({ 
+            message: 'Genre request sent successfully',
+            requestId: result.id 
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error: any) {
+          console.error('Error sending genre request:', error);
+          return new Response(JSON.stringify({ error: 'Failed to send genre request' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      // Genre requests management endpoints (super admin only)
+      if (path === '/api/admin/genre-requests' && request.method === 'GET') {
+        try {
+          // Check if user is super admin
+          const user = await env.DB.prepare('SELECT user_role FROM users WHERE id = ?').bind(userId).first() as any;
+          if (!user || user.user_role !== 'super_admin') {
+            return new Response(JSON.stringify({ error: 'Super admin access required' }), {
+              status: 403,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          const stmt = env.DB.prepare(`
+            SELECT id, genre_name, description, reason, requested_by, requester_name, requester_email,
+                   status, created_at, reviewed_by, reviewed_at, notes
+            FROM genre_requests
+            ORDER BY 
+              CASE status WHEN 'pending' THEN 1 ELSE 2 END,
+              created_at DESC
+          `);
+          
+          const result = await stmt.all();
+          return new Response(JSON.stringify(result.results || []), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error: any) {
+          console.error('Error fetching genre requests:', error);
+          return new Response(JSON.stringify({ error: 'Failed to fetch genre requests' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      if (path.match(/^\/api\/admin\/genre-requests\/\d+\/approve$/) && request.method === 'POST') {
+        try {
+          // Check if user is super admin
+          const user = await env.DB.prepare('SELECT user_role FROM users WHERE id = ?').bind(userId).first() as any;
+          if (!user || user.user_role !== 'super_admin') {
+            return new Response(JSON.stringify({ error: 'Super admin access required' }), {
+              status: 403,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          const requestId = parseInt(path.split('/')[4]);
+          const body = await request.json() as any;
+          const { notes, createGenre } = body;
+
+          // Get the genre request
+          const requestStmt = env.DB.prepare('SELECT * FROM genre_requests WHERE id = ? AND status = ?');
+          const genreRequest = await requestStmt.bind(requestId, 'pending').first() as any;
+          
+          if (!genreRequest) {
+            return new Response(JSON.stringify({ error: 'Genre request not found or already processed' }), {
+              status: 404,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          // If createGenre is true, create the genre
+          let genreId = null;
+          if (createGenre) {
+            const genreService = new GenreService(env.DB);
+            const newGenre = await genreService.createGenre({
+              name: genreRequest.genre_name,
+              description: genreRequest.description
+            }, userId);
+            genreId = newGenre.id;
+          }
+
+          // Update request status
+          const updateStmt = env.DB.prepare(`
+            UPDATE genre_requests 
+            SET status = 'approved', reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP, notes = ?
+            WHERE id = ?
+          `);
+          
+          await updateStmt.bind(userId, notes || null, requestId).run();
+
+          return new Response(JSON.stringify({ 
+            message: 'Genre request approved successfully',
+            genreId 
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error: any) {
+          console.error('Error approving genre request:', error);
+          return new Response(JSON.stringify({ error: 'Failed to approve genre request' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      if (path.match(/^\/api\/admin\/genre-requests\/\d+\/reject$/) && request.method === 'POST') {
+        try {
+          // Check if user is super admin
+          const user = await env.DB.prepare('SELECT user_role FROM users WHERE id = ?').bind(userId).first() as any;
+          if (!user || user.user_role !== 'super_admin') {
+            return new Response(JSON.stringify({ error: 'Super admin access required' }), {
+              status: 403,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          const requestId = parseInt(path.split('/')[4]);
+          const body = await request.json() as any;
+          const { notes } = body;
+
+          // Update request status
+          const updateStmt = env.DB.prepare(`
+            UPDATE genre_requests 
+            SET status = 'rejected', reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP, notes = ?
+            WHERE id = ? AND status = 'pending'
+          `);
+          
+          const result = await updateStmt.bind(userId, notes || null, requestId).run();
+          
+          if (!result.changes) {
+            return new Response(JSON.stringify({ error: 'Genre request not found or already processed' }), {
+              status: 404,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          return new Response(JSON.stringify({ message: 'Genre request rejected successfully' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error: any) {
+          console.error('Error rejecting genre request:', error);
+          return new Response(JSON.stringify({ error: 'Failed to reject genre request' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      // Get genre deletion info (book count) for confirmation
+      if (path.match(/^\/api\/admin\/genres\/\d+\/delete-info$/) && request.method === 'GET') {
+        try {
+          // Check if user is super admin
+          const user = await env.DB.prepare('SELECT user_role FROM users WHERE id = ?').bind(userId).first() as any;
+          if (!user || user.user_role !== 'super_admin') {
+            return new Response(JSON.stringify({ error: 'Super admin access required' }), {
+              status: 403,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          const genreId = parseInt(path.split('/')[4]);
+          
+          // Check how many books have this genre
+          const bookCountStmt = env.DB.prepare(`
+            SELECT COUNT(*) as count 
+            FROM book_genres 
+            WHERE genre_id = ?
+          `);
+          const bookCount = await bookCountStmt.bind(genreId).first() as any;
+          const affectedBooks = bookCount?.count || 0;
+
+          // Get some example book titles
+          const examplesStmt = env.DB.prepare(`
+            SELECT b.title, b.authors
+            FROM books b
+            JOIN book_genres bg ON b.id = bg.book_id
+            WHERE bg.genre_id = ?
+            LIMIT 5
+          `);
+          const examples = await examplesStmt.bind(genreId).all();
+
+          return new Response(JSON.stringify({ 
+            affectedBooks,
+            examples: examples.results || []
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error: any) {
+          console.error('Error getting genre delete info:', error);
+          return new Response(JSON.stringify({ error: 'Failed to get genre info' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      if (path.match(/^\/api\/admin\/genres\/\d+$/) && request.method === 'DELETE') {
+        const genreService = new GenreService(env.DB);
+        try {
+          // Check if user is super admin
+          const user = await env.DB.prepare('SELECT user_role FROM users WHERE id = ?').bind(userId).first() as any;
+          if (!user || user.user_role !== 'super_admin') {
+            return new Response(JSON.stringify({ error: 'Super admin access required' }), {
+              status: 403,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          const genreId = parseInt(path.split('/')[4]);
+          
+          // Check how many books have this genre
+          const bookCountStmt = env.DB.prepare(`
+            SELECT COUNT(*) as count 
+            FROM book_genres 
+            WHERE genre_id = ?
+          `);
+          const bookCount = await bookCountStmt.bind(genreId).first() as any;
+          const affectedBooks = bookCount?.count || 0;
+
+          // Check if genre exists (don't filter by is_active since we want to delete it)
+          const genreExistsStmt = env.DB.prepare('SELECT id FROM curated_genres WHERE id = ?');
+          const genreExists = await genreExistsStmt.bind(genreId).first();
+          if (!genreExists) {
+            return new Response(JSON.stringify({ error: 'Genre not found' }), {
+              status: 404,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          // Delete all book-genre assignments for this genre
+          const deleteAssignmentsStmt = env.DB.prepare('DELETE FROM book_genres WHERE genre_id = ?');
+          await deleteAssignmentsStmt.bind(genreId).run();
+
+          // Delete the genre
+          const deleteGenreStmt = env.DB.prepare('DELETE FROM curated_genres WHERE id = ?');
+          const result = await deleteGenreStmt.bind(genreId).run();
+
+          const changes = result.meta?.changes || result.changes || 0;
+          if (!changes) {
+            return new Response(JSON.stringify({ error: 'Failed to delete genre' }), {
+              status: 500,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          // Invalidate caches since genre deletion affects both genres and books
+          try {
+            const cache = new CacheManager(env);
+            const invalidator = new CacheInvalidator(cache);
+            
+            // Invalidate genre caches
+            await invalidator.invalidateGenres();
+            
+            // Invalidate all user book caches since books will no longer show this genre
+            await cache.delPrefix('library:');
+          } catch (cacheError) {
+            console.warn('Cache invalidation failed after genre deletion:', cacheError);
+            // Don't fail the operation if cache invalidation fails
+          }
+
+          return new Response(JSON.stringify({ 
+            message: 'Genre deleted successfully',
+            affectedBooks 
+          }), {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error: any) {
+          console.error('Error deleting genre:', error);
+          return new Response(JSON.stringify({ error: 'Failed to delete genre' }), {
+            status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }

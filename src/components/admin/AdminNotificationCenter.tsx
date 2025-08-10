@@ -19,8 +19,10 @@ import {
   Schedule,
   Refresh,
   Event,
+  Category,
 } from '@mui/icons-material'
 import RemovalRequestManager from './RemovalRequestManager'
+import GenreRequestManager from './GenreRequestManager'
 import { getApiBaseUrl } from '@/lib/apiConfig'
 
 interface NotificationCounts {
@@ -28,6 +30,7 @@ interface NotificationCounts {
   overdueCheckouts: number
   monthlyReminders: number
   pendingInvitations: number
+  pendingGenreRequests: number
 }
 
 export default function AdminNotificationCenter() {
@@ -37,7 +40,8 @@ export default function AdminNotificationCenter() {
     pendingRemovalRequests: 0,
     overdueCheckouts: 0,
     monthlyReminders: 0,
-    pendingInvitations: 0
+    pendingInvitations: 0,
+    pendingGenreRequests: 0
   })
   const [dataLoaded, setDataLoaded] = useState(false)
 
@@ -65,6 +69,23 @@ export default function AdminNotificationCenter() {
         setCounts(prev => ({
           ...prev,
           pendingRemovalRequests: analyticsData.overview.pendingRequests || 0
+        }))
+      }
+
+      // Load genre requests count
+      const genreRequestsResponse = await fetch(`${getApiBaseUrl()}/api/admin/genre-requests`, {
+        headers: {
+          'Authorization': `Bearer ${session.user.email}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (genreRequestsResponse.ok) {
+        const genreRequests = await genreRequestsResponse.json()
+        const pendingCount = genreRequests.filter((req: any) => req.status === 'pending').length
+        setCounts(prev => ({
+          ...prev,
+          pendingGenreRequests: pendingCount
         }))
       }
 
@@ -117,6 +138,27 @@ export default function AdminNotificationCenter() {
             </Typography>
             <Typography variant="body2" color="text.secondary">
               Removal Requests
+            </Typography>
+          </CardContent>
+        </Card>
+
+        <Card sx={{ 
+          border: counts.pendingGenreRequests > 0 ? 2 : 1,
+          borderColor: counts.pendingGenreRequests > 0 ? 'info.main' : 'divider'
+        }}>
+          <CardContent sx={{ textAlign: 'center', py: 2 }}>
+            <Category 
+              sx={{ 
+                fontSize: 40, 
+                color: counts.pendingGenreRequests > 0 ? 'info.main' : 'text.secondary',
+                mb: 1 
+              }} 
+            />
+            <Typography variant="h4" color={counts.pendingGenreRequests > 0 ? 'info.main' : 'text.secondary'}>
+              {counts.pendingGenreRequests}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Genre Requests
             </Typography>
           </CardContent>
         </Card>
@@ -198,6 +240,13 @@ export default function AdminNotificationCenter() {
             />
             <Tab 
               label={
+                <Badge badgeContent={counts.pendingGenreRequests} color="info">
+                  Genre Requests
+                </Badge>
+              }
+            />
+            <Tab 
+              label={
                 <Badge badgeContent={counts.overdueCheckouts} color="error">
                   Overdue Checkouts
                 </Badge>
@@ -228,6 +277,12 @@ export default function AdminNotificationCenter() {
           )}
 
           {activeTab === 1 && (
+            <Box sx={{ p: 3 }}>
+              <GenreRequestManager />
+            </Box>
+          )}
+
+          {activeTab === 2 && (
             <Box sx={{ p: 3, textAlign: 'center' }}>
               <Schedule sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
               <Typography variant="h6" color="text.secondary" gutterBottom>
@@ -242,7 +297,7 @@ export default function AdminNotificationCenter() {
             </Box>
           )}
 
-          {activeTab === 2 && (
+          {activeTab === 3 && (
             <Box sx={{ p: 3, textAlign: 'center' }}>
               <Notifications sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
               <Typography variant="h6" color="text.secondary" gutterBottom>
@@ -257,7 +312,7 @@ export default function AdminNotificationCenter() {
             </Box>
           )}
 
-          {activeTab === 3 && (
+          {activeTab === 4 && (
             <Box sx={{ p: 3, textAlign: 'center' }}>
               <CheckCircle sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
               <Typography variant="h6" color="text.secondary" gutterBottom>
