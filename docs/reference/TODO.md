@@ -10,4 +10,4 @@ For historical context and completed task details, see [TODO-ARCHIVE.md](./TODO-
 
 ---
 
-**Last updated**: July 2025
+**Last updated**: August 2025
