@@ -1,0 +1,56 @@
+name: Check Production Database Schema
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "CHECK SCHEMA" to confirm read-only check'
+        required: true
+        default: ''
+
+jobs:
+  check-schema:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.confirm == 'CHECK SCHEMA'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Check if genre tables exist in production
+      env:
+        CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      run: |
+        echo "🔍 Checking if genre management tables exist in production..."
+        npx wrangler d1 execute librarycard-db \
+          --command="SELECT name FROM sqlite_master WHERE type='table' AND name IN ('curated_genres', 'book_genres', 'genre_suggestions') ORDER BY name;" \
+          --env=production \
+          --remote
+
+    - name: Check book_genres table structure (if it exists)
+      env:
+        CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      run: |
+        echo "🔍 Checking book_genres table structure..."
+        npx wrangler d1 execute librarycard-db \
+          --command="PRAGMA table_info(book_genres);" \
+          --env=production \
+          --remote || echo "❌ book_genres table does not exist"
+
+    - name: Summary
+      run: |
+        echo "📋 SCHEMA CHECK COMPLETED"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "This was a read-only check of the production database schema."
+        echo "Check the output above to see which genre tables exist."
+        echo "If book_genres is missing the 'assigned_by' column, the July migration needs to be applied."
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
