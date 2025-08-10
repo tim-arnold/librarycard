@@ -30,6 +30,18 @@ export class GenreService {
     return result.results as unknown as CuratedGenre[]
   }
 
+  async getAllGenres(): Promise<CuratedGenre[]> {
+    const stmt = this.db.prepare(`
+      SELECT id, name, description, created_by as createdBy, 
+             created_at as createdAt, updated_at as updatedAt, is_active as isActive
+      FROM curated_genres 
+      ORDER BY name
+    `)
+    
+    const result = await stmt.all()
+    return result.results as unknown as CuratedGenre[]
+  }
+
   async getGenreById(id: number): Promise<CuratedGenre | null> {
     const stmt = this.db.prepare(`
       SELECT id, name, description, created_by as createdBy, 

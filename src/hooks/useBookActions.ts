@@ -477,13 +477,17 @@ export function useBookActions({
 
     try {
       const headers = await getAuthHeaders(session.user.email)
+      const genreIds = genres.map(genre => genre.id)
+      
       const response = await fetch(`${getApiBaseUrl()}/api/books/${bookId}/genres`, {
         method: 'PUT',
         headers,
-        body: JSON.stringify({ genres }),
+        body: JSON.stringify({ genreIds }),
       })
 
       if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Genre update failed:', errorText)
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
 
