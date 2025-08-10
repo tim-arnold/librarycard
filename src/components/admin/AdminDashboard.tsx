@@ -24,6 +24,7 @@ import {
   Refresh,
   PersonAdd,
   BarChart,
+  Category,
 } from '@mui/icons-material'
 import { getApiBaseUrl } from '@/lib/apiConfig'
 
@@ -33,6 +34,7 @@ const AdminUserManager = lazy(() => import('./AdminUserManager'))
 const AdminNotificationCenter = lazy(() => import('./AdminNotificationCenter'))
 const AdminSignupManager = lazy(() => import('./AdminSignupManager'))
 const LocationManager = lazy(() => import('./LocationManager'))
+const GenreManager = lazy(() => import('./GenreManager'))
 
 // Loading component for lazy-loaded admin components
 const AdminComponentLoader = () => (
@@ -51,14 +53,15 @@ const AdminComponentLoader = () => (
   </Box>
 )
 
-const TAB_NAMES = ['overview', 'analytics', 'users', 'locations', 'signup-requests', 'notifications']
+const TAB_NAMES = ['overview', 'analytics', 'users', 'locations', 'genres', 'signup-requests', 'notifications']
 const TAB_INDEX_MAP: { [key: string]: number } = {
   'overview': 0,
   'analytics': 1,
   'users': 2,
   'locations': 3,
-  'signup-requests': 4,
-  'notifications': 5,
+  'genres': 4,
+  'signup-requests': 5,
+  'notifications': 6,
 }
 
 interface AdminOverview {
@@ -244,6 +247,11 @@ export default function AdminDashboard({ initialTab }: AdminDashboardProps = {})
             iconPosition="start"
           />
           <Tab 
+            icon={<Category />} 
+            label="Genre Management" 
+            iconPosition="start"
+          />
+          <Tab 
             icon={<PersonAdd />} 
             label="Signup Requests" 
             iconPosition="start"
@@ -282,6 +290,9 @@ export default function AdminDashboard({ initialTab }: AdminDashboardProps = {})
                     <strong>Locations:</strong> Manage physical locations, shelves, and invitations
                   </Typography>
                   <Typography component="li" variant="body2" paragraph>
+                    <strong>Genre Management:</strong> Create and manage global genres, review genre requests
+                  </Typography>
+                  <Typography component="li" variant="body2" paragraph>
                     <strong>Signup Requests:</strong> Review and approve or deny new user signup requests
                   </Typography>
                   <Typography component="li" variant="body2" paragraph>
@@ -311,11 +322,17 @@ export default function AdminDashboard({ initialTab }: AdminDashboardProps = {})
 
             {activeTab === 4 && (
               <Suspense fallback={<AdminComponentLoader />}>
-                <AdminSignupManager />
+                <GenreManager />
               </Suspense>
             )}
 
             {activeTab === 5 && (
+              <Suspense fallback={<AdminComponentLoader />}>
+                <AdminSignupManager />
+              </Suspense>
+            )}
+
+            {activeTab === 6 && (
               <Suspense fallback={<AdminComponentLoader />}>
                 <AdminNotificationCenter />
               </Suspense>
