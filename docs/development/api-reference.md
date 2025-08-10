@@ -559,6 +559,282 @@ interface Book {
 }
 ```
 
+## Genre Management Endpoints
+
+### GET /api/genres
+
+Get all active genres available for book assignment.
+
+#### Request
+```http
+GET /api/genres
+Authorization: Bearer user@example.com
+```
+
+#### Response
+```json
+[
+  {
+    "id": 1,
+    "name": "Science Fiction",
+    "description": "Speculative fiction with futuristic concepts",
+    "createdBy": "admin@example.com",
+    "createdAt": "2024-01-15T10:30:00Z",
+    "updatedAt": "2024-01-15T10:30:00Z",
+    "isActive": true
+  }
+]
+```
+
+### GET /api/admin/genres
+
+Get all genres (including inactive) for admin management.
+
+**Super Admin Only**: This endpoint requires super admin privileges.
+
+#### Request
+```http
+GET /api/admin/genres
+Authorization: Bearer admin@example.com
+```
+
+#### Response
+```json
+[
+  {
+    "id": 1,
+    "name": "Science Fiction",
+    "description": "Speculative fiction with futuristic concepts",
+    "createdBy": "admin@example.com",
+    "createdAt": "2024-01-15T10:30:00Z",
+    "updatedAt": "2024-01-15T10:30:00Z",
+    "isActive": true
+  }
+]
+```
+
+### POST /api/admin/genres
+
+Create a new curated genre.
+
+**Super Admin Only**: This endpoint requires super admin privileges.
+
+#### Request
+```http
+POST /api/admin/genres
+Authorization: Bearer admin@example.com
+Content-Type: application/json
+
+{
+  "name": "Cyberpunk",
+  "description": "High-tech, low-life science fiction subgenre"
+}
+```
+
+#### Response
+```json
+{
+  "id": 2,
+  "name": "Cyberpunk",
+  "description": "High-tech, low-life science fiction subgenre",
+  "createdBy": "admin@example.com",
+  "createdAt": "2024-01-15T11:00:00Z",
+  "updatedAt": "2024-01-15T11:00:00Z",
+  "isActive": true
+}
+```
+
+### PUT /api/admin/genres/:id
+
+Update an existing curated genre.
+
+**Super Admin Only**: This endpoint requires super admin privileges.
+
+#### Request
+```http
+PUT /api/admin/genres/2
+Authorization: Bearer admin@example.com
+Content-Type: application/json
+
+{
+  "name": "Cyberpunk Fiction",
+  "description": "High-tech, low-life science fiction subgenre featuring dystopian futures"
+}
+```
+
+#### Response
+```json
+{
+  "id": 2,
+  "name": "Cyberpunk Fiction",
+  "description": "High-tech, low-life science fiction subgenre featuring dystopian futures",
+  "createdBy": "admin@example.com",
+  "createdAt": "2024-01-15T11:00:00Z",
+  "updatedAt": "2024-01-15T11:15:00Z",
+  "isActive": true
+}
+```
+
+### GET /api/admin/genres/:id/delete-info
+
+Get information about the impact of deleting a genre (affected books count and examples).
+
+**Super Admin Only**: This endpoint requires super admin privileges.
+
+#### Request
+```http
+GET /api/admin/genres/2/delete-info
+Authorization: Bearer admin@example.com
+```
+
+#### Response
+```json
+{
+  "affectedBooks": 15,
+  "examples": [
+    {
+      "title": "Neuromancer",
+      "authors": "William Gibson"
+    },
+    {
+      "title": "Snow Crash", 
+      "authors": "Neal Stephenson"
+    }
+  ]
+}
+```
+
+### DELETE /api/admin/genres/:id
+
+Delete a curated genre and remove all book assignments.
+
+**Super Admin Only**: This endpoint requires super admin privileges.
+
+#### Request
+```http
+DELETE /api/admin/genres/2
+Authorization: Bearer admin@example.com
+```
+
+#### Response
+```json
+{
+  "message": "Genre deleted successfully",
+  "affectedBooks": 15
+}
+```
+
+### POST /api/admin/genre-request
+
+Request a new genre to be added to the curated list.
+
+**Admin Only**: Available to location admins and super admins.
+
+#### Request
+```http
+POST /api/admin/genre-request
+Authorization: Bearer locationadmin@example.com
+Content-Type: application/json
+
+{
+  "genreName": "Solarpunk",
+  "description": "Optimistic climate fiction",
+  "reason": "Growing collection of eco-positive science fiction",
+  "requesterName": "Library Manager",
+  "requesterEmail": "locationadmin@example.com"
+}
+```
+
+#### Response
+```json
+{
+  "message": "Genre request sent successfully",
+  "requestId": 123
+}
+```
+
+### GET /api/admin/genre-requests
+
+Get all genre requests for super admin review.
+
+**Super Admin Only**: This endpoint requires super admin privileges.
+
+#### Request
+```http
+GET /api/admin/genre-requests
+Authorization: Bearer admin@example.com
+```
+
+#### Response
+```json
+[
+  {
+    "id": 123,
+    "genre_name": "Solarpunk",
+    "description": "Optimistic climate fiction",
+    "reason": "Growing collection of eco-positive science fiction",
+    "requested_by": "locationadmin@example.com",
+    "requester_name": "Library Manager",
+    "requester_email": "locationadmin@example.com",
+    "status": "pending",
+    "created_at": "2024-01-15T12:00:00Z",
+    "reviewed_by": null,
+    "reviewed_at": null,
+    "notes": null
+  }
+]
+```
+
+### POST /api/admin/genre-requests/:id/approve
+
+Approve a genre request and optionally create the genre.
+
+**Super Admin Only**: This endpoint requires super admin privileges.
+
+#### Request
+```http
+POST /api/admin/genre-requests/123/approve
+Authorization: Bearer admin@example.com
+Content-Type: application/json
+
+{
+  "notes": "Great addition to our environmental fiction collection",
+  "createGenre": true
+}
+```
+
+#### Response
+```json
+{
+  "message": "Genre request approved successfully",
+  "genreId": 3
+}
+```
+
+### POST /api/admin/genre-requests/:id/reject
+
+Reject a genre request with optional notes.
+
+**Super Admin Only**: This endpoint requires super admin privileges.
+
+#### Request
+```http
+POST /api/admin/genre-requests/123/reject
+Authorization: Bearer admin@example.com
+Content-Type: application/json
+
+{
+  "notes": "Too specific - falls under existing Science Fiction category"
+}
+```
+
+#### Response
+```json
+{
+  "message": "Genre request rejected successfully"
+}
+```
+
 ## Error Responses
 
 ### General Error Format
