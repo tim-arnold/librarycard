@@ -8,6 +8,7 @@ const GRID_FIELDS = [
   'id',
   'title',
   'authors',
+  'isbn',  // Essential book identifier, needed for MoreDetailsModal
   'thumbnail',
   'status',
   'shelf_id',  // Essential for book grouping by location
@@ -24,18 +25,17 @@ const GRID_FIELDS = [
   'checked_out_by_name',
   'checked_out_date',
   'tags',
-  // Additional fields needed by BookGrid component
+  // Additional fields needed by BookGrid component and MoreDetailsModal
   'description',
   'extendedDescription',
   'subjects',
+  'categories',  // Google Books categories, needed for MoreDetailsModal
   'pageCount',
   'publisherInfo',
   'openLibraryKey'
 ] as const
 
 const DETAIL_ADDITIONAL_FIELDS = [
-  'isbn',
-  'categories',
   'googleAverageRating',
   'googleRatingCount',
   'alternative_covers',
