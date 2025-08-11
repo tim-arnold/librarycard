@@ -357,14 +357,16 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole }: Mo
           {/* Additional Book Information */}
           <Box sx={{ mt: 3 }}>
             {/* ISBN Number */}
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                ISBN
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {book.isbn}
-              </Typography>
-            </Box>
+            {book.isbn && (
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                  ISBN
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {book.isbn}
+                </Typography>
+              </Box>
+            )}
             
             {/* Book Details Grid */}
             <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 2, mb: 3 }}>
@@ -582,11 +584,11 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole }: Mo
             )}
 
             {/* Source Attribution */}
-            {book.sourceAttribution && (
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="h6" gutterBottom>
-                  Data Sources
-                </Typography>
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Data Sources
+              </Typography>
+              {book.sourceAttribution ? (
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                   <Chip 
                     label={`Title: ${book.sourceAttribution.title === 'google' ? 'Google Books' : book.sourceAttribution.title === 'openlibrary' ? 'Open Library' : 'Library of Congress'}`}
@@ -607,8 +609,72 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole }: Mo
                     color={book.sourceAttribution.authors === 'google' ? 'primary' : book.sourceAttribution.authors === 'openlibrary' ? 'secondary' : 'info'}
                   />
                 </Box>
-              </Box>
-            )}
+              ) : (
+                <Box>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    This book's data comes from external sources. Available source data includes:
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                    {/* Show Google Books if we have typical Google Books indicators */}
+                    {(book.thumbnail || book.pageCount || book.googleAverageRating || 
+                      (book.categories && book.categories.length > 0) || book.publisherInfo) && (
+                      <Chip 
+                        label="Google Books"
+                        size="small"
+                        variant="outlined"
+                        color="primary"
+                      />
+                    )}
+                    
+                    {/* Show OpenLibrary if we have typical OpenLibrary indicators */}
+                    {(book.openLibraryKey || (book.subjects && book.subjects.length > 0) || book.series) && (
+                      <Chip 
+                        label="OpenLibrary"
+                        size="small"
+                        variant="outlined"
+                        color="secondary"
+                      />
+                    )}
+                    
+                    {/* Show Library of Congress if we have LoC indicators */}
+                    {(book.lccn || book.locSubjects || book.classification || book.language || book.physicalDescription || book.notes) && (
+                      <Chip 
+                        label="Library of Congress"
+                        size="small"
+                        variant="outlined"
+                        color="info"
+                      />
+                    )}
+                    
+                    {/* Show more specific source indicators if available */}
+                    {book.categories && book.categories.length > 0 && (
+                      <Chip 
+                        label="Google Books Categories"
+                        size="small"
+                        variant="filled"
+                        color="primary"
+                      />
+                    )}
+                    {book.subjects && book.subjects.length > 0 && (
+                      <Chip 
+                        label="OpenLibrary Subjects"
+                        size="small"
+                        variant="filled"
+                        color="secondary"
+                      />
+                    )}
+                    {book.locSubjects && book.locSubjects.length > 0 && (
+                      <Chip 
+                        label="Library of Congress Subjects"
+                        size="small"
+                        variant="filled"
+                        color="info"
+                      />
+                    )}
+                  </Box>
+                </Box>
+              )}
+            </Box>
           </Box>
         </Box>
       </DialogContent>
