@@ -2,6 +2,31 @@
 
 This file documents all completed features, fixes, and improvements to the LibraryCard project.
 
+## August 11, 2025 - Book Reviews Modal State Fix - GitHub Issue #252
+
+### 🐛 Bug Fix: Reviews Cross-Contamination in More Details Modal
+**GitHub Issue #252** resolved - Fixed critical bug where reviews from all books in the library were appearing on every book's "More Details" modal.
+
+#### Problem
+- Reviews from all books in the library were showing up on every book's modal
+- Users saw incorrect reviews when viewing book details
+- State was not being cleared when switching between different books
+
+#### Solution
+- Added `useEffect` hook to clear modal state when book changes
+- Prevents cross-contamination of reviews, checkout history, and location data
+- Ensures each book only displays its own relevant information
+
+#### Technical Changes
+- **Component**: `src/components/modals/MoreDetailsModal.tsx`
+- **Fix**: Added state clearing logic that runs when `book?.id` changes
+- **Impact**: Reviews, checkout history, and location name now reset properly between book selections
+
+#### Testing
+- ✅ Build verification completed successfully
+- ✅ Linting passed with no new errors
+- ✅ Modal now shows correct reviews for each individual book
+
 ## August 10, 2025 - Genre Management System Complete - GitHub Issue #228
 
 ### 🎨 Complete Genre Management System Implementation
