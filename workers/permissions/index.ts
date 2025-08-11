@@ -515,12 +515,16 @@ export async function hasUserPermission(userId: string, locationId: number, perm
     }
 
     // Check if user is location admin (inherits all user permissions)
+    // Include both location owners and members with admin role
     const isLocationAdmin = await env.DB.prepare(`
-      SELECT 1 FROM location_members lm
+      SELECT 1 FROM (
+        SELECT user_id FROM location_members WHERE location_id = ? AND user_id = ?
+        UNION
+        SELECT owner_id as user_id FROM locations WHERE id = ? AND owner_id = ?
+      ) lm
       JOIN users u ON lm.user_id = u.id
-      WHERE lm.location_id = ? AND lm.user_id = ? 
-      AND (u.user_role = 'admin' OR u.user_role = 'super_admin')
-    `).bind(locationId, userId).first();
+      WHERE u.user_role IN ('admin', 'super_admin')
+    `).bind(locationId, userId, locationId, userId).first();
 
     if (isLocationAdmin) {
       return true;
@@ -637,12 +641,16 @@ export async function checkUserPermission(request: Request, userId: string, env:
         }
       } else {
         // Check if user is location admin (inherits all user permissions)
+        // Include both location owners and members with admin role
         const isLocationAdmin = await env.DB.prepare(`
-          SELECT 1 FROM location_members lm
+          SELECT 1 FROM (
+            SELECT user_id FROM location_members WHERE location_id = ? AND user_id = ?
+            UNION
+            SELECT owner_id as user_id FROM locations WHERE id = ? AND owner_id = ?
+          ) lm
           JOIN users u ON lm.user_id = u.id
-          WHERE lm.location_id = ? AND lm.user_id = ? 
-          AND (u.user_role = 'admin' OR u.user_role = 'super_admin')
-        `).bind(locationId, userId).first();
+          WHERE u.user_role IN ('admin', 'super_admin')
+        `).bind(locationId, userId, locationId, userId).first();
 
         if (isLocationAdmin) {
           hasPermission = true;
