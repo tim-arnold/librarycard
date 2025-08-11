@@ -233,7 +233,7 @@ export function useBookFilters({
       
       return (book: EnhancedBook) => {
         // Early return optimizations
-        if (book.isbn.includes(searchTerm)) return true
+        if (book.isbn && book.isbn.includes(searchTerm)) return true
         
         const titleLower = book.title.toLowerCase()
         if (titleLower.includes(searchLower)) return true
