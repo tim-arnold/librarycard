@@ -357,14 +357,16 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole }: Mo
           {/* Additional Book Information */}
           <Box sx={{ mt: 3 }}>
             {/* ISBN Number */}
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                ISBN
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {book.isbn}
-              </Typography>
-            </Box>
+            {book.isbn && (
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                  ISBN
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {book.isbn}
+                </Typography>
+              </Box>
+            )}
             
             {/* Book Details Grid */}
             <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 2, mb: 3 }}>
