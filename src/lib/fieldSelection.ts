@@ -15,6 +15,8 @@ const GRID_FIELDS = [
   'shelf_name',
   'location_name',
   'userRating',
+  'userReview',
+  'userReviewStatus',
   'averageRating',
   'ratingCount',
   'enhancedGenres',
@@ -45,7 +47,6 @@ const DETAIL_ADDITIONAL_FIELDS = [
 const FULL_ADDITIONAL_FIELDS = [
   'checked_out_by',
   'due_date',
-  'userReview',
   'ratingUpdatedAt',
   'lccn',
   'locSubjects',

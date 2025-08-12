@@ -34,6 +34,8 @@ import {
   deleteBookRemovalRequest,
   rateBook,
   getBookRating,
+  getPendingReviews,
+  moderateReview,
   emailOverdueUser,
   getBookEditions
 } from './books';
@@ -1125,6 +1127,16 @@ export default {
       if (path.match(/^\/api\/books\/\d+\/ratings$/) && request.method === 'GET') {
         const bookId = parseInt(path.split('/')[3]);
         return await getBookRating(bookId, userId, env, corsHeaders);
+      }
+
+      // Review moderation endpoints (GitHub Issue #256)
+      if (path === '/api/admin/reviews/pending' && request.method === 'GET') {
+        return await getPendingReviews(userId, env, corsHeaders);
+      }
+
+      if (path.match(/^\/api\/admin\/reviews\/\d+\/moderate$/) && request.method === 'POST') {
+        const reviewId = parseInt(path.split('/')[4]);
+        return await moderateReview(request, reviewId, userId, env, corsHeaders);
       }
 
       // Profile endpoints
