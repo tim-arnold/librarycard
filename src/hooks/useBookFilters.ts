@@ -75,11 +75,15 @@ export function useBookFilters({
 
   // Initialize filters from URL on mount
   useEffect(() => {
+    console.log('🔧 useBookFilters - received initialFilters:', initialFilters)
     if (initialFilters) {
       if (initialFilters.location) setLocationFilter(initialFilters.location)
       if (initialFilters.shelf) setShelfFilter(initialFilters.shelf)
       if (initialFilters.status) setCheckoutFilter(initialFilters.status)
-      if (initialFilters.searchTerm) setSearchTerm(initialFilters.searchTerm)
+      if (initialFilters.searchTerm) {
+        console.log('🔧 Setting searchTerm from URL:', JSON.stringify(initialFilters.searchTerm))
+        setSearchTerm(initialFilters.searchTerm)
+      }
       // Note: categoryFilter is not restored from URL to avoid race conditions
     }
   }, [initialFilters])
@@ -231,6 +235,53 @@ export function useBookFilters({
       if (!searchTerm) return () => true
       const searchLower = searchTerm.toLowerCase()
       
+      // Handle special "missing:" queries for data quality filtering
+      if (searchLower.startsWith('missing:')) {
+        const missingType = searchLower.replace('missing:', '').trim()
+        console.log('🔍 Missing type detected:', JSON.stringify(missingType))
+        
+        return (book: EnhancedBook) => {
+          switch (missingType) {
+            case 'genre':
+              // Check if book has no genres at all
+              const hasAssignedGenres = book.assignedGenres && book.assignedGenres.length > 0
+              const hasEnhancedGenres = book.enhancedGenres && book.enhancedGenres.length > 0
+              const hasCategories = book.categories && book.categories.length > 0
+              const isMissingGenre = !hasAssignedGenres && !hasEnhancedGenres && !hasCategories
+              
+              if (isMissingGenre) {
+                console.log('📚 Found missing genre book:', book.title, {
+                  assignedGenres: book.assignedGenres,
+                  enhancedGenres: book.enhancedGenres, 
+                  categories: book.categories
+                })
+              }
+              
+              return isMissingGenre
+            
+            case 'cover':
+              return !book.thumbnail || book.thumbnail.trim() === ''
+            
+            case 'location':
+              return !book.shelf_name || book.shelf_name.trim() === ''
+            
+            case 'isbn':
+              return !book.isbn || book.isbn.trim() === ''
+            
+            case 'author':
+              return !book.authors || book.authors.length === 0 || 
+                     book.authors.every(author => !author || author.trim() === '')
+            
+            case 'title':
+              return !book.title || book.title.trim() === ''
+            
+            default:
+              return false
+          }
+        }
+      }
+      
+      // Regular search functionality
       return (book: EnhancedBook) => {
         // Early return optimizations
         if (book.isbn && book.isbn.includes(searchTerm)) return true

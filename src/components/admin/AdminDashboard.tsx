@@ -16,14 +16,12 @@ import {
   Paper
 } from '@mui/material'
 import {
-  Dashboard,
   Analytics,
   People,
   Notifications,
   LocationOn,
   Refresh,
   PersonAdd,
-  BarChart,
   Category,
   RateReview,
 } from '@mui/icons-material'
@@ -55,16 +53,15 @@ const AdminComponentLoader = () => (
   </Box>
 )
 
-const TAB_NAMES = ['overview', 'analytics', 'users', 'locations', 'genres', 'reviews', 'signup-requests', 'notifications']
+const TAB_NAMES = ['analytics', 'users', 'locations', 'genres', 'reviews', 'signup-requests', 'notifications']
 const TAB_INDEX_MAP: { [key: string]: number } = {
-  'overview': 0,
-  'analytics': 1,
-  'users': 2,
-  'locations': 3,
-  'genres': 4,
-  'reviews': 5,
-  'signup-requests': 6,
-  'notifications': 7,
+  'analytics': 0,
+  'users': 1,
+  'locations': 2,
+  'genres': 3,
+  'reviews': 4,
+  'signup-requests': 5,
+  'notifications': 6,
 }
 
 interface AdminOverview {
@@ -95,7 +92,7 @@ export default function AdminDashboard({ initialTab }: AdminDashboardProps = {})
 
   useEffect(() => {
     // Only run on initial mount to set tab from URL/prop
-    let tabName = 'overview' // default
+    let tabName = 'analytics' // default
     
     if (initialTab) {
       tabName = initialTab
@@ -230,11 +227,6 @@ export default function AdminDashboard({ initialTab }: AdminDashboardProps = {})
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
         <Tabs value={activeTab} onChange={handleTabChange} variant="scrollable" scrollButtons="auto">
           <Tab 
-            icon={<Dashboard />} 
-            label="Overview" 
-            iconPosition="start"
-          />
-          <Tab 
             icon={<Analytics />} 
             label={`Analytics ${overview ? `(${overview.totalBooks} books)` : ''}`}
             iconPosition="start"
@@ -280,73 +272,42 @@ export default function AdminDashboard({ initialTab }: AdminDashboardProps = {})
         >
           <Box>
             {activeTab === 0 && (
-              <Box>
-                <Typography variant="h6" gutterBottom>
-                  <BarChart sx={{ mr: 1, verticalAlign: 'middle' }} /> Dashboard Overview
-                </Typography>
-                <Typography variant="body1" color="text.secondary" paragraph>
-                  Welcome to the LibraryCard admin dashboard. Use the tabs above to navigate between different administrative functions:
-                </Typography>
-                <Box component="ul" sx={{ pl: 2 }}>
-                  <Typography component="li" variant="body2" paragraph>
-                    <strong>Analytics:</strong> Detailed insights into library usage, popular genres, and user activity
-                  </Typography>
-                  <Typography component="li" variant="body2" paragraph>
-                    <strong>Users:</strong> Manage user accounts, roles, and permissions
-                  </Typography>
-                  <Typography component="li" variant="body2" paragraph>
-                    <strong>Locations:</strong> Manage physical locations, shelves, and invitations
-                  </Typography>
-                  <Typography component="li" variant="body2" paragraph>
-                    <strong>Genre Management:</strong> Create and manage global genres, review genre requests
-                  </Typography>
-                  <Typography component="li" variant="body2" paragraph>
-                    <strong>Signup Requests:</strong> Review and approve or deny new user signup requests
-                  </Typography>
-                  <Typography component="li" variant="body2" paragraph>
-                    <strong>Notifications:</strong> Review pending book removal requests and system notifications
-                  </Typography>
-                </Box>
-              </Box>
-            )}
-
-            {activeTab === 1 && (
               <Suspense fallback={<AdminComponentLoader />}>
                 <AdminAnalytics />
               </Suspense>
             )}
 
-            {activeTab === 2 && (
+            {activeTab === 1 && (
               <Suspense fallback={<AdminComponentLoader />}>
                 <AdminUserManager />
               </Suspense>
             )}
 
-            {activeTab === 3 && (
+            {activeTab === 2 && (
               <Suspense fallback={<AdminComponentLoader />}>
                 <LocationManager />
               </Suspense>
             )}
 
-            {activeTab === 4 && (
+            {activeTab === 3 && (
               <Suspense fallback={<AdminComponentLoader />}>
                 <GenreManager />
               </Suspense>
             )}
 
-            {activeTab === 5 && (
+            {activeTab === 4 && (
               <Suspense fallback={<AdminComponentLoader />}>
                 <ReviewModeration />
               </Suspense>
             )}
 
-            {activeTab === 6 && (
+            {activeTab === 5 && (
               <Suspense fallback={<AdminComponentLoader />}>
                 <AdminSignupManager />
               </Suspense>
             )}
 
-            {activeTab === 7 && (
+            {activeTab === 6 && (
               <Suspense fallback={<AdminComponentLoader />}>
                 <AdminNotificationCenter />
               </Suspense>

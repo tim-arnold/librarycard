@@ -35,6 +35,7 @@ import {
 import Footer from './Footer'
 import HelpModal from '@/components/modals/HelpModal'
 import { useTheme } from '@/lib/ThemeContext'
+import AccessibleIcon from '@/components/ui/AccessibleIcon'
 
 interface AppLayoutProps {
   children: React.ReactNode
@@ -260,13 +261,14 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
             Hello, {userFirstName || session?.user?.name?.split(' ')[0] || 'User'}!
           </Typography>
           
-          <IconButton
-            color="inherit"
+          <AccessibleIcon
+            icon={<AccountCircle />}
+            ariaLabel="Open user menu to access profile, settings, and account options"
+            tooltip="Profile & Settings"
             onClick={handleMenuOpen}
+            color="inherit"
             size="small"
-          >
-            <AccountCircle />
-          </IconButton>
+          />
           
           <Menu
             anchorEl={anchorEl}

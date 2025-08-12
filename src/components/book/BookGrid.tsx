@@ -24,6 +24,7 @@ interface BookCardProps {
   userPermissions: string[]
   userGlobalPermissions: string[]
   userLocations: Array<{ id: number; name: string }>
+  currentUserId: string | null
   shelves: Array<{ id: number; name: string; location_id: number; created_at: string }>
   pendingRemovalRequests: Record<string, number>
   onCheckout: (bookId: string, bookTitle: string) => Promise<void>
@@ -48,6 +49,7 @@ interface BookGridProps {
   userPermissions: string[]
   userGlobalPermissions: string[]
   userLocations: Array<{ id: number; name: string }>
+  currentUserId: string | null
   shelves: Array<{ id: number; name: string; location_id: number; created_at: string }>
   pendingRemovalRequests: Record<string, number>
   onCheckout: (bookId: string, bookTitle: string) => Promise<void>
@@ -73,6 +75,7 @@ const BookCard = React.memo<BookCardProps>(({
   userPermissions,
   userGlobalPermissions,
   userLocations,
+  currentUserId,
   shelves,
   pendingRemovalRequests,
   onCheckout,
@@ -163,7 +166,15 @@ const BookCard = React.memo<BookCardProps>(({
             )}
           </Box>
           <Box sx={{ flex: 1 }}>
-            <Typography variant="h6" gutterBottom>
+            <Typography 
+              variant="h6" 
+              component="h3"
+              gutterBottom
+              sx={{
+                fontWeight: 700,
+                fontSize: { xs: '1.1rem', sm: '1.25rem' }
+              }}
+            >
               {book.title}
             </Typography>
             <Typography variant="body2" color="text.secondary" gutterBottom>
@@ -185,7 +196,7 @@ const BookCard = React.memo<BookCardProps>(({
                 </span>
               ))}
               {book.publishedDate && (
-                <Typography component="span" color="text.secondary">
+                <Typography component="span" color="text.secondary" sx={{ fontStyle: 'italic' }}>
                   , {new Date(book.publishedDate).getFullYear()}
                 </Typography>
               )}
@@ -218,6 +229,8 @@ const BookCard = React.memo<BookCardProps>(({
                 variant="display"
                 showCount={true}
                 onClick={onRateBook ? handleRateBookClick : undefined}
+                userReview={book.userReview}
+                userReviewStatus={book.userReviewStatus}
               />
               
               {/* Rate this book button - only show when user hasn't rated yet */}
@@ -326,13 +339,17 @@ const BookCard = React.memo<BookCardProps>(({
         {book.status === 'checked_out' && (
           <Box sx={{ mt: 2, p: 1, border: 1, borderColor: 'warning.main', borderRadius: 1 }}>
             <Typography variant="body2" color="text.primary" sx={{ fontWeight: 500 }}>
-              <MenuBook sx={{ mr: 1, verticalAlign: 'middle', fontSize: 'inherit' }} /> Checked out
+              <MenuBook sx={{ mr: 1, verticalAlign: 'middle', fontSize: 'inherit' }} />
               {book.checked_out_date && (() => {
                 const checkoutDate = new Date(book.checked_out_date)
                 const today = new Date()
                 const diffTime = Math.abs(today.getTime() - checkoutDate.getTime())
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-                return ` since ${checkoutDate.toLocaleDateString()} (${diffDays} day${diffDays !== 1 ? 's' : ''})`
+                if (book.checked_out_by === currentUserId) {
+                  return `You checked this book out ${diffDays} day${diffDays !== 1 ? 's' : ''} ago`
+                } else {
+                  return `Checked out since ${checkoutDate.toLocaleDateString()} (${diffDays} day${diffDays !== 1 ? 's' : ''})`
+                }
               })()}
             </Typography>
           </Box>
@@ -371,6 +388,7 @@ const BookGrid = React.memo<BookGridProps>(({
   userPermissions,
   userGlobalPermissions,
   userLocations,
+  currentUserId,
   shelves,
   pendingRemovalRequests,
   onCheckout,
@@ -406,6 +424,7 @@ const BookGrid = React.memo<BookGridProps>(({
           userPermissions={userPermissions}
           userGlobalPermissions={userGlobalPermissions}
           userLocations={userLocations}
+          currentUserId={currentUserId}
           shelves={shelves}
           pendingRemovalRequests={pendingRemovalRequests}
           onCheckout={onCheckout}

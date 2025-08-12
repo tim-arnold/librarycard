@@ -16,6 +16,7 @@ interface VirtualizedBookGridProps {
   userPermissions: string[]
   userGlobalPermissions: string[]
   userLocations: Array<{ id: number; name: string }>
+  currentUserId: string | null
   shelves: Array<{ id: number; name: string; location_id: number; created_at: string }>
   pendingRemovalRequests: Record<string, number>
   onCheckout: (bookId: string, bookTitle: string) => Promise<void>
@@ -92,6 +93,7 @@ interface VirtualizedBookCardProps {
   userPermissions: string[]
   userGlobalPermissions: string[]
   userLocations: Array<{ id: number; name: string }>
+  currentUserId: string | null
   shelves: Array<{ id: number; name: string; location_id: number; created_at: string }>
   pendingRemovalRequests: Record<string, number>
   onCheckout: (bookId: string, bookTitle: string) => Promise<void>
@@ -116,6 +118,7 @@ const VirtualizedBookCard = React.memo<VirtualizedBookCardProps>(({
   userPermissions,
   userGlobalPermissions,
   userLocations,
+  currentUserId,
   shelves,
   pendingRemovalRequests,
   onCheckout,
@@ -206,10 +209,18 @@ const VirtualizedBookCard = React.memo<VirtualizedBookCardProps>(({
             )}
           </Box>
           <Box sx={{ flex: 1 }}>
-            <Typography variant="h6" gutterBottom>
+            <Typography 
+              variant="h6" 
+              component="h3"
+              gutterBottom
+              sx={{
+                fontWeight: 700,
+                fontSize: { xs: '1.1rem', sm: '1.25rem' }
+              }}
+            >
               {book.title}
             </Typography>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
+r            <Typography variant="body2" color="text.secondary" gutterBottom>
               {book.authors.map((author, index) => (
                 <span key={index}>
                   <Typography 
@@ -228,7 +239,7 @@ const VirtualizedBookCard = React.memo<VirtualizedBookCardProps>(({
                 </span>
               ))}
               {book.publishedDate && (
-                <Typography component="span" color="text.secondary">
+                <Typography component="span" color="text.secondary" sx={{ fontStyle: 'italic' }}>
                   , {new Date(book.publishedDate).getFullYear()}
                 </Typography>
               )}
@@ -261,6 +272,8 @@ const VirtualizedBookCard = React.memo<VirtualizedBookCardProps>(({
                 variant="display"
                 showCount={true}
                 onClick={onRateBook ? handleRateBookClick : undefined}
+                userReview={book.userReview}
+                userReviewStatus={book.userReviewStatus}
               />
               
               {!book.userRating && onRateBook && (
@@ -352,13 +365,17 @@ const VirtualizedBookCard = React.memo<VirtualizedBookCardProps>(({
         {book.status === 'checked_out' && (
           <Box sx={{ mt: 2, p: 1, border: 1, borderColor: 'warning.main', borderRadius: 1 }}>
             <Typography variant="body2" color="text.primary" sx={{ fontWeight: 500 }}>
-              <MenuBook sx={{ mr: 1, verticalAlign: 'middle', fontSize: 'inherit' }} /> Checked out
+              <MenuBook sx={{ mr: 1, verticalAlign: 'middle', fontSize: 'inherit' }} />
               {book.checked_out_date && (() => {
                 const checkoutDate = new Date(book.checked_out_date)
                 const today = new Date()
                 const diffTime = Math.abs(today.getTime() - checkoutDate.getTime())
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-                return ` since ${checkoutDate.toLocaleDateString()} (${diffDays} day${diffDays !== 1 ? 's' : ''})`
+                if (book.checked_out_by === currentUserId) {
+                  return `You checked this book out ${diffDays} day${diffDays !== 1 ? 's' : ''} ago`
+                } else {
+                  return `Checked out since ${checkoutDate.toLocaleDateString()} (${diffDays} day${diffDays !== 1 ? 's' : ''})`
+                }
               })()}
             </Typography>
           </Box>
