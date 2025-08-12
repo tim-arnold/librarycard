@@ -1,6 +1,6 @@
 'use client'
 
-import { Box, Button } from '@mui/material'
+import { Box, Button, Tooltip } from '@mui/material'
 import {
   Delete,
   ReportProblem,
@@ -77,104 +77,122 @@ export default function BookActions({
       <Box sx={{ display: 'flex', gap: { xs: 1, sm: 0.5 } }}>
         {/* Always show available action buttons */}
         {canDelete && (
-          <Button
-            size="small"
-            variant="outlined"
-            color="error"
-            onClick={() => onDelete(book.id, book.title)}
-            sx={{ 
-              minWidth: 'auto',
-              p: { xs: 1, sm: 0.5 },
-              minHeight: { xs: 40, sm: 32 },
-              width: { xs: 40, sm: 32 }
-            }}
-          >
-            <Delete sx={{ fontSize: { xs: '1.25rem', sm: '1rem' } }} />
-          </Button>
+          <Tooltip title="Delete book" arrow>
+            <Button
+              size="small"
+              variant="outlined"
+              color="error"
+              onClick={() => onDelete(book.id, book.title)}
+              aria-label="Delete book from library"
+              sx={{ 
+                minWidth: 'auto',
+                p: { xs: 1, sm: 0.5 },
+                minHeight: { xs: 40, sm: 32 },
+                width: { xs: 40, sm: 32 }
+              }}
+            >
+              <Delete sx={{ fontSize: { xs: '1.25rem', sm: '1rem' } }} />
+            </Button>
+          </Tooltip>
         )}
         
         {canRelocate && (
-          <Button
-            size="small"
-            variant="outlined"
-            onClick={() => onRelocate(book)}
-            sx={{ 
-              minWidth: 'auto',
-              p: { xs: 1, sm: 0.5 },
-              minHeight: { xs: 40, sm: 32 },
-              width: { xs: 40, sm: 32 }
-            }}
-          >
-            <SwapHoriz sx={{ fontSize: { xs: '1.25rem', sm: '1rem' } }} />
-          </Button>
+          <Tooltip title="Move book to different shelf" arrow>
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={() => onRelocate(book)}
+              aria-label="Move book to a different shelf or location"
+              sx={{ 
+                minWidth: 'auto',
+                p: { xs: 1, sm: 0.5 },
+                minHeight: { xs: 40, sm: 32 },
+                width: { xs: 40, sm: 32 }
+              }}
+            >
+              <SwapHoriz sx={{ fontSize: { xs: '1.25rem', sm: '1rem' } }} />
+            </Button>
+          </Tooltip>
         )}
         
         {/* Show checkout/checkin buttons for all users */}
         {!isCheckedOut ? (
-          <Button
-            size="small"
-            variant="contained"
-            color="primary"
-            onClick={() => onCheckout(book.id, book.title)}
-            sx={{ 
-              minWidth: 'auto',
-              p: { xs: 1, sm: 0.5 },
-              minHeight: { xs: 40, sm: 32 },
-              width: { xs: 40, sm: 32 }
-            }}
-          >
-            <CheckCircle sx={{ fontSize: { xs: '1.25rem', sm: '1rem' } }} />
-          </Button>
+          <Tooltip title="Check out book" arrow>
+            <Button
+              size="small"
+              variant="contained"
+              color="primary"
+              onClick={() => onCheckout(book.id, book.title)}
+              aria-label="Check out book"
+              sx={{ 
+                minWidth: 'auto',
+                p: { xs: 1, sm: 0.5 },
+                minHeight: { xs: 40, sm: 32 },
+                width: { xs: 40, sm: 32 }
+              }}
+            >
+              <CheckCircle sx={{ fontSize: { xs: '1.25rem', sm: '1rem' } }} />
+            </Button>
+          </Tooltip>
         ) : canReturn ? (
-          <Button
-            size="small"
-            variant="contained"
-            color="secondary"
-            onClick={() => onCheckin(book.id, book.title)}
-            sx={{ 
-              minWidth: 'auto',
-              p: { xs: 1, sm: 0.5 },
-              minHeight: { xs: 40, sm: 32 },
-              width: { xs: 40, sm: 32 }
-            }}
-          >
-            <Undo sx={{ fontSize: { xs: '1.25rem', sm: '1rem' } }} />
-          </Button>
+          <Tooltip title="Return book" arrow>
+            <Button
+              size="small"
+              variant="contained"
+              color="secondary"
+              onClick={() => onCheckin(book.id, book.title)}
+              aria-label="Return checked out book"
+              sx={{ 
+                minWidth: 'auto',
+                p: { xs: 1, sm: 0.5 },
+                minHeight: { xs: 40, sm: 32 },
+                width: { xs: 40, sm: 32 }
+              }}
+            >
+              <Undo sx={{ fontSize: { xs: '1.25rem', sm: '1rem' } }} />
+            </Button>
+          </Tooltip>
         ) : null}
         
         {/* Show removal request buttons for users without delete permission */}
         {!canDelete && (
           <>
             {!hasPendingRemovalRequest ? (
-              <Button
-                size="small"
-                variant="outlined"
-                color="warning"
-                onClick={() => onRequestRemoval(book.id, book.title)}
-                sx={{ 
-                  minWidth: 'auto',
-                  p: { xs: 1, sm: 0.5 },
-                  minHeight: { xs: 40, sm: 32 },
-                  width: { xs: 40, sm: 32 }
-                }}
-              >
-                <ReportProblem sx={{ fontSize: { xs: '1.25rem', sm: '1rem' } }} />
-              </Button>
+              <Tooltip title="Notify librarian about book issue" arrow>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="warning"
+                  onClick={() => onRequestRemoval(book.id, book.title)}
+                  aria-label="Notify librarian about book issue or request removal"
+                  sx={{ 
+                    minWidth: 'auto',
+                    p: { xs: 1, sm: 0.5 },
+                    minHeight: { xs: 40, sm: 32 },
+                    width: { xs: 40, sm: 32 }
+                  }}
+                >
+                  <ReportProblem sx={{ fontSize: { xs: '1.25rem', sm: '1rem' } }} />
+                </Button>
+              </Tooltip>
             ) : (
-              <Button
-                size="small"
-                variant="outlined"
-                color="info"
-                onClick={() => onCancelRemovalRequest(book.id, book.title)}
-                sx={{ 
-                  minWidth: 'auto',
-                  p: { xs: 1, sm: 0.5 },
-                  minHeight: { xs: 40, sm: 32 },
-                  width: { xs: 40, sm: 32 }
-                }}
-              >
-                <Cancel sx={{ fontSize: { xs: '1.25rem', sm: '1rem' } }} />
-              </Button>
+              <Tooltip title="Cancel removal request" arrow>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="info"
+                  onClick={() => onCancelRemovalRequest(book.id, book.title)}
+                  aria-label="Cancel pending book removal request"
+                  sx={{ 
+                    minWidth: 'auto',
+                    p: { xs: 1, sm: 0.5 },
+                    minHeight: { xs: 40, sm: 32 },
+                    width: { xs: 40, sm: 32 }
+                  }}
+                >
+                  <Cancel sx={{ fontSize: { xs: '1.25rem', sm: '1rem' } }} />
+                </Button>
+              </Tooltip>
             )}
           </>
         )}
@@ -239,23 +257,29 @@ export default function BookActions({
           {!canDelete && (
             <>
               {!hasPendingRemovalRequest ? (
-                <Button
-                  size="small"
-                  variant="outlined"
-                  color="warning"
-                  onClick={() => onRequestRemoval(book.id, book.title)}
-                >
-                  <ReportProblem />
-                </Button>
+                <Tooltip title="Notify librarian about book issue" arrow>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="warning"
+                    onClick={() => onRequestRemoval(book.id, book.title)}
+                    aria-label="Notify librarian about book issue or request removal"
+                  >
+                    <ReportProblem />
+                  </Button>
+                </Tooltip>
               ) : (
-                <Button
-                  size="small"
-                  variant="outlined"
-                  color="info"
-                  onClick={() => onCancelRemovalRequest(book.id, book.title)}
-                >
-                  <Cancel />
-                </Button>
+                <Tooltip title="Cancel removal request" arrow>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="info"
+                    onClick={() => onCancelRemovalRequest(book.id, book.title)}
+                    aria-label="Cancel pending book removal request"
+                  >
+                    <Cancel />
+                  </Button>
+                </Tooltip>
               )}
             </>
           )}
@@ -320,23 +344,29 @@ export default function BookActions({
       {!canDelete && (
         <Box sx={{ ml: 1 }}>
           {!hasPendingRemovalRequest ? (
-            <Button
-              size="small"
-              variant="outlined"
-              color="warning"
-              onClick={() => onRequestRemoval(book.id, book.title)}
-            >
-              <ReportProblem />
-            </Button>
+            <Tooltip title="Notify librarian about book issue" arrow>
+              <Button
+                size="small"
+                variant="outlined"
+                color="warning"
+                onClick={() => onRequestRemoval(book.id, book.title)}
+                aria-label="Notify librarian about book issue or request removal"
+              >
+                <ReportProblem />
+              </Button>
+            </Tooltip>
           ) : (
-            <Button
-              size="small"
-              variant="outlined"
-              color="info"
-              onClick={() => onCancelRemovalRequest(book.id, book.title)}
-            >
-              <Cancel />
-            </Button>
+            <Tooltip title="Cancel removal request" arrow>
+              <Button
+                size="small"
+                variant="outlined"
+                color="info"
+                onClick={() => onCancelRemovalRequest(book.id, book.title)}
+                aria-label="Cancel pending book removal request"
+              >
+                <Cancel />
+              </Button>
+            </Tooltip>
           )}
         </Box>
       )}

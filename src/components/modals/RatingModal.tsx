@@ -16,6 +16,7 @@ import {
 import { Close, Star } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
 import StarRatingInput from '../book/StarRatingInput'
+import AccessibleIcon from '../ui/AccessibleIcon'
 
 interface RatingModalProps {
   book: EnhancedBook
@@ -92,13 +93,14 @@ export default function RatingModal({
             Rate This Book
           </Typography>
         </Box>
-        <Button
+        <AccessibleIcon
+          icon={<Close />}
+          ariaLabel="Close rating dialog"
+          tooltip="Close"
           onClick={handleClose}
-          sx={{ minWidth: 'auto', p: 0.5 }}
           disabled={isSubmitting}
-        >
-          <Close />
-        </Button>
+          sx={{ minWidth: 'auto', p: 0.5 }}
+        />
       </DialogTitle>
 
       <DialogContent sx={{ pb: 1 }}>

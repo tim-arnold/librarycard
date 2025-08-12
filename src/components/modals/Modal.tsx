@@ -9,6 +9,7 @@ import {
   Typography,
 } from '@mui/material'
 import { Close } from '@mui/icons-material'
+import AccessibleIcon from '../ui/AccessibleIcon'
 
 interface ModalProps {
   isOpen: boolean
@@ -51,15 +52,15 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
         <Typography variant="h6" component="div">
           {title}
         </Typography>
-        <IconButton
-          aria-label="close"
+        <AccessibleIcon
+          icon={<Close />}
+          ariaLabel="Close dialog"
+          tooltip="Close"
           onClick={onClose}
           sx={{
             color: (theme) => theme.palette.grey[500],
           }}
-        >
-          <Close />
-        </IconButton>
+        />
       </DialogTitle>
       <DialogContent sx={{ pt: 1 }}>
         {children}
