@@ -143,7 +143,9 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
 
   // Modal handlers
   const handleMoreDetailsClick = (book: EnhancedBook) => {
-    setSelectedBookForDetails(book)
+    // Find the current book data from the books array to ensure we have the latest data
+    const currentBook = books.find(b => b.id === book.id) || book
+    setSelectedBookForDetails(currentBook)
   }
 
   const handleRelocateClick = (book: EnhancedBook) => {
@@ -151,7 +153,9 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
   }
 
   const handleRateBook = (book: EnhancedBook) => {
-    setSelectedBookForRating(book)
+    // Find the current book data from the books array to ensure we have the latest data
+    const currentBook = books.find(b => b.id === book.id) || book
+    setSelectedBookForRating(currentBook)
   }
 
   const handleGenreEdit = (book: EnhancedBook) => {
@@ -519,6 +523,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
             onRatingSubmit={handleRatingModalSubmit}
             currentRating={selectedBookForRating.userRating}
             currentReview={selectedBookForRating.userReview}
+            currentReviewStatus={selectedBookForRating.userReviewStatus}
           />
         )}
 

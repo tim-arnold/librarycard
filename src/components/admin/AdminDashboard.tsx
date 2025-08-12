@@ -25,6 +25,7 @@ import {
   PersonAdd,
   BarChart,
   Category,
+  RateReview,
 } from '@mui/icons-material'
 import { getApiBaseUrl } from '@/lib/apiConfig'
 
@@ -35,6 +36,7 @@ const AdminNotificationCenter = lazy(() => import('./AdminNotificationCenter'))
 const AdminSignupManager = lazy(() => import('./AdminSignupManager'))
 const LocationManager = lazy(() => import('./LocationManager'))
 const GenreManager = lazy(() => import('./GenreManager'))
+const ReviewModeration = lazy(() => import('../../app/admin/reviews/page'))
 
 // Loading component for lazy-loaded admin components
 const AdminComponentLoader = () => (
@@ -53,15 +55,16 @@ const AdminComponentLoader = () => (
   </Box>
 )
 
-const TAB_NAMES = ['overview', 'analytics', 'users', 'locations', 'genres', 'signup-requests', 'notifications']
+const TAB_NAMES = ['overview', 'analytics', 'users', 'locations', 'genres', 'reviews', 'signup-requests', 'notifications']
 const TAB_INDEX_MAP: { [key: string]: number } = {
   'overview': 0,
   'analytics': 1,
   'users': 2,
   'locations': 3,
   'genres': 4,
-  'signup-requests': 5,
-  'notifications': 6,
+  'reviews': 5,
+  'signup-requests': 6,
+  'notifications': 7,
 }
 
 interface AdminOverview {
@@ -252,6 +255,11 @@ export default function AdminDashboard({ initialTab }: AdminDashboardProps = {})
             iconPosition="start"
           />
           <Tab 
+            icon={<RateReview />} 
+            label="Review Moderation" 
+            iconPosition="start"
+          />
+          <Tab 
             icon={<PersonAdd />} 
             label="Signup Requests" 
             iconPosition="start"
@@ -328,11 +336,17 @@ export default function AdminDashboard({ initialTab }: AdminDashboardProps = {})
 
             {activeTab === 5 && (
               <Suspense fallback={<AdminComponentLoader />}>
-                <AdminSignupManager />
+                <ReviewModeration />
               </Suspense>
             )}
 
             {activeTab === 6 && (
+              <Suspense fallback={<AdminComponentLoader />}>
+                <AdminSignupManager />
+              </Suspense>
+            )}
+
+            {activeTab === 7 && (
               <Suspense fallback={<AdminComponentLoader />}>
                 <AdminNotificationCenter />
               </Suspense>
