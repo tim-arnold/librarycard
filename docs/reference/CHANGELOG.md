@@ -2,6 +2,22 @@
 
 This file documents all completed features, fixes, and improvements to the LibraryCard project.
 
+## August 12, 2025 - Analytics Bug Fix & Visual Enhancement Completion
+
+### 🐛 Critical Bug Fix: Admin Analytics Missing Genre Count Discrepancy
+**Fixed:** Super admin analytics showing incorrect missing genre count (4 instead of 2), while location admin showed correct count.
+
+#### Root Cause & Solution
+- **Issue**: SQL subquery in analytics function used ambiguous table reference `WHERE bg.book_id = id` instead of explicit `WHERE bg.book_id = books.id`
+- **Impact**: Super admin analytics displayed inflated missing genre counts due to incorrect SQL joins
+- **Fix**: Updated analytics query to use explicit table references ensuring accurate data quality metrics
+- **Verification**: Direct database query confirms corrected count, both admin types now show consistent results
+
+#### Technical Details
+- **File**: `workers/admin-extended/index.ts` - corrected missing genre count query
+- **Testing**: Verified analytics accuracy through cache clearing and fresh database queries
+- **Scope**: Super admin analytics only (location admin query was already correct)
+
 ## August 12, 2025 - Visual Enhancement & Accessibility Improvements - GitHub Issue #252
 
 ### 🎨 Major Feature: Complete Visual Enhancement & Accessibility Overhaul
