@@ -8,6 +8,7 @@ import {
   Chip,
   IconButton,
   Grow,
+  Tooltip,
 } from '@mui/material'
 import { Info, Star, Edit } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
@@ -92,11 +93,13 @@ export default function BookText({
             {/* Title and Author */}
             <Box sx={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
               <Typography 
-                variant="body2" 
+                variant="body1" 
+                component="span"
                 sx={{ 
-                  fontWeight: 600,
+                  fontWeight: 700,
                   display: 'inline',
-                  mr: 1
+                  mr: 1,
+                  fontSize: { xs: '1rem', sm: '1.1rem' }
                 }}
                 noWrap
               >
@@ -106,8 +109,7 @@ export default function BookText({
                 variant="body2" 
                 color="text.secondary"
                 sx={{ 
-                  display: 'inline',
-                  fontStyle: 'italic'
+                  display: 'inline'
                 }}
               >
                 {book.authors.map((author, index) => (
@@ -128,7 +130,11 @@ export default function BookText({
                     {index < book.authors.length - 1 && ', '}
                   </span>
                 ))}
-                {book.publishedDate && `, ${new Date(book.publishedDate).getFullYear()}`}
+                {book.publishedDate && (
+                  <Typography component="span" sx={{ fontStyle: 'italic' }}>
+                    , {new Date(book.publishedDate).getFullYear()}
+                  </Typography>
+                )}
               </Typography>
             </Box>
 
@@ -142,6 +148,8 @@ export default function BookText({
                 size="small"
                 variant="chip"
                 onClick={onRateBook ? () => onRateBook(book) : undefined}
+                userReview={book.userReview}
+                userReviewStatus={book.userReviewStatus}
               />
               
               {/* Rate this book button - ultra compact */}
@@ -165,7 +173,7 @@ export default function BookText({
               {/* Checkout status */}
               {book.status === 'checked_out' && (
                 <Chip 
-                  label={book.checked_out_by === currentUserId ? 'Checked out by you' : `Checked out by ${book.checked_out_by_name || 'Unknown'}`}
+                  label={book.checked_out_by === currentUserId ? 'Checked out by you' : 'Checked out'}
                   size="small"
                   color="warning"
                   sx={{ fontSize: '0.7rem', height: 20 }}
@@ -224,34 +232,38 @@ export default function BookText({
 
               {/* More Details button */}
               {(book.extendedDescription || book.subjects || book.pageCount || book.averageRating || book.publisherInfo || book.openLibraryKey) && (
-                <IconButton
-                  size="small"
-                  onClick={() => onMoreDetailsClick(book)}
-                  sx={{ 
-                    p: 0.5,
-                    color: 'primary.main',
-                    '&:hover': {
-                      backgroundColor: 'primary.50'
-                    }
-                  }}
-                  title="More Details"
-                >
-                  <Info sx={{ fontSize: '1rem' }} />
-                </IconButton>
+                <Tooltip title="View additional book details" arrow>
+                  <IconButton
+                    size="small"
+                    onClick={() => onMoreDetailsClick(book)}
+                    aria-label="View additional book details and information"
+                    sx={{ 
+                      p: 0.5,
+                      color: 'primary.main',
+                      '&:hover': {
+                        backgroundColor: 'primary.50'
+                      }
+                    }}
+                  >
+                    <Info sx={{ fontSize: '1rem' }} />
+                  </IconButton>
+                </Tooltip>
               )}
               
               {/* Edit Genres button */}
               {onGenreEdit && (
-                <IconButton
-                  size="small"
-                  onClick={() => onGenreEdit(book)}
-                  sx={{ 
-                    p: 0.5
-                  }}
-                  title="Edit Genres"
-                >
-                  <Edit sx={{ fontSize: '1rem' }} />
-                </IconButton>
+                <Tooltip title="Edit book genres" arrow>
+                  <IconButton
+                    size="small"
+                    onClick={() => onGenreEdit(book)}
+                    aria-label="Edit and manage genres for this book"
+                    sx={{ 
+                      p: 0.5
+                    }}
+                  >
+                    <Edit sx={{ fontSize: '1rem' }} />
+                  </IconButton>
+                </Tooltip>
               )}
 
             </Box>

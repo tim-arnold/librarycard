@@ -61,5 +61,5 @@ export default function AdminPage() {
     return null
   }
 
-  return <AdminDashboard initialTab="overview" />
+  return <AdminDashboard initialTab="analytics" />
 }
