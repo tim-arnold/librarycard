@@ -113,6 +113,7 @@ export default function BookViews({
     userPermissions,
     userGlobalPermissions,
     userLocations,
+    currentUserId,
     shelves,
     pendingRemovalRequests,
     onCheckout,
