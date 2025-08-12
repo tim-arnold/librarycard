@@ -25,6 +25,7 @@ export async function getUserBooks(userId: string, env: Env, corsHeaders: Record
         l.name as location_name,
         br.rating as user_rating, 
         br.review_text as user_review,
+        br.review_status as user_review_status,
         COALESCE((
           SELECT json_group_array(json_object('id', cg.id, 'name', cg.name, 'description', cg.description))
           FROM book_genres bg 
@@ -58,6 +59,7 @@ export async function getUserBooks(userId: string, env: Env, corsHeaders: Record
         l.name as location_name,
         br.rating as user_rating, 
         br.review_text as user_review,
+        br.review_status as user_review_status,
         COALESCE((
           SELECT json_group_array(json_object('id', cg.id, 'name', cg.name, 'description', cg.description))
           FROM book_genres bg 
@@ -102,6 +104,7 @@ export async function getUserBooks(userId: string, env: Env, corsHeaders: Record
     ratingUpdatedAt: book.rating_updated_at,
     userRating: book.user_rating,
     userReview: book.user_review,
+    userReviewStatus: book.user_review_status,
     publisherInfo: book.publisher_info,
     openLibraryKey: book.open_library_key,
     seriesNumber: book.series_number,
@@ -1022,15 +1025,32 @@ export async function rateBook(request: Request, bookId: number, userId: string,
       `);
       await deleteRatingStmt.bind(bookId, userId).run();
     } else {
+      // Determine review status based on user permissions and content
+      const isAdmin = await isUserAdmin(userId, env);
+      const hasReviewText = reviewText && reviewText.trim().length > 0;
+      
+      // Star ratings are always approved, written reviews need moderation (unless admin)
+      const reviewStatus = hasReviewText && !isAdmin ? 'pending' : 'approved';
+      
       // Insert or update rating in book_ratings table
       const upsertRatingStmt = env.DB.prepare(`
-        INSERT OR REPLACE INTO book_ratings (book_id, user_id, rating, review_text, created_at, updated_at)
-        VALUES (?, ?, ?, ?, 
+        INSERT OR REPLACE INTO book_ratings (
+          book_id, user_id, rating, review_text, review_status, 
+          reviewed_by, reviewed_at, created_at, updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, 
           COALESCE((SELECT created_at FROM book_ratings WHERE book_id = ? AND user_id = ?), datetime('now')),
           datetime('now')
         )
       `);
-      await upsertRatingStmt.bind(bookId, userId, rating, reviewText || null, bookId, userId).run();
+      
+      const reviewedBy = reviewStatus === 'approved' && isAdmin ? userId : null;
+      const reviewedAt = reviewStatus === 'approved' ? new Date().toISOString() : null;
+      
+      await upsertRatingStmt.bind(
+        bookId, userId, rating, reviewText || null, reviewStatus,
+        reviewedBy, reviewedAt, bookId, userId
+      ).run();
     }
 
     // Calculate new average rating for this book within the location
@@ -1060,11 +1080,24 @@ export async function rateBook(request: Request, bookId: number, userId: string,
 
     await updateBookStmt.bind(ratingCount, bookId).run();
 
+    // Get the user's review status for the response (only if not deleting)
+    let userReviewStatus = null;
+    if (rating !== 0) {
+      const userReviewStmt = env.DB.prepare(`
+        SELECT review_status
+        FROM book_ratings
+        WHERE book_id = ? AND user_id = ?
+      `);
+      const userReview = await userReviewStmt.bind(bookId, userId).first();
+      userReviewStatus = (userReview as any)?.review_status || null;
+    }
+
     return new Response(JSON.stringify({ 
       message: rating === 0 ? 'Rating deleted successfully' : 'Book rated successfully',
       book_id: bookId,
       book_title: (bookAccess as any).title,
       user_rating: rating === 0 ? null : rating,
+      userReviewStatus: userReviewStatus,
       average_rating: averageRating,
       rating_count: ratingCount
     }), {
@@ -1093,7 +1126,8 @@ export async function getBookRating(bookId: number, userId: string, env: Env, co
       ratingStmt = env.DB.prepare(`
         SELECT 
           b.id, b.title, b.user_rating, b.average_rating, b.rating_count, s.location_id,
-          br.rating as current_user_rating, br.review_text as current_user_review
+          br.rating as current_user_rating, br.review_text as current_user_review,
+          br.review_status as current_user_review_status
         FROM books b
         LEFT JOIN shelves s ON b.shelf_id = s.id
         LEFT JOIN book_ratings br ON b.id = br.book_id AND br.user_id = ?
@@ -1105,7 +1139,8 @@ export async function getBookRating(bookId: number, userId: string, env: Env, co
       ratingStmt = env.DB.prepare(`
         SELECT 
           b.id, b.title, b.user_rating, b.average_rating, b.rating_count, s.location_id,
-          br.rating as current_user_rating, br.review_text as current_user_review
+          br.rating as current_user_rating, br.review_text as current_user_review,
+          br.review_status as current_user_review_status
         FROM books b
         LEFT JOIN shelves s ON b.shelf_id = s.id
         LEFT JOIN locations l ON s.location_id = l.id
@@ -1131,7 +1166,7 @@ export async function getBookRating(bookId: number, userId: string, env: Env, co
     let allReviewsStmt;
     
     if (isAdmin) {
-      // Admins can see all reviews for any book
+      // Admins can see all approved reviews for any book
       allReviewsStmt = env.DB.prepare(`
         SELECT 
           br.rating, br.review_text, br.created_at, br.updated_at,
@@ -1140,10 +1175,11 @@ export async function getBookRating(bookId: number, userId: string, env: Env, co
         INNER JOIN users u ON br.user_id = u.id
         WHERE br.book_id = ? 
           AND br.review_text IS NOT NULL AND br.review_text != ''
+          AND br.review_status = 'approved'
         ORDER BY br.created_at DESC
       `);
     } else {
-      // Regular users see reviews from users with location access
+      // Regular users see approved reviews from users with location access
       allReviewsStmt = env.DB.prepare(`
         SELECT 
           br.rating, br.review_text, br.created_at, br.updated_at,
@@ -1157,6 +1193,7 @@ export async function getBookRating(bookId: number, userId: string, env: Env, co
         WHERE br.book_id = ? 
           AND (b.added_by = br.user_id OR l.owner_id = br.user_id OR lm.user_id = br.user_id)
           AND br.review_text IS NOT NULL AND br.review_text != ''
+          AND br.review_status = 'approved'
         ORDER BY br.created_at DESC
       `);
     }
@@ -1167,6 +1204,7 @@ export async function getBookRating(bookId: number, userId: string, env: Env, co
       book_id: bookId,
       user_rating: bookRating.current_user_rating || null,
       user_review: bookRating.current_user_review || null,
+      user_review_status: bookRating.current_user_review_status || null,
       average_rating: bookRating.average_rating || null,
       rating_count: bookRating.rating_count || 0,
       location_id: bookRating.location_id,
@@ -1445,6 +1483,164 @@ This is an automated reminder from LibraryCard.
   } catch (error) {
     console.error('Error sending overdue email:', error);
     return new Response(JSON.stringify({ error: 'Failed to send overdue email' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+// Review Moderation System (GitHub Issue #256)
+
+export async function getPendingReviews(userId: string, env: Env, corsHeaders: Record<string, string>) {
+  try {
+    // Check if user is admin
+    const isAdmin = await isUserAdmin(userId, env);
+    if (!isAdmin) {
+      return new Response(JSON.stringify({ error: 'Admin access required' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Get all pending reviews with book details
+    const pendingReviewsStmt = env.DB.prepare(`
+      SELECT 
+        br.id, br.book_id, br.user_id, br.rating, br.review_text,
+        br.created_at, br.updated_at, br.review_status,
+        b.title as book_title, b.thumbnail as book_thumbnail, b.authors as book_authors,
+        u.first_name as user_name, u.email as user_email
+      FROM book_ratings br
+      INNER JOIN books b ON br.book_id = b.id
+      INNER JOIN users u ON br.user_id = u.id
+      WHERE br.review_status = 'pending'
+        AND br.review_text IS NOT NULL 
+        AND br.review_text != ''
+      ORDER BY br.created_at ASC
+    `);
+
+    const result = await pendingReviewsStmt.all();
+    
+    const pendingReviews = result.results.map((review: any) => ({
+      id: review.id,
+      bookId: review.book_id,
+      userId: review.user_id,
+      rating: review.rating,
+      reviewText: review.review_text,
+      userName: review.user_name,
+      userEmail: review.user_email,
+      createdAt: review.created_at,
+      updatedAt: review.updated_at,
+      reviewStatus: review.review_status,
+      bookTitle: review.book_title,
+      bookThumbnail: review.book_thumbnail,
+      bookAuthors: JSON.parse(review.book_authors || '[]')
+    }));
+
+    return new Response(JSON.stringify({
+      pendingReviews,
+      count: pendingReviews.length
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (error) {
+    console.error('Error fetching pending reviews:', error);
+    return new Response(JSON.stringify({ error: 'Failed to fetch pending reviews' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+export async function moderateReview(request: Request, reviewId: number, userId: string, env: Env, corsHeaders: Record<string, string>) {
+  try {
+    // Check if user is admin
+    const isAdmin = await isUserAdmin(userId, env);
+    if (!isAdmin) {
+      return new Response(JSON.stringify({ error: 'Admin access required' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { action, rejectionReason }: { action: 'approve' | 'reject' | 'delete', rejectionReason?: string } = await request.json();
+
+    if (!['approve', 'reject', 'delete'].includes(action)) {
+      return new Response(JSON.stringify({ error: 'Invalid action. Must be approve, reject, or delete' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Get the review first to verify it exists and is pending
+    const reviewStmt = env.DB.prepare(`
+      SELECT br.*, b.title as book_title 
+      FROM book_ratings br
+      INNER JOIN books b ON br.book_id = b.id
+      WHERE br.id = ?
+    `);
+    
+    const review = await reviewStmt.bind(reviewId).first() as any;
+    
+    if (!review) {
+      return new Response(JSON.stringify({ error: 'Review not found' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    let result;
+    let message;
+
+    if (action === 'delete') {
+      // Delete the review entirely
+      const deleteStmt = env.DB.prepare(`DELETE FROM book_ratings WHERE id = ?`);
+      result = await deleteStmt.bind(reviewId).run();
+      message = 'Review deleted successfully';
+    } else {
+      // Approve or reject the review
+      const newStatus = action === 'approve' ? 'approved' : 'rejected';
+      const updateStmt = env.DB.prepare(`
+        UPDATE book_ratings 
+        SET review_status = ?, reviewed_by = ?, reviewed_at = datetime('now'),
+            review_rejection_reason = ?
+        WHERE id = ?
+      `);
+      
+      result = await updateStmt.bind(
+        newStatus, 
+        userId, 
+        action === 'reject' ? (rejectionReason || 'No reason provided') : null,
+        reviewId
+      ).run();
+      
+      message = `Review ${action}d successfully`;
+    }
+
+    if (result.changes === 0) {
+      return new Response(JSON.stringify({ error: 'No changes made to review' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Invalidate book cache to ensure UI gets updated data
+    const { invalidateBookCache } = await import('./cached');
+    await invalidateBookCache(review.book_id.toString(), review.user_id, env);
+
+    return new Response(JSON.stringify({
+      success: true,
+      message,
+      reviewId,
+      action,
+      bookTitle: review.book_title
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (error) {
+    console.error('Error moderating review:', error);
+    return new Response(JSON.stringify({ error: 'Failed to moderate review' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
