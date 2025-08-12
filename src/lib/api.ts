@@ -216,3 +216,36 @@ export async function getUserLocationName(): Promise<string | null> {
     return null
   }
 }
+
+// Review Moderation API Functions (GitHub Issue #256)
+
+export async function getPendingReviews() {
+  const { getApiBaseUrl } = await import('@/lib/apiConfig')
+  const response = await fetch(`${getApiBaseUrl()}/api/admin/reviews/pending`, {
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  })
+  if (!response.ok) {
+    throw new Error('Failed to fetch pending reviews')
+  }
+  return response.json()
+}
+
+export async function moderateReview(reviewId: number, action: 'approve' | 'reject' | 'delete', rejectionReason?: string) {
+  const { getApiBaseUrl } = await import('@/lib/apiConfig')
+  const response = await fetch(`${getApiBaseUrl()}/api/admin/reviews/${reviewId}/moderate`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      action,
+      rejectionReason
+    })
+  })
+  if (!response.ok) {
+    throw new Error(`Failed to ${action} review`)
+  }
+  return response.json()
+}

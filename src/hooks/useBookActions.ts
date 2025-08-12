@@ -460,6 +460,7 @@ export function useBookActions({
               ...book, 
               userRating: rating === 0 ? null : rating,
               userReview: rating === 0 ? null : (reviewText || null),
+              userReviewStatus: rating === 0 ? null : result.userReviewStatus,
               averageRating: result.averageRating,
               ratingCount: result.ratingCount
             }
