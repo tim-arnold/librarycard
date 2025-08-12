@@ -1,6 +1,6 @@
 'use client'
 
-import { Box, Typography, Chip } from '@mui/material'
+import { Box, Typography, Chip, Tooltip } from '@mui/material'
 import { Star, StarBorder, StarHalf } from '@mui/icons-material'
 
 interface StarRatingProps {
@@ -13,6 +13,8 @@ interface StarRatingProps {
   variant?: 'display' | 'chip' | 'mini'  // Different display modes for space efficiency
   onClick?: () => void            // Click handler for rating interaction
   className?: string
+  userReview?: string | null      // Current user's review text
+  userReviewStatus?: 'pending' | 'approved' | 'rejected' | null  // Current user's review status
 }
 
 export default function StarRating({
@@ -24,7 +26,9 @@ export default function StarRating({
   showAverage = false,
   variant = 'display',
   onClick,
-  className
+  className,
+  userReview,
+  userReviewStatus
 }: StarRatingProps) {
   // Only show rating if there's an actual rating - no empty stars
   const hasAnyRating = (userRating && userRating > 0) || (averageRating && averageRating > 0)
@@ -36,6 +40,22 @@ export default function StarRating({
   // Determine which rating to display based on availability
   const displayRating = userRating ?? averageRating ?? 0
   const hasUserRating = userRating !== null && userRating !== undefined && userRating > 0
+  const hasUserReview = userReview && userReview.trim().length > 0
+  
+  // Generate contextual tooltip text
+  const getTooltipText = () => {
+    if (!onClick) return undefined
+    
+    if (hasUserRating && hasUserReview) {
+      return 'Click to change your rating or review'
+    } else if (hasUserRating && !hasUserReview) {
+      return 'Click to change your rating or add a review'
+    } else {
+      return 'Click to rate and review this book'
+    }
+  }
+  
+  const tooltipText = getTooltipText()
   
   // Size configurations for different variants
   const sizeConfig = {
@@ -74,7 +94,7 @@ export default function StarRating({
   if (variant === 'chip') {
     if (!displayRating) return null
     
-    return (
+    const chipComponent = (
       <Chip
         icon={<Star sx={{ fontSize: `${config.starSize - 2}px !important` }} aria-label={`${displayRating.toFixed(1)} out of 5 stars`} />}
         label={`${displayRating.toFixed(1)}${showCount && ratingCount > 0 ? ` (${ratingCount})` : ''}`}
@@ -93,13 +113,23 @@ export default function StarRating({
         className={className}
       />
     )
+    
+    if (tooltipText && onClick) {
+      return (
+        <Tooltip title={tooltipText} arrow>
+          {chipComponent}
+        </Tooltip>
+      )
+    }
+    
+    return chipComponent
   }
 
   // Mini variant - single star + rating for ultra-compact spaces
   if (variant === 'mini') {
     if (!displayRating) return null
     
-    return (
+    const miniComponent = (
       <Box 
         sx={{ 
           display: 'flex', 
@@ -132,12 +162,22 @@ export default function StarRating({
         )}
       </Box>
     )
+    
+    if (tooltipText && onClick) {
+      return (
+        <Tooltip title={tooltipText} arrow>
+          {miniComponent}
+        </Tooltip>
+      )
+    }
+    
+    return miniComponent
   }
 
   // Default display variant - shows all 5 stars
   if (!displayRating && !showAverage) return null
 
-  return (
+  const displayComponent = (
     <Box
       sx={{
         display: 'flex',
@@ -192,4 +232,14 @@ export default function StarRating({
       </Box>
     </Box>
   )
+  
+  if (tooltipText && onClick) {
+    return (
+      <Tooltip title={tooltipText} arrow>
+        {displayComponent}
+      </Tooltip>
+    )
+  }
+  
+  return displayComponent
 }

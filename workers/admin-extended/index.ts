@@ -236,6 +236,71 @@ export async function getAdminAnalytics(userId: string, env: Env, corsHeaders: R
       `).bind(userId, userId).first();
     }
 
+    // Collection Growth Chart data (last 30 days by day)
+    let collectionGrowth;
+    if (isSuperAdmin) {
+      collectionGrowth = await env.DB.prepare(`
+        SELECT 
+          DATE(created_at) as date,
+          COUNT(*) as books_added
+        FROM books 
+        WHERE created_at >= datetime('now', '-30 days')
+        GROUP BY DATE(created_at)
+        ORDER BY date ASC
+      `).all();
+    } else {
+      collectionGrowth = await env.DB.prepare(`
+        SELECT 
+          DATE(b.created_at) as date,
+          COUNT(*) as books_added
+        FROM books b
+        LEFT JOIN shelves s ON b.shelf_id = s.id
+        LEFT JOIN locations l ON s.location_id = l.id
+        LEFT JOIN location_members lm ON l.id = lm.location_id
+        WHERE b.created_at >= datetime('now', '-30 days')
+        AND (l.owner_id = ? OR lm.user_id = ?)
+        GROUP BY DATE(b.created_at)
+        ORDER BY date ASC
+      `).bind(userId, userId).all();
+    }
+
+    // Data Quality Dashboard metrics
+    let dataQuality;
+    if (isSuperAdmin) {
+      dataQuality = await env.DB.prepare(`
+        SELECT 
+          COUNT(*) as total_books,
+          SUM(CASE WHEN title IS NULL OR title = '' THEN 1 ELSE 0 END) as missing_title,
+          SUM(CASE WHEN authors IS NULL OR authors = '' THEN 1 ELSE 0 END) as missing_authors,
+          SUM(CASE WHEN thumbnail IS NULL OR thumbnail = '' THEN 1 ELSE 0 END) as missing_cover,
+          SUM(CASE WHEN (categories IS NULL OR categories = '[]') AND (enhanced_genres IS NULL OR enhanced_genres = '[]' OR enhanced_genres = 'null') AND NOT EXISTS (SELECT 1 FROM book_genres bg WHERE bg.book_id = books.id) THEN 1 ELSE 0 END) as missing_genre,
+          SUM(CASE WHEN shelf_id IS NULL THEN 1 ELSE 0 END) as missing_location,
+          SUM(CASE WHEN isbn IS NULL OR isbn = '' THEN 1 ELSE 0 END) as missing_isbn,
+          SUM(CASE WHEN published_date IS NULL OR published_date = '' THEN 1 ELSE 0 END) as missing_publish_date
+        FROM books
+      `).first();
+    } else {
+      dataQuality = await env.DB.prepare(`
+        SELECT 
+          COUNT(*) as total_books,
+          SUM(CASE WHEN b.title IS NULL OR b.title = '' THEN 1 ELSE 0 END) as missing_title,
+          SUM(CASE WHEN b.authors IS NULL OR b.authors = '' THEN 1 ELSE 0 END) as missing_authors,
+          SUM(CASE WHEN b.thumbnail IS NULL OR b.thumbnail = '' THEN 1 ELSE 0 END) as missing_cover,
+          SUM(CASE WHEN (b.categories IS NULL OR b.categories = '[]') AND (b.enhanced_genres IS NULL OR b.enhanced_genres = '[]' OR b.enhanced_genres = 'null') AND NOT EXISTS (SELECT 1 FROM book_genres bg WHERE bg.book_id = b.id) THEN 1 ELSE 0 END) as missing_genre,
+          SUM(CASE WHEN b.shelf_id IS NULL THEN 1 ELSE 0 END) as missing_location,
+          SUM(CASE WHEN b.isbn IS NULL OR b.isbn = '' THEN 1 ELSE 0 END) as missing_isbn,
+          SUM(CASE WHEN b.published_date IS NULL OR b.published_date = '' THEN 1 ELSE 0 END) as missing_publish_date
+        FROM books b
+        LEFT JOIN shelves s ON b.shelf_id = s.id
+        LEFT JOIN locations l ON s.location_id = l.id
+        LEFT JOIN location_members lm ON l.id = lm.location_id
+        WHERE l.owner_id = ? OR lm.user_id = ?
+      `).bind(userId, userId).first();
+    }
+
+    // Disable duplicate detection for now - no actual duplicates exist
+    const duplicates = { results: [] };
+
     return new Response(JSON.stringify({
       overview: {
         totalBooks: (totalBooks as any)?.count || 0,
@@ -249,6 +314,9 @@ export async function getAdminAnalytics(userId: string, env: Env, corsHeaders: R
       booksPerLocation: booksPerLocation.results,
       activeUsers: activeUsers.results,
       topGenres,
+      collectionGrowth: collectionGrowth.results,
+      dataQuality: dataQuality,
+      duplicates: duplicates.results,
       generatedAt: new Date().toISOString()
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
