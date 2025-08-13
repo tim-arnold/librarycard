@@ -315,7 +315,9 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
         <Box sx={{ 
           borderRadius: 0, 
           backgroundColor: (theme) => theme.palette.background.default,
-          boxShadow: 'none' 
+          boxShadow: 'none',
+          paddingLeft: 2, // Match Paper component padding (24px)
+          paddingRight: 2,
         }}>
           <Tabs 
             value={currentPage} 
