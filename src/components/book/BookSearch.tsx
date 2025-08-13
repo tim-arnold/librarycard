@@ -513,7 +513,13 @@ export default function BookSearch({
             variant="contained"
             startIcon={isSearching ? <CircularProgress size={16} color="inherit" /> : <Search />}
             disabled={isSearching || !searchQuery.trim() || disabled}
-            sx={{ minWidth: 120 }}
+            sx={{ 
+              minWidth: 120,
+              color: (theme) => theme.palette.mode === 'dark' ? '#000000' : '#ffffff',
+              '&.Mui-disabled': {
+                color: (theme) => theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.7)',
+              }
+            }}
           >
             {isSearching ? 'Searching...' : 'Search'}
           </Button>
