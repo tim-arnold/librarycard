@@ -786,3 +786,558 @@ export async function sendContactEmail(request: Request, env: Env, corsHeaders: 
     });
   }
 }
+
+export async function sendLocationAccessNotification(
+  env: Env, 
+  recipientEmail: string, 
+  recipientName: string,
+  locationName: string, 
+  granted: boolean,
+  grantedBy: string
+) {
+  const action = granted ? 'granted' : 'revoked';
+  const subject = `LibraryCard: Location access ${action} for ${locationName}`;
+  
+  const htmlBody = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>LibraryCard Location Access Update</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f4f4f4;">
+      <div style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        <div style="background: linear-gradient(135deg, #673ab7 0%, #9c27b0 100%); color: white; padding: 30px; text-align: center;">
+          <h1 style="margin: 0; font-size: 28px; font-weight: 300;">📚 LibraryCard</h1>
+          <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">Location Access ${granted ? 'Granted' : 'Revoked'}</p>
+        </div>
+        <div style="padding: 40px 30px;">
+          <h2 style="color: #673ab7; margin-top: 0; font-size: 24px;">${granted ? '🎉' : '⚠️'} Access Update</h2>
+          <p style="font-size: 16px; margin-bottom: 20px;">Hello ${recipientName},</p>
+          <p style="font-size: 16px; margin-bottom: 20px;">
+            Your access to the <strong>${locationName}</strong> library has been ${action} by ${grantedBy}.
+          </p>
+          <div style="background-color: ${granted ? '#e8f5e8' : '#ffeaea'}; border-left: 4px solid ${granted ? '#4caf50' : '#f44336'}; padding: 20px; margin: 25px 0; border-radius: 5px;">
+            <p style="margin: 0; font-size: 16px;"><strong>📍 Location:</strong> ${locationName}</p>
+            <p style="margin: 10px 0 0 0; font-size: 16px;"><strong>👤 ${granted ? 'Granted' : 'Revoked'} by:</strong> ${grantedBy}</p>
+            <p style="margin: 10px 0 0 0; font-size: 14px; color: #666;"><strong>🕒 ${granted ? 'Granted' : 'Revoked'} at:</strong> ${new Date().toLocaleString()}</p>
+          </div>
+          ${granted 
+            ? `<p style="font-size: 16px; margin-bottom: 25px;">You can now access this library and its collection through LibraryCard.</p>`
+            : `<p style="font-size: 16px; margin-bottom: 25px;">You no longer have access to this library. Any books you may have checked out should be returned.</p>`
+          }
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${env.APP_URL}" 
+               style="display: inline-block; background-color: #673ab7; color: white; padding: 15px 30px; 
+                      text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px;">
+              View LibraryCard
+            </a>
+          </div>
+        </div>
+        <div style="background-color: #f8f9fa; padding: 20px 30px; border-top: 1px solid #dee2e6;">
+          <p style="margin: 0; font-size: 12px; color: #6c757d; text-align: center;">
+            This is an automated message from LibraryCard.
+          </p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const textBody = `
+LibraryCard Location Access ${granted ? 'Granted' : 'Revoked'}
+
+Hello ${recipientName},
+
+Your access to the ${locationName} library has been ${action} by ${grantedBy}.
+
+Location: ${locationName}
+${granted ? 'Granted' : 'Revoked'} by: ${grantedBy}
+${granted ? 'Granted' : 'Revoked'} at: ${new Date().toLocaleString()}
+
+${granted 
+  ? 'You can now access this library and its collection through LibraryCard.'
+  : 'You no longer have access to this library. Any books you may have checked out should be returned.'
+}
+
+Visit: ${env.APP_URL}
+
+This is an automated message from LibraryCard.
+  `;
+
+  return await sendEmailWithFallback(env, recipientEmail, subject, htmlBody, textBody);
+}
+
+export async function sendPermissionChangeNotification(
+  env: Env,
+  recipientEmail: string,
+  recipientName: string,
+  locationName: string,
+  permission: string,
+  granted: boolean,
+  changedBy: string
+) {
+  const action = granted ? 'granted' : 'revoked';
+  const subject = `LibraryCard: Permission ${action} in ${locationName}`;
+  
+  const permissionNames: Record<string, string> = {
+    'can_add_books': 'Add Books',
+    'can_delete_books': 'Delete Books',
+    'can_move_books': 'Move Books',
+    'can_create_shelves': 'Create Shelves',
+    'can_edit_genres': 'Edit Genres',
+    'can_control_user_capabilities': 'Control User Permissions',
+    'can_invite_users': 'Invite Users',
+    'can_manage_shelves': 'Manage Shelves',
+    'can_manage_location_settings': 'Manage Location Settings'
+  };
+
+  const permissionDisplay = permissionNames[permission] || permission;
+
+  const htmlBody = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>LibraryCard Permission Update</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f4f4f4;">
+      <div style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        <div style="background: linear-gradient(135deg, #673ab7 0%, #9c27b0 100%); color: white; padding: 30px; text-align: center;">
+          <h1 style="margin: 0; font-size: 28px; font-weight: 300;">📚 LibraryCard</h1>
+          <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">Permission ${granted ? 'Granted' : 'Revoked'}</p>
+        </div>
+        <div style="padding: 40px 30px;">
+          <h2 style="color: #673ab7; margin-top: 0; font-size: 24px;">${granted ? '🔓' : '🔒'} Permission Update</h2>
+          <p style="font-size: 16px; margin-bottom: 20px;">Hello ${recipientName},</p>
+          <p style="font-size: 16px; margin-bottom: 20px;">
+            Your <strong>${permissionDisplay}</strong> permission in <strong>${locationName}</strong> has been ${action} by ${changedBy}.
+          </p>
+          <div style="background-color: ${granted ? '#e8f5e8' : '#ffeaea'}; border-left: 4px solid ${granted ? '#4caf50' : '#f44336'}; padding: 20px; margin: 25px 0; border-radius: 5px;">
+            <p style="margin: 0; font-size: 16px;"><strong>📍 Location:</strong> ${locationName}</p>
+            <p style="margin: 10px 0 0 0; font-size: 16px;"><strong>🔑 Permission:</strong> ${permissionDisplay}</p>
+            <p style="margin: 10px 0 0 0; font-size: 16px;"><strong>👤 ${granted ? 'Granted' : 'Revoked'} by:</strong> ${changedBy}</p>
+            <p style="margin: 10px 0 0 0; font-size: 14px; color: #666;"><strong>🕒 Changed at:</strong> ${new Date().toLocaleString()}</p>
+          </div>
+          <p style="font-size: 16px; margin-bottom: 25px;">
+            ${granted 
+              ? `You can now use the ${permissionDisplay} feature in ${locationName}.`
+              : `You can no longer use the ${permissionDisplay} feature in ${locationName}.`
+            }
+          </p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${env.APP_URL}" 
+               style="display: inline-block; background-color: #673ab7; color: white; padding: 15px 30px; 
+                      text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px;">
+              View LibraryCard
+            </a>
+          </div>
+        </div>
+        <div style="background-color: #f8f9fa; padding: 20px 30px; border-top: 1px solid #dee2e6;">
+          <p style="margin: 0; font-size: 12px; color: #6c757d; text-align: center;">
+            This is an automated message from LibraryCard.
+          </p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const textBody = `
+LibraryCard Permission ${granted ? 'Granted' : 'Revoked'}
+
+Hello ${recipientName},
+
+Your ${permissionDisplay} permission in ${locationName} has been ${action} by ${changedBy}.
+
+Location: ${locationName}
+Permission: ${permissionDisplay}
+${granted ? 'Granted' : 'Revoked'} by: ${changedBy}
+Changed at: ${new Date().toLocaleString()}
+
+${granted 
+  ? `You can now use the ${permissionDisplay} feature in ${locationName}.`
+  : `You can no longer use the ${permissionDisplay} feature in ${locationName}.`
+}
+
+Visit: ${env.APP_URL}
+
+This is an automated message from LibraryCard.
+  `;
+
+  return await sendEmailWithFallback(env, recipientEmail, subject, htmlBody, textBody);
+}
+
+export async function sendBookActionNotification(
+  env: Env,
+  recipientEmail: string,
+  recipientName: string,
+  bookTitle: string,
+  bookAuthors: string,
+  locationName: string,
+  action: 'added' | 'removed',
+  actionBy: string
+) {
+  const subject = `LibraryCard: Book ${action} in ${locationName}`;
+  
+  const htmlBody = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>LibraryCard Book Update</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f4f4f4;">
+      <div style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        <div style="background: linear-gradient(135deg, #673ab7 0%, #9c27b0 100%); color: white; padding: 30px; text-align: center;">
+          <h1 style="margin: 0; font-size: 28px; font-weight: 300;">📚 LibraryCard</h1>
+          <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">Book ${action === 'added' ? 'Added' : 'Removed'}</p>
+        </div>
+        <div style="padding: 40px 30px;">
+          <h2 style="color: #673ab7; margin-top: 0; font-size: 24px;">${action === 'added' ? '📖' : '🗑️'} Book ${action === 'added' ? 'Added' : 'Removed'}</h2>
+          <p style="font-size: 16px; margin-bottom: 20px;">Hello ${recipientName},</p>
+          <p style="font-size: 16px; margin-bottom: 20px;">
+            A book has been ${action} ${action === 'added' ? 'to' : 'from'} <strong>${locationName}</strong> by ${actionBy}.
+          </p>
+          <div style="background-color: ${action === 'added' ? '#e8f5e8' : '#ffeaea'}; border-left: 4px solid ${action === 'added' ? '#4caf50' : '#f44336'}; padding: 20px; margin: 25px 0; border-radius: 5px;">
+            <p style="margin: 0; font-size: 16px;"><strong>📖 Title:</strong> ${bookTitle}</p>
+            <p style="margin: 10px 0 0 0; font-size: 16px;"><strong>✍️ Authors:</strong> ${bookAuthors}</p>
+            <p style="margin: 10px 0 0 0; font-size: 16px;"><strong>📍 Location:</strong> ${locationName}</p>
+            <p style="margin: 10px 0 0 0; font-size: 16px;"><strong>👤 ${action === 'added' ? 'Added' : 'Removed'} by:</strong> ${actionBy}</p>
+            <p style="margin: 10px 0 0 0; font-size: 14px; color: #666;"><strong>🕒 ${action === 'added' ? 'Added' : 'Removed'} at:</strong> ${new Date().toLocaleString()}</p>
+          </div>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${env.APP_URL}" 
+               style="display: inline-block; background-color: #673ab7; color: white; padding: 15px 30px; 
+                      text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px;">
+              View LibraryCard
+            </a>
+          </div>
+        </div>
+        <div style="background-color: #f8f9fa; padding: 20px 30px; border-top: 1px solid #dee2e6;">
+          <p style="margin: 0; font-size: 12px; color: #6c757d; text-align: center;">
+            This is an automated message from LibraryCard.
+          </p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const textBody = `
+LibraryCard Book ${action === 'added' ? 'Added' : 'Removed'}
+
+Hello ${recipientName},
+
+A book has been ${action} ${action === 'added' ? 'to' : 'from'} ${locationName} by ${actionBy}.
+
+Title: ${bookTitle}
+Authors: ${bookAuthors}
+Location: ${locationName}
+${action === 'added' ? 'Added' : 'Removed'} by: ${actionBy}
+${action === 'added' ? 'Added' : 'Removed'} at: ${new Date().toLocaleString()}
+
+Visit: ${env.APP_URL}
+
+This is an automated message from LibraryCard.
+  `;
+
+  return await sendEmailWithFallback(env, recipientEmail, subject, htmlBody, textBody);
+}
+
+export async function sendBookReviewNotification(
+  env: Env,
+  recipientEmail: string,
+  recipientName: string,
+  bookTitle: string,
+  bookAuthors: string,
+  reviewText: string,
+  reviewerName: string,
+  locationName: string,
+  action: 'submitted' | 'approved' | 'rejected',
+  reviewedBy?: string,
+  comment?: string
+) {
+  let subject: string;
+  let actionText: string;
+  
+  switch (action) {
+    case 'submitted':
+      subject = `LibraryCard: New book review submitted - ${bookTitle}`;
+      actionText = 'submitted';
+      break;
+    case 'approved':
+      subject = `LibraryCard: Your book review was approved - ${bookTitle}`;
+      actionText = 'approved';
+      break;
+    case 'rejected':
+      subject = `LibraryCard: Book review update - ${bookTitle}`;
+      actionText = 'rejected';
+      break;
+  }
+  
+  const htmlBody = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>LibraryCard Book Review Update</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f4f4f4;">
+      <div style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        <div style="background: linear-gradient(135deg, #673ab7 0%, #9c27b0 100%); color: white; padding: 30px; text-align: center;">
+          <h1 style="margin: 0; font-size: 28px; font-weight: 300;">📚 LibraryCard</h1>
+          <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">Book Review ${action === 'submitted' ? 'Submission' : (action === 'approved' ? 'Approved' : 'Update')}</p>
+        </div>
+        <div style="padding: 40px 30px;">
+          <h2 style="color: #673ab7; margin-top: 0; font-size: 24px;">
+            ${action === 'submitted' ? '📝' : (action === 'approved' ? '✅' : '📋')} 
+            Book Review ${action === 'submitted' ? 'Submitted' : (action === 'approved' ? 'Approved' : 'Update')}
+          </h2>
+          <p style="font-size: 16px; margin-bottom: 20px;">Hello ${recipientName},</p>
+          <p style="font-size: 16px; margin-bottom: 20px;">
+            ${action === 'submitted' 
+              ? `${reviewerName} has submitted a new book review that requires moderation.`
+              : action === 'approved'
+              ? `Your book review has been approved and is now visible to other users.`
+              : `Your book review has been reviewed by an administrator.`
+            }
+          </p>
+          <div style="background-color: ${action === 'approved' ? '#e8f5e8' : (action === 'rejected' ? '#ffeaea' : '#fff3cd')}; border-left: 4px solid ${action === 'approved' ? '#4caf50' : (action === 'rejected' ? '#f44336' : '#ffc107')}; padding: 20px; margin: 25px 0; border-radius: 5px;">
+            <p style="margin: 0; font-size: 16px;"><strong>📖 Book:</strong> ${bookTitle}</p>
+            <p style="margin: 10px 0 0 0; font-size: 16px;"><strong>✍️ Authors:</strong> ${bookAuthors}</p>
+            <p style="margin: 10px 0 0 0; font-size: 16px;"><strong>📍 Location:</strong> ${locationName}</p>
+            ${action === 'submitted' ? `<p style="margin: 10px 0 0 0; font-size: 16px;"><strong>👤 Reviewer:</strong> ${reviewerName}</p>` : ''}
+            ${reviewedBy && action !== 'submitted' ? `<p style="margin: 10px 0 0 0; font-size: 16px;"><strong>👤 Reviewed by:</strong> ${reviewedBy}</p>` : ''}
+            <p style="margin: 10px 0 0 0; font-size: 14px; color: #666;"><strong>🕒 ${action === 'submitted' ? 'Submitted' : 'Reviewed'} at:</strong> ${new Date().toLocaleString()}</p>
+            <div style="margin: 15px 0 0 0; padding: 15px; background-color: rgba(255,255,255,0.7); border-radius: 3px;">
+              <p style="margin: 0; font-size: 14px;"><strong>📝 Review:</strong></p>
+              <p style="margin: 5px 0 0 0; font-size: 14px; font-style: italic;">"${reviewText.length > 200 ? reviewText.substring(0, 200) + '...' : reviewText}"</p>
+            </div>
+            ${comment ? `<p style="margin: 15px 0 0 0; font-size: 14px;"><strong>💬 Admin Comment:</strong> ${comment}</p>` : ''}
+          </div>
+          ${action === 'submitted' 
+            ? '<p style="font-size: 16px; margin-bottom: 25px;">Please review this submission in the admin panel to approve or reject it.</p>'
+            : action === 'approved'
+            ? '<p style="font-size: 16px; margin-bottom: 25px;">Thank you for contributing to our book community! Other users can now see your review.</p>'
+            : '<p style="font-size: 16px; margin-bottom: 25px;">If you have questions about this decision, please contact an administrator.</p>'
+          }
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${env.APP_URL}${action === 'submitted' ? '/admin/reviews' : `/library?search=${encodeURIComponent(bookTitle)}`}" 
+               style="display: inline-block; background-color: #673ab7; color: white; padding: 15px 30px; 
+                      text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px;">
+              ${action === 'submitted' ? 'Review Submissions' : 'View Book'}
+            </a>
+          </div>
+        </div>
+        <div style="background-color: #f8f9fa; padding: 20px 30px; border-top: 1px solid #dee2e6;">
+          <p style="margin: 0; font-size: 12px; color: #6c757d; text-align: center;">
+            This is an automated message from LibraryCard.
+          </p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const textBody = `
+LibraryCard Book Review ${action === 'submitted' ? 'Submission' : (action === 'approved' ? 'Approved' : 'Update')}
+
+Hello ${recipientName},
+
+${action === 'submitted' 
+  ? `${reviewerName} has submitted a new book review that requires moderation.`
+  : action === 'approved'
+  ? `Your book review has been approved and is now visible to other users.`
+  : `Your book review has been reviewed by an administrator.`
+}
+
+Book: ${bookTitle}
+Authors: ${bookAuthors}
+Location: ${locationName}
+${action === 'submitted' ? `Reviewer: ${reviewerName}` : ''}
+${reviewedBy && action !== 'submitted' ? `Reviewed by: ${reviewedBy}` : ''}
+${action === 'submitted' ? 'Submitted' : 'Reviewed'} at: ${new Date().toLocaleString()}
+
+Review: "${reviewText.length > 200 ? reviewText.substring(0, 200) + '...' : reviewText}"
+${comment ? `Admin Comment: ${comment}` : ''}
+
+${action === 'submitted' 
+  ? 'Please review this submission in the admin panel to approve or reject it.'
+  : action === 'approved'
+  ? 'Thank you for contributing to our book community! Other users can now see your review.'
+  : 'If you have questions about this decision, please contact an administrator.'
+}
+
+Visit: ${env.APP_URL}${action === 'submitted' ? '/admin/reviews' : `/library?search=${encodeURIComponent(bookTitle)}`}
+
+This is an automated message from LibraryCard.
+  `;
+
+  return await sendEmailWithFallback(env, recipientEmail, subject, htmlBody, textBody);
+}
+
+export async function sendGenreSuggestionNotification(
+  env: Env,
+  recipientEmail: string,
+  recipientName: string,
+  genreName: string,
+  action: 'suggested' | 'approved' | 'rejected',
+  suggestedBy?: string,
+  reviewedBy?: string,
+  comment?: string
+) {
+  let subject: string;
+  let actionText: string;
+  
+  switch (action) {
+    case 'suggested':
+      subject = `LibraryCard: New genre suggestion - ${genreName}`;
+      actionText = 'suggested';
+      break;
+    case 'approved':
+      subject = `LibraryCard: Genre approved - ${genreName}`;
+      actionText = 'approved';
+      break;
+    case 'rejected':
+      subject = `LibraryCard: Genre rejected - ${genreName}`;
+      actionText = 'rejected';
+      break;
+  }
+  
+  const htmlBody = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>LibraryCard Genre Update</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f4f4f4;">
+      <div style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        <div style="background: linear-gradient(135deg, #673ab7 0%, #9c27b0 100%); color: white; padding: 30px; text-align: center;">
+          <h1 style="margin: 0; font-size: 28px; font-weight: 300;">📚 LibraryCard</h1>
+          <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">Genre ${action === 'suggested' ? 'Suggestion' : (action === 'approved' ? 'Approved' : 'Rejected')}</p>
+        </div>
+        <div style="padding: 40px 30px;">
+          <h2 style="color: #673ab7; margin-top: 0; font-size: 24px;">
+            ${action === 'suggested' ? '💡' : (action === 'approved' ? '✅' : '❌')} 
+            Genre ${action === 'suggested' ? 'Suggested' : (action === 'approved' ? 'Approved' : 'Rejected')}
+          </h2>
+          <p style="font-size: 16px; margin-bottom: 20px;">Hello ${recipientName},</p>
+          <p style="font-size: 16px; margin-bottom: 20px;">
+            ${action === 'suggested' 
+              ? `A new genre has been suggested by ${suggestedBy}.`
+              : `A genre suggestion has been ${actionText} by ${reviewedBy}.`
+            }
+          </p>
+          <div style="background-color: ${action === 'approved' ? '#e8f5e8' : (action === 'rejected' ? '#ffeaea' : '#fff3cd')}; border-left: 4px solid ${action === 'approved' ? '#4caf50' : (action === 'rejected' ? '#f44336' : '#ffc107')}; padding: 20px; margin: 25px 0; border-radius: 5px;">
+            <p style="margin: 0; font-size: 16px;"><strong>🏷️ Genre:</strong> ${genreName}</p>
+            ${suggestedBy ? `<p style="margin: 10px 0 0 0; font-size: 16px;"><strong>👤 Suggested by:</strong> ${suggestedBy}</p>` : ''}
+            ${reviewedBy ? `<p style="margin: 10px 0 0 0; font-size: 16px;"><strong>👤 Reviewed by:</strong> ${reviewedBy}</p>` : ''}
+            <p style="margin: 10px 0 0 0; font-size: 14px; color: #666;"><strong>🕒 ${action === 'suggested' ? 'Suggested' : 'Reviewed'} at:</strong> ${new Date().toLocaleString()}</p>
+            ${comment ? `<p style="margin: 15px 0 0 0; font-size: 14px;"><strong>💬 Comment:</strong> ${comment}</p>` : ''}
+          </div>
+          ${action === 'suggested' 
+            ? '<p style="font-size: 16px; margin-bottom: 25px;">Please review this suggestion in the admin panel.</p>'
+            : action === 'approved'
+            ? '<p style="font-size: 16px; margin-bottom: 25px;">This genre is now available for use in LibraryCard.</p>'
+            : '<p style="font-size: 16px; margin-bottom: 25px;">This genre suggestion was not approved at this time.</p>'
+          }
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${env.APP_URL}" 
+               style="display: inline-block; background-color: #673ab7; color: white; padding: 15px 30px; 
+                      text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px;">
+              View LibraryCard
+            </a>
+          </div>
+        </div>
+        <div style="background-color: #f8f9fa; padding: 20px 30px; border-top: 1px solid #dee2e6;">
+          <p style="margin: 0; font-size: 12px; color: #6c757d; text-align: center;">
+            This is an automated message from LibraryCard.
+          </p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const textBody = `
+LibraryCard Genre ${action === 'suggested' ? 'Suggestion' : (action === 'approved' ? 'Approved' : 'Rejected')}
+
+Hello ${recipientName},
+
+${action === 'suggested' 
+  ? `A new genre has been suggested by ${suggestedBy}.`
+  : `A genre suggestion has been ${actionText} by ${reviewedBy}.`
+}
+
+Genre: ${genreName}
+${suggestedBy ? `Suggested by: ${suggestedBy}` : ''}
+${reviewedBy ? `Reviewed by: ${reviewedBy}` : ''}
+${action === 'suggested' ? 'Suggested' : 'Reviewed'} at: ${new Date().toLocaleString()}
+${comment ? `Comment: ${comment}` : ''}
+
+${action === 'suggested' 
+  ? 'Please review this suggestion in the admin panel.'
+  : action === 'approved'
+  ? 'This genre is now available for use in LibraryCard.'
+  : 'This genre suggestion was not approved at this time.'
+}
+
+Visit: ${env.APP_URL}
+
+This is an automated message from LibraryCard.
+  `;
+
+  return await sendEmailWithFallback(env, recipientEmail, subject, htmlBody, textBody);
+}
+
+async function sendEmailWithFallback(
+  env: Env, 
+  email: string, 
+  subject: string, 
+  htmlBody: string, 
+  textBody: string
+) {
+  if (env.RESEND_API_KEY) {
+    try {
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from: env.FROM_EMAIL || 'LibraryCard <noreply@tim52.io>',
+          to: [email],
+          subject: subject,
+          html: htmlBody,
+          text: textBody
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error('Failed to send notification email:', error);
+        throw new Error(`Email service error: ${response.status}`);
+      }
+
+      const result = await response.json() as { id: string };
+      console.log('Notification email sent successfully:', result.id);
+      return result;
+    } catch (error) {
+      console.error('Error sending notification email:', error);
+      throw error;
+    }
+  } else if (env.ENVIRONMENT === 'local') {
+    console.log(`Notification email fallback: ${email} - ${subject}`);
+    return { id: 'local-fallback' };
+  } else {
+    throw new Error('No email service configured');
+  }
+}

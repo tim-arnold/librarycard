@@ -13,7 +13,8 @@ import {
   Button,
   Fade,
   Container,
-  Paper
+  Paper,
+  Badge
 } from '@mui/material'
 import {
   Analytics,
@@ -21,9 +22,7 @@ import {
   Notifications,
   LocationOn,
   Refresh,
-  PersonAdd,
   Category,
-  RateReview,
 } from '@mui/icons-material'
 import { getApiBaseUrl } from '@/lib/apiConfig'
 
@@ -31,10 +30,8 @@ import { getApiBaseUrl } from '@/lib/apiConfig'
 const AdminAnalytics = lazy(() => import('./AdminAnalytics'))
 const AdminUserManager = lazy(() => import('./AdminUserManager'))
 const AdminNotificationCenter = lazy(() => import('./AdminNotificationCenter'))
-const AdminSignupManager = lazy(() => import('./AdminSignupManager'))
 const LocationManager = lazy(() => import('./LocationManager'))
 const GenreManager = lazy(() => import('./GenreManager'))
-const ReviewModeration = lazy(() => import('../../app/admin/reviews/page'))
 
 // Loading component for lazy-loaded admin components
 const AdminComponentLoader = () => (
@@ -53,15 +50,13 @@ const AdminComponentLoader = () => (
   </Box>
 )
 
-const TAB_NAMES = ['analytics', 'users', 'locations', 'genres', 'reviews', 'signup-requests', 'notifications']
+const TAB_NAMES = ['analytics', 'users', 'locations', 'genres', 'notifications']
 const TAB_INDEX_MAP: { [key: string]: number } = {
   'analytics': 0,
   'users': 1,
   'locations': 2,
   'genres': 3,
-  'reviews': 4,
-  'signup-requests': 5,
-  'notifications': 6,
+  'notifications': 4,
 }
 
 interface AdminOverview {
@@ -69,6 +64,8 @@ interface AdminOverview {
   totalUsers: number
   totalLocations: number
   pendingRequests: number
+  pendingReviews: number
+  pendingSignupRequests: number
   unorganizedBooks: number
   recentBooks: number
   recentCheckouts: number
@@ -263,22 +260,28 @@ export default function AdminDashboard({ initialTab }: AdminDashboardProps = {})
           />
           <Tab 
             icon={<Category />} 
-            label="Genre Management" 
+            label="Genres"
             iconPosition="start"
           />
           <Tab 
-            icon={<RateReview />} 
-            label="Review Moderation" 
-            iconPosition="start"
-          />
-          <Tab 
-            icon={<PersonAdd />} 
-            label="Signup Requests" 
-            iconPosition="start"
-          />
-          <Tab 
-            icon={<Notifications />} 
-            label={`Notifications ${overview?.pendingRequests ? `(${overview.pendingRequests})` : ''}`}
+            icon={
+              <Badge 
+                badgeContent={(overview?.pendingRequests || 0) + (overview?.pendingReviews || 0) + (overview?.pendingSignupRequests || 0) > 0 ? (overview?.pendingRequests || 0) + (overview?.pendingReviews || 0) + (overview?.pendingSignupRequests || 0) : undefined} 
+                color="primary"
+                max={99}
+                sx={{
+                  '& .MuiBadge-badge': {
+                    fontSize: '0.75rem',
+                    height: '18px',
+                    minWidth: '18px',
+                    borderRadius: '9px',
+                  }
+                }}
+              >
+                <Notifications />
+              </Badge>
+            }
+            label="Notifications"
             iconPosition="start"
           />
         </Tabs>
@@ -328,18 +331,6 @@ export default function AdminDashboard({ initialTab }: AdminDashboardProps = {})
             )}
 
             {activeTab === 4 && (
-              <Suspense fallback={<AdminComponentLoader />}>
-                <ReviewModeration />
-              </Suspense>
-            )}
-
-            {activeTab === 5 && (
-              <Suspense fallback={<AdminComponentLoader />}>
-                <AdminSignupManager />
-              </Suspense>
-            )}
-
-            {activeTab === 6 && (
               <Suspense fallback={<AdminComponentLoader />}>
                 <AdminNotificationCenter />
               </Suspense>
