@@ -341,8 +341,8 @@ export default function RemovalRequestManager() {
 
   if (loading) {
     return (
-      <Container maxWidth="xl" sx={{ py: 2 }}>
-        <Paper sx={{ p: 3 }}>
+      <Container maxWidth="xl" sx={{ pb: 2 }}>
+        <Paper sx={{ p: 3, borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
           <Typography variant="h4" component="h2" gutterBottom>
             <Assignment sx={{ mr: 1, verticalAlign: 'middle' }} /> Requests
           </Typography>
@@ -358,8 +358,8 @@ export default function RemovalRequestManager() {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 2 }}>
-      <Paper sx={{ p: 3 }}>
+    <Container maxWidth="xl" sx={{ pb: 2 }}>
+      <Paper sx={{ p: 3, borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
           <Typography variant="h4" component="h2">
             <Assignment sx={{ mr: 1, verticalAlign: 'middle' }} /> Requests ({filteredRequests.length})

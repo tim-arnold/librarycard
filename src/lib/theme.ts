@@ -554,17 +554,36 @@ function createThemeOptions(isDark: boolean, variant: ThemeVariant): ThemeOption
         root: ({ theme }: { theme: Theme }) => ({
           textTransform: 'none' as const,
           fontWeight: 500,
-          borderRadius: '6px',
+          borderTopLeftRadius: '6px',
+          borderTopRightRadius: '6px',
+          borderBottomLeftRadius: 0,
+          borderBottomRightRadius: 0,
           margin: '0 4px',
           minHeight: '48px',
           transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          // Default inactive state - subtle outline to show tabs exist
+          backgroundColor: 'transparent',
+          border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
+          borderBottom: 'none',
+          color: theme.palette.text.secondary,
+          
           '&.Mui-selected': {
-            background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-            color: theme.palette.primary.contrastText,
-            boxShadow: `0 2px 4px ${theme.palette.primary.main}40`,
+            // Active tab matches content background exactly  
+            backgroundColor: theme.palette.mode === 'dark'
+              ? theme.palette.background.paper 
+              : theme.palette.background.paper,
+            color: theme.palette.text.primary,
+            border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
+            borderBottom: 'none',
+            position: 'relative',
+            zIndex: 1,
           },
           '&:hover:not(.Mui-selected)': {
-            backgroundColor: `${theme.palette.primary.main}10`,
+            // Hover state - lighter than active but darker than inactive
+            backgroundColor: theme.palette.mode === 'dark' 
+              ? 'rgba(255,255,255,0.05)' 
+              : 'rgba(0,0,0,0.02)',
+            borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
           },
         }),
       },
@@ -657,17 +676,32 @@ function createThemeOptions(isDark: boolean, variant: ThemeVariant): ThemeOption
         root: ({ theme }: { theme: Theme }) => ({
           textTransform: 'none' as const,
           fontWeight: 500,
-          borderRadius: '6px',
+          borderTopLeftRadius: '6px',
+          borderTopRightRadius: '6px',
+          borderBottomLeftRadius: 0,
+          borderBottomRightRadius: 0,
           margin: '0 4px',
           minHeight: '48px',
           transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          // Default inactive state - completely transparent
+          backgroundColor: 'transparent',
+          border: 'none',
+          borderBottom: 'none',
+          color: theme.palette.text.secondary,
+          
           '&.Mui-selected': {
-            background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-            color: theme.palette.primary.contrastText,
-            boxShadow: `0 2px 4px ${theme.palette.primary.main}50`,
+            // Active tabs get elevated background and stronger border
+            backgroundColor: theme.palette.background.paper,
+            color: theme.palette.text.primary,
+            border: `1px solid rgba(255,255,255,0.2)`,
+            borderBottom: 'none',
+            position: 'relative',
+            zIndex: 1,
           },
           '&:hover:not(.Mui-selected)': {
-            backgroundColor: `${theme.palette.primary.main}20`,
+            // Hover state - lighter than active but darker than inactive
+            backgroundColor: 'rgba(255,255,255,0.05)',
+            borderColor: 'rgba(255,255,255,0.2)',
           },
         }),
       },
