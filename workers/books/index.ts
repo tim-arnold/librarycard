@@ -2,6 +2,7 @@ import { Env, Book, GoogleBooksResponse } from '../types';
 import { isUserAdmin, isUserSuperAdmin } from '../auth';
 import { hasUserPermission, hasGlobalPermission, getLocationIdFromShelfId, getLocationIdFromBookId } from '../permissions';
 import { invalidateAllAdminAnalytics } from '../admin/cached';
+import { sendBookReviewUpdate } from '../notifications/index';
 
 // Core Book Management Functions
 export async function getUserBooks(userId: string, env: Env, corsHeaders: Record<string, string>) {
@@ -1051,6 +1052,24 @@ export async function rateBook(request: Request, bookId: number, userId: string,
         bookId, userId, rating, reviewText || null, reviewStatus,
         reviewedBy, reviewedAt, bookId, userId
       ).run();
+
+      // Send notification if review was submitted for moderation
+      if (reviewStatus === 'pending' && reviewText && reviewText.trim().length > 0) {
+        try {
+          await sendBookReviewUpdate(
+            env,
+            (bookAccess as any).title,
+            'authors' in bookAccess ? (bookAccess as any).authors : 'Unknown Author',
+            reviewText,
+            userId,
+            (bookAccess as any).location_id,
+            'submitted'
+          );
+        } catch (notificationError) {
+          console.error('Failed to send book review notification:', notificationError);
+          // Don't fail the review submission if notification fails
+        }
+      }
     }
 
     // Calculate new average rating for this book within the location
@@ -1622,6 +1641,34 @@ export async function moderateReview(request: Request, reviewId: number, userId:
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    // Send notification for review moderation (approve/reject only, not delete)
+    if (action !== 'delete') {
+      try {
+        // Get book details for notification
+        const bookStmt = env.DB.prepare(`
+          SELECT title, authors, location_id FROM books WHERE id = ?
+        `);
+        const book = await bookStmt.bind(review.book_id).first() as any;
+
+        if (book) {
+          await sendBookReviewUpdate(
+            env,
+            book.title,
+            book.authors || '',
+            review.review_text || '',
+            review.user_id,
+            book.location_id,
+            action === 'approve' ? 'approved' : 'rejected',
+            userId,
+            action === 'reject' ? rejectionReason : undefined
+          );
+        }
+      } catch (error) {
+        console.error('Error sending review moderation notification:', error);
+        // Don't fail the entire operation if notification fails
+      }
     }
 
     // Invalidate book cache to ensure UI gets updated data

@@ -19,6 +19,7 @@ import {
   IconButton,
   Menu,
   MenuItem,
+  Badge,
 } from '@mui/material'
 import {
   QrCodeScanner,
@@ -36,6 +37,7 @@ import Footer from './Footer'
 import HelpModal from '@/components/modals/HelpModal'
 import { useTheme } from '@/lib/ThemeContext'
 import AccessibleIcon from '@/components/ui/AccessibleIcon'
+import { useUnreadNotificationCount } from '@/hooks/useNotifications'
 
 interface AppLayoutProps {
   children: React.ReactNode
@@ -55,6 +57,7 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [helpModalOpen, setHelpModalOpen] = useState(false)
   const dataLoadedRef = useRef(false)
+  const { unreadCount } = useUnreadNotificationCount()
 
   useEffect(() => {
     if (session && !dataLoadedRef.current) {
@@ -367,7 +370,23 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
               <Tab 
                 value="admin" 
                 label="Admin Dashboard"
-                icon={<Dashboard />}
+                icon={
+                  <Badge 
+                    badgeContent={unreadCount > 0 ? unreadCount : undefined} 
+                    color="primary"
+                    max={99}
+                    sx={{
+                      '& .MuiBadge-badge': {
+                        fontSize: '0.75rem',
+                        height: '18px',
+                        minWidth: '18px',
+                        borderRadius: '9px',
+                      }
+                    }}
+                  >
+                    <Dashboard />
+                  </Badge>
+                }
                 iconPosition="start"
                 onClick={() => handleTabChange('/admin')}
               />
