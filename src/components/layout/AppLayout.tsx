@@ -312,7 +312,7 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
       </AppBar>
       
       <Container maxWidth="xl" sx={{ py: 2 }}>
-        <Paper sx={{ mb: 2 }}>
+        <Paper>
           <Tabs 
             value={currentPage} 
             variant="scrollable"
