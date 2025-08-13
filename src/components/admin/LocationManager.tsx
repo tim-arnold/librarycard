@@ -488,8 +488,8 @@ export default function LocationManager() {
 
   if (loading) {
     return (
-      <Container maxWidth="xl" sx={{ py: 2 }}>
-        <Paper sx={{ p: 3 }}>
+      <Container maxWidth="xl" sx={{ pb: 2 }}>
+        <Paper sx={{ p: 3, borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
           <Typography variant="h4" component="h2" gutterBottom>
             <Home sx={{ mr: 1, verticalAlign: 'middle' }} /> Locations
           </Typography>
@@ -505,8 +505,8 @@ export default function LocationManager() {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 2 }}>
-      <Paper sx={{ p: 3 }}>
+    <Container maxWidth="xl" sx={{ pb: 2 }}>
+      <Paper sx={{ p: 3, borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
         <Typography variant="h4" component="h2" gutterBottom>
           <Home sx={{ mr: 1, verticalAlign: 'middle' }} /> Locations
         </Typography>

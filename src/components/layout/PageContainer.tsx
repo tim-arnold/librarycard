@@ -63,8 +63,8 @@ export default function PageContainer({
   }, [pathname, children])
 
   return (
-    <Container maxWidth={maxWidth} sx={{ py: 2 }}>
-      <Paper sx={{ p: padding }}>
+    <Container maxWidth={maxWidth} sx={{ pb: 2 }}>
+      <Paper sx={{ p: padding, borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
         <Fade in={fadeIn} timeout={{ enter: 300, exit: 150 }}>
           <Box sx={{ minHeight: '400px' }}>
             {displayChildren}

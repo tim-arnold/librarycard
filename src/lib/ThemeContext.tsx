@@ -3,12 +3,16 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { ThemeProvider } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
-import { createAppTheme } from './theme'
+import { createAppTheme, type ThemeVariant } from './theme'
 import { getStorageItem, setStorageItem } from './storage'
+
+export type ThemeMode = 'light' | 'dark'
 
 interface ThemeContextType {
   isDarkMode: boolean
+  themeVariant: ThemeVariant
   toggleTheme: () => void
+  setThemeVariant: (variant: ThemeVariant) => void
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
@@ -26,38 +30,66 @@ interface ThemeContextProviderProps {
 }
 
 export function ThemeContextProvider({ children }: ThemeContextProviderProps) {
-  const [isDarkMode, setIsDarkMode] = useState(false)
+  const [isDarkMode, setIsDarkMode] = useState(true)
+  const [themeVariant, setThemeVariant] = useState<ThemeVariant>('indigo')
   const [isLoaded, setIsLoaded] = useState(false)
 
-  // Load theme preference from localStorage on mount
+  // Load theme preferences from localStorage on mount
   useEffect(() => {
     const savedTheme = getStorageItem('librarycard-theme', 'functional')
-    if (savedTheme === 'dark') {
+    const savedVariant = getStorageItem('librarycard-theme-variant', 'functional') as ThemeVariant
+    
+    if (savedTheme === 'light') {
+      setIsDarkMode(false)
+    } else if (!savedTheme) {
+      // Default to dark mode for new users
       setIsDarkMode(true)
+    } else {
+      setIsDarkMode(savedTheme === 'dark')
     }
+    
+    if (savedVariant && ['indigo', 'green', 'red', 'blue', 'purple', 'amber'].includes(savedVariant)) {
+      setThemeVariant(savedVariant)
+    }
+    
     setIsLoaded(true)
   }, [])
 
-  // Save theme preference to localStorage when it changes
+  // Save theme preferences to localStorage when they change
   useEffect(() => {
     if (isLoaded) {
       setStorageItem('librarycard-theme', isDarkMode ? 'dark' : 'light', 'functional')
     }
   }, [isDarkMode, isLoaded])
 
+  useEffect(() => {
+    if (isLoaded) {
+      setStorageItem('librarycard-theme-variant', themeVariant, 'functional')
+    }
+  }, [themeVariant, isLoaded])
+
   const toggleTheme = () => {
     setIsDarkMode(prev => !prev)
   }
 
-  // Don't render until we've loaded the preference to prevent flash
+  const handleSetThemeVariant = (variant: ThemeVariant) => {
+    setThemeVariant(variant)
+  }
+
+  // Don't render until we've loaded the preferences to prevent flash
   if (!isLoaded) {
     return null
   }
 
-  const theme = createAppTheme(isDarkMode)
+  const theme = createAppTheme(isDarkMode, themeVariant)
 
   return (
-    <ThemeContext.Provider value={{ isDarkMode, toggleTheme }}>
+    <ThemeContext.Provider value={{ 
+      isDarkMode, 
+      themeVariant, 
+      toggleTheme, 
+      setThemeVariant: handleSetThemeVariant 
+    }}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
         {children}
