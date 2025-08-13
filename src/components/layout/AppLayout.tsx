@@ -311,12 +311,40 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
         </Toolbar>
       </AppBar>
       
-      <Container maxWidth="xl" sx={{ py: 2 }}>
-        <Paper sx={{ mb: 2 }}>
+      <Container maxWidth="xl" sx={{ pt: 2, pb: 0 }}>
+        <Box sx={{ 
+          borderRadius: 0, 
+          backgroundColor: (theme) => theme.palette.background.default,
+          boxShadow: 'none' 
+        }}>
           <Tabs 
             value={currentPage} 
             variant="scrollable"
             scrollButtons="auto"
+            TabIndicatorProps={{ style: { display: 'none' } }}
+            sx={{
+              '& .MuiTab-root.Mui-selected': {
+                // Main navigation tabs need exact color match with content
+                backgroundColor: (theme) => {
+                  if (theme.palette.mode === 'dark') {
+                    // Use the exact content background color for each theme variant
+                    const isDarkMode = theme.palette.mode === 'dark'
+                    const primary = theme.palette.primary.main
+                    
+                    // Map primary colors to content backgrounds - use exact Paper component colors
+                    // Check primary[300] values (used in dark mode)
+                    if (primary.includes('d8b4fe')) return '#251a2d' // Purple (#d8b4fe)
+                    if (primary.includes('86efac')) return '#1a2e20' // Green (#86efac)  
+                    if (primary.includes('fca5a5')) return '#2d1515' // Red (#fca5a5)
+                    if (primary.includes('93c5fd')) return '#1a2332' // Blue (#93c5fd)
+                    if (primary.includes('fcd34d')) return '#2d2415' // Amber (#fcd34d)
+                    return '#1e293b' // Indigo (default - #a5b4fc)
+                  } else {
+                    return theme.palette.background.paper
+                  }
+                } + ' !important',
+              }
+            }}
           >
             <Tab 
               value="library" 
@@ -344,8 +372,10 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
               />
             )}
           </Tabs>
-        </Paper>
+        </Box>
+      </Container>
 
+      <Container maxWidth="xl" sx={{ pt: 0, pb: 2 }}>
         {children}
       </Container>
       
