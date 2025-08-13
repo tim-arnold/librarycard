@@ -328,21 +328,20 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
                 backgroundColor: (theme) => {
                   if (theme.palette.mode === 'dark') {
                     // Use the exact content background color for each theme variant
-                    const isDarkMode = theme.palette.mode === 'dark'
                     const primary = theme.palette.primary.main
                     
                     // Map primary colors to content backgrounds - use exact Paper component colors
                     // Check primary[300] values (used in dark mode)
-                    if (primary.includes('d8b4fe')) return '#251a2d' // Purple (#d8b4fe)
-                    if (primary.includes('86efac')) return '#1a2e20' // Green (#86efac)  
-                    if (primary.includes('fca5a5')) return '#2d1515' // Red (#fca5a5)
-                    if (primary.includes('93c5fd')) return '#1a2332' // Blue (#93c5fd)
-                    if (primary.includes('fcd34d')) return '#2d2415' // Amber (#fcd34d)
-                    return '#1e293b' // Indigo (default - #a5b4fc)
+                    if (primary.includes('d8b4fe')) return '#251a2d !important' // Purple (#d8b4fe)
+                    if (primary.includes('86efac')) return '#1a2e20 !important' // Green (#86efac)  
+                    if (primary.includes('fca5a5')) return '#2d1515 !important' // Red (#fca5a5)
+                    if (primary.includes('93c5fd')) return '#1a2332 !important' // Blue (#93c5fd)
+                    if (primary.includes('fcd34d')) return '#2d2415 !important' // Amber (#fcd34d)
+                    return '#1e293b !important' // Indigo (default - #a5b4fc)
                   } else {
-                    return theme.palette.background.paper
+                    return theme.palette.background.paper + ' !important'
                   }
-                } + ' !important',
+                },
               }
             }}
           >
