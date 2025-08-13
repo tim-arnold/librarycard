@@ -7,6 +7,41 @@ declare module '@mui/material/styles' {
   }
 }
 
+export type ThemeVariant = 'indigo' | 'green' | 'red' | 'blue' | 'purple' | 'amber'
+
+export interface ThemeVariantConfig {
+  name: string
+  primary: {
+    50: string
+    100: string
+    200: string
+    300: string
+    400: string
+    500: string
+    600: string
+    700: string
+    800: string
+    900: string
+  }
+  secondary: {
+    50: string
+    100: string
+    200: string
+    300: string
+    400: string
+    500: string
+    600: string
+    700: string
+    800: string
+    900: string
+  }
+  darkBackground: {
+    default: string
+    paper: string
+    elevated: string
+  }
+}
+
 const commonTypography = {
   // Enhanced font families with Google Fonts
   fontFamily: [
@@ -115,8 +150,8 @@ const commonComponents = {
   MuiContainer: {
     styleOverrides: {
       root: {
-        paddingLeft: '0 !important',
-        paddingRight: '0 !important',
+        paddingLeft: '8px !important',
+        paddingRight: '8px !important',
       },
     },
   },
@@ -145,19 +180,11 @@ const commonComponents = {
         },
       }),
       contained: ({ theme }: { theme: Theme }) => ({
-        background: theme.palette.mode === 'light' 
-          ? 'linear-gradient(135deg, #4f46e5 0%, #8b5cf6 100%)'
-          : 'linear-gradient(135deg, #a5b4fc 0%, #c4b5fd 100%)',
-        boxShadow: theme.palette.mode === 'light'
-          ? '0 1px 3px rgba(79, 70, 229, 0.2), 0 1px 2px rgba(79, 70, 229, 0.12)'
-          : '0 1px 3px rgba(165, 180, 252, 0.3), 0 1px 2px rgba(165, 180, 252, 0.15)',
+        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+        boxShadow: `0 1px 3px ${theme.palette.primary.main}40, 0 1px 2px ${theme.palette.primary.main}20`,
         '&:hover': {
-          background: theme.palette.mode === 'light'
-            ? 'linear-gradient(135deg, #4338ca 0%, #7c3aed 100%)'
-            : 'linear-gradient(135deg, #818cf8 0%, #a78bfa 100%)',
-          boxShadow: theme.palette.mode === 'light'
-            ? '0 4px 6px rgba(79, 70, 229, 0.25), 0 2px 4px rgba(79, 70, 229, 0.15)'
-            : '0 4px 6px rgba(129, 140, 248, 0.35), 0 2px 4px rgba(129, 140, 248, 0.2)',
+          background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
+          boxShadow: `0 4px 6px ${theme.palette.primary.main}40, 0 2px 4px ${theme.palette.primary.main}25`,
           transform: 'translateY(-1px)',
         },
       }),
@@ -165,17 +192,13 @@ const commonComponents = {
         borderColor: theme.palette.primary.main,
         '&:hover': {
           borderColor: theme.palette.primary.dark,
-          backgroundColor: theme.palette.mode === 'light'
-            ? 'rgba(99, 102, 241, 0.04)'
-            : 'rgba(129, 140, 248, 0.08)',
+          backgroundColor: `${theme.palette.primary.main}10`,
           transform: 'translateY(-1px)',
         },
       }),
       text: ({ theme }: { theme: Theme }) => ({
         '&:hover': {
-          backgroundColor: theme.palette.mode === 'light'
-            ? 'rgba(99, 102, 241, 0.04)'
-            : 'rgba(129, 140, 248, 0.08)',
+          backgroundColor: `${theme.palette.primary.main}10`,
           transform: 'translateY(-1px)',
         },
       }),
@@ -194,9 +217,7 @@ const commonComponents = {
             '& .MuiOutlinedInput-notchedOutline': {
               borderColor: theme.palette.primary.main,
               borderWidth: '2px',
-              boxShadow: theme.palette.mode === 'light'
-                ? '0 0 0 3px rgba(99, 102, 241, 0.1)'
-                : '0 0 0 3px rgba(129, 140, 248, 0.2)',
+              boxShadow: `0 0 0 3px ${theme.palette.primary.main}30`,
             },
           },
         },
@@ -266,21 +287,220 @@ const enhancedColors = {
   }
 }
 
-const lightThemeOptions: ThemeOptions = {
-  palette: {
-    mode: 'light',
+// Define theme variant configurations
+export const themeVariants: Record<ThemeVariant, ThemeVariantConfig> = {
+  indigo: {
+    name: 'Indigo',
     primary: {
-      main: enhancedColors.primary[600], // Darker indigo for better contrast (4.5:1+)
-      light: enhancedColors.primary[400],
-      dark: enhancedColors.primary[800],
-      contrastText: '#ffffff',
+      50: '#eef2ff',
+      100: '#e0e7ff', 
+      200: '#c7d2fe',
+      300: '#a5b4fc',
+      400: '#818cf8',
+      500: '#6366f1',
+      600: '#4f46e5',
+      700: '#4338ca',
+      800: '#3730a3',
+      900: '#312e81',
     },
     secondary: {
-      main: enhancedColors.secondary[500], // Warm amber
-      light: enhancedColors.secondary[300],
-      dark: enhancedColors.secondary[700],
-      contrastText: '#000000',
+      50: '#fffbeb',
+      100: '#fef3c7',
+      200: '#fde68a', 
+      300: '#fcd34d',
+      400: '#fbbf24',
+      500: '#f59e0b',
+      600: '#d97706',
+      700: '#b45309',
+      800: '#92400e',
+      900: '#78350f',
     },
+    darkBackground: {
+      default: '#0f172a', // Rich dark slate
+      paper: '#1e293b',   // Elevated dark surfaces
+      elevated: '#334155', // Higher elevated surfaces
+    },
+  },
+  green: {
+    name: 'Forest Green',
+    primary: {
+      50: '#f0fdf4',
+      100: '#dcfce7',
+      200: '#bbf7d0',
+      300: '#86efac',
+      400: '#4ade80',
+      500: '#22c55e',
+      600: '#16a34a',
+      700: '#15803d',
+      800: '#166534',
+      900: '#14532d',
+    },
+    secondary: {
+      50: '#fefce8',
+      100: '#fef9c3',
+      200: '#fef08a',
+      300: '#fde047',
+      400: '#facc15',
+      500: '#eab308',
+      600: '#ca8a04',
+      700: '#a16207',
+      800: '#854d0e',
+      900: '#713f12',
+    },
+    darkBackground: {
+      default: '#0c1710', // Deep forest green-black
+      paper: '#1a2e20',   // Dark forest green
+      elevated: '#233529', // Elevated forest surfaces
+    },
+  },
+  red: {
+    name: 'Crimson Red',
+    primary: {
+      50: '#fef2f2',
+      100: '#fee2e2',
+      200: '#fecaca',
+      300: '#fca5a5',
+      400: '#f87171',
+      500: '#ef4444',
+      600: '#dc2626',
+      700: '#b91c1c',
+      800: '#991b1b',
+      900: '#7f1d1d',
+    },
+    secondary: {
+      50: '#fff7ed',
+      100: '#ffedd5',
+      200: '#fed7aa',
+      300: '#fdba74',
+      400: '#fb923c',
+      500: '#f97316',
+      600: '#ea580c',
+      700: '#c2410c',
+      800: '#9a3412',
+      900: '#7c2d12',
+    },
+    darkBackground: {
+      default: '#180a0a', // Deep crimson-black
+      paper: '#2d1515',   // Dark crimson
+      elevated: '#3d1a1a', // Elevated crimson surfaces
+    },
+  },
+  blue: {
+    name: 'Ocean Blue',
+    primary: {
+      50: '#eff6ff',
+      100: '#dbeafe',
+      200: '#bfdbfe',
+      300: '#93c5fd',
+      400: '#60a5fa',
+      500: '#3b82f6',
+      600: '#2563eb',
+      700: '#1d4ed8',
+      800: '#1e40af',
+      900: '#1e3a8a',
+    },
+    secondary: {
+      50: '#f0f9ff',
+      100: '#e0f2fe',
+      200: '#bae6fd',
+      300: '#7dd3fc',
+      400: '#38bdf8',
+      500: '#0ea5e9',
+      600: '#0284c7',
+      700: '#0369a1',
+      800: '#075985',
+      900: '#0c4a6e',
+    },
+    darkBackground: {
+      default: '#0a1220', // Deep ocean blue-black
+      paper: '#1a2332',   // Dark ocean blue
+      elevated: '#253244', // Elevated ocean surfaces
+    },
+  },
+  purple: {
+    name: 'Royal Purple',
+    primary: {
+      50: '#faf5ff',
+      100: '#f3e8ff',
+      200: '#e9d5ff',
+      300: '#d8b4fe',
+      400: '#c084fc',
+      500: '#a855f7',
+      600: '#9333ea',
+      700: '#7c3aed',
+      800: '#6b21a8',
+      900: '#581c87',
+    },
+    secondary: {
+      50: '#fdf4ff',
+      100: '#fae8ff',
+      200: '#f5d0fe',
+      300: '#f0abfc',
+      400: '#e879f9',
+      500: '#d946ef',
+      600: '#c026d3',
+      700: '#a21caf',
+      800: '#86198f',
+      900: '#701a75',
+    },
+    darkBackground: {
+      default: '#140a18', // Deep royal purple-black
+      paper: '#251a2d',   // Dark royal purple
+      elevated: '#352038', // Elevated royal surfaces
+    },
+  },
+  amber: {
+    name: 'Golden Amber',
+    primary: {
+      50: '#fffbeb',
+      100: '#fef3c7',
+      200: '#fde68a',
+      300: '#fcd34d',
+      400: '#fbbf24',
+      500: '#f59e0b',
+      600: '#d97706',
+      700: '#b45309',
+      800: '#92400e',
+      900: '#78350f',
+    },
+    secondary: {
+      50: '#fefce8',
+      100: '#fef9c3',
+      200: '#fef08a',
+      300: '#fde047',
+      400: '#facc15',
+      500: '#eab308',
+      600: '#ca8a04',
+      700: '#a16207',
+      800: '#854d0e',
+      900: '#713f12',
+    },
+    darkBackground: {
+      default: '#1a1308', // Deep golden amber-black
+      paper: '#2d2415',   // Dark golden amber
+      elevated: '#3d3020', // Elevated golden surfaces
+    },
+  },
+}
+
+function createThemeOptions(isDark: boolean, variant: ThemeVariant): ThemeOptions {
+  const variantConfig = themeVariants[variant]
+  
+  const lightThemeOptions: ThemeOptions = {
+    palette: {
+      mode: 'light',
+      primary: {
+        main: variantConfig.primary[600],
+        light: variantConfig.primary[400],
+        dark: variantConfig.primary[800],
+        contrastText: '#ffffff',
+      },
+      secondary: {
+        main: variantConfig.secondary[500],
+        light: variantConfig.secondary[300],
+        dark: variantConfig.secondary[700],
+        contrastText: '#000000',
+      },
     error: {
       main: '#ef4444',        // Modern red
       light: '#f87171',
@@ -334,17 +554,36 @@ const lightThemeOptions: ThemeOptions = {
         root: ({ theme }: { theme: Theme }) => ({
           textTransform: 'none' as const,
           fontWeight: 500,
-          borderRadius: '6px',
+          borderTopLeftRadius: '6px',
+          borderTopRightRadius: '6px',
+          borderBottomLeftRadius: 0,
+          borderBottomRightRadius: 0,
           margin: '0 4px',
           minHeight: '48px',
           transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          // Default inactive state - subtle outline to show tabs exist
+          backgroundColor: 'transparent',
+          border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
+          borderBottom: 'none',
+          color: theme.palette.text.secondary,
+          
           '&.Mui-selected': {
-            background: 'linear-gradient(135deg, #4f46e5 0%, #8b5cf6 100%)',
-            color: '#ffffff',
-            boxShadow: '0 2px 4px rgba(79, 70, 229, 0.2)',
+            // Active tab matches content background exactly  
+            backgroundColor: theme.palette.mode === 'dark'
+              ? theme.palette.background.paper 
+              : theme.palette.background.paper,
+            color: theme.palette.text.primary,
+            border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
+            borderBottom: 'none',
+            position: 'relative',
+            zIndex: 1,
           },
           '&:hover:not(.Mui-selected)': {
-            backgroundColor: 'rgba(79, 70, 229, 0.04)',
+            // Hover state - lighter than active but darker than inactive
+            backgroundColor: theme.palette.mode === 'dark' 
+              ? 'rgba(255,255,255,0.05)' 
+              : 'rgba(0,0,0,0.02)',
+            borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
           },
         }),
       },
@@ -368,21 +607,21 @@ const lightThemeOptions: ThemeOptions = {
   },
 }
 
-const darkThemeOptions: ThemeOptions = {
-  palette: {
-    mode: 'dark',
-    primary: {
-      main: enhancedColors.primary[300], // Even lighter indigo for better contrast on dark backgrounds
-      light: enhancedColors.primary[200],
-      dark: enhancedColors.primary[400],
-      contrastText: '#000000',
-    },
-    secondary: {
-      main: enhancedColors.secondary[400], // Lighter amber for dark mode
-      light: enhancedColors.secondary[300],
-      dark: enhancedColors.secondary[500],
-      contrastText: '#000000',
-    },
+  const darkThemeOptions: ThemeOptions = {
+    palette: {
+      mode: 'dark',
+      primary: {
+        main: variantConfig.primary[300],
+        light: variantConfig.primary[200],
+        dark: variantConfig.primary[400],
+        contrastText: '#000000',
+      },
+      secondary: {
+        main: variantConfig.secondary[400],
+        light: variantConfig.secondary[300],
+        dark: variantConfig.secondary[500],
+        contrastText: '#000000',
+      },
     error: {
       main: '#f87171',        // Lighter red for dark mode
       light: '#fca5a5',
@@ -404,9 +643,9 @@ const darkThemeOptions: ThemeOptions = {
       dark: '#10b981',
     },
     background: {
-      default: '#0f172a',     // Rich dark slate
-      paper: '#1e293b',      // Elevated dark surfaces
-      elevated: '#334155',   // Higher elevated surfaces
+      default: variantConfig.darkBackground.default,
+      paper: variantConfig.darkBackground.paper,
+      elevated: variantConfig.darkBackground.elevated,
     } as any,
     text: {
       primary: 'rgba(255, 255, 255, 0.95)', // Increased contrast
@@ -421,9 +660,9 @@ const darkThemeOptions: ThemeOptions = {
         root: ({ theme }: { theme: Theme }) => ({
           borderRadius: '12px',
           transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-          backgroundColor: '#334155',
+          backgroundColor: variantConfig.darkBackground.elevated,
           boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2)',
-          border: '1px solid #475569',
+          border: `1px solid ${variantConfig.darkBackground.elevated}`,
           '&:hover': {
             boxShadow: '0 8px 25px rgba(0, 0, 0, 0.4), 0 4px 10px rgba(0, 0, 0, 0.25)',
             transform: 'translateY(-1px)',
@@ -437,17 +676,32 @@ const darkThemeOptions: ThemeOptions = {
         root: ({ theme }: { theme: Theme }) => ({
           textTransform: 'none' as const,
           fontWeight: 500,
-          borderRadius: '6px',
+          borderTopLeftRadius: '6px',
+          borderTopRightRadius: '6px',
+          borderBottomLeftRadius: 0,
+          borderBottomRightRadius: 0,
           margin: '0 4px',
           minHeight: '48px',
           transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          // Default inactive state - completely transparent
+          backgroundColor: 'transparent',
+          border: 'none',
+          borderBottom: 'none',
+          color: theme.palette.text.secondary,
+          
           '&.Mui-selected': {
-            background: 'linear-gradient(135deg, #a5b4fc 0%, #c4b5fd 100%)',
-            color: '#000000',
-            boxShadow: '0 2px 4px rgba(165, 180, 252, 0.3)',
+            // Active tabs get elevated background and stronger border
+            backgroundColor: theme.palette.background.paper,
+            color: theme.palette.text.primary,
+            border: `1px solid rgba(255,255,255,0.2)`,
+            borderBottom: 'none',
+            position: 'relative',
+            zIndex: 1,
           },
           '&:hover:not(.Mui-selected)': {
-            backgroundColor: 'rgba(165, 180, 252, 0.08)',
+            // Hover state - lighter than active but darker than inactive
+            backgroundColor: 'rgba(255,255,255,0.05)',
+            borderColor: 'rgba(255,255,255,0.2)',
           },
         }),
       },
@@ -485,7 +739,7 @@ const darkThemeOptions: ThemeOptions = {
         text: ({ theme }: { theme: Theme }) => ({
           color: theme.palette.primary.main,
           '&:hover': {
-            backgroundColor: 'rgba(129, 140, 248, 0.08)',
+            backgroundColor: `${theme.palette.primary.main}20`,
             transform: 'translateY(-1px)',
           },
         }),
@@ -502,8 +756,8 @@ const darkThemeOptions: ThemeOptions = {
     MuiDialog: {
       styleOverrides: {
         paper: {
-          backgroundColor: '#1e1e1e', // Ensure dialog has proper dark background
-          color: 'rgba(255, 255, 255, 0.95)', // Ensure text is white in dark mode
+          backgroundColor: variantConfig.darkBackground.paper,
+          color: 'rgba(255, 255, 255, 0.95)',
         },
       },
     },
@@ -524,14 +778,17 @@ const darkThemeOptions: ThemeOptions = {
   },
 }
 
-export const lightTheme = createTheme(lightThemeOptions)
-export const darkTheme = createTheme(darkThemeOptions)
+  return isDark ? darkThemeOptions : lightThemeOptions
+}
+
+export const lightTheme = createTheme(createThemeOptions(false, 'indigo'))
+export const darkTheme = createTheme(createThemeOptions(true, 'indigo'))
 
 // Export default theme for backwards compatibility
 export const theme = lightTheme
 
-export function createAppTheme(isDark: boolean) {
-  return isDark ? darkTheme : lightTheme
+export function createAppTheme(isDark: boolean, variant: ThemeVariant = 'indigo') {
+  return createTheme(createThemeOptions(isDark, variant))
 }
 
 // Export enhanced colors for use in components

@@ -15,6 +15,7 @@ import {
   FormControlLabel,
   Divider,
   Alert,
+  Chip,
 } from '@mui/material'
 import {
   ArrowBack,
@@ -23,15 +24,17 @@ import {
   LightMode,
   Palette,
   Security,
+  ColorLens,
 } from '@mui/icons-material'
 import Footer from '@/components/layout/Footer'
 import { useTheme } from '@/lib/ThemeContext'
+import { themeVariants, type ThemeVariant } from '@/lib/theme'
 import SecuritySettings from '@/components/settings/SecuritySettings'
 
 export default function SettingsPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
-  const { isDarkMode, toggleTheme } = useTheme()
+  const { isDarkMode, themeVariant, toggleTheme, setThemeVariant } = useTheme()
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -88,7 +91,7 @@ export default function SettingsPage() {
         
         <Card variant="outlined" sx={{ mb: 3 }}>
           <CardContent>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
               <Box>
                 <Typography variant="h6" component="h3" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   {isDarkMode ? <DarkMode /> : <LightMode />}
@@ -107,6 +110,42 @@ export default function SettingsPage() {
                 }
                 label=""
               />
+            </Box>
+
+            <Divider sx={{ my: 3 }} />
+
+            <Box>
+              <Typography variant="h6" component="h3" sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                <ColorLens />
+                Theme Color
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Choose your preferred color scheme
+              </Typography>
+              
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                {Object.entries(themeVariants).map(([key, variant]) => (
+                  <Chip
+                    key={key}
+                    label={variant.name}
+                    onClick={() => setThemeVariant(key as ThemeVariant)}
+                    variant={themeVariant === key ? 'filled' : 'outlined'}
+                    sx={{
+                      backgroundColor: themeVariant === key 
+                        ? variant.primary[isDarkMode ? 300 : 600]
+                        : 'transparent',
+                      borderColor: variant.primary[isDarkMode ? 300 : 600],
+                      color: themeVariant === key 
+                        ? (isDarkMode ? '#000000' : '#ffffff')
+                        : variant.primary[isDarkMode ? 300 : 600],
+                      '&:hover': {
+                        backgroundColor: variant.primary[isDarkMode ? 400 : 500],
+                        color: isDarkMode ? '#000000' : '#ffffff',
+                      },
+                    }}
+                  />
+                ))}
+              </Box>
             </Box>
           </CardContent>
         </Card>
