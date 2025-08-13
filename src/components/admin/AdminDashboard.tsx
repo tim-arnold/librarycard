@@ -174,8 +174,8 @@ export default function AdminDashboard({ initialTab }: AdminDashboardProps = {})
 
   if (loading) {
     return (
-      <Container maxWidth="xl" sx={{ py: 2 }}>
-        <Paper sx={{ p: 3 }}>
+      <Container maxWidth="xl" sx={{ pb: 2 }}>
+        <Paper sx={{ p: 3, borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
           <Typography variant="h4" component="h1" gutterBottom>
             🔧 Admin Dashboard
           </Typography>
@@ -192,8 +192,8 @@ export default function AdminDashboard({ initialTab }: AdminDashboardProps = {})
 
   if (error) {
     return (
-      <Container maxWidth="xl" sx={{ py: 2 }}>
-        <Paper sx={{ p: 3 }}>
+      <Container maxWidth="xl" sx={{ pb: 2 }}>
+        <Paper sx={{ p: 3, borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
           <Typography variant="h4" component="h1" gutterBottom>
             🔧 Admin Dashboard
           </Typography>
@@ -206,8 +206,8 @@ export default function AdminDashboard({ initialTab }: AdminDashboardProps = {})
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 2 }}>
-      <Paper sx={{ p: 3 }}>
+    <Container maxWidth="xl" sx={{ pb: 2 }}>
+      <Paper sx={{ p: 3, borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" component="h1">
           🔧 Admin Dashboard
@@ -224,8 +224,28 @@ export default function AdminDashboard({ initialTab }: AdminDashboardProps = {})
 
 
       {/* Navigation Tabs */}
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs value={activeTab} onChange={handleTabChange} variant="scrollable" scrollButtons="auto">
+      <Box sx={{ position: 'relative', mb: 3 }}>
+        <Tabs 
+          value={activeTab} 
+          onChange={handleTabChange} 
+          variant="scrollable" 
+          scrollButtons="auto" 
+          TabIndicatorProps={{ style: { display: 'none' } }}
+          sx={{
+            '& .MuiTab-root.Mui-selected': {
+              position: 'relative',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: '2px',
+                backgroundColor: (theme) => theme.palette.background.paper,
+              }
+            }
+          }}
+        >
           <Tab 
             icon={<Analytics />} 
             label={`Analytics ${overview ? `(${overview.totalBooks} books)` : ''}`}
@@ -262,6 +282,18 @@ export default function AdminDashboard({ initialTab }: AdminDashboardProps = {})
             iconPosition="start"
           />
         </Tabs>
+        {/* Border line that appears behind tabs */}
+        <Box sx={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: '1px',
+          backgroundColor: (theme) => theme.palette.mode === 'dark' 
+            ? 'rgba(255, 255, 255, 0.12)'
+            : 'rgba(0, 0, 0, 0.12)',
+          zIndex: 0,
+        }} />
       </Box>
 
       {/* Tab Content */}
