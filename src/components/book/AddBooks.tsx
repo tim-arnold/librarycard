@@ -726,8 +726,8 @@ try {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: { xs: 1, sm: 2 } }}>
-      <Paper sx={{ p: { xs: 2, sm: 3 } }}>
+    <Container maxWidth="xl" sx={{ pb: { xs: 1, sm: 2 } }}>
+      <Paper sx={{ p: { xs: 2, sm: 3 }, borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
         <Typography variant="h4" component="h2" gutterBottom>
           <LibraryBooks sx={{ mr: 1 }} /> Add Books
         </Typography>
