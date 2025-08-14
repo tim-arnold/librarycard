@@ -43,6 +43,14 @@ import { useBookSelection } from '@/contexts/BookSelectionContext'
 import { getApiBaseUrl } from '@/lib/apiConfig'
 import { useSession } from 'next-auth/react'
 
+// Utility function to ensure Google Books thumbnail URLs use HTTPS
+function ensureHttps(url: string | undefined): string | undefined {
+  if (!url) return url
+  if (url.startsWith('http://books.google.com/')) {
+    return url.replace('http://books.google.com/', 'https://books.google.com/')
+  }
+  return url
+}
 
 interface BookSearchProps {
   searchQuery: string
@@ -257,11 +265,11 @@ export default function BookSearch({
         authors: item.volumeInfo.authors,
         description: item.volumeInfo.description,
         covers: item.volumeInfo.imageLinks ? {
-          thumbnail: item.volumeInfo.imageLinks.thumbnail,
-          small: item.volumeInfo.imageLinks.small,
-          medium: item.volumeInfo.imageLinks.medium,
-          large: item.volumeInfo.imageLinks.large,
-          extraLarge: item.volumeInfo.imageLinks.extraLarge,
+          thumbnail: ensureHttps(item.volumeInfo.imageLinks.thumbnail),
+          small: ensureHttps(item.volumeInfo.imageLinks.small),
+          medium: ensureHttps(item.volumeInfo.imageLinks.medium),
+          large: ensureHttps(item.volumeInfo.imageLinks.large),
+          extraLarge: ensureHttps(item.volumeInfo.imageLinks.extraLarge),
         } : undefined,
         publishedDate: item.volumeInfo.publishedDate,
         categories: item.volumeInfo.categories,
@@ -366,7 +374,7 @@ export default function BookSearch({
         title: item.volumeInfo.title,
         authors: item.volumeInfo.authors || [],
         publishedDate: item.volumeInfo.publishedDate,
-        thumbnail: item.volumeInfo.imageLinks?.thumbnail
+        thumbnail: ensureHttps(item.volumeInfo.imageLinks?.thumbnail)
       }
     } else {
       // Enhanced format
