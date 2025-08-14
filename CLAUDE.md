@@ -60,12 +60,12 @@ npm run build
 npm run lint
 
 # Worker deployment
-npm run deploy:staging               # Deploy to staging (original account)
-npm run deploy:staging-new           # Deploy to staging (NEW isolated account)
+npm run deploy:staging               # ⚠️ DEPRECATED - staging auto-deploys via GitHub Actions
+npm run deploy:staging-new           # ⚠️ DEPRECATED - staging auto-deploys via GitHub Actions  
 npm run deploy:prod                  # ⚠️ BLOCKED - redirects to GitHub Actions for safety
 
 # Database migrations  
-npx wrangler d1 execute librarycard-db-staging-new --file=migrations/migration.sql --env=staging-new --remote
+npx wrangler d1 execute librarycard-db-staging-new --file=migrations/migration.sql --env=staging-new --remote  # ⚠️ Use GitHub Actions instead
 npm run migrate:prod                 # ⚠️ BLOCKED - redirects to GitHub Actions for safety
 
 # Database backup operations (Phase 2)
@@ -84,11 +84,12 @@ npm run validate:env                 # Validate environment before production op
 
 # CRITICAL SAFETY NOTES (Updated Phase 3 - GitHub Actions Required):
 # - PRODUCTION DEPLOYMENT: MUST use GitHub Actions workflows (local commands blocked for safety)
-# - Staging: Use isolated account with npm run deploy:staging-new or GitHub Actions
+# - STAGING DEPLOYMENT: Auto-deploys via GitHub Actions on staging branch push (manual commands deprecated)
 # - Production: GitHub Actions "Deploy to Production (Enhanced Safety)" workflow ONLY
 # - All production operations require manual GitHub Actions trigger + confirmation
 # - Production scripts include automated backups and validation
 # - Local direct wrangler commands are blocked for production environment
+# - Staging manual deployment commands are deprecated - use auto-deploy workflow instead
 ```
 
 ## Current Technical State
