@@ -1020,11 +1020,29 @@ export async function rateBook(request: Request, bookId: number, userId: string,
 
     // Handle rating deletion (rating = 0) or insertion/update
     if (rating === 0) {
+      // Check if we're deleting a pending review (affects pending count)
+      const existingReviewStmt = env.DB.prepare(`
+        SELECT review_status FROM book_ratings WHERE book_id = ? AND user_id = ?
+      `);
+      const existingReview = await existingReviewStmt.bind(bookId, userId).first();
+      const wasPending = (existingReview as any)?.review_status === 'pending';
+
       // Delete the rating
       const deleteRatingStmt = env.DB.prepare(`
         DELETE FROM book_ratings WHERE book_id = ? AND user_id = ?
       `);
       await deleteRatingStmt.bind(bookId, userId).run();
+
+      // Invalidate admin analytics cache if a pending review was deleted
+      if (wasPending) {
+        try {
+          const { invalidateAllAdminAnalytics } = await import('../admin/cached');
+          await invalidateAllAdminAnalytics(env);
+        } catch (cacheError) {
+          console.error('Failed to invalidate admin analytics cache:', cacheError);
+          // Don't fail the review deletion if cache invalidation fails
+        }
+      }
     } else {
       // Determine review status based on user permissions and content
       const isAdmin = await isUserAdmin(userId, env);
@@ -1068,6 +1086,15 @@ export async function rateBook(request: Request, bookId: number, userId: string,
         } catch (notificationError) {
           console.error('Failed to send book review notification:', notificationError);
           // Don't fail the review submission if notification fails
+        }
+
+        // Invalidate admin analytics cache since pending review count increased
+        try {
+          const { invalidateAllAdminAnalytics } = await import('../admin/cached');
+          await invalidateAllAdminAnalytics(env);
+        } catch (cacheError) {
+          console.error('Failed to invalidate admin analytics cache:', cacheError);
+          // Don't fail the review submission if cache invalidation fails
         }
       }
     }
@@ -1674,6 +1701,10 @@ export async function moderateReview(request: Request, reviewId: number, userId:
     // Invalidate book cache to ensure UI gets updated data
     const { invalidateBookCache } = await import('./cached');
     await invalidateBookCache(review.book_id.toString(), review.user_id, env);
+
+    // Invalidate admin analytics cache since pending review count changed
+    const { invalidateAllAdminAnalytics } = await import('../admin/cached');
+    await invalidateAllAdminAnalytics(env);
 
     return new Response(JSON.stringify({
       success: true,
