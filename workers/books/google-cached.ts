@@ -1,6 +1,15 @@
 import { Env, GoogleBooksResponse } from '../types';
 import { CacheManager, CacheKeys, CacheTTL } from '../cache/kv';
 
+// Utility function to ensure Google Books thumbnail URLs use HTTPS
+function ensureHttps(url: string | undefined): string | undefined {
+  if (!url) return url
+  if (url.startsWith('http://books.google.com/')) {
+    return url.replace('http://books.google.com/', 'https://books.google.com/')
+  }
+  return url
+}
+
 /**
  * Cached Google Books API functions with automatic fallback
  */
@@ -43,7 +52,7 @@ export async function getCachedGoogleBooksISBN(isbn: string, env: Env): Promise<
       title: bookInfo.title || 'Unknown Title',
       authors: bookInfo.authors || ['Unknown Author'],
       description: bookInfo.description,
-      thumbnail: bookInfo.imageLinks?.thumbnail || bookInfo.imageLinks?.smallThumbnail,
+      thumbnail: ensureHttps(bookInfo.imageLinks?.thumbnail || bookInfo.imageLinks?.smallThumbnail),
       publishedDate: bookInfo.publishedDate,
       categories: bookInfo.categories || [],
       publisher: bookInfo.publisher,
@@ -115,7 +124,7 @@ export async function getCachedGoogleBooksSearch(query: string, env: Env, maxRes
         title: volumeInfo.title || 'Unknown Title',
         authors: volumeInfo.authors || ['Unknown Author'],
         description: volumeInfo.description,
-        thumbnail: volumeInfo.imageLinks?.thumbnail || volumeInfo.imageLinks?.smallThumbnail,
+        thumbnail: ensureHttps(volumeInfo.imageLinks?.thumbnail || volumeInfo.imageLinks?.smallThumbnail),
         publishedDate: volumeInfo.publishedDate,
         categories: volumeInfo.categories || [],
         publisher: volumeInfo.publisher,
@@ -177,7 +186,7 @@ export async function getCachedGoogleBooksVolume(volumeId: string, env: Env): Pr
       title: volumeInfo.title || 'Unknown Title',
       authors: volumeInfo.authors || ['Unknown Author'],
       description: volumeInfo.description,
-      thumbnail: volumeInfo.imageLinks?.thumbnail || volumeInfo.imageLinks?.smallThumbnail,
+      thumbnail: ensureHttps(volumeInfo.imageLinks?.thumbnail || volumeInfo.imageLinks?.smallThumbnail),
       publishedDate: volumeInfo.publishedDate,
       categories: volumeInfo.categories || [],
       publisher: volumeInfo.publisher,
@@ -248,7 +257,7 @@ export async function getCachedBookEditions(title: string, author: string, env: 
         const covers: any = {};
         if (volumeInfo.imageLinks) {
           Object.keys(volumeInfo.imageLinks).forEach(size => {
-            covers[size] = volumeInfo.imageLinks[size];
+            covers[size] = ensureHttps(volumeInfo.imageLinks[size]);
           });
         }
         
