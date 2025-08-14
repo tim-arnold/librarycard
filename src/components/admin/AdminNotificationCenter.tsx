@@ -37,7 +37,11 @@ interface NotificationCounts {
   pendingGenreRequests: number
 }
 
-export default function AdminNotificationCenter() {
+interface AdminNotificationCenterProps {
+  onDataChange?: () => void;
+}
+
+export default function AdminNotificationCenter({ onDataChange }: AdminNotificationCenterProps = {}) {
   const { data: session } = useSession()
   const [activeTab, setActiveTab] = useState(0)
   const [counts, setCounts] = useState<NotificationCounts>({
@@ -102,6 +106,9 @@ export default function AdminNotificationCenter() {
       // - Overdue checkouts (books checked out > 30 days)
       // - Monthly reminders (books still checked out for monthly notification)
       // - Pending invitations across all locations
+
+      // Notify parent components about data change for immediate badge updates
+      onDataChange?.()
 
     } catch (error) {
       console.error('Error loading notification counts:', error)
@@ -195,7 +202,7 @@ export default function AdminNotificationCenter() {
         <CardContent sx={{ p: 0 }}>
           {activeTab === 0 && (
             <Box sx={{ p: 3 }}>
-              <RemovalRequestManager />
+              <RemovalRequestManager onCountChange={loadNotificationCounts} />
             </Box>
           )}
 
@@ -209,13 +216,13 @@ export default function AdminNotificationCenter() {
 
           {activeTab === 2 && (
             <Box sx={{ p: 3 }}>
-              <AdminSignupManager />
+              <AdminSignupManager onCountChange={loadNotificationCounts} />
             </Box>
           )}
 
           {activeTab === 3 && (
             <Box sx={{ p: 3 }}>
-              <GenreRequestManager />
+              <GenreRequestManager onCountChange={loadNotificationCounts} />
             </Box>
           )}
 
