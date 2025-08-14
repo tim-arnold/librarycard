@@ -15,5 +15,5 @@ export const getApiBaseUrl = (): string => {
   return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8787'
 }
 
-// Export the result of calling the function
-export const API_BASE_URL = getApiBaseUrl()
+// Export the function directly to avoid computing during build
+export const API_BASE_URL = getApiBaseUrl
