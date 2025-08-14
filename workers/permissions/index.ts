@@ -1,4 +1,5 @@
 import { Env } from '../types';
+import { sendPermissionUpdate } from '../notifications/index';
 
 // Permission checking utilities
 export async function isUserSuperAdmin(userId: string, env: Env): Promise<boolean> {
@@ -420,11 +421,21 @@ export async function grantUserPermission(request: Request, userId: string, env:
     }
 
     // Insert or ignore if already exists
-    await env.DB.prepare(`
+    const result = await env.DB.prepare(`
       INSERT OR IGNORE INTO location_user_permissions 
       (location_id, user_id, permission, granted_by, granted_at)
       VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
     `).bind(locationId, targetUserId, permission, userId).run();
+
+    // Send notification if permission was actually granted (not if it already existed)
+    if (result.changes > 0) {
+      try {
+        await sendPermissionUpdate(env, targetUserId, locationId, permission, true, userId);
+      } catch (notificationError) {
+        console.error('Failed to send permission notification:', notificationError);
+        // Don't fail the permission grant if notification fails
+      }
+    }
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
@@ -460,10 +471,20 @@ export async function revokeUserPermission(request: Request, userId: string, env
       });
     }
 
-    await env.DB.prepare(`
+    const result = await env.DB.prepare(`
       DELETE FROM location_user_permissions 
       WHERE location_id = ? AND user_id = ? AND permission = ?
     `).bind(locationId, targetUserId, permission).run();
+
+    // Send notification if permission was actually revoked
+    if (result.changes > 0) {
+      try {
+        await sendPermissionUpdate(env, targetUserId, locationId, permission, false, userId);
+      } catch (notificationError) {
+        console.error('Failed to send permission notification:', notificationError);
+        // Don't fail the permission revoke if notification fails
+      }
+    }
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
