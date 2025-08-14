@@ -13,11 +13,11 @@ We use a clean three-environment deployment strategy:
 - **Usage**: Development and testing
 
 ### Staging
-- **Frontend**: `https://staging--libarycard.netlify.app/`
-- **Worker**: `librarycard-api-staging`
-- **Database**: `librarycard-db-staging`
+- **Frontend**: Standalone Netlify staging site (independent deployment)
+- **Worker**: `librarycard-api-staging` (isolated Cloudflare account)
+- **Database**: `librarycard-db-staging-new`
 - **Usage**: Pre-production testing and validation
-- **Auto-deployment**: Triggered by pushes to `staging` branch
+- **Deployment**: Manual via GitHub Actions or direct deployment
 
 ### Production
 - **Frontend**: `https://librarycard.tim52.io/`
@@ -58,8 +58,8 @@ npx wrangler dev
 
 #### Frontend Deployment
 ```bash
-# Deploy frontend - automatic via GitHub push to staging branch
-git push origin staging
+# Deploy frontend to standalone staging site
+# Manual deployment or branch-specific configuration as needed
 ```
 
 #### Health Check Verification
@@ -118,7 +118,7 @@ curl https://librarycard-api-production.tim-arnold.workers.dev/health
 ## Deployment Methods
 
 ### Frontend (Netlify)
-- **Staging**: Automatic on pushes to `staging` branch
+- **Staging**: Standalone staging site with independent configuration
 - **Production**: Automatic on pushes to `main` branch
 - **Build command**: `npm run build`
 - **Output directory**: `.next`
@@ -361,4 +361,4 @@ npm run backup:restore
 
 ---
 
-**Last updated**: July 2025
+**Last updated**: August 2025
