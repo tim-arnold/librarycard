@@ -23,7 +23,7 @@ async function getCSRFToken(): Promise<string | null> {
   return null
 }
 
-async function getAuthHeaders(): Promise<Record<string, string>> {
+async function getAuthHeaders(method: string = 'GET'): Promise<Record<string, string>> {
   const session = await getSession()
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -32,10 +32,12 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   if (session?.user?.email) {
     headers['Authorization'] = `Bearer ${session.user.email}`
     
-    // Add CSRF token for state-changing operations
-    const csrfToken = await getCSRFToken()
-    if (csrfToken) {
-      headers['X-CSRF-Token'] = csrfToken
+    // Add CSRF token only for state-changing operations
+    if (method !== 'GET') {
+      const csrfToken = await getCSRFToken()
+      if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken
+      }
     }
   }
   
@@ -48,7 +50,8 @@ export async function authenticatedApiCall(
   options: RequestInit = {}
 ): Promise<Response> {
   const { getApiBaseUrl } = await import('@/lib/apiConfig')
-  const headers = await getAuthHeaders()
+  const method = (options.method || 'GET').toUpperCase()
+  const headers = await getAuthHeaders(method)
   
   return fetch(`${getApiBaseUrl()}${url}`, {
     ...options,
@@ -62,7 +65,7 @@ export async function authenticatedApiCall(
 export async function saveBook(book: Omit<EnhancedBook, 'id'>): Promise<boolean> {
   try {
     const { getApiBaseUrl } = await import('@/lib/apiConfig')
-    const headers = await getAuthHeaders()
+    const headers = await getAuthHeaders('POST')
     
     const response = await fetch(`${getApiBaseUrl()}/api/books`, {
       method: 'POST',
@@ -99,7 +102,7 @@ export async function getDashboardData(fieldSet: 'grid' | 'detail' | 'full' = 'g
   try {
     const { getApiBaseUrl } = await import('@/lib/apiConfig')
     const { getFieldsParam } = await import('@/lib/fieldSelection')
-    const headers = await getAuthHeaders()
+    const headers = await getAuthHeaders('GET')
     
     // Get fields parameter for the specified field set
     const fields = getFieldsParam(fieldSet)
@@ -121,7 +124,7 @@ export async function getDashboardData(fieldSet: 'grid' | 'detail' | 'full' = 'g
 export async function getBooks(): Promise<EnhancedBook[]> {
   try {
     const { getApiBaseUrl } = await import('@/lib/apiConfig')
-    const headers = await getAuthHeaders()
+    const headers = await getAuthHeaders('GET')
     
     const response = await fetch(`${getApiBaseUrl()}/api/books`, {
       headers,
@@ -140,7 +143,7 @@ export async function getBooks(): Promise<EnhancedBook[]> {
 export async function updateBook(id: string | number, updates: Partial<EnhancedBook>): Promise<boolean> {
   try {
     const { getApiBaseUrl } = await import('@/lib/apiConfig')
-    const headers = await getAuthHeaders()
+    const headers = await getAuthHeaders('PUT')
     
     const response = await fetch(`${getApiBaseUrl()}/api/books/${id}`, {
       method: 'PUT',
@@ -171,7 +174,7 @@ export async function updateBook(id: string | number, updates: Partial<EnhancedB
 export async function deleteBook(id: string | number): Promise<boolean> {
   try {
     const { getApiBaseUrl } = await import('@/lib/apiConfig')
-    const headers = await getAuthHeaders()
+    const headers = await getAuthHeaders('DELETE')
     
     const response = await fetch(`${getApiBaseUrl()}/api/books/${id}`, {
       method: 'DELETE',
@@ -191,7 +194,7 @@ export async function deleteBook(id: string | number): Promise<boolean> {
 
 export async function getBooksWithRatings(): Promise<EnhancedBook[]> {
   const { getApiBaseUrl } = await import('@/lib/apiConfig')
-  const headers = await getAuthHeaders()
+  const headers = await getAuthHeaders('GET')
   
   const response = await fetch(`${getApiBaseUrl()}/api/books`, {
     headers,
@@ -215,4 +218,37 @@ export async function getUserLocationName(): Promise<string | null> {
     console.error('Failed to fetch location name:', error)
     return null
   }
+}
+
+// Review Moderation API Functions (GitHub Issue #256)
+
+export async function getPendingReviews() {
+  const { getApiBaseUrl } = await import('@/lib/apiConfig')
+  const response = await fetch(`${getApiBaseUrl()}/api/admin/reviews/pending`, {
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  })
+  if (!response.ok) {
+    throw new Error('Failed to fetch pending reviews')
+  }
+  return response.json()
+}
+
+export async function moderateReview(reviewId: number, action: 'approve' | 'reject' | 'delete', rejectionReason?: string) {
+  const { getApiBaseUrl } = await import('@/lib/apiConfig')
+  const response = await fetch(`${getApiBaseUrl()}/api/admin/reviews/${reviewId}/moderate`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      action,
+      rejectionReason
+    })
+  })
+  if (!response.ok) {
+    throw new Error(`Failed to ${action} review`)
+  }
+  return response.json()
 }

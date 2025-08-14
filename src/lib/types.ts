@@ -79,6 +79,7 @@ export interface EnhancedBook extends Book {
   // Rating system fields
   userRating?: number | null      // Current user's rating (1-5 stars)
   userReview?: string | null      // Current user's review text
+  userReviewStatus?: 'pending' | 'approved' | 'rejected' | null  // Current user's review moderation status
   averageRating?: number | null   // Library-specific average rating
   ratingCount?: number            // Number of library-specific ratings
   googleAverageRating?: number | null  // Google Books average rating (for More Details)
@@ -112,6 +113,10 @@ export interface BookRating {
   userName?: string
   createdAt: string
   updatedAt: string
+  reviewStatus?: 'pending' | 'approved' | 'rejected'
+  reviewedBy?: string
+  reviewedAt?: string
+  reviewRejectionReason?: string
 }
 
 export interface RateBookRequest {
@@ -124,10 +129,30 @@ export interface RateBookRequest {
 export interface BookRatingsResponse {
   userRating: number | null
   userReview?: string | null
+  userReviewStatus?: 'pending' | 'approved' | 'rejected' | null
   averageRating: number | null
   ratingCount: number
   locationId: number
   allRatings?: BookRating[]  // For showing all reviews in More Details
+}
+
+// Review Moderation System Interfaces (GitHub Issue #256)
+export interface PendingReview extends BookRating {
+  bookTitle: string
+  bookThumbnail?: string
+  bookAuthors: string[]
+}
+
+export interface ReviewModerationRequest {
+  reviewId: number
+  action: 'approve' | 'reject' | 'delete'
+  rejectionReason?: string
+}
+
+export interface ReviewModerationResponse {
+  success: boolean
+  message: string
+  review?: BookRating
 }
 
 // Dynamic Genre Management System Interfaces

@@ -1,7 +1,7 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect } from 'react'
 import { Container, CircularProgress, Typography, Box } from '@mui/material'
 import BookLibrary from '@/components/library/BookLibrary'
@@ -9,6 +9,7 @@ import BookLibrary from '@/components/library/BookLibrary'
 export default function LibraryPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   useEffect(() => {
     if (status === 'loading') return
@@ -32,5 +33,20 @@ export default function LibraryPage() {
     return null
   }
 
-  return <BookLibrary />
+  // Extract URL parameters for search functionality
+  const searchTerm = searchParams.get('search')
+  const category = searchParams.get('category')
+  const statusFilter = searchParams.get('status')
+
+
+  const urlFilters = {
+    location: '',
+    shelf: '',
+    status: statusFilter || '',
+    searchTerm: searchTerm || '',
+    category: category || '',
+  }
+
+
+  return <BookLibrary initialFilters={urlFilters} />
 }
