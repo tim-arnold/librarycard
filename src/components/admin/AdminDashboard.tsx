@@ -110,15 +110,7 @@ export default function AdminDashboard({ initialTab, onDataChange }: AdminDashbo
     }
   }, [session?.user?.email, dataLoaded])
 
-  // Set up automatic refresh every 30 seconds for dynamic badge updates
-  useEffect(() => {
-    if (session?.user?.email && dataLoaded) {
-      const interval = setInterval(() => {
-        loadOverview()
-      }, 30000);
-      return () => clearInterval(interval);
-    }
-  }, [session?.user?.email, dataLoaded])
+  // Removed automatic refresh - users can manually refresh when needed
 
   const loadOverview = async () => {
     if (!session?.user?.email) return
