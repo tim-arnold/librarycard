@@ -34,7 +34,11 @@ import { useSession } from 'next-auth/react'
 import { authenticatedFetch } from '@/lib/auth-utils'
 import type { PendingReview } from '@/lib/types'
 
-export default function ReviewModerationPage() {
+interface ReviewModerationPageProps {
+  onCountChange?: () => void;
+}
+
+export default function ReviewModerationPage({ onCountChange }: ReviewModerationPageProps = {}) {
   const { data: session } = useSession()
   const [pendingReviews, setPendingReviews] = useState<PendingReview[]>([])
   const [loading, setLoading] = useState(true)
@@ -98,6 +102,8 @@ export default function ReviewModerationPage() {
         setSuccess(`Review ${action}d successfully`)
         // Remove the review from the pending list
         setPendingReviews(prev => prev.filter(review => review.id !== reviewId))
+        // Notify parent components about count change
+        onCountChange?.()
       } else {
         setError(result.error || `Failed to ${action} review`)
       }
