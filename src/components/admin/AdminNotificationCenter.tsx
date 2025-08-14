@@ -25,7 +25,7 @@ import AdminSignupManager from './AdminSignupManager'
 import { lazy, Suspense } from 'react'
 import { getApiBaseUrl } from '@/lib/apiConfig'
 
-const ReviewModeration = lazy(() => import('../../app/admin/reviews/page'))
+const ReviewModeration = lazy(() => import('./ReviewModerationComponent'))
 
 interface NotificationCounts {
   pendingRemovalRequests: number
