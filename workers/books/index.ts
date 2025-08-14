@@ -2,6 +2,7 @@ import { Env, Book, GoogleBooksResponse } from '../types';
 import { isUserAdmin, isUserSuperAdmin } from '../auth';
 import { hasUserPermission, hasGlobalPermission, getLocationIdFromShelfId, getLocationIdFromBookId } from '../permissions';
 import { invalidateAllAdminAnalytics } from '../admin/cached';
+import { sendBookReviewUpdate } from '../notifications/index';
 
 // Core Book Management Functions
 export async function getUserBooks(userId: string, env: Env, corsHeaders: Record<string, string>) {
@@ -1019,11 +1020,29 @@ export async function rateBook(request: Request, bookId: number, userId: string,
 
     // Handle rating deletion (rating = 0) or insertion/update
     if (rating === 0) {
+      // Check if we're deleting a pending review (affects pending count)
+      const existingReviewStmt = env.DB.prepare(`
+        SELECT review_status FROM book_ratings WHERE book_id = ? AND user_id = ?
+      `);
+      const existingReview = await existingReviewStmt.bind(bookId, userId).first();
+      const wasPending = (existingReview as any)?.review_status === 'pending';
+
       // Delete the rating
       const deleteRatingStmt = env.DB.prepare(`
         DELETE FROM book_ratings WHERE book_id = ? AND user_id = ?
       `);
       await deleteRatingStmt.bind(bookId, userId).run();
+
+      // Invalidate admin analytics cache if a pending review was deleted
+      if (wasPending) {
+        try {
+          const { invalidateAllAdminAnalytics } = await import('../admin/cached');
+          await invalidateAllAdminAnalytics(env);
+        } catch (cacheError) {
+          console.error('Failed to invalidate admin analytics cache:', cacheError);
+          // Don't fail the review deletion if cache invalidation fails
+        }
+      }
     } else {
       // Determine review status based on user permissions and content
       const isAdmin = await isUserAdmin(userId, env);
@@ -1051,6 +1070,33 @@ export async function rateBook(request: Request, bookId: number, userId: string,
         bookId, userId, rating, reviewText || null, reviewStatus,
         reviewedBy, reviewedAt, bookId, userId
       ).run();
+
+      // Send notification if review was submitted for moderation
+      if (reviewStatus === 'pending' && reviewText && reviewText.trim().length > 0) {
+        try {
+          await sendBookReviewUpdate(
+            env,
+            (bookAccess as any).title,
+            'authors' in bookAccess ? (bookAccess as any).authors : 'Unknown Author',
+            reviewText,
+            userId,
+            (bookAccess as any).location_id,
+            'submitted'
+          );
+        } catch (notificationError) {
+          console.error('Failed to send book review notification:', notificationError);
+          // Don't fail the review submission if notification fails
+        }
+
+        // Invalidate admin analytics cache since pending review count increased
+        try {
+          const { invalidateAllAdminAnalytics } = await import('../admin/cached');
+          await invalidateAllAdminAnalytics(env);
+        } catch (cacheError) {
+          console.error('Failed to invalidate admin analytics cache:', cacheError);
+          // Don't fail the review submission if cache invalidation fails
+        }
+      }
     }
 
     // Calculate new average rating for this book within the location
@@ -1624,9 +1670,41 @@ export async function moderateReview(request: Request, reviewId: number, userId:
       });
     }
 
+    // Send notification for review moderation (approve/reject only, not delete)
+    if (action !== 'delete') {
+      try {
+        // Get book details for notification
+        const bookStmt = env.DB.prepare(`
+          SELECT title, authors, location_id FROM books WHERE id = ?
+        `);
+        const book = await bookStmt.bind(review.book_id).first() as any;
+
+        if (book) {
+          await sendBookReviewUpdate(
+            env,
+            book.title,
+            book.authors || '',
+            review.review_text || '',
+            review.user_id,
+            book.location_id,
+            action === 'approve' ? 'approved' : 'rejected',
+            userId,
+            action === 'reject' ? rejectionReason : undefined
+          );
+        }
+      } catch (error) {
+        console.error('Error sending review moderation notification:', error);
+        // Don't fail the entire operation if notification fails
+      }
+    }
+
     // Invalidate book cache to ensure UI gets updated data
     const { invalidateBookCache } = await import('./cached');
     await invalidateBookCache(review.book_id.toString(), review.user_id, env);
+
+    // Invalidate admin analytics cache since pending review count changed
+    const { invalidateAllAdminAnalytics } = await import('../admin/cached');
+    await invalidateAllAdminAnalytics(env);
 
     return new Response(JSON.stringify({
       success: true,

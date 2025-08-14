@@ -52,7 +52,11 @@ interface BookRemovalRequest {
   reviewed_at?: string
 }
 
-export default function RemovalRequestManager() {
+interface RemovalRequestManagerProps {
+  onCountChange?: () => void;
+}
+
+export default function RemovalRequestManager({ onCountChange }: RemovalRequestManagerProps = {}) {
   const { data: session } = useSession()
   const { modalState, confirmAsync, alert, closeModal } = useModal()
   const [requests, setRequests] = useState<BookRemovalRequest[]>([])
@@ -113,6 +117,7 @@ export default function RemovalRequestManager() {
 
         if (response.ok) {
           await loadRequests() // Refresh the list
+          onCountChange?.() // Notify parent about count change
           await alert({
             title: 'Book Removed',
             message: `"${bookTitle}" has been removed from the library.`,
@@ -156,6 +161,7 @@ export default function RemovalRequestManager() {
 
         if (response.ok) {
           await loadRequests() // Refresh the list
+          onCountChange?.() // Notify parent about count change
           await alert({
             title: 'Request Denied',
             message: `The removal request for "${bookTitle}" has been denied. The book remains in the library.`,
