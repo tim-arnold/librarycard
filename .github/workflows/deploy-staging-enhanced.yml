@@ -1,4 +1,4 @@
-name: Deploy to Staging (Enhanced - Isolated Account)
+name: Auto-Deploy to Staging (Enhanced - Isolated Account)
 
 on:
   push:
