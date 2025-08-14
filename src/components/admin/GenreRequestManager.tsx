@@ -46,7 +46,11 @@ interface GenreRequest {
   notes?: string
 }
 
-export default function GenreRequestManager() {
+interface GenreRequestManagerProps {
+  onCountChange?: () => void;
+}
+
+export default function GenreRequestManager({ onCountChange }: GenreRequestManagerProps = {}) {
   const [genreRequests, setGenreRequests] = useState<GenreRequest[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -103,6 +107,8 @@ export default function GenreRequestManager() {
         setReviewNotes('')
         setCreateGenre(true)
         loadGenreRequests()
+        // Notify parent about count change
+        onCountChange?.()
       } else {
         const error = await response.json()
         setError(error.error || `Failed to ${reviewAction} genre request`)
