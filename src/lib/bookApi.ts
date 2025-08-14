@@ -3,6 +3,15 @@ import { classifyGenres } from '@/lib/genreClassifier'
 
 const GOOGLE_BOOKS_API = 'https://www.googleapis.com/books/v1/volumes'
 
+// Utility function to ensure Google Books thumbnail URLs use HTTPS
+function ensureHttps(url: string | undefined): string | undefined {
+  if (!url) return url
+  if (url.startsWith('http://books.google.com/')) {
+    return url.replace('http://books.google.com/', 'https://books.google.com/')
+  }
+  return url
+}
+
 export async function fetchBookData(isbn: string): Promise<Book | null> {
   try {
     const response = await fetch(`${GOOGLE_BOOKS_API}?q=isbn:${isbn}`)
@@ -20,7 +29,7 @@ export async function fetchBookData(isbn: string): Promise<Book | null> {
       title: bookInfo.title || 'Unknown Title',
       authors: bookInfo.authors || ['Unknown Author'],
       description: bookInfo.description,
-      thumbnail: bookInfo.imageLinks?.thumbnail || bookInfo.imageLinks?.smallThumbnail,
+      thumbnail: ensureHttps(bookInfo.imageLinks?.thumbnail || bookInfo.imageLinks?.smallThumbnail),
       publishedDate: bookInfo.publishedDate,
       categories: bookInfo.categories
     }
@@ -77,7 +86,7 @@ export async function fetchEnhancedBookData(isbn: string): Promise<EnhancedBook 
       title: bookInfo.title || 'Unknown Title',
       authors: bookInfo.authors || ['Unknown Author'],
       description: bookInfo.description,
-      thumbnail: bookInfo.imageLinks?.thumbnail || bookInfo.imageLinks?.smallThumbnail,
+      thumbnail: ensureHttps(bookInfo.imageLinks?.thumbnail || bookInfo.imageLinks?.smallThumbnail),
       publishedDate: bookInfo.publishedDate,
       categories: bookInfo.categories,
       publisherInfo: bookInfo.publisher,
@@ -186,7 +195,7 @@ export async function fetchEnhancedBookFromSearch(googleBookItem: GoogleBookItem
     title = googleBookItem.volumeInfo.title
     authors = googleBookItem.volumeInfo.authors || ['Unknown Author']
     description = googleBookItem.volumeInfo.description
-    thumbnail = googleBookItem.volumeInfo.imageLinks?.thumbnail
+    thumbnail = ensureHttps(googleBookItem.volumeInfo.imageLinks?.thumbnail)
     publishedDate = googleBookItem.volumeInfo.publishedDate
     categories = googleBookItem.volumeInfo.categories
     publisher = googleBookItem.volumeInfo.publisher
@@ -563,7 +572,7 @@ function mergeBookData(google: any, openLibrary: any, loc: LocBookData | null, i
     subjects: mergeSubjects(google, openLibrary, loc),
     
     // Google Books specific fields (best source for these)
-    thumbnail: google?.imageLinks?.thumbnail || google?.imageLinks?.smallThumbnail,
+    thumbnail: ensureHttps(google?.imageLinks?.thumbnail || google?.imageLinks?.smallThumbnail),
     pageCount: google?.pageCount,
     averageRating: google?.averageRating,
     ratingCount: google?.ratingsCount,
