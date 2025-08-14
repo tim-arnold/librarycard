@@ -38,6 +38,7 @@ import HelpModal from '@/components/modals/HelpModal'
 import { useTheme } from '@/lib/ThemeContext'
 import AccessibleIcon from '@/components/ui/AccessibleIcon'
 import { useUnreadNotificationCount } from '@/hooks/useNotifications'
+import { useAdminPendingCounts } from '@/hooks/useAdminPendingCounts'
 
 interface AppLayoutProps {
   children: React.ReactNode
@@ -58,6 +59,7 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
   const [helpModalOpen, setHelpModalOpen] = useState(false)
   const dataLoadedRef = useRef(false)
   const { unreadCount } = useUnreadNotificationCount()
+  const { counts: adminCounts } = useAdminPendingCounts()
 
   useEffect(() => {
     if (session && !dataLoadedRef.current) {
@@ -372,7 +374,7 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
                 label="Admin Dashboard"
                 icon={
                   <Badge 
-                    badgeContent={unreadCount > 0 ? unreadCount : undefined} 
+                    badgeContent={isAdmin(userRole) ? (adminCounts.total > 0 ? adminCounts.total : undefined) : (unreadCount > 0 ? unreadCount : undefined)} 
                     color="primary"
                     max={99}
                     sx={{
