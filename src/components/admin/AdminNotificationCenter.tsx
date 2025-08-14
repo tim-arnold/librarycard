@@ -108,14 +108,6 @@ export default function AdminNotificationCenter() {
     }
   }
 
-  // Set up automatic refresh every 30 seconds for dynamic updates
-  useEffect(() => {
-    if (session?.user?.email) {
-      const interval = setInterval(loadNotificationCounts, 30000);
-      return () => clearInterval(interval);
-    }
-  }, [session?.user?.email]);
-
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue)
   }
@@ -202,7 +194,7 @@ export default function AdminNotificationCenter() {
           {activeTab === 1 && (
             <Box sx={{ p: 3 }}>
               <Suspense fallback={<Box sx={{ p: 3, textAlign: 'center' }}>Loading review moderation...</Box>}>
-                <ReviewModeration onCountChange={loadNotificationCounts} />
+                <ReviewModeration />
               </Suspense>
             </Box>
           )}
