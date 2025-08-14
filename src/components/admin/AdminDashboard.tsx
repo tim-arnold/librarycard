@@ -73,9 +73,10 @@ interface AdminOverview {
 
 interface AdminDashboardProps {
   initialTab?: string
+  onDataChange?: () => void
 }
 
-export default function AdminDashboard({ initialTab }: AdminDashboardProps = {}) {
+export default function AdminDashboard({ initialTab, onDataChange }: AdminDashboardProps = {}) {
   const { data: session } = useSession()
   const pathname = usePathname()
   const router = useRouter()
@@ -109,6 +110,16 @@ export default function AdminDashboard({ initialTab }: AdminDashboardProps = {})
     }
   }, [session?.user?.email, dataLoaded])
 
+  // Set up automatic refresh every 30 seconds for dynamic badge updates
+  useEffect(() => {
+    if (session?.user?.email && dataLoaded) {
+      const interval = setInterval(() => {
+        loadOverview()
+      }, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [session?.user?.email, dataLoaded])
+
   const loadOverview = async () => {
     if (!session?.user?.email) return
 
@@ -125,6 +136,8 @@ export default function AdminDashboard({ initialTab }: AdminDashboardProps = {})
         const data = await response.json()
         setOverview(data.overview)
         setError('')
+        // Notify parent about data change
+        onDataChange?.()
       } else if (response.status === 403) {
         setError('Admin privileges required to access this dashboard')
       } else {
@@ -332,7 +345,7 @@ export default function AdminDashboard({ initialTab }: AdminDashboardProps = {})
 
             {activeTab === 4 && (
               <Suspense fallback={<AdminComponentLoader />}>
-                <AdminNotificationCenter />
+                <AdminNotificationCenter onDataChange={onDataChange} />
               </Suspense>
             )}
           </Box>

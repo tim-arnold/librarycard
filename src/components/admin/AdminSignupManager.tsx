@@ -51,7 +51,11 @@ interface SignupRequest {
   review_comment?: string
 }
 
-export default function AdminSignupManager() {
+interface AdminSignupManagerProps {
+  onCountChange?: () => void;
+}
+
+export default function AdminSignupManager({ onCountChange }: AdminSignupManagerProps = {}) {
   const { data: session } = useSession()
   const [requests, setRequests] = useState<SignupRequest[]>([])
   const [loading, setLoading] = useState(true)
@@ -135,6 +139,8 @@ export default function AdminSignupManager() {
         setReviewRequest(null)
         setReviewAction(null)
         setReviewComment('')
+        // Notify parent components about count change
+        onCountChange?.()
       } else {
         const errorData = await response.json()
         setError(errorData.error || `Failed to ${reviewAction} signup request`)

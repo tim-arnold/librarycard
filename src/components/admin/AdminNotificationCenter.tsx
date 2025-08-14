@@ -25,7 +25,7 @@ import AdminSignupManager from './AdminSignupManager'
 import { lazy, Suspense } from 'react'
 import { getApiBaseUrl } from '@/lib/apiConfig'
 
-const ReviewModeration = lazy(() => import('../../app/admin/reviews/page'))
+const ReviewModeration = lazy(() => import('./ReviewModerationComponent'))
 
 interface NotificationCounts {
   pendingRemovalRequests: number
@@ -37,7 +37,11 @@ interface NotificationCounts {
   pendingGenreRequests: number
 }
 
-export default function AdminNotificationCenter() {
+interface AdminNotificationCenterProps {
+  onDataChange?: () => void;
+}
+
+export default function AdminNotificationCenter({ onDataChange }: AdminNotificationCenterProps = {}) {
   const { data: session } = useSession()
   const [activeTab, setActiveTab] = useState(0)
   const [counts, setCounts] = useState<NotificationCounts>({
@@ -103,10 +107,21 @@ export default function AdminNotificationCenter() {
       // - Monthly reminders (books still checked out for monthly notification)
       // - Pending invitations across all locations
 
+      // Notify parent components about data change for immediate badge updates
+      onDataChange?.()
+
     } catch (error) {
       console.error('Error loading notification counts:', error)
     }
   }
+
+  // Set up automatic refresh every 30 seconds for dynamic updates
+  useEffect(() => {
+    if (session?.user?.email) {
+      const interval = setInterval(loadNotificationCounts, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [session?.user?.email]);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue)
@@ -187,27 +202,27 @@ export default function AdminNotificationCenter() {
         <CardContent sx={{ p: 0 }}>
           {activeTab === 0 && (
             <Box sx={{ p: 3 }}>
-              <RemovalRequestManager />
+              <RemovalRequestManager onCountChange={loadNotificationCounts} />
             </Box>
           )}
 
           {activeTab === 1 && (
             <Box sx={{ p: 3 }}>
               <Suspense fallback={<Box sx={{ p: 3, textAlign: 'center' }}>Loading review moderation...</Box>}>
-                <ReviewModeration />
+                <ReviewModeration onCountChange={loadNotificationCounts} />
               </Suspense>
             </Box>
           )}
 
           {activeTab === 2 && (
             <Box sx={{ p: 3 }}>
-              <AdminSignupManager />
+              <AdminSignupManager onCountChange={loadNotificationCounts} />
             </Box>
           )}
 
           {activeTab === 3 && (
             <Box sx={{ p: 3 }}>
-              <GenreRequestManager />
+              <GenreRequestManager onCountChange={loadNotificationCounts} />
             </Box>
           )}
 
