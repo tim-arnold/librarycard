@@ -3,6 +3,7 @@ import { isUserAdmin, isUserSuperAdmin } from '../auth';
 import { getCachedIsUserAdmin, getCachedIsUserSuperAdmin, getCachedUserPermissions } from '../auth/cached';
 import { invalidateAllAdminAnalytics } from '../admin/cached';
 import { applyDefaultPermissionsToUser } from '../locations';
+import { sendLocationAccessUpdate } from '../notifications/index';
 
 // Extended admin functions extracted from main worker
 
@@ -18,7 +19,7 @@ export async function getAdminAnalytics(userId: string, env: Env, corsHeaders: R
   const isSuperAdmin = await getCachedIsUserSuperAdmin(userId, env);
 
   try {
-    let totalBooks, totalUsers, totalLocations, pendingRequests;
+    let totalBooks, totalUsers, totalLocations, pendingRequests, pendingReviews, pendingSignupRequests;
     
     if (isSuperAdmin) {
       // Super admin gets global statistics
@@ -26,6 +27,8 @@ export async function getAdminAnalytics(userId: string, env: Env, corsHeaders: R
       totalUsers = await env.DB.prepare('SELECT COUNT(*) as count FROM users').first();
       totalLocations = await env.DB.prepare('SELECT COUNT(*) as count FROM locations').first();
       pendingRequests = await env.DB.prepare('SELECT COUNT(*) as count FROM book_removal_requests WHERE status = "pending"').first();
+      pendingReviews = await env.DB.prepare('SELECT COUNT(*) as count FROM book_ratings WHERE review_status = "pending"').first();
+      pendingSignupRequests = await env.DB.prepare('SELECT COUNT(*) as count FROM signup_approval_requests WHERE status = "pending"').first();
     } else {
       // Regular admin gets location-scoped statistics
       totalBooks = await env.DB.prepare(`
@@ -77,7 +80,7 @@ export async function getAdminAnalytics(userId: string, env: Env, corsHeaders: R
       `).bind(userId, userId).first();
       
       pendingRequests = await env.DB.prepare(`
-        SELECT COUNT(*) as count 
+        SELECT COUNT(DISTINCT brr.id) as count 
         FROM book_removal_requests brr
         LEFT JOIN books b ON brr.book_id = b.id
         LEFT JOIN shelves s ON b.shelf_id = s.id
@@ -85,6 +88,19 @@ export async function getAdminAnalytics(userId: string, env: Env, corsHeaders: R
         LEFT JOIN location_members lm ON l.id = lm.location_id
         WHERE brr.status = "pending" AND (l.owner_id = ? OR lm.user_id = ?)
       `).bind(userId, userId).first();
+      
+      pendingReviews = await env.DB.prepare(`
+        SELECT COUNT(DISTINCT br.id) as count 
+        FROM book_ratings br
+        LEFT JOIN books b ON br.book_id = b.id
+        LEFT JOIN shelves s ON b.shelf_id = s.id
+        LEFT JOIN locations l ON s.location_id = l.id
+        LEFT JOIN location_members lm ON l.id = lm.location_id
+        WHERE br.review_status = "pending" AND (l.owner_id = ? OR lm.user_id = ?)
+      `).bind(userId, userId).first();
+      
+      // Signup requests are global for all admins (not location-scoped)
+      pendingSignupRequests = await env.DB.prepare('SELECT COUNT(*) as count FROM signup_approval_requests WHERE status = "pending"').first();
     }
 
     // Books per location
@@ -307,6 +323,8 @@ export async function getAdminAnalytics(userId: string, env: Env, corsHeaders: R
         totalUsers: (totalUsers as any)?.count || 0,
         totalLocations: (totalLocations as any)?.count || 0,
         pendingRequests: (pendingRequests as any)?.count || 0,
+        pendingReviews: (pendingReviews as any)?.count || 0,
+        pendingSignupRequests: (pendingSignupRequests as any)?.count || 0,
         unorganizedBooks: (unorganizedBooks as any)?.count || 0,
         recentBooks: (recentBooks as any)?.count || 0,
         recentCheckouts: (recentCheckouts as any)?.count || 0,
@@ -725,6 +743,14 @@ export async function assignLocationToUser(targetUserId: string, locationId: str
       // Don't fail the assignment if permission application fails
     }
 
+    // Send notification about location access being granted
+    try {
+      await sendLocationAccessUpdate(env, targetUserId, parseInt(locationId), true, adminUserId);
+    } catch (notificationError) {
+      console.error('Failed to send location access notification:', notificationError);
+      // Don't fail the assignment if notification fails
+    }
+
     return new Response(JSON.stringify({ 
       message: `User successfully assigned to location "${(location as any).name}"`,
       locationId,
@@ -853,6 +879,14 @@ export async function unassignLocationFromUser(targetUserId: string, locationId:
         WHERE id = ?
       `).bind((newOwner as any).id, locationId).run();
 
+      // Send notification about location access being revoked
+      try {
+        await sendLocationAccessUpdate(env, targetUserId, parseInt(locationId), false, adminUserId);
+      } catch (notificationError) {
+        console.error('Failed to send location access notification:', notificationError);
+        // Don't fail the unassignment if notification fails
+      }
+
       return new Response(JSON.stringify({ 
         message: `User successfully removed from location "${(location as any).name}" and ownership transferred to another admin`,
         locationId,
@@ -874,6 +908,14 @@ export async function unassignLocationFromUser(targetUserId: string, locationId:
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
+      }
+
+      // Send notification about location access being revoked
+      try {
+        await sendLocationAccessUpdate(env, targetUserId, parseInt(locationId), false, adminUserId);
+      } catch (notificationError) {
+        console.error('Failed to send location access notification:', notificationError);
+        // Don't fail the unassignment if notification fails
       }
     }
 
