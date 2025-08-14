@@ -75,13 +75,11 @@ export function useBookFilters({
 
   // Initialize filters from URL on mount
   useEffect(() => {
-    console.log('🔧 useBookFilters - received initialFilters:', initialFilters)
     if (initialFilters) {
       if (initialFilters.location) setLocationFilter(initialFilters.location)
       if (initialFilters.shelf) setShelfFilter(initialFilters.shelf)
       if (initialFilters.status) setCheckoutFilter(initialFilters.status)
       if (initialFilters.searchTerm) {
-        console.log('🔧 Setting searchTerm from URL:', JSON.stringify(initialFilters.searchTerm))
         setSearchTerm(initialFilters.searchTerm)
       }
       // Note: categoryFilter is not restored from URL to avoid race conditions
