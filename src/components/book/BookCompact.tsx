@@ -136,9 +136,9 @@ export default function BookList({
                 variant="h6" 
                 component="h3" 
                 sx={{ 
-                  fontWeight: 600, 
+                  fontWeight: 700, 
                   mb: 1.5, 
-                  fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' },
+                  fontSize: { xs: '1.1rem', sm: '1.2rem', md: '1.3rem' },
                   lineHeight: 1.3,
                   wordBreak: 'break-word'
                 }}
@@ -173,7 +173,7 @@ export default function BookList({
                   </span>
                 ))}
                 {book.publishedDate && (
-                  <Typography component="span" sx={{ color: 'text.secondary' }}>
+                  <Typography component="span" sx={{ color: 'text.secondary', fontStyle: 'italic' }}>
                     , {new Date(book.publishedDate).getFullYear()}
                   </Typography>
                 )}
@@ -224,6 +224,8 @@ export default function BookList({
                     size="small"
                     variant="mini"
                     onClick={onRateBook ? () => onRateBook(book) : undefined}
+                    userReview={book.userReview}
+                    userReviewStatus={book.userReviewStatus}
                   />
                   
                   {/* Rate this book button - only show when user hasn't rated yet */}
@@ -369,13 +371,17 @@ export default function BookList({
                     color="text.primary"
                     sx={{ fontWeight: 500, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
                   >
-                    <MenuBook sx={{ mr: 1, verticalAlign: 'middle', fontSize: 'inherit' }} /> Checked out by {book.checked_out_by === currentUserId ? 'you' : (book.checked_out_by_name || 'Unknown')}
+                    <MenuBook sx={{ mr: 1, verticalAlign: 'middle', fontSize: 'inherit' }} />
                     {book.checked_out_date && (() => {
                       const checkoutDate = new Date(book.checked_out_date)
                       const today = new Date()
                       const diffTime = Math.abs(today.getTime() - checkoutDate.getTime())
                       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-                      return ` since ${checkoutDate.toLocaleDateString()} (${diffDays} day${diffDays !== 1 ? 's' : ''})`
+                      if (book.checked_out_by === currentUserId) {
+                        return `You checked this book out ${diffDays} day${diffDays !== 1 ? 's' : ''} ago`
+                      } else {
+                        return `Checked out since ${checkoutDate.toLocaleDateString()} (${diffDays} day${diffDays !== 1 ? 's' : ''})`
+                      }
                     })()}
                   </Typography>
                 </Box>

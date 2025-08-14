@@ -106,6 +106,10 @@ export async function approveSignupRequest(request: Request, requestId: number, 
       comment
     );
 
+    // Invalidate admin analytics cache since pending signup count changed
+    const { invalidateAllAdminAnalytics } = await import('./cached');
+    await invalidateAllAdminAnalytics(env);
+
     return new Response(JSON.stringify({ 
       message: 'Signup request approved successfully',
       user_id: newUserId,
@@ -165,6 +169,10 @@ export async function denySignupRequest(request: Request, requestId: number, use
       false, 
       comment
     );
+
+    // Invalidate admin analytics cache since pending signup count changed
+    const { invalidateAllAdminAnalytics } = await import('./cached');
+    await invalidateAllAdminAnalytics(env);
 
     return new Response(JSON.stringify({ 
       message: 'Signup request denied',

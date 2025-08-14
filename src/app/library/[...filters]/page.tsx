@@ -95,6 +95,7 @@ export default function FilteredLibraryPage() {
   const category = searchParams.get('category')
   const statusFilter = searchParams.get('status')
 
+
   const urlFilters = {
     location: locationSlug ? (locationSlugMap[locationSlug] || slugToName(locationSlug)) : '',
     shelf: shelfSlug ? (shelfSlugMap[shelfSlug] || slugToName(shelfSlug)) : '',
@@ -102,6 +103,7 @@ export default function FilteredLibraryPage() {
     searchTerm: searchTerm || '',
     category: category || '',
   }
+
 
   return <BookLibrary initialFilters={urlFilters} />
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -53,6 +53,17 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole }: Mo
   const [showReviews, setShowReviews] = useState(false)
   const [loadingReviews, setLoadingReviews] = useState(false)
   const [locationName, setLocationName] = useState<string>('')
+
+  // Clear state when book changes to prevent cross-contamination of reviews
+  useEffect(() => {
+    if (book?.id) {
+      setReviews([])
+      setShowReviews(false)
+      setCheckoutHistory([])
+      setShowCheckoutHistory(false)
+      setLocationName('')
+    }
+  }, [book?.id])
 
   if (!book) return null
 

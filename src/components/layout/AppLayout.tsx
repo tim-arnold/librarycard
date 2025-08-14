@@ -19,6 +19,7 @@ import {
   IconButton,
   Menu,
   MenuItem,
+  Badge,
 } from '@mui/material'
 import {
   QrCodeScanner,
@@ -35,6 +36,9 @@ import {
 import Footer from './Footer'
 import HelpModal from '@/components/modals/HelpModal'
 import { useTheme } from '@/lib/ThemeContext'
+import AccessibleIcon from '@/components/ui/AccessibleIcon'
+import { useUnreadNotificationCount } from '@/hooks/useNotifications'
+import { useAdminPendingCounts } from '@/hooks/useAdminPendingCounts'
 
 interface AppLayoutProps {
   children: React.ReactNode
@@ -54,6 +58,8 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [helpModalOpen, setHelpModalOpen] = useState(false)
   const dataLoadedRef = useRef(false)
+  const { unreadCount } = useUnreadNotificationCount()
+  const { counts: adminCounts } = useAdminPendingCounts()
 
   useEffect(() => {
     if (session && !dataLoadedRef.current) {
@@ -260,13 +266,14 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
             Hello, {userFirstName || session?.user?.name?.split(' ')[0] || 'User'}!
           </Typography>
           
-          <IconButton
-            color="inherit"
+          <AccessibleIcon
+            icon={<AccountCircle />}
+            ariaLabel="Open user menu to access profile, settings, and account options"
+            tooltip="Profile & Settings"
             onClick={handleMenuOpen}
+            color="inherit"
             size="small"
-          >
-            <AccountCircle />
-          </IconButton>
+          />
           
           <Menu
             anchorEl={anchorEl}
@@ -309,12 +316,41 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
         </Toolbar>
       </AppBar>
       
-      <Container maxWidth="xl" sx={{ py: 2 }}>
-        <Paper sx={{ mb: 2 }}>
+      <Container maxWidth="xl" sx={{ pt: 2, pb: 0 }}>
+        <Box sx={{ 
+          borderRadius: 0, 
+          backgroundColor: (theme) => theme.palette.background.default,
+          boxShadow: 'none',
+          paddingLeft: 2, // Match Paper component padding (24px)
+          paddingRight: 2,
+        }}>
           <Tabs 
             value={currentPage} 
             variant="scrollable"
             scrollButtons="auto"
+            TabIndicatorProps={{ style: { display: 'none' } }}
+            sx={{
+              '& .MuiTab-root.Mui-selected': {
+                // Main navigation tabs need exact color match with content
+                backgroundColor: (theme) => {
+                  if (theme.palette.mode === 'dark') {
+                    // Use the exact content background color for each theme variant
+                    const primary = theme.palette.primary.main
+                    
+                    // Map primary colors to content backgrounds - use exact Paper component colors
+                    // Check primary[300] values (used in dark mode)
+                    if (primary.includes('d8b4fe')) return '#251a2d !important' // Purple (#d8b4fe)
+                    if (primary.includes('86efac')) return '#1a2e20 !important' // Green (#86efac)  
+                    if (primary.includes('fca5a5')) return '#2d1515 !important' // Red (#fca5a5)
+                    if (primary.includes('93c5fd')) return '#1a2332 !important' // Blue (#93c5fd)
+                    if (primary.includes('fcd34d')) return '#2d2415 !important' // Amber (#fcd34d)
+                    return '#1e293b !important' // Indigo (default - #a5b4fc)
+                  } else {
+                    return theme.palette.background.paper + ' !important'
+                  }
+                },
+              }
+            }}
           >
             <Tab 
               value="library" 
@@ -336,14 +372,32 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
               <Tab 
                 value="admin" 
                 label="Admin Dashboard"
-                icon={<Dashboard />}
+                icon={
+                  <Badge 
+                    badgeContent={isAdmin(userRole) ? (adminCounts.total > 0 ? adminCounts.total : undefined) : (unreadCount > 0 ? unreadCount : undefined)} 
+                    color="primary"
+                    max={99}
+                    sx={{
+                      '& .MuiBadge-badge': {
+                        fontSize: '0.75rem',
+                        height: '18px',
+                        minWidth: '18px',
+                        borderRadius: '9px',
+                      }
+                    }}
+                  >
+                    <Dashboard />
+                  </Badge>
+                }
                 iconPosition="start"
                 onClick={() => handleTabChange('/admin')}
               />
             )}
           </Tabs>
-        </Paper>
+        </Box>
+      </Container>
 
+      <Container maxWidth="xl" sx={{ pt: 0, pb: 2 }}>
         {children}
       </Container>
       

@@ -34,6 +34,8 @@ import {
   deleteBookRemovalRequest,
   rateBook,
   getBookRating,
+  getPendingReviews,
+  moderateReview,
   emailOverdueUser,
   getBookEditions
 } from './books';
@@ -132,6 +134,19 @@ import {
   grantGlobalPermission,
   revokeGlobalPermission
 } from './permissions';
+import {
+  getUserNotificationPreferences,
+  updateNotificationPreference,
+  getNotificationSettings,
+  resetNotificationPreferences
+} from './notification-preferences';
+import {
+  getInAppNotifications,
+  getUnreadCount,
+  markNotificationRead,
+  markAllNotificationsRead,
+  createTestNotification
+} from './in-app-notifications';
 import { RateLimiter } from './auth/rate-limiter';
 import { TwoFactorAuth } from './auth/two-factor';
 import { requireCSRFToken, getCSRFTokenEndpoint, shouldProtectWithCSRF } from './csrf';
@@ -1127,6 +1142,16 @@ export default {
         return await getBookRating(bookId, userId, env, corsHeaders);
       }
 
+      // Review moderation endpoints (GitHub Issue #256)
+      if (path === '/api/admin/reviews/pending' && request.method === 'GET') {
+        return await getPendingReviews(userId, env, corsHeaders);
+      }
+
+      if (path.match(/^\/api\/admin\/reviews\/\d+\/moderate$/) && request.method === 'POST') {
+        const reviewId = parseInt(path.split('/')[4]);
+        return await moderateReview(request, reviewId, userId, env, corsHeaders);
+      }
+
       // Profile endpoints
       if (path === '/api/profile' && request.method === 'GET') {
         return await getUserProfile(userId, env, corsHeaders);
@@ -1696,6 +1721,37 @@ To review this request, log in as a super administrator and go to Admin Dashboar
           case 'DELETE':
             return await revokeGlobalPermission(request, userId, env, corsHeaders);
         }
+      }
+
+      // Notification preference endpoints
+      if (path === '/api/notifications/preferences' && request.method === 'GET') {
+        return await getUserNotificationPreferences(request, userId, env, corsHeaders);
+      }
+      if (path === '/api/notifications/preferences' && request.method === 'PUT') {
+        return await updateNotificationPreference(request, userId, env, corsHeaders);
+      }
+      if (path === '/api/notifications/settings' && request.method === 'GET') {
+        return await getNotificationSettings(request, userId, env, corsHeaders);
+      }
+      if (path === '/api/notifications/preferences/reset' && request.method === 'POST') {
+        return await resetNotificationPreferences(request, userId, env, corsHeaders);
+      }
+
+      // In-app notification endpoints
+      if (path === '/api/notifications/in-app' && request.method === 'GET') {
+        return await getInAppNotifications(request, userId, env, corsHeaders);
+      }
+      if (path === '/api/notifications/unread-count' && request.method === 'GET') {
+        return await getUnreadCount(request, userId, env, corsHeaders);
+      }
+      if (path === '/api/notifications/mark-read' && request.method === 'POST') {
+        return await markNotificationRead(request, userId, env, corsHeaders);
+      }
+      if (path === '/api/notifications/mark-all-read' && request.method === 'POST') {
+        return await markAllNotificationsRead(request, userId, env, corsHeaders);
+      }
+      if (path === '/api/notifications/test' && request.method === 'POST') {
+        return await createTestNotification(request, userId, env, corsHeaders);
       }
 
       // Admin cache management endpoints

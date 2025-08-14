@@ -16,6 +16,7 @@ import {
 import { Close, Star } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
 import StarRatingInput from '../book/StarRatingInput'
+import AccessibleIcon from '../ui/AccessibleIcon'
 
 interface RatingModalProps {
   book: EnhancedBook
@@ -24,6 +25,7 @@ interface RatingModalProps {
   onRatingSubmit: (rating: number, reviewText?: string) => Promise<void>
   currentRating?: number | null
   currentReview?: string | null
+  currentReviewStatus?: 'pending' | 'approved' | 'rejected' | null
 }
 
 export default function RatingModal({
@@ -32,12 +34,14 @@ export default function RatingModal({
   onClose,
   onRatingSubmit,
   currentRating,
-  currentReview
+  currentReview,
+  currentReviewStatus
 }: RatingModalProps) {
   const [rating, setRating] = useState<number>(currentRating || 0)
   const [reviewText, setReviewText] = useState<string>(currentReview || '')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string>('')
+
 
   const handleSubmit = async () => {
     // Only show error if trying to submit 0 rating when there's no existing rating to clear
@@ -89,13 +93,14 @@ export default function RatingModal({
             Rate This Book
           </Typography>
         </Box>
-        <Button
+        <AccessibleIcon
+          icon={<Close />}
+          ariaLabel="Close rating dialog"
+          tooltip="Close"
           onClick={handleClose}
-          sx={{ minWidth: 'auto', p: 0.5 }}
           disabled={isSubmitting}
-        >
-          <Close />
-        </Button>
+          sx={{ minWidth: 'auto', p: 0.5 }}
+        />
       </DialogTitle>
 
       <DialogContent sx={{ pb: 1 }}>
@@ -152,11 +157,30 @@ export default function RatingModal({
             placeholder="Share your thoughts about this book..."
             value={reviewText}
             onChange={(e) => setReviewText(e.target.value)}
-            disabled={isSubmitting}
+            disabled={isSubmitting || currentReviewStatus === 'pending'}
             inputProps={{ maxLength: 1000 }}
             helperText={`${reviewText.length}/1000 characters`}
             sx={{ mb: 2 }}
           />
+          
+          {/* Review Status Messages */}
+          {currentReviewStatus === 'pending' && (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              Your review is currently queued for approval by a location administrator.
+            </Alert>
+          )}
+          
+          {currentReviewStatus === 'rejected' && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              Your previous review was rejected. You can write a new review that will be submitted for approval.
+            </Alert>
+          )}
+          
+          {currentReviewStatus === 'approved' && currentReview && (
+            <Alert severity="success" sx={{ mb: 2 }}>
+              Your review has been approved. You can edit it, and changes will be resubmitted for approval.
+            </Alert>
+          )}
         </Box>
 
         {/* Error Display */}
