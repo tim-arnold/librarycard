@@ -13,18 +13,18 @@ We use a clean three-environment deployment strategy:
 - **Usage**: Development and testing
 
 ### Staging
-- **Frontend**: `https://staging--libarycard.netlify.app/`
-- **Worker**: `librarycard-api-staging`
-- **Database**: `librarycard-db-staging`
+- **Frontend**: Automatic deployment on pushes to `staging` branch
+- **Worker**: `librarycard-api-staging` (isolated Cloudflare account) - Auto-deployed via GitHub Actions
+- **Database**: `librarycard-db-staging-new` - Manual migrations via GitHub Actions
 - **Usage**: Pre-production testing and validation
-- **Auto-deployment**: Triggered by pushes to `staging` branch
+- **Auto-deployment**: Frontend and Worker auto-deploy on staging branch push
 
 ### Production
-- **Frontend**: `https://librarycard.tim52.io/`
-- **Worker**: `librarycard-api-production`
-- **Database**: `librarycard-db`
+- **Frontend**: `https://librarycard.tim52.io/` - Automatic deployment on pushes to `main` branch
+- **Worker**: `librarycard-api-production` - Manual GitHub Actions deployment ONLY
+- **Database**: `librarycard-db` - Manual migrations via GitHub Actions ONLY
 - **Usage**: Live production environment
-- **Auto-deployment**: Triggered by pushes to `main` branch
+- **Frontend Deployment**: Automatic via Netlify, Worker/DB: Manual GitHub Actions ONLY
 
 ## Deployment Commands
 
@@ -58,23 +58,23 @@ npx wrangler dev
 
 #### Frontend Deployment
 ```bash
-# Deploy frontend - automatic via GitHub push to staging branch
+# Frontend deploys automatically via Netlify on staging branch push
 git push origin staging
 ```
 
 #### Health Check Verification
 ```bash
 # Verify staging deployment
-curl https://librarycard-api-staging.tim-arnold.workers.dev/health
+curl https://librarycard-api-staging.librarycard-staging.workers.dev/health
 ```
 
 #### Alternative Local Commands (Legacy)
-⚠️ **Note**: Direct wrangler commands still work for staging but enhanced workflow is recommended:
+⚠️ **Note**: Direct wrangler commands still work for staging but SHOULD NOT be used. Use the auto-deploy workflow instead:
 ```bash
-# Legacy staging deployment (still supported)
+# Legacy staging deployment (SHOULD NOT be used - auto-deploy handles this)
 npx wrangler deploy --env=staging
 
-# Legacy database migration (still supported)
+# Legacy database migration (SHOULD NOT be used - use GitHub Actions workflow)
 npx wrangler d1 execute librarycard-db-staging --file=migrations/your-migration.sql --env=staging --remote
 ```
 
@@ -118,18 +118,18 @@ curl https://librarycard-api-production.tim-arnold.workers.dev/health
 ## Deployment Methods
 
 ### Frontend (Netlify)
-- **Staging**: Automatic on pushes to `staging` branch
-- **Production**: Automatic on pushes to `main` branch
+- **Staging**: Automatic deployment on pushes to `staging` branch
+- **Production**: Automatic deployment on pushes to `main` branch
 - **Build command**: `npm run build`
 - **Output directory**: `.next`
 
 ### Backend (Cloudflare Workers)
-- **Staging**: Enhanced GitHub Actions workflow (isolated staging account)
-- **Production**: ⚠️ **GITHUB ACTIONS ONLY** - Manual local deployment blocked for security
+- **Staging**: Auto-deployment via "Auto-Deploy to Staging" GitHub Actions workflow (isolated staging account)
+- **Production**: ⚠️ **GITHUB ACTIONS ONLY** - Manual deployment required, local access blocked for security
 - **Local production access**: Permanently disabled in Phase 3 safety enhancements
 
 ### Database Migrations
-- **Staging**: Available via enhanced GitHub Actions workflow
+- **Staging**: Manual execution via GitHub Actions workflow (workers auto-deploy, but migrations are manual)
 - **Production**: ⚠️ **GITHUB ACTIONS ONLY** - Manual execution required via workflow dispatch
 - **Safety features**: Automatic backups, pre-migration validation, rollback procedures
 
@@ -143,13 +143,15 @@ npx wrangler d1 execute libarycard-db-local --file=migrations/new-migration.sql
 
 ### 2. Test on Staging
 ```bash
-# Deploy to staging database
-npx wrangler d1 execute librarycard-db-staging --file=migrations/new-migration.sql --env=staging --remote
+# ⚠️ DEPRECATED: Use GitHub Actions workflow instead
+# npx wrangler d1 execute librarycard-db-staging --file=migrations/new-migration.sql --env=staging --remote
 
-# Deploy staging worker if needed
-npx wrangler deploy --env=staging
+# ⚠️ DEPRECATED: Worker auto-deploys on staging branch push
+# npx wrangler deploy --env=staging
 
-# Test functionality on staging environment
+# Proper method: Use GitHub Actions workflow for database migrations
+# Worker will auto-deploy when staging branch is pushed
+# Test functionality on staging environment after auto-deployment
 ```
 
 ### 3. Deploy to Production
@@ -193,7 +195,9 @@ npx wrangler deploy --env=staging
    - Audit logging
 
 ### Important Phase 3 Changes
-- ❌ **No automatic production deployments**: All production changes require manual workflow triggers
+- ❌ **No automatic production worker/DB deployments**: All production worker and database changes require manual workflow triggers
+- ✅ **Automatic frontend deployments**: Both staging and production frontends auto-deploy on branch push
+- ✅ **Automatic staging worker deployment**: Staging workers auto-deploy via "Auto-Deploy to Staging" workflow
 - ❌ **Local production access blocked**: `npm run deploy:prod` and `npm run migrate:prod` redirect to GitHub Actions
 - ✅ **Enhanced staging isolation**: Separate Cloudflare account for staging environment
 - ✅ **Multi-layer safety**: Confirmations, backups, validation, and rollback procedures
@@ -210,7 +214,7 @@ After deployment:
 
 ### Backend Verification
 1. **Health check**: 
-   - Staging: `curl https://librarycard-api-staging.tim-arnold.workers.dev/health`
+   - Staging: `curl https://librarycard-api-staging.librarycard-staging.workers.dev/health`
    - Production: `curl https://librarycard-api-production.tim-arnold.workers.dev/health`
 2. **API connection**: Verify books save to database
 3. **Authentication**: Test login/logout flows
@@ -280,7 +284,7 @@ npx wrangler d1 execute [database-name] --command="SELECT 1;" --env=[environment
 | Environment | Worker URL |
 |-------------|------------|
 | Local | `http://localhost:8787` (via wrangler dev) |
-| Staging | `https://librarycard-api-staging.tim-arnold.workers.dev` |
+| Staging | `https://librarycard-api-staging.librarycard-staging.workers.dev` |
 | Production | `https://librarycard-api-production.tim-arnold.workers.dev` |
 
 ### Database IDs
@@ -361,4 +365,4 @@ npm run backup:restore
 
 ---
 
-**Last updated**: July 2025
+**Last updated**: August 2025
