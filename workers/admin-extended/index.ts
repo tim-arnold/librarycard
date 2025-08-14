@@ -80,7 +80,7 @@ export async function getAdminAnalytics(userId: string, env: Env, corsHeaders: R
       `).bind(userId, userId).first();
       
       pendingRequests = await env.DB.prepare(`
-        SELECT COUNT(DISTINCT brr.id) as count 
+        SELECT COUNT(*) as count 
         FROM book_removal_requests brr
         LEFT JOIN books b ON brr.book_id = b.id
         LEFT JOIN shelves s ON b.shelf_id = s.id
@@ -90,7 +90,7 @@ export async function getAdminAnalytics(userId: string, env: Env, corsHeaders: R
       `).bind(userId, userId).first();
       
       pendingReviews = await env.DB.prepare(`
-        SELECT COUNT(DISTINCT br.id) as count 
+        SELECT COUNT(*) as count 
         FROM book_ratings br
         LEFT JOIN books b ON br.book_id = b.id
         LEFT JOIN shelves s ON b.shelf_id = s.id
