@@ -38,12 +38,6 @@ export default function LibraryPage() {
   const category = searchParams.get('category')
   const statusFilter = searchParams.get('status')
 
-  console.log('🌐 Library page URL Parameters:', {
-    searchTerm,
-    category,
-    statusFilter,
-    searchParams: Object.fromEntries(searchParams.entries())
-  })
 
   const urlFilters = {
     location: '',
@@ -53,7 +47,6 @@ export default function LibraryPage() {
     category: category || '',
   }
 
-  console.log('🌐 Library page Generated urlFilters:', urlFilters)
 
   return <BookLibrary initialFilters={urlFilters} />
 }
