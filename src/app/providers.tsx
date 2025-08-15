@@ -3,7 +3,6 @@
 import { SessionProvider } from 'next-auth/react'
 import { ThemeContextProvider } from '@/lib/ThemeContext'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import PerformanceTracker from '@/components/performance/PerformanceTracker'
 import { useState } from 'react'
 
@@ -35,8 +34,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
           {children}
           {/* Performance monitoring */}
           <PerformanceTracker />
-          {/* Only show devtools in development */}
-          {process.env.NODE_ENV === 'development' && <ReactQueryDevtools />}
         </ThemeContextProvider>
       </QueryClientProvider>
     </SessionProvider>
