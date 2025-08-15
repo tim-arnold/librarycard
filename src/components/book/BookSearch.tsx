@@ -20,6 +20,8 @@ import {
   Alert,
   Chip,
   Tooltip,
+  FormControlLabel,
+  Switch,
   useMediaQuery,
   useTheme,
 } from '@mui/material'
@@ -103,6 +105,7 @@ export default function BookSearch({
   const [showOpenLibraryOption, setShowOpenLibraryOption] = useState(false)
   const [hasOpenLibraryResults, setHasOpenLibraryResults] = useState(false)
   const [isEnhancingWithOpenLibrary, setIsEnhancingWithOpenLibrary] = useState(false)
+  const [hideBooksWithoutCovers, setHideBooksWithoutCovers] = useState(false)
   
   // Use parent state if provided, otherwise use local state
   const searchResults = parentSearchResults || []
@@ -573,9 +576,27 @@ export default function BookSearch({
       {searchResults.length > 0 && (
         <Box data-testid="search-results-section">
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h6" ref={searchResultsRef}>
-              Search Results {hasOpenLibraryResults && <Chip label="Enhanced with OpenLibrary" size="small" color="success" sx={{ ml: 1 }} />}
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Typography variant="h6" ref={searchResultsRef}>
+                Search Results {hasOpenLibraryResults && <Chip label="Enhanced with OpenLibrary" size="small" color="success" sx={{ ml: 1 }} />}
+              </Typography>
+              {/* Hide books without covers toggle */}
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={hideBooksWithoutCovers}
+                    onChange={(e) => setHideBooksWithoutCovers(e.target.checked)}
+                    size="small"
+                  />
+                }
+                label={
+                  <Typography variant="body2" color="text.secondary">
+                    Hide books without covers
+                  </Typography>
+                }
+                sx={{ ml: 2 }}
+              />
+            </Box>
             <Typography variant="body2" color="text.secondary">
               Showing {Math.min(displayedResults, searchResults.length)} of {totalResults > searchResults.length ? `${searchResults.length}+ (${totalResults} total found)` : searchResults.length} results
             </Typography>
@@ -614,7 +635,14 @@ export default function BookSearch({
             </Alert>
           )}
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 2 }}>
-            {searchResults.slice(0, displayedResults).map((item) => {
+            {searchResults
+              .filter((item) => {
+                if (!hideBooksWithoutCovers) return true;
+                const { thumbnail } = getItemData(item);
+                return thumbnail; // Only show books with covers when toggle is enabled
+              })
+              .slice(0, displayedResults)
+              .map((item) => {
               const { isbn, title, authors, publishedDate, thumbnail } = getItemData(item)
               const bookKey = isbn || title
               
@@ -670,14 +698,38 @@ export default function BookSearch({
                     </Box>
                   )}
                   
-                  {thumbnail && (
-                    <CardMedia
-                      component="img"
-                      src={thumbnail}
-                      alt={title}
-                      sx={{ width: 80, height: 'auto', mx: 'auto', mb: 1 }}
-                    />
-                  )}
+                  {/* Book cover or placeholder */}
+                  <Box sx={{ width: 80, height: 120, mx: 'auto', mb: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {thumbnail ? (
+                      <CardMedia
+                        component="img"
+                        src={thumbnail}
+                        alt={title}
+                        sx={{ width: 80, height: 'auto', maxHeight: 120 }}
+                      />
+                    ) : (
+                      <Box
+                        sx={{
+                          width: 80,
+                          height: 120,
+                          backgroundColor: 'grey.200',
+                          border: '1px solid',
+                          borderColor: 'grey.300',
+                          borderRadius: 1,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'grey.500'
+                        }}
+                      >
+                        <Book sx={{ fontSize: 32, mb: 0.5 }} />
+                        <Typography variant="caption" sx={{ fontSize: '0.6rem', textAlign: 'center', px: 0.5 }}>
+                          No cover available
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
                   
                   <Typography variant="h6" component="h3" gutterBottom>
                     {title}
