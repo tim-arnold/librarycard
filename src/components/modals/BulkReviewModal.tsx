@@ -229,8 +229,8 @@ export default function BulkReviewModal({
         </Box>
 
         {/* Summary */}
-        <Box sx={{ p: 2, backgroundColor: 'grey.50', borderRadius: 1 }}>
-          <Typography variant="body2" color="text.secondary">
+        <Box sx={{ p: 2, backgroundColor: 'grey.100', borderRadius: 1 }}>
+          <Typography variant="body2" sx={{ color: '#333' }}>
             <strong>Summary:</strong> Save {selectionCount} book{selectionCount === 1 ? '' : 's'} 
             {selectedShelfId && shelves.find(s => s.id === selectedShelfId) && (
               <> to <strong>{shelves.find(s => s.id === selectedShelfId)?.name}</strong></>
