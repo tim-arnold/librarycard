@@ -35,7 +35,6 @@ import {
   CheckBoxOutlineBlank,
   Book,
   Public,
-  AutoAwesome,
   PhoneAndroid,
 } from '@mui/icons-material'
 import type { EnhancedBook, GoogleBookItem } from '@/lib/types'
@@ -103,7 +102,10 @@ export default function BookSearch({
   
   const [isSearching, setIsSearching] = useState(false)
   const [displayedResults, setDisplayedResults] = useState(parentDisplayedResults || 10)
-  const [enhancedMode, setEnhancedMode] = useState(true) // Default to enhanced mode
+  const [showOpenLibraryOption, setShowOpenLibraryOption] = useState(false)
+  const [hasOpenLibraryResults, setHasOpenLibraryResults] = useState(false)
+  const [isEnhancingWithOpenLibrary, setIsEnhancingWithOpenLibrary] = useState(false)
+  const [hideBooksWithoutCovers, setHideBooksWithoutCovers] = useState(false)
   
   // Use parent state if provided, otherwise use local state
   const searchResults = parentSearchResults || []
@@ -181,13 +183,16 @@ export default function BookSearch({
     if (!query.trim()) return
 
     setIsSearching(true)
+    setShowOpenLibraryOption(false)
+    setHasOpenLibraryResults(false)
     
     try {
-      if (enhancedMode) {
-        await searchEnhancedBooks(query)
-      } else {
-        await searchGoogleBooks(query)
-      }
+      // Always start with Google Books search
+      await searchGoogleBooks(query)
+      
+      // Show OpenLibrary option after Google search completes
+      setShowOpenLibraryOption(true)
+      
       onSearchComplete?.()
     } catch (_error) {
       onError(
@@ -199,54 +204,6 @@ export default function BookSearch({
     }
   }
 
-  const searchEnhancedBooks = async (query: string) => {
-    if (!session?.user?.email) {
-      onError('Authentication Required', 'Please sign in to use enhanced search.')
-      return
-    }
-
-    const params = new URLSearchParams({
-      enhanced: 'true',
-      q: query.trim()
-    })
-    
-    const response = await fetch(`${getApiBaseUrl()}/api/books/editions?${params}`, {
-      headers: {
-        'Authorization': `Bearer ${session.user.email}`,
-        'Content-Type': 'application/json',
-      },
-    })
-    
-    if (response.ok) {
-      const data = await response.json()
-      const editions = data.editions || []
-      
-      onSearchResultsChange?.(editions)
-      onTotalResultsChange?.(editions.length)
-      
-      // Only reset to 10 if parent doesn't have a specific displayedResults value
-      if (parentDisplayedResults === undefined) {
-        setDisplayedResults(10)
-        onDisplayedResultsChange?.(10)
-      }
-      
-      // Scroll to "Search Results" heading after results are loaded
-      // Use longer timeout to ensure DOM is fully rendered
-      setTimeout(() => {
-        if (searchResultsRef.current) {
-          console.log('Scrolling to Search Results (Enhanced):', { element: searchResultsRef.current, offsetTop: searchResultsRef.current.offsetTop, currentScrollTop: window.scrollY })
-          searchResultsRef.current.scrollIntoView({ 
-            behavior: 'smooth',
-            block: 'start'
-          })
-        } else {
-          console.log('searchResultsRef.current is null (Enhanced)')
-        }
-      }, 300)
-    } else {
-      onError('Enhanced Search Failed', 'Failed to search across multiple sources. Please try again.')
-    }
-  }
 
   const searchGoogleBooks = async (query: string) => {
     const response = await fetch(
@@ -323,12 +280,84 @@ export default function BookSearch({
     }
   }
 
+  const enhanceWithOpenLibrary = async () => {
+    if (!searchQuery.trim() || !session?.user?.email) return
+    
+    setIsEnhancingWithOpenLibrary(true)
+    
+    try {
+      const params = new URLSearchParams({
+        enhanced: 'true',
+        q: searchQuery.trim()
+      })
+      
+      const response = await fetch(`${getApiBaseUrl()}/api/books/editions?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${session.user.email}`,
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        const enhancedEditions = data.editions || []
+        
+        // Merge with existing Google Books results, removing duplicates
+        const currentResults = searchResults
+        const mergedResults = [...currentResults]
+        
+        // Add OpenLibrary results that aren't already in Google results
+        enhancedEditions.forEach((olBook: any) => {
+          const isDuplicate = currentResults.some((gbBook: any) => {
+            // Check for ISBN match first
+            if (olBook.isbn && gbBook.isbn && olBook.isbn === gbBook.isbn) {
+              return true
+            }
+            
+            // Check for title + author match
+            const titleMatch = olBook.title?.toLowerCase().trim() === gbBook.title?.toLowerCase().trim()
+            const authorMatch = olBook.authors && gbBook.authors && 
+              olBook.authors.some((olAuthor: string) => 
+                gbBook.authors.some((gbAuthor: string) => 
+                  gbAuthor.toLowerCase().trim() === olAuthor.toLowerCase().trim()
+                )
+              )
+            
+            return titleMatch && authorMatch
+          })
+          
+          if (!isDuplicate) {
+            mergedResults.push(olBook)
+          }
+        })
+        
+        onSearchResultsChange?.(mergedResults)
+        setHasOpenLibraryResults(true)
+        
+        // Update displayed results to show new books if needed
+        if (parentDisplayedResults === undefined && mergedResults.length > displayedResults) {
+          const newDisplayed = Math.max(displayedResults, Math.min(mergedResults.length, displayedResults + 10))
+          setDisplayedResults(newDisplayed)
+          onDisplayedResultsChange?.(newDisplayed)
+        }
+      } else {
+        onError('Enhancement Failed', 'Failed to search OpenLibrary. Please try again.')
+      }
+    } catch (_error) {
+      onError('Enhancement Failed', 'Failed to search OpenLibrary. Please try again.')
+    } finally {
+      setIsEnhancingWithOpenLibrary(false)
+    }
+  }
+
   const handleClearSearch = () => {
     onSearchQueryChange('')
     onSearchResultsChange?.([])
     onTotalResultsChange?.(0)
     setDisplayedResults(10)
     onDisplayedResultsChange?.(10)
+    setShowOpenLibraryOption(false)
+    setHasOpenLibraryResults(false)
     searchInputRef.current?.focus()
   }
 
@@ -497,7 +526,7 @@ export default function BookSearch({
             fullWidth
             value={searchQuery}
             onChange={(e) => onSearchQueryChange(e.target.value)}
-            placeholder={enhancedMode ? "Search by title, author, or keywords (enhanced search across 2 sources)..." : "Search by title, author, or keywords..."}
+            placeholder="Search by title, author, or keywords..."
             variant="outlined"
             disabled={isSearching || disabled}
             inputRef={searchInputRef}
@@ -533,46 +562,6 @@ export default function BookSearch({
           </Button>
         </Box>
         
-        {/* Enhanced Search Toggle */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={enhancedMode}
-                onChange={(e) => setEnhancedMode(e.target.checked)}
-                disabled={isSearching || disabled}
-              />
-            }
-            label={
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <AutoAwesome fontSize="small" />
-                <Typography variant="body2">
-                  Enhanced Search (2 sources)
-                </Typography>
-              </Box>
-            }
-          />
-          
-          {enhancedMode && (
-            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-              <Chip
-                icon={<Book />}
-                label="Google Books"
-                size="small"
-                variant="outlined"
-                color="primary"
-              />
-              <Chip
-                icon={<Public />}
-                label="Open Library"
-                size="small"
-                variant="outlined"
-                color="success"
-              />
-            </Box>
-          )}
-        </Box>
-        
         {/* Mobile scanning tip for desktop users */}
         {!isMobile && (
           <Alert severity="info" sx={{ mt: 2 }}>
@@ -587,15 +576,73 @@ export default function BookSearch({
       {searchResults.length > 0 && (
         <Box data-testid="search-results-section">
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h6" ref={searchResultsRef}>
-              Search Results
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Typography variant="h6" ref={searchResultsRef}>
+                Search Results {hasOpenLibraryResults && <Chip label="Enhanced with OpenLibrary" size="small" color="success" sx={{ ml: 1 }} />}
+              </Typography>
+              {/* Hide books without covers toggle */}
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={hideBooksWithoutCovers}
+                    onChange={(e) => setHideBooksWithoutCovers(e.target.checked)}
+                    size="small"
+                  />
+                }
+                label={
+                  <Typography variant="body2" color="text.secondary">
+                    Hide books without covers
+                  </Typography>
+                }
+                sx={{ ml: 2 }}
+              />
+            </Box>
             <Typography variant="body2" color="text.secondary">
               Showing {Math.min(displayedResults, searchResults.length)} of {totalResults > searchResults.length ? `${searchResults.length}+ (${totalResults} total found)` : searchResults.length} results
             </Typography>
           </Box>
+          
+          {/* OpenLibrary Enhancement Option */}
+          {showOpenLibraryOption && !hasOpenLibraryResults && session?.user?.email && (
+            <Alert 
+              severity="info" 
+              sx={{ mb: 2 }}
+              action={
+                <Button
+                  color="inherit"
+                  size="small"
+                  variant="outlined"
+                  startIcon={isEnhancingWithOpenLibrary ? <CircularProgress size={16} color="inherit" /> : <Public />}
+                  onClick={enhanceWithOpenLibrary}
+                  disabled={isEnhancingWithOpenLibrary || disabled}
+                  sx={{ 
+                    whiteSpace: 'nowrap',
+                    borderColor: 'info.main',
+                    color: 'info.main',
+                    '&:hover': {
+                      backgroundColor: 'info.main',
+                      color: 'white'
+                    }
+                  }}
+                >
+                  {isEnhancingWithOpenLibrary ? 'Searching...' : 'Search OpenLibrary'}
+                </Button>
+              }
+            >
+              <Typography variant="body2">
+                <strong>Didn't find what you were looking for?</strong> Search OpenLibrary for additional results including academic and historical books.
+              </Typography>
+            </Alert>
+          )}
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 2 }}>
-            {searchResults.slice(0, displayedResults).map((item) => {
+            {searchResults
+              .filter((item) => {
+                if (!hideBooksWithoutCovers) return true;
+                const { thumbnail } = getItemData(item);
+                return thumbnail; // Only show books with covers when toggle is enabled
+              })
+              .slice(0, displayedResults)
+              .map((item) => {
               const { isbn, title, authors, publishedDate, thumbnail } = getItemData(item)
               const bookKey = isbn || title
               
@@ -626,8 +673,8 @@ export default function BookSearch({
               return (
               <Card key={item.id} data-book-key={bookKey} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                 <CardContent sx={{ flex: 1 }}>
-                  {/* Source attribution chip */}
-                  {enhancedMode && item.source && (
+                  {/* Source attribution chip - show when we have mixed results */}
+                  {hasOpenLibraryResults && item.source && (
                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
                       <Tooltip title={item.sourceDisplayName || item.source}>
                         <Chip
@@ -651,14 +698,38 @@ export default function BookSearch({
                     </Box>
                   )}
                   
-                  {thumbnail && (
-                    <CardMedia
-                      component="img"
-                      src={thumbnail}
-                      alt={title}
-                      sx={{ width: 80, height: 'auto', mx: 'auto', mb: 1 }}
-                    />
-                  )}
+                  {/* Book cover or placeholder */}
+                  <Box sx={{ width: 80, height: 120, mx: 'auto', mb: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {thumbnail ? (
+                      <CardMedia
+                        component="img"
+                        src={thumbnail}
+                        alt={title}
+                        sx={{ width: 80, height: 'auto', maxHeight: 120 }}
+                      />
+                    ) : (
+                      <Box
+                        sx={{
+                          width: 80,
+                          height: 120,
+                          backgroundColor: 'grey.200',
+                          border: '1px solid',
+                          borderColor: 'grey.300',
+                          borderRadius: 1,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'grey.500'
+                        }}
+                      >
+                        <Book sx={{ fontSize: 32, mb: 0.5 }} />
+                        <Typography variant="caption" sx={{ fontSize: '0.6rem', textAlign: 'center', px: 0.5 }}>
+                          No cover available
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
                   
                   <Typography variant="h6" component="h3" gutterBottom>
                     {title}
@@ -669,7 +740,7 @@ export default function BookSearch({
                   </Typography>
                   
                   {/* Additional metadata for enhanced results */}
-                  {enhancedMode && (
+                  {hasOpenLibraryResults && (
                     <Box sx={{ mt: 1 }}>
                       {item.publisher && (
                         <Typography variant="caption" color="text.secondary" display="block">
