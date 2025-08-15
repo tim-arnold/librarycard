@@ -9,7 +9,7 @@ This file documents all completed features, fixes, and improvements to the Libra
 
 #### Core Search Improvements
 - **Removed Enhanced/Basic Toggle**: Eliminated confusing upfront mode selection that users didn't understand
-- **Google Books First**: Default to fast, comprehensive Google Books search (1M+ results) for optimal user experience  
+- **Google Books First**: Default to fast, comprehensive Google Books search (1M+ results) for optimal user experience
 - **Progressive Enhancement**: "Didn't find what you were looking for? Search OpenLibrary" option appears after initial search
 - **Smart Result Merging**: Automatic deduplication when OpenLibrary results are added to Google Books results
 - **Source Attribution**: Clear visual indicators showing result sources when mixed results are present
@@ -28,12 +28,32 @@ This file documents all completed features, fixes, and improvements to the Libra
 
 #### User Experience Impact
 - **No Confusing Choices**: Users simply search without needing to understand technical differences
-- **Fast Initial Results**: Google Books provides immediate, comprehensive results 
+- **Fast Initial Results**: Google Books provides immediate, comprehensive results
 - **Optional Enhancement**: Progressive disclosure allows users to get more results when needed
 - **Better Visual Design**: Clean placeholder icons and optional filtering improve visual consistency
 
 **Breaking Changes**: None - all existing functionality preserved
 **Migration Required**: None - changes are UI-only improvements
+
+## August 14, 2025 - Staging Environment & Code Quality Improvements
+
+### 🚀 Infrastructure: Standalone Netlify Staging Site Setup
+- **Staging Site Configuration**: Completed setup of standalone Netlify staging site for improved deployment isolation
+- **Environment Separation**: Enhanced staging environment configuration with proper CSP headers and Turnstile support
+- **Code Quality Cleanup**: Removed debug console.log statements from library pages to reduce console noise in staging/production
+
+#### Staging Environment Enhancements
+- **Mixed Content Security**: Fixed Google Books cover image warnings by implementing secure HTTPS fallbacks
+- **CSRF Protection**: Resolved token refresh issues preventing proper admin functionality in staging
+- **API Configuration**: Improved API base URL handling for staging environment consistency
+
+#### Development Workflow Improvements
+- **Debug Statement Cleanup**: Systematic removal of debugging output from:
+  - Library page URL parameter logging
+  - useBookFilters hook debugging output
+  - Dynamic library route parameter logging
+- **Environment Security**: Removed .env.staging from repository and added to .gitignore for better secrets management
+- **GitHub Actions Enhancement**: Renamed staging deployment workflow to "Auto-Deploy to Staging" for clearer workflow identification
 
 ## August 13, 2025 - Automated Admin Notification System & Badge Color Consistency - GitHub Issue #156
 
@@ -47,7 +67,7 @@ This file documents all completed features, fixes, and improvements to the Libra
 - **Notification Preferences**: User-configurable settings for email notification types
 - **Delivery Tracking**: Email success/failure logging with error handling and retry mechanisms
 
-#### Admin Interface Reorganization  
+#### Admin Interface Reorganization
 - **Unified Notifications Tab**: Consolidated Review Moderation and Signup Requests into Notifications section
 - **Streamlined Badge System**: Comprehensive notification badges showing total pending items across all admin functions
 - **Color Consistency**: All notification badges now use primary theme color instead of mixed red/theme colors
@@ -75,7 +95,7 @@ This file documents all completed features, fixes, and improvements to the Libra
 - **Clickable Data Quality Links**: Direct navigation from analytics to filtered library views using special "missing:" search syntax
 - **Role-Based Analytics**: Proper filtering for super admin (global) vs location admin (scoped) perspectives
 
-#### 🔧 Admin Dashboard UX Improvements  
+#### 🔧 Admin Dashboard UX Improvements
 - **Removed Overview Tab**: Eliminated redundant overview tab, making analytics the default landing page
 - **Streamlined Navigation**: Updated tab indices and navigation flow for better admin workflow
 - **Default Analytics Tab**: Admin dashboard now opens directly to analytics for immediate insights
@@ -160,7 +180,7 @@ This file documents all completed features, fixes, and improvements to the Libra
 
 #### User Experience
 - **Immediate Feedback**: Star ratings appear instantly, review text shows pending status
-- **Clear Status Messages**: Users see "queued for approval", "approved", or "rejected" states  
+- **Clear Status Messages**: Users see "queued for approval", "approved", or "rejected" states
 - **Seamless Editing**: Approved reviews can be edited with automatic resubmission workflow
 - **Admin Dashboard**: Integrated review moderation tab in admin navigation
 
@@ -216,7 +236,7 @@ This file documents all completed features, fixes, and improvements to the Libra
 
 ### 🎯 Admin Dashboard Integration
 - **New Tab**: "Genre Management" section added to admin dashboard with lazy loading
-- **Descriptive Text**: Clear explanation of curated vs source genres for user understanding  
+- **Descriptive Text**: Clear explanation of curated vs source genres for user understanding
 - **Notification System**: Genre requests appear in admin notification center for review
 
 ### 📊 Database Migrations Applied
@@ -237,14 +257,14 @@ This file documents all completed features, fixes, and improvements to the Libra
 
 ### ⚡ Phase 4: Advanced Optimizations Implemented
 - **Virtual Scrolling**: React-window integration with dynamic height calculations for handling 10,000+ books without performance degradation
-- **Intelligent Code Splitting**: Lazy-loaded admin components and book management features reducing initial bundle size by 90%+ 
+- **Intelligent Code Splitting**: Lazy-loaded admin components and book management features reducing initial bundle size by 90%+
 - **Core Web Vitals Monitoring**: Comprehensive performance tracking with real-time LCP, INP/FID, CLS, FCP, TTFB measurement
 - **Performance Dashboard**: Admin-accessible monitoring interface with detailed metrics, thresholds, and optimization recommendations
 - **Smart Loading States**: Contextual loading components with descriptive messages for better UX during code splitting
 
 ### 📊 Final Performance Achievements (All Target Metrics Exceeded)
 - **Initial Page Load Time**: Reduced from 3-5 seconds to <1.5 seconds (70% improvement) ✅
-- **Filter Operation Response**: Improved from 500-1000ms to <50ms (95% improvement) ✅  
+- **Filter Operation Response**: Improved from 500-1000ms to <50ms (95% improvement) ✅
 - **Database Query Performance**: Optimized from 200-500ms to <50ms (90% improvement) ✅
 - **Large Library Support**: Seamlessly handles 10,000+ books with virtual scrolling ✅
 - **Bundle Size Optimization**: 30%+ reduction achieved through strategic code splitting ✅
@@ -259,7 +279,7 @@ This file documents all completed features, fixes, and improvements to the Libra
 ### 🎯 Complete Performance Optimization Summary
 **All 5 Phases Successfully Delivered:**
 1. ✅ Phase 1: Database optimizations (70-90% query improvement)
-2. ✅ Phase 2: React component memoization (50-70% rendering improvement)  
+2. ✅ Phase 2: React component memoization (50-70% rendering improvement)
 3. ✅ Phase 3: API batching and caching (40-60% load time improvement)
 4. ✅ Phase 4: Advanced optimizations (20-30% additional gains + monitoring)
 5. ✅ Phase 5: Field selection & payload optimization (60% payload reduction)
@@ -276,7 +296,7 @@ This file documents all completed features, fixes, and improvements to the Libra
 - **Network Efficiency**: Dramatically reduced initial page load bandwidth usage, especially beneficial for slower connections and mobile users
 - **Flexible Field Sets**: Support for grid (optimized), detail, full, and search field sets based on UI context requirements
 
-### 🛠️ Technical Implementation  
+### 🛠️ Technical Implementation
 - **Field Selection Library**: New `/src/lib/fieldSelection.ts` with type-safe field set definitions and utility functions
 - **Enhanced Dashboard Endpoint**: Modified `/workers/profile/index.ts` to accept and process field selection parameters
 - **React Query Integration**: Updated API layer to leverage field selection with caching infrastructure
@@ -365,7 +385,7 @@ This file documents all completed features, fixes, and improvements to the Libra
 - **Input Validation**: Added robust input validation and sanitization across all authentication flows to prevent injection attacks
 - **Environment Security**: Removed hardcoded production URLs and implemented proper environment variable validation
 
-### 🔐 Authentication & Session Management Enhancements  
+### 🔐 Authentication & Session Management Enhancements
 - **JWT Sessions**: Implemented secure JWT-based session management with proper token validation and expiration handling
 - **2FA Implementation**: Complete two-factor authentication system with TOTP (Time-based One-Time Password) and backup codes
 - **Password Security**: Enhanced password handling with proper hashing, validation, and strength requirements
@@ -447,7 +467,7 @@ This file documents all completed features, fixes, and improvements to the Libra
 
 ### Location Creation & Permission UI Fixes - GitHub Issue #147 COMPLETE!
 - **RESTRICTED**: Location creation buttons to super admins only (removed from regular admin access)
-- **UPDATED**: All UI messaging to clearly distinguish between "super administrators" and "location administrators"  
+- **UPDATED**: All UI messaging to clearly distinguish between "super administrators" and "location administrators"
 - **FIXED**: Location creation automatic form display logic to only trigger for super admins
 - **ENHANCED**: Permission management messages to guide users to appropriate contact (super admin vs location admin)
 - **SECURED**: Frontend permission boundaries to match backend security model where only super admins can create locations
@@ -477,7 +497,7 @@ This file documents all completed features, fixes, and improvements to the Libra
 - **IMPLEMENTED**: Migration script for adding default permissions storage to existing locations
 - **ADDED**: API functions for managing default permissions (create, read, update) with validation
 
-### UI/UX Improvements  
+### UI/UX Improvements
 - **ENHANCED**: Location list display with book counts, shelf counts, creation dates, and owner information
 - **REFINED**: Deletion animations to remove spinning effects and center shrinking animation
 - **DISABLED**: Modal backdrop click for LocationOnboardingStepper to prevent accidental dismissal
@@ -487,7 +507,7 @@ This file documents all completed features, fixes, and improvements to the Libra
 
 ### Integration & API Enhancements
 - **INTEGRATED**: Default permission application in both admin assignment and invitation acceptance workflows
-- **ADDED**: Route ordering fixes for default permissions endpoints to prevent API conflicts  
+- **ADDED**: Route ordering fixes for default permissions endpoints to prevent API conflicts
 - **IMPLEMENTED**: Defensive programming patterns with proper array initialization and error handling
 - **ENHANCED**: Worker routing with proper endpoint precedence for location default permissions
 
@@ -526,7 +546,7 @@ This file documents all completed features, fixes, and improvements to the Libra
 
 ### Mobile-First Library Interface - GitHub Issue #114 COMPLETE!
 - **ELIMINATED**: Shelf tiles component entirely (was confusing and took excessive space on mobile)
-- **IMPLEMENTED**: Dynamic book counts in shelf filter dropdown (e.g., "Fiction (24)") 
+- **IMPLEMENTED**: Dynamic book counts in shelf filter dropdown (e.g., "Fiction (24)")
 - **ADDED**: Dynamic genre counts in genre filter that update based on location/shelf filters
 - **REMOVED**: Verbose library info panel to save vertical space (kept welcome message for empty libraries)
 - **ENHANCED**: Mobile-responsive library header with stacked layout on small screens
@@ -553,7 +573,7 @@ This file documents all completed features, fixes, and improvements to the Libra
 - **ENHANCED**: Consistent API endpoint resolution for better maintainability and environment configuration management
 - **UPDATED**: Auth utilities, admin components, modal components, layout components, and remaining API routes
 
-### Phase 1 Consolidation 
+### Phase 1 Consolidation
 - **UPDATED**: Core infrastructure including auth-utils.ts, AddBooks.tsx, library filters, API routes, and signin page
 - **REPLACED**: Hardcoded constants in critical authentication and book management workflows
 - **VERIFIED**: Build and functionality testing to ensure no regressions during consolidation
@@ -564,7 +584,7 @@ This file documents all completed features, fixes, and improvements to the Libra
 - **ACHIEVED**: 100% elimination of hardcoded API_BASE constants with 48 insertions and 62 deletions (net -14 lines)
 - **MAINTAINED**: Existing `API_BASE_URL` import pattern for consistent function-based API configuration
 
-### Icon Standardization - GitHub Issue #110 COMPLETE! 
+### Icon Standardization - GitHub Issue #110 COMPLETE!
 - **STANDARDIZED**: Complete replacement of emoji icons with Material UI icons across entire application
 - **ENHANCED**: Professional and cohesive user interface with semantic icon choices
 - **IMPLEMENTED**: Consistent visual language using LibraryBooks, MenuBook, LocationOn, Person, Assignment, Settings, and other MUI icons
@@ -581,7 +601,7 @@ This file documents all completed features, fixes, and improvements to the Libra
 - **RESOLVED**: Mobile ADD GENRE button width issues with responsive sizing and padding
 
 ### Bug Fixes & UI Polish
-- **FIXED**: Book search autoscroll behavior for better user navigation experience  
+- **FIXED**: Book search autoscroll behavior for better user navigation experience
 - **RESOLVED**: Add Books UI stuck states that could prevent proper form submission
 - **IMPROVED**: Desktop container padding removal for better space utilization
 - **ENHANCED**: Button styling consistency and responsive behavior across all form components
@@ -1138,9 +1158,9 @@ This file documents all completed features, fixes, and improvements to the Libra
 
 ### Browser Navigation & URL Examples
 - **ENABLED**: Proper browser back/forward button navigation with state preservation and accurate URL generation
-- **EXAMPLES**: 
+- **EXAMPLES**:
   - `/library/home-library/programming-books` - Books on Programming Books shelf in Home Library
-  - `/library/office-library?status=checked-out` - Checked out books in Office Library  
+  - `/library/office-library?status=checked-out` - Checked out books in Office Library
   - `/add-books/scan` - Direct access to ISBN scanning interface
   - `/library?search=javascript&category=technology` - Search with combined filters
 - **VERIFIED**: All URLs are shareable, bookmarkable, and load with proper filter states applied
@@ -1478,7 +1498,7 @@ This file documents all completed features, fixes, and improvements to the Libra
 - **IMPLEMENTED**: Complete multi-select book selection system with shopping cart metaphor for efficient bulk book addition
 - **CREATED**: BookSelectionContext with React Context for persistent cart state management across components
 - **ADDED**: Floating cart indicator with count badge and preview popover showing selected books with removal capability
-- **IMPLEMENTED**: Selection mode toggle allowing users to switch between "Add One" and "Select Multiple" workflows seamlessly  
+- **IMPLEMENTED**: Selection mode toggle allowing users to switch between "Add One" and "Select Multiple" workflows seamlessly
 - **ENHANCED**: BookSearch component with dual-action buttons supporting both immediate save and cart addition patterns
 - **CREATED**: BulkReviewModal for reviewing all selected books with shared shelf selection and bulk tags functionality
 - **ADDED**: Progressive enhancement UI where cart features only appear when books are selected, maintaining clean interface
@@ -1491,7 +1511,7 @@ This file documents all completed features, fixes, and improvements to the Libra
 
 ### Technical Architecture & Performance
 - **ARCHITECTURE**: Modular React Context provider pattern with Map-based selection state for O(1) operations
-- **STATE MANAGEMENT**: Efficient selection tracking with book deduplication and temporary ID handling for ISBN-less books  
+- **STATE MANAGEMENT**: Efficient selection tracking with book deduplication and temporary ID handling for ISBN-less books
 - **UI COMPONENTS**: SelectionModeToggle, CartIndicator, BulkReviewModal with Material UI integration and consistent theming
 - **ERROR HANDLING**: Graceful partial failure handling in bulk operations with detailed per-book status reporting
 - **PERFORMANCE**: Optimistic UI updates and lazy loading of bulk components only when selection mode is activated
@@ -1571,7 +1591,7 @@ This file documents all completed features, fixes, and improvements to the Libra
 - **PREVENTED**: Unwanted auto-search triggers when returning from cancelled book selections with preserveSearchState flag
 - **ENHANCED**: Book identification system using ISBN or title for accurate scroll targeting and state tracking
 
-### Search Results Progressive Loading & UI Improvements  
+### Search Results Progressive Loading & UI Improvements
 - **INCREASED**: Google Books API results from 10 to 40 books per search for better selection variety
 - **ADDED**: Progressive loading interface showing initial 10 results with "Load more" button for additional batches
 - **IMPLEMENTED**: Smart button text that adapts based on remaining results ("Load 10 more books" vs "Load the last 3 books")
@@ -1584,7 +1604,7 @@ This file documents all completed features, fixes, and improvements to the Libra
 - **FIXED**: Critical issue where clicking "Cancel" returned users to empty search results instead of preserved state
 - **IMPLEMENTED**: Comprehensive cancel handling that preserves search results, pagination state, and scroll position
 - **CREATED**: Cancelled book key tracking to scroll users back to the exact book they chose not to add
-- **ENHANCED**: Both cancel buttons (BookPreview and action buttons) with proper state preservation logic  
+- **ENHANCED**: Both cancel buttons (BookPreview and action buttons) with proper state preservation logic
 - **ADDED**: State synchronization between BookSearch component and parent AddBooks component for seamless user experience
 - **RESOLVED**: Component re-rendering issues that caused search results to disappear during book selection workflow
 - **OPTIMIZED**: Auto-search prevention when returning from cancelled selections to maintain user's browsing context
@@ -1611,7 +1631,7 @@ This file documents all completed features, fixes, and improvements to the Libra
 - **DESIGNED**: User-friendly interface allowing Accept All, Decline Optional, or Custom preference selection
 - **ENSURED**: Essential authentication cookies remain functional while respecting opt-outs for preference storage
 
-### Admin Navigation Consolidation & UI Simplification  
+### Admin Navigation Consolidation & UI Simplification
 - **REMOVED**: Redundant main navigation tabs (Locations, Requests) for admin users that duplicated admin dashboard functionality
 - **SIMPLIFIED**: Admin main navigation structure to: Libraries, Add Books, Admin Dashboard for cleaner user experience
 - **CONSOLIDATED**: All location management and request handling into centralized Admin Dashboard interface
@@ -1658,7 +1678,7 @@ This file documents all completed features, fixes, and improvements to the Libra
 
 ### Comprehensive Book Sorting System Implementation
 - **IMPLEMENTED**: Four-field sorting system with title, author, publication date, and date added options
-- **ADDED**: Toggle-able ascending/descending sort direction with clear arrow icon indicators  
+- **ADDED**: Toggle-able ascending/descending sort direction with clear arrow icon indicators
 - **ENHANCED**: Smart alphabetical sorting that ignores articles ("the", "a", "an") for better organization
 - **CREATED**: Intelligent author sorting by last name with support for both "Last, First" and "First Last" formats
 - **IMPLEMENTED**: Publication date sorting with graceful handling of missing dates
@@ -1668,7 +1688,7 @@ This file documents all completed features, fixes, and improvements to the Libra
 - **OPTIMIZED**: Sort state management to reset to alphabetical ascending on page refresh for consistent user experience
 - **ENHANCED**: Loading screen during library data fetch to replace confusing empty state with professional spinner and messaging
 
-### User Experience & Interface Improvements  
+### User Experience & Interface Improvements
 - **ADDED**: Professional loading screen with spinner, descriptive text, and emoji branding during library initialization
 - **IMPROVED**: Sort direction icon semantics to show current state (up arrow = A-Z, down arrow = Z-A) with helpful tooltips
 - **FIXED**: React rendering timing issue where filtered books were updated but pagination wasn't recalculating due to array mutation
@@ -1679,7 +1699,7 @@ This file documents all completed features, fixes, and improvements to the Libra
 ### Technical Implementation Details
 - **CREATED**: SortField and SortDirection TypeScript types for type safety
 - **ENHANCED**: BookFilters component with sort dropdown and direction toggle button
-- **IMPLEMENTED**: localStorage persistence for view mode while resetting sort to default on page load  
+- **IMPLEMENTED**: localStorage persistence for view mode while resetting sort to default on page load
 - **ADDED**: Comprehensive logging system for debugging sort state and pagination issues
 - **FIXED**: Array mutation issue in sorting logic that prevented React from detecting filteredBooks changes
 - **OPTIMIZED**: useMemo hook for pagination calculation with proper dependency array including filteredBooks, currentPage, and booksPerPage
@@ -1722,7 +1742,7 @@ This file documents all completed features, fixes, and improvements to the Libra
 - **INTEGRATED**: Google OAuth invitation acceptance with existing backend invitation system
 - **OPTIMIZED**: User experience by allowing invited users to choose their preferred authentication method
 
-### Authentication System Reliability Improvements  
+### Authentication System Reliability Improvements
 - **FIXED**: Critical user creation bug where NextAuth was calling wrong API URL for Google OAuth users
 - **RESOLVED**: Issue where Google OAuth users weren't being properly created in database during sign-in
 - **ENHANCED**: Invitation revocation system with robust verification checks to prevent stuck invitations
@@ -2134,7 +2154,7 @@ This file documents all completed features, fixes, and improvements to the Libra
 
 ### Authentication & Core Infrastructure
 - ✅ Google OAuth authentication implemented
-- ✅ Email/password authentication with email verification 
+- ✅ Email/password authentication with email verification
 - ✅ Strong password validation (8+ chars, uppercase, lowercase, number, special char)
 - ✅ Development mode fallbacks for testing
 - ✅ Registration and login working in production
