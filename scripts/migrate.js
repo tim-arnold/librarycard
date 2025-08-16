@@ -686,32 +686,53 @@ class MigrationRunner {
       
       const existingTables = new Set();
       
+      // Debug: Log the raw output to understand the format
+      this.log(`   🔍 DEBUG: Raw wrangler output length: ${result.output.length}`);
+      this.log(`   🔍 DEBUG: First 500 chars: ${result.output.substring(0, 500)}`);
+      
       try {
         // Parse JSON output from wrangler D1
         const lines = result.output.split('\n');
+        this.log(`   🔍 DEBUG: Output has ${lines.length} lines`);
+        
         const jsonStart = lines.findIndex(line => line.trim().startsWith('['));
+        this.log(`   🔍 DEBUG: JSON starts at line ${jsonStart}`);
         
         if (jsonStart !== -1) {
           const jsonOutput = lines.slice(jsonStart).join('\n');
+          this.log(`   🔍 DEBUG: JSON content: ${jsonOutput.substring(0, 200)}...`);
+          
           const parsed = JSON.parse(jsonOutput);
+          this.log(`   🔍 DEBUG: Parsed JSON structure: ${JSON.stringify(parsed, null, 2).substring(0, 300)}...`);
           
           if (parsed && parsed[0] && parsed[0].results) {
+            this.log(`   🔍 DEBUG: Found ${parsed[0].results.length} results in JSON`);
             parsed[0].results.forEach(row => {
               if (row.name) {
                 existingTables.add(row.name);
+                this.log(`   🔍 DEBUG: Added table: ${row.name}`);
               }
             });
+          } else {
+            this.log(`   ⚠️  DEBUG: Unexpected JSON structure - no results array found`);
           }
+        } else {
+          this.log(`   ⚠️  DEBUG: No JSON array found, trying fallback parsing`);
         }
       } catch (error) {
         this.log(`   ⚠️  Error parsing JSON output: ${error.message}`);
+        this.log(`   🔍 DEBUG: Falling back to pipe-delimited parsing`);
+        
         // Fallback to old parsing method
         const lines = result.output.split('\n').filter(line => line.trim());
+        this.log(`   🔍 DEBUG: Fallback parsing ${lines.length} lines`);
+        
         for (const line of lines) {
           if (line.includes('|') && !line.includes('name')) {
             const tableName = line.split('|')[1]?.trim();
             if (tableName) {
               existingTables.add(tableName);
+              this.log(`   🔍 DEBUG: Fallback added table: ${tableName}`);
             }
           }
         }
