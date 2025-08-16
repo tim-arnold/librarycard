@@ -17,6 +17,9 @@ const { readFileSync, writeFileSync, existsSync } = require('fs');
 const { createInterface } = require('readline');
 const { join } = require('path');
 
+// Load environment variables from .env.local
+require('dotenv').config({ path: '.env.local' });
+
 const BACKUP_DIR = './backups-staging';
 const METADATA_FILE = './backups-staging/backup-metadata.json';
 const AUDIT_LOG = './staging-audit.log';
