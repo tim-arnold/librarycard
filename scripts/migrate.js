@@ -359,6 +359,20 @@ class MigrationRunner {
       this.log(`   - ${migration.filename}`);
     });
 
+    // For first-time bootstrap, check if migrations have already been manually applied
+    const appliedMigrations = await this.getAppliedMigrations();
+    if (appliedMigrations.length === 0 && this.environment !== 'local') {
+      this.log('\n🔍 First-time bootstrap detected on non-local environment');
+      this.log('   Checking for manually applied migrations...');
+      
+      const safeToBootstrap = await this.checkBootstrapSafety(pendingMigrations);
+      if (!safeToBootstrap) {
+        this.log('⚠️  Some migrations appear to have been manually applied');
+        this.log('   Use dry-run mode to review, or manually mark applied migrations in tracking tables');
+        return { success: false, error: 'Bootstrap safety check failed' };
+      }
+    }
+
     const batchId = this.generateBatchId();
     let successfulMigrations = 0;
 
@@ -630,6 +644,55 @@ class MigrationRunner {
       SET status = ?, completed_at = datetime('now'), successful_migrations = ?, error_message = ?
       WHERE id = ?
     `, [status, successfulRollbacks, errorMessage, rollbackBatchId]);
+  }
+
+  /**
+   * Check if it's safe to bootstrap by detecting manually applied migrations
+   */
+  async checkBootstrapSafety(pendingMigrations) {
+    this.log('   🔍 Checking database schema for existing tables...');
+    
+    try {
+      // Check for tables that should be created by pending migrations
+      const result = await this.executeSQL(`
+        SELECT name FROM sqlite_master WHERE type='table'
+      `, 'Checking existing tables');
+      
+      const existingTables = new Set();
+      const lines = result.output.split('\n').filter(line => line.trim());
+      
+      for (const line of lines) {
+        if (line.includes('|') && !line.includes('name')) {
+          const tableName = line.split('|')[1]?.trim();
+          if (tableName) {
+            existingTables.add(tableName);
+          }
+        }
+      }
+      
+      this.log(`   📊 Found ${existingTables.size} existing tables`);
+      
+      // Check if critical tables that should be created by migrations already exist
+      const criticalTables = ['books', 'users', 'locations', 'curated_genres'];
+      const existingCriticalTables = criticalTables.filter(table => existingTables.has(table));
+      
+      if (existingCriticalTables.length > 0) {
+        this.log(`   ⚠️  Critical tables already exist: ${existingCriticalTables.join(', ')}`);
+        this.log(`   🎯 This suggests migrations have been manually applied`);
+        
+        // For now, return false to be safe
+        // In the future, we could add smarter detection or user confirmation
+        return false;
+      }
+      
+      this.log('   ✅ Bootstrap appears safe - no conflicting tables found');
+      return true;
+      
+    } catch (error) {
+      this.log(`   ❌ Error checking bootstrap safety: ${error.message}`);
+      // If we can't check, err on the side of caution
+      return false;
+    }
   }
 
   /**
