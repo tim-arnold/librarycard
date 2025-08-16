@@ -44,6 +44,8 @@ jobs:
 
       - name: Check migration status
         id: status
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ github.event.inputs.environment == 'staging' && secrets.CLOUDFLARE_API_TOKEN_STAGING_NEW || secrets.CLOUDFLARE_API_TOKEN_PRODUCTION }}
         run: |
           echo "🔍 Checking migration status for ${{ github.event.inputs.environment }}..."
           
