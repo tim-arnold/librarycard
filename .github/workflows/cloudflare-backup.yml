@@ -124,12 +124,9 @@ jobs:
           # Try to get worker info
           wrangler whoami > worker-auth-info.txt || echo "Auth info failed"
           
-          # List workers
-          wrangler list > workers-list.txt || echo "Workers list failed"
-          
-          # Get current deployment info if possible
+          # Get deployment info using modern wrangler commands
           echo "Checking worker deployment status..." > deployment-status.txt
-          wrangler status || echo "Status check failed" >> deployment-status.txt
+          wrangler deployments list --name=librarycard-worker >> deployment-status.txt || echo "Deployments check failed" >> deployment-status.txt
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       
