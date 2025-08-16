@@ -44,6 +44,8 @@ jobs:
 
       - name: Check migration status
         id: status
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ github.event.inputs.environment == 'staging' && secrets.CLOUDFLARE_API_TOKEN_STAGING_NEW || secrets.CLOUDFLARE_API_TOKEN_PRODUCTION }}
         run: |
           echo "🔍 Checking migration status for ${{ github.event.inputs.environment }}..."
           
@@ -51,7 +53,20 @@ jobs:
           export MIGRATION_ENV="${{ github.event.inputs.environment == 'staging' && 'staging-new' || 'production' }}"
           
           # Run migration status check (dry run to avoid requiring database access)
+          set +e  # Don't exit on error so we can capture and display the output
           RESULT=$(npm run migrate:dry-run 2>&1)
+          EXIT_CODE=$?
+          set -e  # Re-enable exit on error
+          
+          echo "🔍 Migration command exit code: $EXIT_CODE"
+          echo "📋 Full output:"
+          echo "$RESULT"
+          
+          if [[ $EXIT_CODE -ne 0 ]]; then
+            echo "❌ Migration dry-run failed with exit code $EXIT_CODE"
+            echo "📋 Error output above shows the issue"
+            exit 1
+          fi
           
           # Extract pending migration count from output
           PENDING_COUNT=$(echo "$RESULT" | grep -o "Found [0-9]* pending migrations" | grep -o "[0-9]*" || echo "0")

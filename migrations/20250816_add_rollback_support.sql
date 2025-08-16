@@ -3,6 +3,7 @@
 -- Creates optional rollback tracking table for detailed rollback history
 
 -- Add rollback_target column to migration_batches
+-- Note: This might fail if column already exists from bootstrap, which is OK
 ALTER TABLE migration_batches ADD COLUMN rollback_target TEXT;
 
 -- Create rollback tracking table (optional, for detailed rollback history)
