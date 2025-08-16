@@ -28,19 +28,28 @@ This document outlines the three-phase approach for deploying the automated migr
    - Verify smart bootstrap analysis correctly identifies existing migrations
    - Confirm no unexpected migrations would be executed
 
-2. **Backup Strategy Verification**
-   - Test production backup creation: `npm run backup:create`
-   - Verify backup integrity: `npm run backup:verify`
-   - Document backup restore procedures
-   - Ensure backups are accessible and valid
+2. **Staging Backup/Restore Testing** 🧪
+   - **CRITICAL**: Test backup/restore system on staging before production use
+   - Create staging backup: `npm run backup:staging:create "pre-test"`
+   - List and verify staging backups: `npm run backup:staging:list` and `npm run backup:staging:verify <id>`
+   - Test complete restore process: `npm run backup:staging:restore`
+   - Verify staging application works after restore
+   - Confirm data integrity and functionality
+   - **This validates the entire backup/restore procedure is working**
 
-3. **Rollback Procedure Documentation**
+3. **Production Backup Strategy Verification**
+   - Test production backup creation: `npm run backup:create "pre-migration-test"`
+   - Verify backup integrity: `npm run backup:verify <backup-id>`
+   - Ensure backups are accessible and valid
+   - **Only proceed after staging backup/restore test succeeds**
+
+4. **Rollback Procedure Documentation**
    - Document manual rollback steps
    - Test rollback procedures on staging
    - Prepare emergency response plan
    - Verify rollback system availability
 
-4. **GitHub Actions Workflow Validation**
+5. **GitHub Actions Workflow Validation**
    - Confirm production environment protection rules
    - Test manual approval gates
    - Verify API health checks work correctly
@@ -138,6 +147,45 @@ If issues occur during deployment:
 2. **Manual**: Execute `npm run backup:restore` with latest backup
 3. **Emergency**: Revert to manual migration process
 4. **Communication**: Notify team and stakeholders immediately
+
+## Staging Backup/Restore Testing Commands
+
+**Before production deployment, test the complete backup/restore system on staging:**
+
+### Create Staging Backup
+```bash
+npm run backup:staging:create "pre-migration-test"
+```
+
+### List Available Staging Backups  
+```bash
+npm run backup:staging:list
+```
+
+### Verify Staging Backup
+```bash
+npm run backup:staging:verify <backup-id>
+```
+
+### Test Staging Restore (Interactive)
+```bash
+npm run backup:staging:restore
+```
+
+**Expected Flow:**
+1. Select backup from list
+2. Verify backup integrity 
+3. Create pre-restore safety backup
+4. Confirm restore (simplified for staging)
+5. Execute complete database restore
+6. Verify staging application functionality
+
+**Success Criteria:**
+- ✅ Backup creates successfully with all data
+- ✅ Verification passes with correct table/row counts
+- ✅ Restore completes without errors
+- ✅ Staging application works after restore
+- ✅ All data intact and functionality preserved
 
 ## Technical Implementation Details
 
