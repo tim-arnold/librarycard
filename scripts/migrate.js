@@ -673,9 +673,16 @@ class MigrationRunner {
     
     try {
       // Check for tables that should be created by pending migrations
+      // IMPORTANT: We need to actually query the database even in dry-run mode
+      // to make the correct bootstrap decision
+      const wasInDryRun = this.dryRun;
+      this.dryRun = false; // Temporarily disable dry-run for this safety check
+      
       const result = await this.executeSQL(`
         SELECT name FROM sqlite_master WHERE type='table'
       `, 'Checking existing tables');
+      
+      this.dryRun = wasInDryRun; // Restore original dry-run setting
       
       const existingTables = new Set();
       
