@@ -64,7 +64,22 @@ npm run deploy:staging               # Deploy to staging (original account)
 npm run deploy:staging-new           # Deploy to staging (NEW isolated account)
 npm run deploy:prod                  # ⚠️ BLOCKED - redirects to GitHub Actions for safety
 
-# Database migrations  
+# Database migrations (AUTOMATED MIGRATION RUNNER)
+npm run migrate                      # Apply all pending migrations to local environment
+npm run migrate:status               # Show migration status and pending migrations
+npm run migrate:dry-run              # Preview what migrations would be applied without executing
+npm run migrate:local                # Apply migrations to local environment  
+
+# ⚠️ STAGING/PRODUCTION MIGRATIONS: GitHub Actions ONLY
+# npm run migrate:staging              # ❌ BLOCKED - Use GitHub Actions "Automated Database Migrations" 
+# npm run migrate:production           # ❌ BLOCKED - Use GitHub Actions "Automated Database Migrations"
+
+# Database rollbacks (LOCAL ONLY - staging/prod use GitHub Actions)
+npm run migrate:rollback              # Rollback last batch in local environment
+# npm run migrate:rollback:staging     # ❌ BLOCKED - Use GitHub Actions "Automated Database Rollbacks"
+# npm run migrate:rollback:production  # ❌ BLOCKED - Use GitHub Actions "Automated Database Rollbacks"
+
+# Legacy manual migration commands (DEPRECATED - use automated runner above)
 npx wrangler d1 execute librarycard-db-staging-new --file=migrations/migration.sql --env=staging-new --remote
 npm run migrate:prod                 # ⚠️ BLOCKED - redirects to GitHub Actions for safety
 
