@@ -124,9 +124,12 @@ class MigrationRunner {
             executionTime
           });
         } else {
+          const command = `wrangler ${args.join(' ')}`;
           this.log(`❌ ${description} failed with code ${code}`);
-          this.log(`Error: ${stderr}`);
-          reject(new Error(`${description} failed: ${stderr}`));
+          this.log(`❌ Command: ${command}`);
+          this.log(`❌ STDOUT: ${stdout}`);
+          this.log(`❌ STDERR: ${stderr}`);
+          reject(new Error(`${description} failed with code ${code}: ${stderr || stdout || 'No output'}`));
         }
       });
     });
@@ -186,9 +189,12 @@ class MigrationRunner {
             executionTime
           });
         } else {
+          const command = `wrangler ${args.join(' ')}`;
           this.log(`❌ ${description} failed with code ${code}`);
-          this.log(`Error: ${stderr}`);
-          reject(new Error(`${description} failed: ${stderr}`));
+          this.log(`❌ Command: ${command}`);
+          this.log(`❌ STDOUT: ${stdout}`);
+          this.log(`❌ STDERR: ${stderr}`);
+          reject(new Error(`${description} failed with code ${code}: ${stderr || stdout || 'No output'}`));
         }
       });
     });
