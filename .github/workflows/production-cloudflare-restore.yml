@@ -96,22 +96,23 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Create emergency pre-restore backup
+      - name: Emergency pre-restore backup notice
         run: |
-          echo "💾 Creating EMERGENCY pre-restore backup of current production state..."
-          
-          # Trigger emergency backup
-          gh workflow run cloudflare-backup.yml
-          
-          echo "✅ Emergency pre-restore backup initiated"
-          echo "⏰ Waiting 60 seconds for backup to start..."
-          sleep 60
-          
-          # Get the latest workflow run to track backup progress
-          echo "📋 Latest backup run:"
-          gh run list --workflow=cloudflare-backup.yml --limit=1
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          echo "💾 EMERGENCY PRE-RESTORE BACKUP NOTICE"
+          echo "======================================"
+          echo "🚨 CRITICAL: You MUST manually run 'Cloudflare Workers & D1 Backup'"
+          echo "   workflow BEFORE proceeding with this production restore!"
+          echo ""
+          echo "📋 Steps to create emergency backup:"
+          echo "1. Go to Actions → 'Cloudflare Workers & D1 Backup'"
+          echo "2. Click 'Run workflow' → Enter reason: 'emergency-pre-restore'"
+          echo "3. Wait for backup completion"
+          echo "4. Then re-run this restore workflow"
+          echo ""
+          echo "⚠️  PRODUCTION RESTORE WITHOUT BACKUP IS EXTREMELY DANGEROUS"
+          echo ""
+          echo "⏰ Waiting 30 seconds for review..."
+          sleep 30
       
       - name: Download backup from GitHub Release
         run: |
