@@ -210,9 +210,8 @@ class MigrationRunner {
         'Fetching applied migrations'
       );
       
-      if (this.dryRun) {
-        return []; // In dry run, assume no migrations applied
-      }
+      // Note: We need to check applied migrations even in dry-run mode
+      // to make correct bootstrap decisions
       
       // Parse the output to extract migration data
       // This is a simplified parser - may need adjustment based on wrangler output format
