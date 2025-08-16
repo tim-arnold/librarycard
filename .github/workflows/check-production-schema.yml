@@ -1,4 +1,4 @@
-name: Check Production Database Schema
+name: 🔍 Production Check Database Schema
 
 on:
   workflow_dispatch:
