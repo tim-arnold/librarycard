@@ -19,7 +19,17 @@
     "backup:verify": "node scripts/auto-backup.js verify",
     "backup:restore": "node scripts/restore-backup.js",
     "deploy:staging": "wrangler deploy --env=staging",
-    "deploy:staging-new": "CLOUDFLARE_API_TOKEN=$CLOUDFLARE_API_TOKEN_STAGING_NEW wrangler deploy --config=wrangler.staging-new.toml --env=staging"
+    "deploy:staging-new": "CLOUDFLARE_API_TOKEN=$CLOUDFLARE_API_TOKEN_STAGING_NEW wrangler deploy --config=wrangler.staging-new.toml --env=staging",
+    "migrate": "node scripts/migrate.js migrate",
+    "migrate:status": "node scripts/migrate.js status",
+    "migrate:rollback": "node scripts/migrate.js rollback",
+    "migrate:rollback:local": "MIGRATION_ENV=local node scripts/migrate.js rollback",
+    "migrate:rollback:staging": "MIGRATION_ENV=staging-new node scripts/migrate.js rollback",
+    "migrate:rollback:production": "MIGRATION_ENV=production node scripts/migrate.js rollback",
+    "migrate:local": "MIGRATION_ENV=local node scripts/migrate.js migrate",
+    "migrate:staging": "MIGRATION_ENV=staging-new node scripts/migrate.js migrate",
+    "migrate:production": "MIGRATION_ENV=production node scripts/migrate.js migrate",
+    "migrate:dry-run": "node scripts/migrate.js migrate --dry-run"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
