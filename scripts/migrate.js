@@ -379,18 +379,32 @@ class MigrationRunner {
       this.log('\n🔍 First-time bootstrap detected on non-local environment');
       this.log('   Checking for manually applied migrations...');
       
-      const safeToBootstrap = await this.checkBootstrapSafety(pendingMigrations);
-      if (!safeToBootstrap) {
-        this.log('⚠️  Some migrations appear to have been manually applied');
-        this.log('   Use dry-run mode to review, or manually mark applied migrations in tracking tables');
+      const bootstrapResult = await this.checkBootstrapSafety(pendingMigrations);
+      if (!bootstrapResult.safe) {
+        this.log('⚠️  Existing database detected - using smart bootstrap mode');
+        this.log(`   📊 Found ${bootstrapResult.existingTables.size} existing tables`);
+        this.log(`   🎯 Will apply only new migration tracking migrations`);
         
-        // In dry-run mode, return success so workflows can parse the output
+        // Filter to only migration tracking system migrations that don't conflict
+        const trackingMigrations = pendingMigrations.filter(migration => 
+          migration.filename.includes('create_migrations_tracking_system') ||
+          migration.filename.includes('add_rollback_support')
+        );
+        
+        this.log(`   📋 Smart bootstrap: ${trackingMigrations.length} tracking migrations to apply`);
+        this.log(`   📋 Smart bootstrap: ${pendingMigrations.length - trackingMigrations.length} existing migrations to mark as applied`);
+        
+        // In dry-run mode, show what would happen
         if (this.dryRun) {
-          this.log('🔍 DRY RUN: Would skip applying migrations due to bootstrap safety check');
-          return { success: true, migrationsApplied: 0, skipped: true, reason: 'Bootstrap safety check failed' };
+          this.log('🔍 DRY RUN: Smart bootstrap would:');
+          this.log(`   1. Apply ${trackingMigrations.length} new tracking migrations`);
+          this.log(`   2. Mark ${pendingMigrations.length - trackingMigrations.length} existing migrations as applied`);
+          this.log(`   3. Set up automated migration tracking for future use`);
+          return { success: true, migrationsApplied: trackingMigrations.length, skipped: false, smartBootstrap: true };
         }
         
-        return { success: false, error: 'Bootstrap safety check failed' };
+        // Apply smart bootstrap logic
+        return await this.performSmartBootstrap(pendingMigrations, trackingMigrations, bootstrapResult.existingTables);
       }
       
       // Bootstrap: Create tracking tables first
@@ -747,18 +761,82 @@ class MigrationRunner {
         this.log(`   ⚠️  Critical tables already exist: ${existingCriticalTables.join(', ')}`);
         this.log(`   🎯 This suggests migrations have been manually applied`);
         
-        // For now, return false to be safe
-        // In the future, we could add smarter detection or user confirmation
-        return false;
+        return { safe: false, existingTables, reason: 'Critical tables exist' };
       }
       
       this.log('   ✅ Bootstrap appears safe - no conflicting tables found');
-      return true;
+      return { safe: true, existingTables, reason: 'No conflicts detected' };
       
     } catch (error) {
       this.log(`   ❌ Error checking bootstrap safety: ${error.message}`);
       // If we can't check, err on the side of caution
-      return false;
+      return { safe: false, existingTables: new Set(), reason: `Error: ${error.message}` };
+    }
+  }
+
+  /**
+   * Perform smart bootstrap for existing databases
+   */
+  async performSmartBootstrap(allMigrations, trackingMigrations, existingTables) {
+    this.log('🎯 Starting smart bootstrap process...');
+    
+    const batchId = this.generateBatchId();
+    const nonTrackingMigrations = allMigrations.filter(migration => 
+      !trackingMigrations.includes(migration)
+    );
+    
+    try {
+      // Step 1: Create tracking tables manually (these migrations will add them too, but we need them first)
+      this.log('🔨 Creating migration tracking tables...');
+      await this.createTrackingTables();
+      
+      // Step 2: Mark all existing migrations as applied in a bootstrap batch
+      this.log(`📋 Marking ${nonTrackingMigrations.length} existing migrations as applied...`);
+      await this.startMigrationBatch(batchId, nonTrackingMigrations.length);
+      
+      for (const migration of nonTrackingMigrations) {
+        await this.recordMigrationApplied(migration, batchId, 0); // 0ms execution time for bootstrap
+        this.log(`   ✅ Marked as applied: ${migration.filename}`);
+      }
+      
+      await this.updateMigrationBatch(batchId, 'completed', nonTrackingMigrations.length);
+      
+      // Step 3: Apply the new tracking migrations normally
+      this.log(`🔧 Applying ${trackingMigrations.length} new tracking migrations...`);
+      const trackingBatchId = this.generateBatchId();
+      await this.startMigrationBatch(trackingBatchId, trackingMigrations.length);
+      
+      let appliedTrackingMigrations = 0;
+      for (const migration of trackingMigrations) {
+        this.log(`🔧 Applying migration: ${migration.filename}`);
+        const result = await this.executeSQLFile(migration.filepath, migration.filename);
+        await this.recordMigrationApplied(migration, trackingBatchId, result.executionTime);
+        appliedTrackingMigrations++;
+        this.log(`   ✅ Successfully applied: ${migration.filename}`);
+      }
+      
+      await this.updateMigrationBatch(trackingBatchId, 'completed', appliedTrackingMigrations);
+      
+      this.log(`\n🎉 Smart bootstrap completed successfully!`);
+      this.log(`   📋 Marked ${nonTrackingMigrations.length} existing migrations as applied`);
+      this.log(`   🔧 Applied ${appliedTrackingMigrations} new tracking migrations`);
+      this.log(`   🚀 System ready for automated migrations`);
+      
+      return {
+        success: true,
+        migrationsApplied: appliedTrackingMigrations,
+        migrationsMarked: nonTrackingMigrations.length,
+        smartBootstrap: true,
+        batchIds: [batchId, trackingBatchId]
+      };
+      
+    } catch (error) {
+      this.log(`💥 Smart bootstrap failed: ${error.message}`);
+      return {
+        success: false,
+        error: error.message,
+        smartBootstrap: true
+      };
     }
   }
 
