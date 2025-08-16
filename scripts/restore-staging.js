@@ -207,12 +207,17 @@ class StagingDatabaseRestore {
       console.log(`Restoring staging from backup: ${backupId}`);
       console.log('This may take several minutes...\n');
       
-      // Disable foreign key constraints for restore
-      console.log('🔧 Disabling foreign key constraints...');
-      await this.executeD1Command('PRAGMA foreign_keys = OFF;');
-      
       // Load backup data
       const backupData = JSON.parse(readFileSync(backupFile, 'utf8'));
+      
+      // Disable foreign key constraints for restore
+      console.log('🔧 Disabling foreign key constraints...');
+      try {
+        await this.executeD1Command('PRAGMA foreign_keys = OFF;');
+        console.log('  ✅ Foreign key constraints disabled');
+      } catch (error) {
+        console.log('  ⚠️  Could not disable foreign key constraints, proceeding anyway');
+      }
       
       // Restore each table
       for (const [tableName, tableData] of Object.entries(backupData.tables)) {
@@ -220,6 +225,7 @@ class StagingDatabaseRestore {
         
         try {
           // Clear existing data instead of dropping table (avoids foreign key issues)
+          console.log(`  🧹 Clearing ${tableName}...`);
           await this.executeD1Command(`DELETE FROM ${tableName};`);
           
           // Insert backup data
