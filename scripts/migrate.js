@@ -220,11 +220,17 @@ class MigrationRunner {
       
       return migrations;
     } catch (error) {
-      // If the migrations table doesn't exist yet, return empty array
-      if (error.message.includes('no such table: migrations_applied')) {
-        this.log('Migrations tracking table not found - assuming first run');
+      // Bootstrap detection: if migrations table doesn't exist yet, return empty array
+      if (error.message.includes('no such table: migrations_applied') ||
+          error.message.includes('no such table') ||
+          error.message.includes('table or view does not exist') ||
+          error.message.includes('migrations_applied')) {
+        this.log(`🆕 First-time setup detected: migration tracking tables don't exist yet`);
+        this.log(`📋 Bootstrap mode: Will apply all existing migrations to establish baseline`);
         return [];
       }
+      
+      this.log(`❌ Error fetching applied migrations: ${error.message}`);
       throw error;
     }
   }
