@@ -55,7 +55,9 @@ class StagingDatabaseBackup {
       console.log('📋 Discovering database tables...');
       const tablesResult = this.executeD1Command(`
         SELECT name FROM sqlite_master 
-        WHERE type='table' AND name NOT LIKE 'sqlite_%' 
+        WHERE type='table' 
+        AND name NOT LIKE 'sqlite_%'
+        AND name NOT LIKE '_cf_%'
         ORDER BY name;
       `);
       
@@ -66,23 +68,29 @@ class StagingDatabaseBackup {
       for (const table of tables) {
         console.log(`💾 Backing up table: ${table.name}`);
         
-        // Get table schema
-        const schemaResult = this.executeD1Command(`
-          SELECT sql FROM sqlite_master 
-          WHERE type='table' AND name='${table.name}';
-        `);
-        
-        // Get table data
-        const dataResult = this.executeD1Command(`SELECT * FROM ${table.name};`);
-        const tableData = this.parseD1Output(dataResult);
-        
-        backupData.tables[table.name] = {
-          schema: this.parseD1Output(schemaResult)[0]?.sql || '',
-          data: tableData,
-          row_count: tableData.length
-        };
-        
-        console.log(`  ✅ ${tableData.length} rows backed up from ${table.name}`);
+        try {
+          // Get table schema
+          const schemaResult = this.executeD1Command(`
+            SELECT sql FROM sqlite_master 
+            WHERE type='table' AND name='${table.name}';
+          `);
+          
+          // Get table data
+          const dataResult = this.executeD1Command(`SELECT * FROM ${table.name};`);
+          const tableData = this.parseD1Output(dataResult);
+          
+          backupData.tables[table.name] = {
+            schema: this.parseD1Output(schemaResult)[0]?.sql || '',
+            data: tableData,
+            row_count: tableData.length
+          };
+          
+          console.log(`  ✅ ${tableData.length} rows backed up from ${table.name}`);
+          
+        } catch (error) {
+          console.log(`  ⚠️  Skipped table ${table.name}: ${error.message}`);
+          // Continue with other tables
+        }
       }
 
       // Calculate backup statistics
@@ -129,25 +137,32 @@ class StagingDatabaseBackup {
 
   parseD1Output(output) {
     try {
-      // D1 returns results in various formats, try to parse as JSON first
-      const lines = output.trim().split('\n');
-      const dataLines = lines.filter(line => 
-        line.startsWith('{') || line.startsWith('[') || line.includes('|')
-      );
+      // Extract JSON from wrangler output
+      const lines = output.split('\n');
+      const jsonStartIndex = lines.findIndex(line => line.trim().startsWith('['));
       
-      if (dataLines.length === 0) return [];
-      
-      // Try to parse as JSON array
-      try {
-        return JSON.parse(dataLines.join('\n'));
-      } catch {
-        // Fallback: parse pipe-separated format
-        return this.parsePipeFormat(dataLines);
+      if (jsonStartIndex === -1) {
+        console.warn('⚠️  No JSON found in D1 output');
+        return [];
       }
       
+      // Get everything from the JSON start to the end
+      const jsonLines = lines.slice(jsonStartIndex);
+      const jsonText = jsonLines.join('\n');
+      
+      // Parse the JSON
+      const jsonData = JSON.parse(jsonText);
+      
+      // Extract results from the wrangler JSON format
+      if (Array.isArray(jsonData) && jsonData[0] && jsonData[0].results) {
+        return jsonData[0].results;
+      }
+      
+      return [];
+      
     } catch (error) {
-      console.warn('⚠️  Could not parse D1 output, returning raw data');
-      return [{ raw_output: output }];
+      console.warn('⚠️  Could not parse D1 JSON output:', error.message);
+      return [];
     }
   }
 
