@@ -164,7 +164,7 @@ jobs:
           
           function executeD1Command(sql) {
             try {
-              const command = `wrangler d1 execute librarycard-db-staging-new --config=../../wrangler.staging-new.toml --env=staging --remote --command="${sql.replace(/"/g, '\\"')}"`;
+              const command = `wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote --command="${sql.replace(/"/g, '\\"')}"`;
               const result = execSync(command, { encoding: 'utf8' });
               return result;
             } catch (error) {
