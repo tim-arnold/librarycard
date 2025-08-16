@@ -272,23 +272,29 @@ class StagingDatabaseRestore {
     
     // Get column names from first row
     const columns = Object.keys(data[0]);
-    const batchSize = 50; // Insert in batches to avoid command length limits
+    const batchSize = 10; // Smaller batch size to avoid command length limits
     
     for (let i = 0; i < data.length; i += batchSize) {
       const batch = data.slice(i, i + batchSize);
       
-      const values = batch.map(row => {
+      // Insert each row individually to avoid command length issues
+      for (const row of batch) {
         const vals = columns.map(col => {
           const val = row[col];
           if (val === null || val === undefined) return 'NULL';
           if (typeof val === 'string') return `'${val.replace(/'/g, "''")}'`;
           return val;
         });
-        return `(${vals.join(', ')})`;
-      });
-      
-      const sql = `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES ${values.join(', ')};`;
-      await this.executeD1Command(sql);
+        
+        const sql = `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES (${vals.join(', ')});`;
+        
+        try {
+          await this.executeD1Command(sql);
+        } catch (error) {
+          console.log(`    ⚠️  Failed to insert row in ${tableName}: ${error.message}`);
+          // Continue with other rows
+        }
+      }
     }
   }
 
