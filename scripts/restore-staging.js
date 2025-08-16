@@ -219,15 +219,55 @@ class StagingDatabaseRestore {
         console.log('  ⚠️  Could not disable foreign key constraints, proceeding anyway');
       }
       
-      // Restore each table
-      for (const [tableName, tableData] of Object.entries(backupData.tables)) {
+      // Define table dependency order (child tables first, then parents)
+      const tableOrder = [
+        // Child tables (no foreign key dependencies)
+        'notification_queue', 'notification_log', 'notification_read_status', 'notification_preferences',
+        'in_app_notifications', 'webauthn_challenges', 'webauthn_credentials', 'jwt_sessions', 
+        'auth_audit_log', 'user_recovery_codes', 'user_global_permissions',
+        'genre_suggestions', 'genre_requests', 'book_genres', 'book_ratings', 'book_removal_requests',
+        'book_checkout_history', 'migration_rollbacks', 'migrations_applied', 'migration_batches',
+        'signup_approval_requests',
+        
+        // Tables with dependencies  
+        'location_user_permissions', 'location_admin_capabilities', 'location_members', 'location_invitations',
+        'books', 'shelves',
+        
+        // Parent tables (referenced by others)
+        'curated_genres', 'locations', 'users'
+      ];
+      
+      // Get all table names from backup and sort by dependency order
+      const allTableNames = Object.keys(backupData.tables);
+      const orderedTables = [
+        ...tableOrder.filter(name => allTableNames.includes(name)),
+        ...allTableNames.filter(name => !tableOrder.includes(name))
+      ];
+      
+      console.log(`🔄 Restoring ${orderedTables.length} tables in dependency order...`);
+      
+      // Clear all tables first (in dependency order)
+      console.log('\n🧹 Clearing all table data...');
+      for (const tableName of orderedTables) {
+        try {
+          console.log(`  🧹 Clearing ${tableName}...`);
+          await this.executeD1Command(`DELETE FROM ${tableName};`);
+        } catch (error) {
+          console.log(`  ⚠️  Could not clear ${tableName}: ${error.message}`);
+        }
+      }
+      
+      // Then restore data (in reverse order - parents first for inserts)
+      console.log('\n📥 Restoring data...');
+      const restoreOrder = [...orderedTables].reverse();
+      
+      for (const tableName of restoreOrder) {
+        const tableData = backupData.tables[tableName];
+        if (!tableData) continue;
+        
         console.log(`🔄 Restoring table: ${tableName} (${tableData.row_count} rows)`);
         
         try {
-          // Clear existing data instead of dropping table (avoids foreign key issues)
-          console.log(`  🧹 Clearing ${tableName}...`);
-          await this.executeD1Command(`DELETE FROM ${tableName};`);
-          
           // Insert backup data
           if (tableData.data.length > 0) {
             await this.insertDataBatch(tableName, tableData.data);
