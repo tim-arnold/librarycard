@@ -863,7 +863,7 @@ class MigrationRunner {
     
     await this.executeSQL(migrationsAppliedSQL, 'Creating migrations_applied table');
     
-    // Create migration_batches table
+    // Create migration_batches table (basic version, rollback features added by separate migration)
     const migrationBatchesSQL = `
       CREATE TABLE IF NOT EXISTS migration_batches (
         id TEXT PRIMARY KEY,
@@ -874,8 +874,7 @@ class MigrationRunner {
         successful_migrations INTEGER NOT NULL DEFAULT 0,
         failed_migration TEXT,
         error_message TEXT,
-        environment TEXT NOT NULL,
-        rollback_target TEXT
+        environment TEXT NOT NULL
       );
       
       CREATE INDEX IF NOT EXISTS idx_migration_batches_status ON migration_batches(status);
@@ -884,19 +883,8 @@ class MigrationRunner {
     
     await this.executeSQL(migrationBatchesSQL, 'Creating migration_batches table');
     
-    // Create migration_rollbacks table (optional)
-    const migrationRollbacksSQL = `
-      CREATE TABLE IF NOT EXISTS migration_rollbacks (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        filename TEXT NOT NULL,
-        rolled_back_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        rollback_batch_id TEXT NOT NULL
-      );
-      
-      CREATE INDEX IF NOT EXISTS idx_migration_rollbacks_rollback_batch_id ON migration_rollbacks(rollback_batch_id);
-    `;
-    
-    await this.executeSQL(migrationRollbacksSQL, 'Creating migration_rollbacks table');
+    // Note: migration_rollbacks table and rollback_target column 
+    // will be created by the 20250816_add_rollback_support.sql migration
     
     this.log('✅ Migration tracking tables created successfully');
   }
