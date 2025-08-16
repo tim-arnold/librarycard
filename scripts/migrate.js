@@ -384,6 +384,13 @@ class MigrationRunner {
       if (!safeToBootstrap) {
         this.log('⚠️  Some migrations appear to have been manually applied');
         this.log('   Use dry-run mode to review, or manually mark applied migrations in tracking tables');
+        
+        // In dry-run mode, return success so workflows can parse the output
+        if (this.dryRun) {
+          this.log('🔍 DRY RUN: Would skip applying migrations due to bootstrap safety check');
+          return { success: true, migrationsApplied: 0, skipped: true, reason: 'Bootstrap safety check failed' };
+        }
+        
         return { success: false, error: 'Bootstrap safety check failed' };
       }
       
