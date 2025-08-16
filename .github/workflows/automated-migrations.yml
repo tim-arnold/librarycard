@@ -45,7 +45,7 @@ jobs:
       - name: Check migration status
         id: status
         env:
-          CLOUDFLARE_API_TOKEN: ${{ github.event.inputs.environment == 'staging' && secrets.CLOUDFLARE_API_TOKEN_STAGING_NEW || secrets.CLOUDFLARE_API_TOKEN_PRODUCTION }}
+          CLOUDFLARE_API_TOKEN: ${{ github.event.inputs.environment == 'staging' && secrets.CLOUDFLARE_API_TOKEN_STAGING_NEW || secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           echo "🔍 Checking migration status for ${{ github.event.inputs.environment }}..."
           
@@ -165,7 +165,7 @@ jobs:
           echo "💾 Creating production backup before migration..."
           npm run backup:create
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_PRODUCTION }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
       - name: Apply migrations to production
         run: |
@@ -180,7 +180,7 @@ jobs:
             npm run migrate:production
           fi
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_PRODUCTION }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
       - name: Verify production health
         if: github.event.inputs.dry_run != 'true'
@@ -203,7 +203,7 @@ jobs:
           export MIGRATION_ENV="production"
           npm run migrate:status
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_PRODUCTION }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
       - name: Notify success
         if: github.event.inputs.dry_run != 'true'
