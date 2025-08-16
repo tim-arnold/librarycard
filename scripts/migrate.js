@@ -37,7 +37,8 @@ class MigrationRunner {
       'staging-new': {
         database: 'librarycard-db-staging-new',
         remote: true,
-        env: 'staging-new'
+        config: 'wrangler.staging-new.toml',
+        env: 'staging'
       },
       production: {
         database: 'librarycard-db-production',
@@ -88,6 +89,10 @@ class MigrationRunner {
         args.push('--remote');
       }
       
+      if (this.dbConfig.config) {
+        args.push('--config', this.dbConfig.config);
+      }
+      
       if (this.dbConfig.env) {
         args.push('--env', this.dbConfig.env);
       }
@@ -119,9 +124,12 @@ class MigrationRunner {
             executionTime
           });
         } else {
+          const command = `wrangler ${args.join(' ')}`;
           this.log(`❌ ${description} failed with code ${code}`);
-          this.log(`Error: ${stderr}`);
-          reject(new Error(`${description} failed: ${stderr}`));
+          this.log(`❌ Command: ${command}`);
+          this.log(`❌ STDOUT: ${stdout}`);
+          this.log(`❌ STDERR: ${stderr}`);
+          reject(new Error(`${description} failed with code ${code}: ${stderr || stdout || 'No output'}`));
         }
       });
     });
@@ -146,6 +154,10 @@ class MigrationRunner {
         args.push('--remote');
       }
       
+      if (this.dbConfig.config) {
+        args.push('--config', this.dbConfig.config);
+      }
+      
       if (this.dbConfig.env) {
         args.push('--env', this.dbConfig.env);
       }
@@ -177,9 +189,12 @@ class MigrationRunner {
             executionTime
           });
         } else {
+          const command = `wrangler ${args.join(' ')}`;
           this.log(`❌ ${description} failed with code ${code}`);
-          this.log(`Error: ${stderr}`);
-          reject(new Error(`${description} failed: ${stderr}`));
+          this.log(`❌ Command: ${command}`);
+          this.log(`❌ STDOUT: ${stdout}`);
+          this.log(`❌ STDERR: ${stderr}`);
+          reject(new Error(`${description} failed with code ${code}: ${stderr || stdout || 'No output'}`));
         }
       });
     });
@@ -371,6 +386,10 @@ class MigrationRunner {
         this.log('   Use dry-run mode to review, or manually mark applied migrations in tracking tables');
         return { success: false, error: 'Bootstrap safety check failed' };
       }
+      
+      // Bootstrap: Create tracking tables first
+      this.log('🔨 Creating migration tracking tables for first-time setup...');
+      await this.createTrackingTables();
     }
 
     const batchId = this.generateBatchId();
@@ -659,18 +678,42 @@ class MigrationRunner {
       `, 'Checking existing tables');
       
       const existingTables = new Set();
-      const lines = result.output.split('\n').filter(line => line.trim());
       
-      for (const line of lines) {
-        if (line.includes('|') && !line.includes('name')) {
-          const tableName = line.split('|')[1]?.trim();
-          if (tableName) {
-            existingTables.add(tableName);
+      try {
+        // Parse JSON output from wrangler D1
+        const lines = result.output.split('\n');
+        const jsonStart = lines.findIndex(line => line.trim().startsWith('['));
+        
+        if (jsonStart !== -1) {
+          const jsonOutput = lines.slice(jsonStart).join('\n');
+          const parsed = JSON.parse(jsonOutput);
+          
+          if (parsed && parsed[0] && parsed[0].results) {
+            parsed[0].results.forEach(row => {
+              if (row.name) {
+                existingTables.add(row.name);
+              }
+            });
+          }
+        }
+      } catch (error) {
+        this.log(`   ⚠️  Error parsing JSON output: ${error.message}`);
+        // Fallback to old parsing method
+        const lines = result.output.split('\n').filter(line => line.trim());
+        for (const line of lines) {
+          if (line.includes('|') && !line.includes('name')) {
+            const tableName = line.split('|')[1]?.trim();
+            if (tableName) {
+              existingTables.add(tableName);
+            }
           }
         }
       }
       
       this.log(`   📊 Found ${existingTables.size} existing tables`);
+      if (existingTables.size > 0) {
+        this.log(`   📋 Tables: ${Array.from(existingTables).slice(0, 10).join(', ')}${existingTables.size > 10 ? '...' : ''}`);
+      }
       
       // Check if critical tables that should be created by migrations already exist
       const criticalTables = ['books', 'users', 'locations', 'curated_genres'];
@@ -693,6 +736,67 @@ class MigrationRunner {
       // If we can't check, err on the side of caution
       return false;
     }
+  }
+
+  /**
+   * Create migration tracking tables for first-time setup
+   */
+  async createTrackingTables() {
+    this.log('🔨 Creating migration tracking tables...');
+    
+    // Create migrations_applied table
+    const migrationsAppliedSQL = `
+      CREATE TABLE IF NOT EXISTS migrations_applied (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        filename TEXT NOT NULL UNIQUE,
+        checksum TEXT NOT NULL,
+        applied_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        execution_time_ms INTEGER NOT NULL DEFAULT 0,
+        batch_id TEXT NOT NULL
+      );
+      
+      CREATE INDEX IF NOT EXISTS idx_migrations_applied_batch_id ON migrations_applied(batch_id);
+      CREATE INDEX IF NOT EXISTS idx_migrations_applied_applied_at ON migrations_applied(applied_at);
+    `;
+    
+    await this.executeSQL(migrationsAppliedSQL, 'Creating migrations_applied table');
+    
+    // Create migration_batches table
+    const migrationBatchesSQL = `
+      CREATE TABLE IF NOT EXISTS migration_batches (
+        id TEXT PRIMARY KEY,
+        started_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        completed_at DATETIME,
+        status TEXT NOT NULL DEFAULT 'running',
+        total_migrations INTEGER NOT NULL DEFAULT 0,
+        successful_migrations INTEGER NOT NULL DEFAULT 0,
+        failed_migration TEXT,
+        error_message TEXT,
+        environment TEXT NOT NULL,
+        rollback_target TEXT
+      );
+      
+      CREATE INDEX IF NOT EXISTS idx_migration_batches_status ON migration_batches(status);
+      CREATE INDEX IF NOT EXISTS idx_migration_batches_started_at ON migration_batches(started_at);
+    `;
+    
+    await this.executeSQL(migrationBatchesSQL, 'Creating migration_batches table');
+    
+    // Create migration_rollbacks table (optional)
+    const migrationRollbacksSQL = `
+      CREATE TABLE IF NOT EXISTS migration_rollbacks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        filename TEXT NOT NULL,
+        rolled_back_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        rollback_batch_id TEXT NOT NULL
+      );
+      
+      CREATE INDEX IF NOT EXISTS idx_migration_rollbacks_rollback_batch_id ON migration_rollbacks(rollback_batch_id);
+    `;
+    
+    await this.executeSQL(migrationRollbacksSQL, 'Creating migration_rollbacks table');
+    
+    this.log('✅ Migration tracking tables created successfully');
   }
 
   /**
