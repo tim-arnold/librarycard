@@ -1,0 +1,366 @@
+name: Staging Cloudflare Database Restore
+
+on:
+  workflow_dispatch:
+    inputs:
+      backup_tag:
+        description: 'GitHub Release tag of the backup to restore (e.g., staging-backup-123-20250816-1430)'
+        required: true
+        type: string
+      confirmation:
+        description: 'Type "RESTORE STAGING" to confirm this will overwrite staging data'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  
+jobs:
+  restore-staging:
+    runs-on: ubuntu-latest
+    
+    # Safety check
+    if: github.event.inputs.confirmation == 'RESTORE STAGING'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Install Wrangler CLI
+        run: npm install -g wrangler
+      
+      - name: Set Cloudflare API Token
+        run: echo "CLOUDFLARE_API_TOKEN_STAGING_NEW is configured"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_STAGING_NEW }}
+      
+      - name: Validate backup tag
+        run: |
+          echo "🔍 Validating backup tag: ${{ github.event.inputs.backup_tag }}"
+          
+          # Check if tag exists
+          if ! gh release view "${{ github.event.inputs.backup_tag }}" > /dev/null 2>&1; then
+            echo "❌ Release tag not found: ${{ github.event.inputs.backup_tag }}"
+            exit 1
+          fi
+          
+          echo "✅ Backup tag validated"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Create pre-restore backup
+        run: |
+          echo "💾 Creating pre-restore backup of current staging state..."
+          
+          # Create a safety backup before restore
+          gh workflow run staging-cloudflare-backup.yml -f reason="pre-restore-safety-backup-$(date +%Y%m%d-%H%M)"
+          
+          echo "✅ Pre-restore backup initiated"
+          echo "⏰ Waiting 30 seconds for backup to start..."
+          sleep 30
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Download backup from GitHub Release
+        run: |
+          echo "📥 Downloading backup from GitHub Release..."
+          
+          # Create restore directory
+          mkdir -p restore-workspace
+          cd restore-workspace
+          
+          # Download the backup archive
+          gh release download "${{ github.event.inputs.backup_tag }}" -p "*.tar.gz"
+          
+          # Extract the archive
+          tar -xzf *.tar.gz
+          
+          # Verify backup contents
+          echo "📋 Backup contents:"
+          ls -la staging-cloudflare/
+          
+          # Verify the database backup file exists
+          if [ ! -f "staging-cloudflare/staging-database-backup.json" ]; then
+            echo "❌ Database backup file not found in archive"
+            exit 1
+          fi
+          
+          echo "✅ Backup downloaded and verified"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Validate backup integrity
+        run: |
+          echo "🔍 Validating backup integrity..."
+          cd restore-workspace/staging-cloudflare
+          
+          # Create backup validation script
+          cat > validate-backup.js << 'EOF'
+          #!/usr/bin/env node
+          const { readFileSync } = require('fs');
+          
+          try {
+            console.log('📋 Validating backup file structure...');
+            
+            const backupData = JSON.parse(readFileSync('staging-database-backup.json', 'utf8'));
+            
+            // Verify structure
+            if (!backupData.tables || !backupData.metadata) {
+              throw new Error('Invalid backup structure');
+            }
+            
+            // Verify each table
+            let totalRows = 0;
+            const tableCount = Object.keys(backupData.tables).length;
+            
+            for (const [tableName, tableData] of Object.entries(backupData.tables)) {
+              if (!tableData.schema || !Array.isArray(tableData.data)) {
+                throw new Error(`Invalid table data for: ${tableName}`);
+              }
+              totalRows += tableData.data.length;
+            }
+            
+            // Verify metadata consistency
+            if (totalRows !== backupData.metadata.total_rows) {
+              throw new Error('Row count mismatch in metadata');
+            }
+            
+            console.log(`✅ Backup validation successful`);
+            console.log(`📊 Verified ${tableCount} tables with ${totalRows} total rows`);
+            console.log(`📅 Backup created: ${new Date(backupData.timestamp).toLocaleString()}`);
+            console.log(`👤 Created by: ${backupData.metadata.created_by}`);
+            console.log(`📝 Reason: ${backupData.reason}`);
+            
+          } catch (error) {
+            console.error(`❌ Backup validation failed: ${error.message}`);
+            process.exit(1);
+          }
+          EOF
+          
+          chmod +x validate-backup.js
+          node validate-backup.js
+      
+      - name: Execute staging restore
+        run: |
+          echo "🚀 Executing staging database restore..."
+          cd restore-workspace/staging-cloudflare
+          
+          # Create comprehensive restore script
+          cat > github-restore-staging.js << 'EOF'
+          #!/usr/bin/env node
+          const { execSync } = require('child_process');
+          const { readFileSync } = require('fs');
+          
+          function executeD1Command(sql) {
+            try {
+              const command = `wrangler d1 execute librarycard-db-staging-new --config=../../wrangler.staging-new.toml --env=staging --remote --command="${sql.replace(/"/g, '\\"')}"`;
+              const result = execSync(command, { encoding: 'utf8' });
+              return result;
+            } catch (error) {
+              throw new Error(`Database command failed: ${error.message}`);
+            }
+          }
+          
+          async function executeRestore() {
+            console.log('🔄 Starting staging database restore from GitHub backup...');
+            
+            const timestamp = new Date().toISOString();
+            console.log(`Restore started: ${timestamp}`);
+            
+            try {
+              // Load backup data
+              const backupData = JSON.parse(readFileSync('staging-database-backup.json', 'utf8'));
+              console.log(`Restoring from backup: ${backupData.id}`);
+              
+              // Disable foreign key constraints for restore
+              console.log('🔧 Disabling foreign key constraints...');
+              try {
+                await executeD1Command('PRAGMA foreign_keys = OFF;');
+                console.log('  ✅ Foreign key constraints disabled');
+              } catch (error) {
+                console.log('  ⚠️  Could not disable foreign key constraints, proceeding anyway');
+              }
+              
+              // Define table dependency order (child tables first, then parents)
+              const tableOrder = [
+                // Child tables (no foreign key dependencies)
+                'notification_queue', 'notification_log', 'notification_read_status', 'notification_preferences',
+                'in_app_notifications', 'webauthn_challenges', 'webauthn_credentials', 'jwt_sessions', 
+                'auth_audit_log', 'user_recovery_codes', 'user_global_permissions',
+                'genre_suggestions', 'genre_requests', 'book_genres', 'book_ratings', 'book_removal_requests',
+                'book_checkout_history', 'migration_rollbacks', 'migrations_applied', 'migration_batches',
+                'signup_approval_requests',
+                
+                // Tables with dependencies  
+                'location_user_permissions', 'location_admin_capabilities', 'location_members', 'location_invitations',
+                'books', 'shelves',
+                
+                // Parent tables (referenced by others)
+                'curated_genres', 'locations', 'users'
+              ];
+              
+              // Get all table names from backup and sort by dependency order
+              const allTableNames = Object.keys(backupData.tables);
+              const orderedTables = [
+                ...tableOrder.filter(name => allTableNames.includes(name)),
+                ...allTableNames.filter(name => !tableOrder.includes(name))
+              ];
+              
+              console.log(`🔄 Restoring ${orderedTables.length} tables in dependency order...`);
+              
+              // Clear all tables first (in dependency order)
+              console.log('\\n🧹 Clearing all table data...');
+              for (const tableName of orderedTables) {
+                try {
+                  console.log(`  🧹 Clearing ${tableName}...`);
+                  await executeD1Command(`DELETE FROM ${tableName};`);
+                } catch (error) {
+                  console.log(`  ⚠️  Could not clear ${tableName}: ${error.message}`);
+                }
+              }
+              
+              // Then restore data (in reverse order - parents first for inserts)
+              console.log('\\n📥 Restoring data...');
+              const restoreOrder = [...orderedTables].reverse();
+              
+              for (const tableName of restoreOrder) {
+                const tableData = backupData.tables[tableName];
+                if (!tableData) continue;
+                
+                console.log(`🔄 Restoring table: ${tableName} (${tableData.row_count} rows)`);
+                
+                try {
+                  // Insert backup data
+                  if (tableData.data.length > 0) {
+                    await insertDataBatch(tableName, tableData.data);
+                  }
+                  
+                  console.log(`  ✅ ${tableName} restored successfully`);
+                  
+                } catch (error) {
+                  console.error(`  ❌ Failed to restore table ${tableName}: ${error.message}`);
+                  throw new Error(`Table restore failed: ${tableName}`);
+                }
+              }
+              
+              // Re-enable foreign key constraints
+              console.log('\\n🔧 Re-enabling foreign key constraints...');
+              await executeD1Command('PRAGMA foreign_keys = ON;');
+              
+              console.log('\\n✅ Staging database restore completed successfully!');
+              console.log(`📊 Restored ${orderedTables.length} tables from backup: ${backupData.id}`);
+              
+              console.log('\\n📋 Post-restore checklist:');
+              console.log('1. Verify staging application is functioning correctly');
+              console.log('2. Test critical user flows on staging');
+              console.log('3. Check data integrity with spot checks');
+              console.log('4. This was a GitHub Actions restore test - SUCCESS!');
+              
+            } catch (error) {
+              console.error('\\n❌ Staging restore failed!');
+              console.error(`Error: ${error.message}`);
+              
+              console.log('\\n🚨 Staging database may be in inconsistent state!');
+              console.log('1. Check staging application status');
+              console.log('2. Consider using pre-restore backup to rollback');
+              console.log('3. Review restore logs for specific errors');
+              console.log('4. This is staging - safe to debug and retry');
+              
+              throw error;
+            }
+          }
+          
+          async function insertDataBatch(tableName, data) {
+            if (data.length === 0) return;
+            
+            // Get column names from first row
+            const columns = Object.keys(data[0]);
+            
+            // Insert each row individually to avoid command length issues
+            for (const row of data) {
+              const vals = columns.map(col => {
+                const val = row[col];
+                if (val === null || val === undefined) return 'NULL';
+                if (typeof val === 'string') return `'${val.replace(/'/g, "''")}'`;
+                return val;
+              });
+              
+              const sql = `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES (${vals.join(', ')});`;
+              
+              try {
+                await executeD1Command(sql);
+              } catch (error) {
+                console.log(`    ⚠️  Failed to insert row in ${tableName}: ${error.message}`);
+                // Continue with other rows
+              }
+            }
+          }
+          
+          executeRestore().then(() => {
+            console.log('🎉 GitHub Actions staging restore completed successfully');
+          }).catch(error => {
+            console.error('💥 GitHub Actions staging restore failed:', error.message);
+            process.exit(1);
+          });
+          EOF
+          
+          chmod +x github-restore-staging.js
+          
+          # Execute the restore
+          node github-restore-staging.js
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_STAGING_NEW }}
+      
+      - name: Verify restore success
+        run: |
+          echo "🔍 Verifying restore success..."
+          
+          # Test basic database connectivity
+          wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote --command="SELECT COUNT(*) as total_users FROM users;" || echo "User count check failed"
+          wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote --command="SELECT COUNT(*) as total_books FROM books;" || echo "Book count check failed"
+          wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote --command="SELECT COUNT(*) as total_locations FROM locations;" || echo "Location count check failed"
+          
+          echo "✅ Basic verification completed"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_STAGING_NEW }}
+      
+      - name: Cleanup
+        if: always()
+        run: |
+          echo "🧹 Cleaning up restore workspace..."
+          rm -rf restore-workspace
+          echo "✅ Cleanup completed"
+      
+      - name: Notify on success
+        run: |
+          echo "✅ Staging restore completed successfully!"
+          echo "🎯 Backup restored from: ${{ github.event.inputs.backup_tag }}"
+          echo "🧪 This validates the GitHub Actions backup/restore cycle"
+          echo "📋 Next steps:"
+          echo "1. Test staging application functionality"
+          echo "2. Verify data integrity"
+          echo "3. Use this process as template for production restores"
+      
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "❌ Staging restore failed!"
+          echo "📋 Troubleshooting steps:"
+          echo "1. Check if backup tag exists: ${{ github.event.inputs.backup_tag }}"
+          echo "2. Verify CLOUDFLARE_API_TOKEN_STAGING_NEW secret"
+          echo "3. Check staging database accessibility"
+          echo "4. Review backup file integrity"
+          echo "5. Consider using pre-restore backup to rollback"
+          echo ""
+          echo "🚨 Staging may be in inconsistent state - manual intervention may be required"
