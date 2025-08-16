@@ -842,6 +842,14 @@ class MigrationRunner {
           if (tables.length > 0 && tables.every(table => existingTables.has(table))) {
             migrationCreatesExistingSchema = true;
           }
+          // Special handling for migrations that add columns to existing tables (empty array)
+          else if (tables.length === 0) {
+            // These migrations modify existing tables - assume they've been applied if core tables exist
+            const coreTablesExist = existingTables.has('users') && existingTables.has('books') && existingTables.has('locations');
+            if (coreTablesExist) {
+              migrationCreatesExistingSchema = true;
+            }
+          }
           break;
         }
       }
