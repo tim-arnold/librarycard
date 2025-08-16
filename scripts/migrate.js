@@ -386,6 +386,10 @@ class MigrationRunner {
         this.log('   Use dry-run mode to review, or manually mark applied migrations in tracking tables');
         return { success: false, error: 'Bootstrap safety check failed' };
       }
+      
+      // Bootstrap: Create tracking tables first
+      this.log('🔨 Creating migration tracking tables for first-time setup...');
+      await this.createTrackingTables();
     }
 
     const batchId = this.generateBatchId();
@@ -673,8 +677,15 @@ class MigrationRunner {
         SELECT name FROM sqlite_master WHERE type='table'
       `, 'Checking existing tables');
       
+      // DEBUG: Show raw output to understand format
+      this.log(`   🔍 Raw wrangler output:`);
+      this.log(`   ${JSON.stringify(result.output)}`);
+      
       const existingTables = new Set();
       const lines = result.output.split('\n').filter(line => line.trim());
+      
+      this.log(`   🔍 Parsed lines (${lines.length}):`);
+      lines.forEach((line, i) => this.log(`   ${i}: ${JSON.stringify(line)}`));
       
       for (const line of lines) {
         if (line.includes('|') && !line.includes('name')) {
@@ -686,6 +697,9 @@ class MigrationRunner {
       }
       
       this.log(`   📊 Found ${existingTables.size} existing tables`);
+      if (existingTables.size > 0) {
+        this.log(`   📋 Tables: ${Array.from(existingTables).join(', ')}`);
+      }
       
       // Check if critical tables that should be created by migrations already exist
       const criticalTables = ['books', 'users', 'locations', 'curated_genres'];
