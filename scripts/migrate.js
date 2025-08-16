@@ -37,7 +37,8 @@ class MigrationRunner {
       'staging-new': {
         database: 'librarycard-db-staging-new',
         remote: true,
-        env: 'staging-new'
+        config: 'wrangler.staging-new.toml',
+        env: 'staging'
       },
       production: {
         database: 'librarycard-db-production',
@@ -86,6 +87,10 @@ class MigrationRunner {
       
       if (this.dbConfig.remote) {
         args.push('--remote');
+      }
+      
+      if (this.dbConfig.config) {
+        args.push('--config', this.dbConfig.config);
       }
       
       if (this.dbConfig.env) {
@@ -144,6 +149,10 @@ class MigrationRunner {
       
       if (this.dbConfig.remote) {
         args.push('--remote');
+      }
+      
+      if (this.dbConfig.config) {
+        args.push('--config', this.dbConfig.config);
       }
       
       if (this.dbConfig.env) {
