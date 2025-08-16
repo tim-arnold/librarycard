@@ -54,6 +54,22 @@ jobs:
           DISABLE_ESLINT_PLUGIN=true npx next build
           echo "🔍 ESLint disabled for performance optimization deployment"
 
+      - name: Apply database migrations
+        run: |
+          echo "🗄️  Applying database migrations to staging..."
+          export MIGRATION_ENV="staging-new"
+          export CI=true  # Tell migration system this is CI environment
+          
+          echo "📊 Checking migration status..."
+          npm run migrate:status || echo "⚠️  Migration status check completed with warnings"
+          
+          echo "🚀 Applying pending migrations..."
+          node scripts/migrate.js migrate
+          
+          echo "✅ Database migration step completed"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_STAGING_NEW }}
+
       - name: Deploy to Staging (Isolated Account)
         uses: cloudflare/wrangler-action@v3
         with:

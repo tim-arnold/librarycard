@@ -1,0 +1,217 @@
+name: Automated Database Migrations
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+        default: 'staging'
+      dry_run:
+        description: 'Dry run (preview only, no changes)'
+        required: false
+        type: boolean
+        default: false
+      reason:
+        description: 'Reason for migration (optional)'
+        required: false
+        type: string
+
+jobs:
+  check-migrations:
+    name: Check Migration Status
+    runs-on: ubuntu-latest
+    outputs:
+      has_pending: ${{ steps.status.outputs.has_pending }}
+      pending_count: ${{ steps.status.outputs.pending_count }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check migration status
+        id: status
+        run: |
+          echo "🔍 Checking migration status for ${{ github.event.inputs.environment }}..."
+          
+          # Set environment for migration runner
+          export MIGRATION_ENV="${{ github.event.inputs.environment == 'staging' && 'staging-new' || 'production' }}"
+          
+          # Run migration status check (dry run to avoid requiring database access)
+          RESULT=$(npm run migrate:dry-run 2>&1)
+          
+          # Extract pending migration count from output
+          PENDING_COUNT=$(echo "$RESULT" | grep -o "Found [0-9]* pending migrations" | grep -o "[0-9]*" || echo "0")
+          
+          echo "📊 Found $PENDING_COUNT pending migrations"
+          echo "pending_count=$PENDING_COUNT" >> $GITHUB_OUTPUT
+          echo "has_pending=$([[ $PENDING_COUNT -gt 0 ]] && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          
+          # Show pending migrations
+          if [[ $PENDING_COUNT -gt 0 ]]; then
+            echo "📋 Pending migrations:"
+            echo "$RESULT" | grep "   - " || true
+          else
+            echo "✅ No pending migrations found"
+          fi
+
+  migrate-staging:
+    name: Apply Migrations to Staging
+    runs-on: ubuntu-latest
+    needs: check-migrations
+    if: github.event.inputs.environment == 'staging' && (needs.check-migrations.outputs.has_pending == 'true' || github.event.inputs.dry_run == true)
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply migrations to staging
+        run: |
+          echo "🚀 Applying migrations to staging environment..."
+          export MIGRATION_ENV="staging-new"
+          
+          if [[ "${{ github.event.inputs.dry_run }}" == "true" ]]; then
+            echo "🔍 DRY RUN MODE - Preview only"
+            npm run migrate:dry-run
+          else
+            echo "💾 Applying ${{ needs.check-migrations.outputs.pending_count }} pending migrations"
+            npm run migrate:staging
+          fi
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_STAGING_NEW }}
+
+      - name: Verify staging health
+        if: github.event.inputs.dry_run != 'true'
+        run: |
+          echo "🔍 Verifying staging API health after migration..."
+          sleep 10
+          STAGING_API_URL="https://librarycard-api-staging.librarycard-staging.workers.dev"
+          if curl -f -s --max-time 30 "$STAGING_API_URL/health" > /dev/null; then
+            echo "✅ Staging API is healthy after migration"
+          else
+            echo "❌ Staging API unresponsive after migration"
+            exit 1
+          fi
+
+      - name: Check final migration status
+        if: github.event.inputs.dry_run != 'true'
+        run: |
+          echo "📊 Final migration status:"
+          export MIGRATION_ENV="staging-new"
+          npm run migrate:status
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_STAGING_NEW }}
+
+  migrate-production:
+    name: Apply Migrations to Production
+    runs-on: ubuntu-latest
+    needs: check-migrations
+    if: github.event.inputs.environment == 'production' && (needs.check-migrations.outputs.has_pending == 'true' || github.event.inputs.dry_run == true)
+    environment: production  # Requires manual approval
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create production backup
+        if: github.event.inputs.dry_run != 'true'
+        run: |
+          echo "💾 Creating production backup before migration..."
+          npm run backup:create
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_PRODUCTION }}
+
+      - name: Apply migrations to production
+        run: |
+          echo "🚀 Applying migrations to production environment..."
+          export MIGRATION_ENV="production"
+          
+          if [[ "${{ github.event.inputs.dry_run }}" == "true" ]]; then
+            echo "🔍 DRY RUN MODE - Preview only"
+            npm run migrate:dry-run
+          else
+            echo "💾 Applying ${{ needs.check-migrations.outputs.pending_count }} pending migrations"
+            npm run migrate:production
+          fi
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_PRODUCTION }}
+
+      - name: Verify production health
+        if: github.event.inputs.dry_run != 'true'
+        run: |
+          echo "🔍 Verifying production API health after migration..."
+          sleep 15
+          PRODUCTION_API_URL="https://librarycard-api.librarycard.workers.dev"
+          if curl -f -s --max-time 30 "$PRODUCTION_API_URL/health" > /dev/null; then
+            echo "✅ Production API is healthy after migration"
+          else
+            echo "❌ Production API unresponsive after migration"
+            echo "🚨 Consider rolling back migration if this persists"
+            exit 1
+          fi
+
+      - name: Check final migration status
+        if: github.event.inputs.dry_run != 'true'
+        run: |
+          echo "📊 Final migration status:"
+          export MIGRATION_ENV="production"
+          npm run migrate:status
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_PRODUCTION }}
+
+      - name: Notify success
+        if: github.event.inputs.dry_run != 'true'
+        run: |
+          echo "🎉 PRODUCTION MIGRATION COMPLETED SUCCESSFULLY"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Migrations applied: ${{ needs.check-migrations.outputs.pending_count }}"
+          echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "Actor: ${{ github.actor }}"
+          echo "Commit: ${{ github.sha }}"
+          if [ -n "${{ github.event.inputs.reason }}" ]; then
+            echo "Reason: ${{ github.event.inputs.reason }}"
+          fi
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+  no-migrations:
+    name: No Migrations Needed
+    runs-on: ubuntu-latest
+    needs: check-migrations
+    if: needs.check-migrations.outputs.has_pending == 'false' && github.event.inputs.dry_run != 'true'
+    
+    steps:
+      - name: Report no migrations
+        run: |
+          echo "✅ No pending migrations found for ${{ github.event.inputs.environment }}"
+          echo "Database is already up to date."
