@@ -174,12 +174,12 @@ jobs:
           
           if [ -f "database-schema-backup.sql" ]; then
             echo "📋 Applying schema backup..."
-            wrangler d1 execute librarycard-db-production --env=production --remote --file=database-schema-backup.sql
+            wrangler d1 execute librarycard-db --env=production --remote --file=database-schema-backup.sql
             echo "✅ Schema restored"
           else
             echo "⚠️  No schema backup found - attempting schema.sql"
             if [ -f "schema.sql" ]; then
-              wrangler d1 execute librarycard-db-production --env=production --remote --file=schema.sql
+              wrangler d1 execute librarycard-db --env=production --remote --file=schema.sql
               echo "✅ Base schema applied"
             else
               echo "❌ No schema files available"
@@ -233,7 +233,7 @@ jobs:
           echo "🔍 Verifying basic PRODUCTION database connectivity..."
           
           # Test basic database connectivity
-          wrangler d1 execute librarycard-db-production --env=production --remote --command="SELECT name FROM sqlite_master WHERE type='table';" || echo "Table list check failed"
+          wrangler d1 execute librarycard-db --env=production --remote --command="SELECT name FROM sqlite_master WHERE type='table';" || echo "Table list check failed"
           
           echo "✅ Basic connectivity verified"
         env:
