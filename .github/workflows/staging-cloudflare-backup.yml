@@ -66,10 +66,10 @@ jobs:
           cd backup/staging-cloudflare
           
           # Export current schema
-          wrangler d1 execute librarycard-db-staging-new --config=../wrangler.staging-new.toml --env=staging --remote --command=".schema" > database-schema-backup.sql || echo "Schema backup failed"
+          wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote --command=".schema" > database-schema-backup.sql || echo "Schema backup failed"
           
           # Get table info for verification
-          wrangler d1 execute librarycard-db-staging-new --config=../wrangler.staging-new.toml --env=staging --remote --command="SELECT name FROM sqlite_master WHERE type='table';" > tables-list.txt || echo "Tables list failed"
+          wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote --command="SELECT name FROM sqlite_master WHERE type='table';" > tables-list.txt || echo "Tables list failed"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_STAGING_NEW }}
       
@@ -85,7 +85,7 @@ jobs:
           const { writeFileSync } = require('fs');
           
           function executeD1Command(sql) {
-            const command = `wrangler d1 execute librarycard-db-staging-new --config=../wrangler.staging-new.toml --env=staging --remote --command="${sql.replace(/"/g, '\\"')}"`;
+            const command = `wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote --command="${sql.replace(/"/g, '\\"')}"`;
             return execSync(command, { encoding: 'utf8' });
           }
           
@@ -215,7 +215,7 @@ jobs:
           EOF
           
           # Try to get row counts (may fail if DB is busy)
-          wrangler d1 execute librarycard-db-staging-new --config=../wrangler.staging-new.toml --env=staging --remote --command="SELECT 'users' as table_name, COUNT(*) as row_count FROM users UNION ALL SELECT 'locations', COUNT(*) FROM locations UNION ALL SELECT 'shelves', COUNT(*) FROM shelves UNION ALL SELECT 'books', COUNT(*) FROM books UNION ALL SELECT 'location_members', COUNT(*) FROM location_members;" >> database-stats.txt || echo "Row count query failed" >> database-stats.txt
+          wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote --command="SELECT 'users' as table_name, COUNT(*) as row_count FROM users UNION ALL SELECT 'locations', COUNT(*) FROM locations UNION ALL SELECT 'shelves', COUNT(*) FROM shelves UNION ALL SELECT 'books', COUNT(*) FROM books UNION ALL SELECT 'location_members', COUNT(*) FROM location_members;" >> database-stats.txt || echo "Row count query failed" >> database-stats.txt
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_STAGING_NEW }}
       
