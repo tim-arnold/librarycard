@@ -219,11 +219,10 @@ class StagingDatabaseRestore {
         console.log(`🔄 Restoring table: ${tableName} (${tableData.row_count} rows)`);
         
         try {
-          // Drop and recreate table
-          await this.executeD1Command(`DROP TABLE IF EXISTS ${tableName};`);
-          await this.executeD1Command(tableData.schema);
+          // Clear existing data instead of dropping table (avoids foreign key issues)
+          await this.executeD1Command(`DELETE FROM ${tableName};`);
           
-          // Insert data in batches
+          // Insert backup data
           if (tableData.data.length > 0) {
             await this.insertDataBatch(tableName, tableData.data);
           }
