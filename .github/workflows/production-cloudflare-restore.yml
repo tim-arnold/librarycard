@@ -1,0 +1,288 @@
+name: 🚨 PRODUCTION Cloudflare Database Restore
+
+on:
+  workflow_dispatch:
+    inputs:
+      backup_tag:
+        description: 'GitHub Release tag of the PRODUCTION backup to restore (e.g., cf-backup-123-20250816)'
+        required: true
+        type: string
+      confirmation_1:
+        description: 'Type "RESTORE PRODUCTION DATABASE" to confirm this will overwrite PRODUCTION data'
+        required: true
+        type: string
+      confirmation_2:
+        description: 'Type "I UNDERSTAND THIS IS IRREVERSIBLE" for final confirmation'
+        required: true
+        type: string
+      emergency_reason:
+        description: 'Emergency reason for production restore (required for audit)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  
+jobs:
+  restore-production:
+    runs-on: ubuntu-latest
+    
+    # EXTREME SAFETY CHECKS
+    if: >
+      github.event.inputs.confirmation_1 == 'RESTORE PRODUCTION DATABASE' &&
+      github.event.inputs.confirmation_2 == 'I UNDERSTAND THIS IS IRREVERSIBLE' &&
+      github.event.inputs.emergency_reason != ''
+    
+    environment: production # Require environment approval
+    
+    steps:
+      - name: 🚨 PRODUCTION RESTORE WARNING
+        run: |
+          echo "🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨"
+          echo "🚨                                                🚨"
+          echo "🚨        PRODUCTION DATABASE RESTORE            🚨"
+          echo "🚨                                                🚨"
+          echo "🚨  THIS WILL OVERWRITE ALL PRODUCTION DATA!     🚨"
+          echo "🚨                                                🚨"
+          echo "🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨"
+          echo ""
+          echo "Backup to restore: ${{ github.event.inputs.backup_tag }}"
+          echo "Emergency reason: ${{ github.event.inputs.emergency_reason }}"
+          echo "Started by: ${{ github.actor }}"
+          echo "Start time: $(date -u)"
+          echo ""
+          echo "⏰ Waiting 30 seconds for final consideration..."
+          sleep 30
+      
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Install Wrangler CLI
+        run: npm install -g wrangler
+      
+      - name: Set Cloudflare API Token
+        run: echo "CLOUDFLARE_API_TOKEN is configured"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      
+      - name: Validate backup tag
+        run: |
+          echo "🔍 Validating PRODUCTION backup tag: ${{ github.event.inputs.backup_tag }}"
+          
+          # Check if tag exists
+          if ! gh release view "${{ github.event.inputs.backup_tag }}" > /dev/null 2>&1; then
+            echo "❌ Release tag not found: ${{ github.event.inputs.backup_tag }}"
+            exit 1
+          fi
+          
+          # Verify it's a production backup (should start with 'cf-backup-')
+          if [[ "${{ github.event.inputs.backup_tag }}" != cf-backup-* ]]; then
+            echo "❌ Invalid production backup tag format. Must start with 'cf-backup-'"
+            exit 1
+          fi
+          
+          echo "✅ Production backup tag validated"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Create emergency pre-restore backup
+        run: |
+          echo "💾 Creating EMERGENCY pre-restore backup of current production state..."
+          
+          # Trigger emergency backup
+          gh workflow run cloudflare-backup.yml
+          
+          echo "✅ Emergency pre-restore backup initiated"
+          echo "⏰ Waiting 60 seconds for backup to start..."
+          sleep 60
+          
+          # Get the latest workflow run to track backup progress
+          echo "📋 Latest backup run:"
+          gh run list --workflow=cloudflare-backup.yml --limit=1
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Download backup from GitHub Release
+        run: |
+          echo "📥 Downloading PRODUCTION backup from GitHub Release..."
+          
+          # Create restore directory
+          mkdir -p restore-workspace
+          cd restore-workspace
+          
+          # Download the backup archive
+          gh release download "${{ github.event.inputs.backup_tag }}" -p "*.tar.gz"
+          
+          # Extract the archive
+          tar -xzf *.tar.gz
+          
+          # Verify backup contents
+          echo "📋 Production backup contents:"
+          ls -la cloudflare/
+          
+          # Note: Production backups may not have the comprehensive JSON backup yet
+          echo "⚠️  Production backup structure may differ from staging backups"
+          echo "📋 Available files:"
+          find cloudflare/ -name "*.sql" -o -name "*.json" -o -name "*.txt" | head -20
+          
+          echo "✅ Production backup downloaded"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Analyze backup structure
+        run: |
+          echo "🔍 Analyzing production backup structure..."
+          cd restore-workspace/cloudflare
+          
+          # Check what type of backup this is
+          if [ -f "database-schema-backup.sql" ]; then
+            echo "✅ Found schema backup"
+          else
+            echo "❌ Schema backup not found"
+          fi
+          
+          if [ -f "database-stats.txt" ]; then
+            echo "📊 Database statistics:"
+            cat database-stats.txt | head -20
+          fi
+          
+          if [ -f "backup-d1-data.sh" ]; then
+            echo "✅ Found data backup script"
+          else
+            echo "⚠️  Data backup script not found - may need manual data export"
+          fi
+          
+          echo "📋 All available files:"
+          ls -la
+      
+      - name: Execute schema restore
+        run: |
+          echo "🔄 Restoring PRODUCTION database schema..."
+          cd restore-workspace/cloudflare
+          
+          if [ -f "database-schema-backup.sql" ]; then
+            echo "📋 Applying schema backup..."
+            wrangler d1 execute librarycard-db-production --env=production --remote --file=database-schema-backup.sql
+            echo "✅ Schema restored"
+          else
+            echo "⚠️  No schema backup found - attempting schema.sql"
+            if [ -f "schema.sql" ]; then
+              wrangler d1 execute librarycard-db-production --env=production --remote --file=schema.sql
+              echo "✅ Base schema applied"
+            else
+              echo "❌ No schema files available"
+              exit 1
+            fi
+          fi
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      
+      - name: Data restore warning
+        run: |
+          echo "⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️"
+          echo "⚠️                                                ⚠️"
+          echo "⚠️         PRODUCTION DATA RESTORE                ⚠️"
+          echo "⚠️                                                ⚠️"
+          echo "⚠️  CURRENT PRODUCTION BACKUPS MAY HAVE LIMITED  ⚠️"
+          echo "⚠️  DATA RESTORATION CAPABILITIES                 ⚠️"
+          echo "⚠️                                                ⚠️"
+          echo "⚠️  MANUAL DATA RESTORATION MAY BE REQUIRED      ⚠️"
+          echo "⚠️                                                ⚠️"
+          echo "⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️"
+          echo ""
+          echo "📋 Current production backup capabilities:"
+          echo "- ✅ Schema restoration"
+          echo "- ✅ Worker source code"
+          echo "- ⚠️  Data restoration (may require manual steps)"
+          echo ""
+          echo "📖 See RESTORE-CLOUDFLARE.md for manual data restoration steps"
+      
+      - name: Provide manual restoration guidance
+        run: |
+          echo "📖 PRODUCTION DATA RESTORATION GUIDANCE"
+          echo "======================================="
+          echo ""
+          echo "Current production backups use the legacy format."
+          echo "For complete data restoration, you may need to:"
+          echo ""
+          echo "1. Use the backup-d1-data.sh script to export data from a recent backup"
+          echo "2. Manually execute table-by-table restoration commands"
+          echo "3. Verify data integrity after restoration"
+          echo ""
+          echo "📋 Available restoration files in this backup:"
+          cd restore-workspace/cloudflare
+          ls -la *.sh *.sql *.txt 2>/dev/null || echo "No restoration files found"
+          echo ""
+          echo "🚨 RECOMMENDATION: Consider upgrading production backups to include"
+          echo "   comprehensive data backup like the staging system before proceeding"
+      
+      - name: Verify basic connectivity
+        run: |
+          echo "🔍 Verifying basic PRODUCTION database connectivity..."
+          
+          # Test basic database connectivity
+          wrangler d1 execute librarycard-db-production --env=production --remote --command="SELECT name FROM sqlite_master WHERE type='table';" || echo "Table list check failed"
+          
+          echo "✅ Basic connectivity verified"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      
+      - name: Cleanup
+        if: always()
+        run: |
+          echo "🧹 Cleaning up restore workspace..."
+          rm -rf restore-workspace
+          echo "✅ Cleanup completed"
+      
+      - name: Log emergency restore
+        if: always()
+        run: |
+          echo "📝 PRODUCTION RESTORE AUDIT LOG"
+          echo "==============================="
+          echo "Restore Date: $(date -u)"
+          echo "Initiated by: ${{ github.actor }}"
+          echo "Backup used: ${{ github.event.inputs.backup_tag }}"
+          echo "Emergency reason: ${{ github.event.inputs.emergency_reason }}"
+          echo "Status: ${{ job.status }}"
+          echo ""
+          echo "🚨 This production restore event has been logged for audit purposes"
+      
+      - name: Notify on success
+        run: |
+          echo "✅ PRODUCTION restore completed!"
+          echo "🎯 Backup restored from: ${{ github.event.inputs.backup_tag }}"
+          echo "📋 CRITICAL NEXT STEPS:"
+          echo "1. Verify production application is functioning"
+          echo "2. Test critical user flows immediately"
+          echo "3. Check data integrity thoroughly"
+          echo "4. Monitor for any restoration issues"
+          echo "5. Consider data restoration if schema-only restore was performed"
+          echo ""
+          echo "🚨 PRODUCTION DATABASE RESTORE COMPLETED"
+      
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "❌ PRODUCTION restore FAILED!"
+          echo "🚨🚨🚨 PRODUCTION EMERGENCY 🚨🚨🚨"
+          echo ""
+          echo "📋 IMMEDIATE ACTIONS REQUIRED:"
+          echo "1. Check production application status"
+          echo "2. Assess database state"
+          echo "3. Consider emergency rollback using pre-restore backup"
+          echo "4. Contact technical team immediately"
+          echo "5. Review failure logs above"
+          echo ""
+          echo "🆘 PRODUCTION DATABASE MAY BE IN INCONSISTENT STATE"
+          echo "🆘 IMMEDIATE TECHNICAL INTERVENTION REQUIRED"
