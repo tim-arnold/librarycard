@@ -59,18 +59,15 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Create pre-restore backup
+      - name: Pre-restore safety notice
         run: |
-          echo "💾 Creating pre-restore backup of current staging state..."
-          
-          # Create a safety backup before restore
-          gh workflow run staging-cloudflare-backup.yml -f reason="pre-restore-safety-backup-$(date +%Y%m%d-%H%M)"
-          
-          echo "✅ Pre-restore backup initiated"
-          echo "⏰ Waiting 30 seconds for backup to start..."
-          sleep 30
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          echo "💾 Pre-restore Safety Notice"
+          echo "=============================="
+          echo "⚠️  This restore will overwrite current staging data"
+          echo "💡 For safety, manually run 'Staging Cloudflare Workers & D1 Backup'"
+          echo "   workflow before this restore if you want to preserve current state"
+          echo "🧪 This is STAGING - safe for testing restore procedures"
+          echo ""
       
       - name: Download backup from GitHub Release
         run: |
