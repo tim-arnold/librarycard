@@ -13,6 +13,9 @@ const { execSync } = require('child_process');
 const { writeFileSync, readFileSync, existsSync, mkdirSync } = require('fs');
 const { join } = require('path');
 
+// Load environment variables from .env.local
+require('dotenv').config({ path: '.env.local' });
+
 const BACKUP_DIR = './backups-staging';
 const METADATA_FILE = './backups-staging/backup-metadata.json';
 
