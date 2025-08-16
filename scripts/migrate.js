@@ -304,7 +304,7 @@ class MigrationRunner {
    */
   async recordMigrationApplied(migration, batchId, executionTime) {
     const sql = `
-      INSERT INTO migrations_applied (filename, checksum, execution_time_ms, batch_id)
+      INSERT OR IGNORE INTO migrations_applied (filename, checksum, execution_time_ms, batch_id)
       VALUES ('${migration.filename}', '${migration.checksum}', ${executionTime}, '${batchId}')
     `;
     
