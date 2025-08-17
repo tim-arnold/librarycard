@@ -360,14 +360,8 @@ jobs:
                           }
                         }
                         
-                        // Enhanced escaping for regular string fields
-                        try {
-                          return JSON.stringify(value);
-                        } catch (jsonError) {
-                          // Fallback: manual escaping for problematic strings
-                          console.log(`    ⚠️  JSON.stringify failed for ${col} in row ${rowIdx + 1}: ${jsonError.message}`);
-                          return `'${value.replace(/'/g, "''").replace(/\\/g, "\\\\")}'`;
-                        }
+                        // Use single quotes for ALL string fields to avoid SQL parsing issues
+                        return `'${value.replace(/'/g, "''")}'`;
                       }
                       if (typeof value === 'number') return value;
                       if (typeof value === 'boolean') return value ? 1 : 0;
