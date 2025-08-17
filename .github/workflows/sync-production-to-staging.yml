@@ -336,8 +336,26 @@ jobs:
                     return value;
                   });
                   
-                  const insertSql = `INSERT INTO ${tableName} (${commonColumns.join(', ')}) VALUES (${values.join(', ')})`;
-                  executeStagingD1Command(insertSql);
+                  const insertSql = `INSERT INTO ${tableName} (${commonColumns.join(', ')}) VALUES (${values.join(', ')});`;
+                  
+                  // Use file-based execution to avoid command length limits
+                  const fs = require('fs');
+                  const tempFile = `/tmp/sql_${Date.now()}_${Math.random().toString(36).slice(2)}.sql`;
+                  fs.writeFileSync(tempFile, insertSql);
+                  
+                  try {
+                    const result = execSync(`wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote --file="${tempFile}"`, { 
+                      encoding: 'utf8',
+                      env: { ...process.env, CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN_STAGING_NEW }
+                    });
+                    // Clean up temp file
+                    fs.unlinkSync(tempFile);
+                    return result;
+                  } catch (error) {
+                    // Clean up temp file even on error
+                    try { fs.unlinkSync(tempFile); } catch {}
+                    throw error;
+                  }
                 }
                 
                 console.log(`    ✅ Synced ${tableName}: ${tableData.data.length} rows`);
