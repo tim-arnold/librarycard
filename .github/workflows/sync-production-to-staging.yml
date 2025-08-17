@@ -321,7 +321,7 @@ jobs:
                     return value;
                   });
                   
-                  const insertSql = `INSERT INTO ${tableName} (${commonColumns.join(', ')}) VALUES (${values.join(', ')});`;
+                  const insertSql = `INSERT OR REPLACE INTO ${tableName} (${commonColumns.join(', ')}) VALUES (${values.join(', ')});`;
                   
                   // Use file-based execution to avoid command length limits
                   const fs = require('fs');
