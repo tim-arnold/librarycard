@@ -63,10 +63,10 @@ jobs:
           cd backup/cloudflare
           
           # Export current schema
-          wrangler d1 execute librarycard-db --command=".schema" > database-schema-backup.sql || echo "Schema backup failed"
+          wrangler d1 execute librarycard-db --config=../wrangler.prod.toml --env=production --remote --command=".schema" > database-schema-backup.sql || echo "Schema backup failed"
           
           # Get table info for verification
-          wrangler d1 execute librarycard-db --command="SELECT name FROM sqlite_master WHERE type='table';" > tables-list.txt || echo "Tables list failed"
+          wrangler d1 execute librarycard-db --config=../wrangler.prod.toml --env=production --remote --command="SELECT name FROM sqlite_master WHERE type='table';" > tables-list.txt || echo "Tables list failed"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       
@@ -87,16 +87,16 @@ jobs:
           echo "Backing up D1 database data..."
           
           # Backup each table (adjust for your tables)
-          wrangler d1 execute librarycard-db --command="SELECT * FROM users;" > users-backup.sql
-          wrangler d1 execute librarycard-db --command="SELECT * FROM locations;" > locations-backup.sql
-          wrangler d1 execute librarycard-db --command="SELECT * FROM shelves;" > shelves-backup.sql
-          wrangler d1 execute librarycard-db --command="SELECT * FROM books;" > books-backup.sql
-          wrangler d1 execute librarycard-db --command="SELECT * FROM location_members;" > location_members-backup.sql
-          wrangler d1 execute librarycard-db --command="SELECT * FROM location_invitations;" > location_invitations-backup.sql
-          wrangler d1 execute librarycard-db --command="SELECT * FROM book_checkout_history;" > book_checkout_history-backup.sql
-          wrangler d1 execute librarycard-db --command="SELECT * FROM book_ratings;" > book_ratings-backup.sql
-          wrangler d1 execute librarycard-db --command="SELECT * FROM book_removal_requests;" > book_removal_requests-backup.sql
-          wrangler d1 execute librarycard-db --command="SELECT * FROM signup_approval_requests;" > signup_approval_requests-backup.sql
+          wrangler d1 execute librarycard-db --config=../wrangler.prod.toml --env=production --remote --command="SELECT * FROM users;" > users-backup.sql
+          wrangler d1 execute librarycard-db --config=../wrangler.prod.toml --env=production --remote --command="SELECT * FROM locations;" > locations-backup.sql
+          wrangler d1 execute librarycard-db --config=../wrangler.prod.toml --env=production --remote --command="SELECT * FROM shelves;" > shelves-backup.sql
+          wrangler d1 execute librarycard-db --config=../wrangler.prod.toml --env=production --remote --command="SELECT * FROM books;" > books-backup.sql
+          wrangler d1 execute librarycard-db --config=../wrangler.prod.toml --env=production --remote --command="SELECT * FROM location_members;" > location_members-backup.sql
+          wrangler d1 execute librarycard-db --config=../wrangler.prod.toml --env=production --remote --command="SELECT * FROM location_invitations;" > location_invitations-backup.sql
+          wrangler d1 execute librarycard-db --config=../wrangler.prod.toml --env=production --remote --command="SELECT * FROM book_checkout_history;" > book_checkout_history-backup.sql
+          wrangler d1 execute librarycard-db --config=../wrangler.prod.toml --env=production --remote --command="SELECT * FROM book_ratings;" > book_ratings-backup.sql
+          wrangler d1 execute librarycard-db --config=../wrangler.prod.toml --env=production --remote --command="SELECT * FROM book_removal_requests;" > book_removal_requests-backup.sql
+          wrangler d1 execute librarycard-db --config=../wrangler.prod.toml --env=production --remote --command="SELECT * FROM signup_approval_requests;" > signup_approval_requests-backup.sql
           
           echo "Data backup completed"
           EOF
@@ -112,7 +112,7 @@ jobs:
           EOF
           
           # Try to get row counts (may fail if DB is busy)
-          wrangler d1 execute librarycard-db --command="SELECT 'users' as table_name, COUNT(*) as row_count FROM users UNION ALL SELECT 'locations', COUNT(*) FROM locations UNION ALL SELECT 'shelves', COUNT(*) FROM shelves UNION ALL SELECT 'books', COUNT(*) FROM books UNION ALL SELECT 'location_members', COUNT(*) FROM location_members;" >> database-stats.txt || echo "Row count query failed" >> database-stats.txt
+          wrangler d1 execute librarycard-db --config=../wrangler.prod.toml --env=production --remote --command="SELECT 'users' as table_name, COUNT(*) as row_count FROM users UNION ALL SELECT 'locations', COUNT(*) FROM locations UNION ALL SELECT 'shelves', COUNT(*) FROM shelves UNION ALL SELECT 'books', COUNT(*) FROM books UNION ALL SELECT 'location_members', COUNT(*) FROM location_members;" >> database-stats.txt || echo "Row count query failed" >> database-stats.txt
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       
