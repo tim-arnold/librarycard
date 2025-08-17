@@ -260,15 +260,40 @@ class ProductionDatabaseRestore {
         try {
           // Insert data row by row (safer for large datasets)
           for (const row of tableData.data) {
-            const columns = Object.keys(row);
-            const values = columns.map(col => {
+            // Get columns from backup data
+            const backupColumns = Object.keys(row);
+            
+            // Get target table schema to handle any schema differences
+            let targetColumns;
+            try {
+              const schemaResult = this.executeD1Command(`PRAGMA table_info(${tableName})`);
+              const schemaLines = schemaResult.split('\n');
+              const schemaJsonStart = schemaLines.findIndex(line => line.trim().startsWith('['));
+              if (schemaJsonStart !== -1) {
+                const schemaJson = schemaLines.slice(schemaJsonStart).join('\n');
+                const schemaData = JSON.parse(schemaJson);
+                if (schemaData[0] && schemaData[0].results) {
+                  targetColumns = schemaData[0].results.map(col => col.name);
+                }
+              }
+            } catch (error) {
+              console.log(`    ⚠️  Could not get schema for ${tableName}, using backup columns only`);
+              targetColumns = backupColumns;
+            }
+            
+            // Use only columns that exist in both backup data AND target schema
+            const commonColumns = backupColumns.filter(col => 
+              targetColumns ? targetColumns.includes(col) : true
+            );
+            
+            const values = commonColumns.map(col => {
               const value = row[col];
               if (value === null) return 'NULL';
               if (typeof value === 'string') return `'${value.replace(/'/g, "''")}'`;
               return value;
             });
             
-            const insertSql = `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES (${values.join(', ')})`;
+            const insertSql = `INSERT INTO ${tableName} (${commonColumns.join(', ')}) VALUES (${values.join(', ')})`;
             this.executeD1Command(insertSql);
           }
           
