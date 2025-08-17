@@ -41,7 +41,7 @@ class MigrationRunner {
         env: 'staging'
       },
       production: {
-        database: 'librarycard-db-production',
+        database: 'librarycard-db',
         remote: true,
         env: 'production'
       }

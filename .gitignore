@@ -18,6 +18,14 @@ yarn-error.log*
 # TypeScript
 *.tsbuildinfo
 
+# Backup and restore files
+/backups-staging/
+/backups-production/
+/cloudflare/
+*.tar.gz
+staging-*.log
+production-*.log
+
 # Production
 /build
 /dist
