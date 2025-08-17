@@ -242,28 +242,23 @@ jobs:
               console.log('  ⚠️  Could not disable foreign key constraints, proceeding anyway');
             }
             
-            console.log('🗑️  Clearing staging tables...');
-            
-            // Skip tables that don't exist in staging or are legacy/orphaned
-            const skipTables = ['enhanced_genres_backup']; // Legacy table not in staging schema
-            
-            // Clear tables in dependency order
-            for (const tableName of tableOrder) {
-              // Skip tables that don't exist in staging
-              if (skipTables.includes(tableName)) {
-                console.log(`    ⏭️  Skipping clear for ${tableName} (legacy/orphaned table)`);
-                continue;
-              }
-              
-              if (backupData.tables[tableName] && !backupData.tables[tableName].error) {
-                try {
-                  executeStagingD1Command(`DELETE FROM ${tableName}`);
-                  console.log(`    ✅ Cleared ${tableName}`);
-                } catch (error) {
-                  console.log(`    ⚠️  Could not clear ${tableName}: ${error.message}`);
-                }
-              }
-            }
+            // TEMPORARILY DISABLED: Clear staging tables for faster debugging
+            console.log('⏭️  Skipping table clearing for faster debugging...');
+            // const skipTables = ['enhanced_genres_backup']; // Legacy table not in staging schema
+            // for (const tableName of tableOrder) {
+            //   if (skipTables.includes(tableName)) {
+            //     console.log(`    ⏭️  Skipping clear for ${tableName} (legacy/orphaned table)`);
+            //     continue;
+            //   }
+            //   if (backupData.tables[tableName] && !backupData.tables[tableName].error) {
+            //     try {
+            //       executeStagingD1Command(`DELETE FROM ${tableName}`);
+            //       console.log(`    ✅ Cleared ${tableName}`);
+            //     } catch (error) {
+            //       console.log(`    ⚠️  Could not clear ${tableName}: ${error.message}`);
+            //     }
+            //   }
+            // }
             
             // Create system user for curated_genres foreign key constraint
             console.log('\n👤 Creating system user for curated_genres...');
