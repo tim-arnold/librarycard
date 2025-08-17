@@ -26,10 +26,35 @@ const AUDIT_LOG = './production-restore-audit.log';
 
 class ProductionDatabaseRestore {
   constructor() {
+    this.validateGitHubActionsEnvironment();
     this.rl = createInterface({
       input: process.stdin,
       output: process.stdout
     });
+  }
+
+  validateGitHubActionsEnvironment() {
+    // CRITICAL SAFETY: Production restore should NEVER be automated
+    // This is an extra safety check - restore should always be manual
+    console.error('🚨 PRODUCTION RESTORE SAFETY BLOCK 🚨');
+    console.error('❌ Production database restore is BLOCKED from automation');
+    console.error('❌ This operation requires manual local execution with extreme caution');
+    console.error('');
+    console.error('🔧 For production restore:');
+    console.error('   1. Download backup from GitHub release');
+    console.error('   2. Extract to local backups-production/ directory');
+    console.error('   3. Set PRODUCTION_RESTORE_OVERRIDE=true environment variable');
+    console.error('   4. Run locally: PRODUCTION_RESTORE_OVERRIDE=true node scripts/restore-production.js');
+    console.error('');
+    console.error('⚠️  EXTREME CAUTION: This affects live production data!');
+    
+    // Allow override for emergency situations only
+    if (!process.env.PRODUCTION_RESTORE_OVERRIDE) {
+      process.exit(1);
+    }
+
+    console.log('⚠️  PRODUCTION RESTORE OVERRIDE DETECTED');
+    console.log('🚨 PROCEEDING WITH EXTREME CAUTION');
   }
 
   async restore() {
