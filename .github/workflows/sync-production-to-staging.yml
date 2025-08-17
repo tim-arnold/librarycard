@@ -352,8 +352,8 @@ jobs:
                           try {
                             // Validate it's valid JSON first
                             JSON.parse(value);
-                            // If valid JSON, escape it for SQL (single layer of escaping)
-                            return JSON.stringify(value);
+                            // For JSON fields, use single quotes to avoid SQL parsing issues with square brackets
+                            return `'${value.replace(/'/g, "''")}'`;
                           } catch (parseError) {
                             // Not valid JSON despite field name or appearance, treat as regular string
                             console.log(`    ⚠️  Field ${col} looks like JSON but isn't valid: ${value.substring(0, 100)}...`);
