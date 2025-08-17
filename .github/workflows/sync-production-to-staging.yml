@@ -320,9 +320,18 @@ jobs:
               try {
                 // Sync ALL data row by row with schema compatibility
                 console.log(`    🔄 Processing ${tableData.data.length} rows for ${tableName}...`);
+                
+                // Add explicit loop tracking to catch silent termination
+                console.log(`    🎯 STARTING LOOP: Will process rows 1 through ${tableData.data.length}`);
+                
                 for (let rowIndex = 0; rowIndex < tableData.data.length; rowIndex++) {
                   const row = tableData.data[rowIndex];
+                  console.log(`    `)
+                  console.log(`    ==========================================`);
+                  console.log(`    🎯 LOOP ITERATION ${rowIndex + 1}/${tableData.data.length} STARTING`);
                   console.log(`    📝 Processing row ${rowIndex + 1}/${tableData.data.length}: ${tableName} - ${row.id || row.email || 'unknown'}`);
+                  console.log(`    ⏰ Timestamp: ${new Date().toISOString()}`);
+                  console.log(`    ==========================================`);
                   
                   // Get columns from production backup data
                   const prodColumns = Object.keys(row);
@@ -359,10 +368,15 @@ jobs:
                   
                   try {
                     console.log(`    🔄 Executing SQL file with wrangler...`);
+                    console.log(`    ⏰ Starting wrangler execution at: ${new Date().toISOString()}`);
+                    
                     const result = execSync(`npx wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote --file="${tempFile}"`, { 
                       encoding: 'utf8',
+                      timeout: 120000, // 2 minute timeout to detect hanging
                       env: { ...process.env, CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN_STAGING_NEW }
                     });
+                    
+                    console.log(`    ⏰ Wrangler execution completed at: ${new Date().toISOString()}`);
                     console.log(`    ✅ SQL executed successfully`);
                     console.log(`    📊 Wrangler output (full): ${result}`);
                     
@@ -376,10 +390,13 @@ jobs:
                     // CRITICAL: Verify row was actually inserted - count must increase
                     const expectedCount = rowIndex + 1 + 1; // +1 for system user, +1 for 0-based index
                     try {
+                      console.log(`    🔢 Starting count verification at: ${new Date().toISOString()}`);
                       const countResult = execSync(`npx wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote --command="SELECT COUNT(*) as count FROM ${tableName};"`, {
                         encoding: 'utf8',
+                        timeout: 60000, // 1 minute timeout for count
                         env: { ...process.env, CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN_STAGING_NEW }
                       });
+                      console.log(`    🔢 Count verification completed at: ${new Date().toISOString()}`);
                       
                       // Parse the count result
                       const countMatch = countResult.match(/"count":\s*(\d+)/);
@@ -404,6 +421,15 @@ jobs:
                     // Clean up temp file
                     fs.unlinkSync(tempFile);
                     console.log(`    ✅ Row ${rowIndex + 1}/${tableData.data.length} successfully processed for ${tableName}`);
+                    console.log(`    🎯 LOOP ITERATION ${rowIndex + 1}/${tableData.data.length} COMPLETED SUCCESSFULLY`);
+                    console.log(`    ⏰ Completion timestamp: ${new Date().toISOString()}`);
+                    
+                    // Check if this is the last row
+                    if (rowIndex + 1 === tableData.data.length) {
+                      console.log(`    🏁 FINAL ROW COMPLETED - MOVING TO NEXT TABLE`);
+                    } else {
+                      console.log(`    ➡️  PROCEEDING TO NEXT ROW: ${rowIndex + 2}/${tableData.data.length}`);
+                    }
                     return result;
                   } catch (error) {
                     console.log(`    🚨 CRITICAL FAILURE - STOPPING SYNC`);
