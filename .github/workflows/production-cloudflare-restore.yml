@@ -132,125 +132,326 @@ jobs:
           echo "📋 Production backup contents:"
           ls -la cloudflare/
           
-          # Note: Production backups may not have the comprehensive JSON backup yet
-          echo "⚠️  Production backup structure may differ from staging backups"
-          echo "📋 Available files:"
-          find cloudflare/ -name "*.sql" -o -name "*.json" -o -name "*.txt" | head -20
+          # Look for the production backup JSON file
+          BACKUP_FILE=$(find cloudflare/ -name "prod-backup-*.json" | head -1)
           
-          echo "✅ Production backup downloaded"
+          if [ -z "$BACKUP_FILE" ]; then
+            echo "❌ Production backup JSON file not found in archive"
+            echo "📋 Available files:"
+            find cloudflare/ -name "*.json" | head -10
+            exit 1
+          fi
+          
+          echo "✅ Found production backup: $BACKUP_FILE"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Analyze backup structure
+      - name: Validate backup integrity
         run: |
-          echo "🔍 Analyzing production backup structure..."
+          echo "🔍 Validating production backup integrity..."
           cd restore-workspace/cloudflare
           
-          # Check what type of backup this is
-          if [ -f "database-schema-backup.sql" ]; then
-            echo "✅ Found schema backup"
-          else
-            echo "❌ Schema backup not found"
+          # Find the production backup file
+          BACKUP_FILE=$(find . -name "prod-backup-*.json" | head -1)
+          
+          if [ -z "$BACKUP_FILE" ]; then
+            echo "❌ Production backup file not found"
+            exit 1
           fi
           
-          if [ -f "database-stats.txt" ]; then
-            echo "📊 Database statistics:"
-            cat database-stats.txt | head -20
-          fi
+          # Create backup validation script
+          cat > validate-backup.js << 'EOF'
+          #!/usr/bin/env node
+          const { readFileSync } = require('fs');
           
-          if [ -f "backup-d1-data.sh" ]; then
-            echo "✅ Found data backup script"
-          else
-            echo "⚠️  Data backup script not found - may need manual data export"
-          fi
+          try {
+            console.log('📋 Validating production backup file structure...');
+            
+            // Find the backup file dynamically
+            const fs = require('fs');
+            const backupFiles = fs.readdirSync('.').filter(f => f.includes('prod-backup-') && f.endsWith('.json'));
+            
+            if (backupFiles.length === 0) {
+              throw new Error('No production backup JSON file found');
+            }
+            
+            const backupFile = backupFiles[0];
+            console.log(`📦 Found backup file: ${backupFile}`);
+            
+            const backupData = JSON.parse(readFileSync(backupFile, 'utf8'));
+            
+            // Verify structure
+            if (!backupData.tables || !backupData.metadata) {
+              throw new Error('Invalid backup structure');
+            }
+            
+            // Verify each table
+            let totalRows = 0;
+            const tableCount = Object.keys(backupData.tables).length;
+            
+            for (const [tableName, tableData] of Object.entries(backupData.tables)) {
+              if (!tableData.error && tableData.data && Array.isArray(tableData.data)) {
+                totalRows += tableData.data.length;
+              }
+            }
+            
+            console.log(`✅ Production backup validation successful`);
+            console.log(`📊 Verified ${tableCount} tables with ${totalRows} total rows`);
+            console.log(`📅 Backup created: ${new Date(backupData.timestamp).toLocaleString()}`);
+            console.log(`👤 Created by: ${backupData.metadata.created_by}`);
+            console.log(`📝 Reason: ${backupData.reason}`);
+            
+          } catch (error) {
+            console.error(`❌ Production backup validation failed: ${error.message}`);
+            process.exit(1);
+          }
+          EOF
           
-          echo "📋 All available files:"
-          ls -la
+          chmod +x validate-backup.js
+          node validate-backup.js
       
-      - name: Setup Node.js for restore script
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies for restore script
-        run: npm ci
-
-      - name: Prepare backup files for Node.js restore script
+      - name: Execute production restore
         run: |
-          echo "📦 Preparing backup files for Node.js restore script..."
+          echo "🚀 Executing PRODUCTION database restore..."
           cd restore-workspace/cloudflare
           
-          # Create backups-production directory and copy backup files
-          mkdir -p ../../backups-production
+          # Create comprehensive production restore script (same proven approach as staging)
+          cat > github-restore-production.js << 'EOF'
+          #!/usr/bin/env node
+          const { execSync } = require('child_process');
+          const { readFileSync } = require('fs');
           
-          # Copy JSON backup files if they exist
-          cp -r *.json ../../backups-production/ 2>/dev/null || echo "No JSON backup files found"
+          function executeD1Command(sql) {
+            try {
+              // Use file-based execution to avoid command length limits (same as staging)
+              const { writeFileSync, unlinkSync } = require('fs');
+              const tempSqlFile = `temp_github_restore_prod_${Date.now()}.sql`;
+              
+              // Write SQL to temporary file
+              writeFileSync(tempSqlFile, sql);
+              
+              try {
+                // Execute using file instead of command parameter
+                const command = `wrangler d1 execute librarycard-db --config=wrangler.prod.toml --env=production --remote --file="${tempSqlFile}"`;
+                const result = execSync(command, { encoding: 'utf8' });
+                return result;
+              } finally {
+                // Clean up temporary file
+                try {
+                  unlinkSync(tempSqlFile);
+                } catch (cleanupError) {
+                  // Ignore cleanup errors
+                }
+              }
+            } catch (error) {
+              throw new Error(`Database command failed: ${error.message}`);
+            }
+          }
           
-          # Copy metadata file if it exists
-          cp backup-metadata.json ../../backups-production/ 2>/dev/null || echo "No metadata file found"
+          async function insertDataBatch(tableName, data) {
+            if (data.length === 0) return;
+            
+            // Get column names from first row
+            const columns = Object.keys(data[0]);
+            const batchSize = 5; // Use same batch size as successful staging workflow
+            
+            console.log(`    🔄 Processing ${data.length} rows for ${tableName} in batches...`);
+            const totalBatches = Math.ceil(data.length / batchSize);
+            console.log(`    🎯 Will process ${totalBatches} batches of up to ${batchSize} rows each`);
+            
+            for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+              const startRow = batchIndex * batchSize;
+              const endRow = Math.min(startRow + batchSize, data.length);
+              const batch = data.slice(startRow, endRow);
+              
+              console.log(`    ==========================================`);
+              console.log(`    🎯 BATCH ${batchIndex + 1}/${totalBatches}: Processing rows ${startRow + 1}-${endRow}`);
+              console.log(`    ⏰ Batch start timestamp: ${new Date().toISOString()}`);
+              console.log(`    ==========================================`);
+              
+              // Create batch INSERT statement (same logic as staging workflow)
+              const batchValues = batch.map(row => {
+                const vals = columns.map(col => {
+                  const val = row[col];
+                  if (val === null || val === undefined) return 'NULL';
+                  if (typeof val === 'string') {
+                    // Use single quotes to avoid SQL parsing issues with complex text content
+                    return `'${val.replace(/'/g, "''")}'`;
+                  }
+                  if (typeof val === 'number') return val;
+                  if (typeof val === 'boolean') return val ? 1 : 0;
+                  return val;
+                });
+                return `(${vals.join(', ')})`;
+              });
+              
+              const batchSql = `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES ${batchValues.join(', ')};`;
+              
+              console.log(`    📝 Batch SQL length: ${batchSql.length} characters`);
+              
+              try {
+                console.log(`    🔄 Executing batch SQL file with wrangler...`);
+                console.log(`    ⏰ Starting batch wrangler execution at: ${new Date().toISOString()}`);
+                
+                await executeD1Command(batchSql);
+                
+                console.log(`    ⏰ Batch wrangler execution completed at: ${new Date().toISOString()}`);
+                console.log(`    ✅ Batch ${batchIndex + 1}/${totalBatches} completed (rows ${startRow + 1}-${endRow})`);
+                
+              } catch (batchError) {
+                console.log(`    🚨 CRITICAL BATCH FAILURE`);
+                console.log(`    ❌ Batch execution failed: ${batchError.message}`);
+                throw new Error(`BATCH RESTORE FAILED: Batch ${batchIndex + 1} failed: ${batchError.message}`);
+              }
+            }
+          }
           
-          echo "✅ Backup files prepared for Node.js restore script"
-
-      - name: Production restore instructions
-        run: |
-          echo "🚨⚠️🚨⚠️🚨⚠️🚨⚠️🚨⚠️🚨⚠️🚨⚠️🚨⚠️🚨⚠️🚨⚠️"
-          echo "⚠️                                                ⚠️"
-          echo "⚠️         PRODUCTION DATABASE RESTORE            ⚠️"
-          echo "⚠️                                                ⚠️"
-          echo "⚠️  AUTOMATED RESTORE CANNOT BE SAFELY AUTOMATED ⚠️"
-          echo "⚠️  THIS REQUIRES MANUAL CONFIRMATION FOR SAFETY ⚠️"
-          echo "⚠️                                                ⚠️"
-          echo "⚠️  MANUAL DATA RESTORATION MAY BE REQUIRED      ⚠️"
-          echo "⚠️                                                ⚠️"
-          echo "⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️"
-          echo ""
-          echo "📋 Current production backup capabilities:"
-          echo "- ✅ Schema restoration"
-          echo "- ✅ Worker source code"
-          echo "- ⚠️  Data restoration (may require manual steps)"
-          echo ""
-          echo "📖 See RESTORE-CLOUDFLARE.md for manual data restoration steps"
+          async function executeRestore() {
+            console.log('🔄 Starting PRODUCTION database restore from GitHub backup...');
+            
+            const timestamp = new Date().toISOString();
+            console.log(`Restore started: ${timestamp}`);
+            
+            try {
+              // Find the production backup file dynamically
+              const fs = require('fs');
+              const backupFiles = fs.readdirSync('.').filter(f => f.includes('prod-backup-') && f.endsWith('.json'));
+              
+              if (backupFiles.length === 0) {
+                throw new Error('No production backup JSON file found');
+              }
+              
+              const backupFile = backupFiles[0];
+              console.log(`📦 Loading backup file: ${backupFile}`);
+              
+              // Load backup data
+              const backupData = JSON.parse(readFileSync(backupFile, 'utf8'));
+              console.log(`Restoring from backup: ${backupData.id}`);
+              
+              // Disable foreign key constraints for restore
+              console.log('🔧 Disabling foreign key constraints...');
+              try {
+                await executeD1Command('PRAGMA foreign_keys = OFF;');
+                console.log('  ✅ Foreign key constraints disabled');
+              } catch (error) {
+                console.log('  ⚠️  Could not disable foreign key constraints, proceeding anyway');
+              }
+              
+              // Define table dependency order (child tables first, then parents)
+              const tableOrder = [
+                // Child tables (no foreign key dependencies)
+                'notification_queue', 'notification_log', 'notification_read_status', 'notification_preferences',
+                'in_app_notifications', 'webauthn_challenges', 'webauthn_credentials', 'jwt_sessions', 
+                'auth_audit_log', 'user_recovery_codes', 'user_global_permissions',
+                'genre_suggestions', 'genre_requests', 'book_genres', 'book_ratings', 'book_removal_requests',
+                'book_checkout_history', 'migration_rollbacks', 'migrations_applied', 'migration_batches',
+                'signup_approval_requests',
+                
+                // Tables with dependencies  
+                'location_user_permissions', 'location_admin_capabilities', 'location_members', 'location_invitations',
+                'books', 'shelves',
+                
+                // Parent tables (referenced by others)
+                'curated_genres', 'locations', 'users'
+              ];
+              
+              // Get all table names from backup and sort by dependency order
+              const allTableNames = Object.keys(backupData.tables);
+              const orderedTables = [
+                ...tableOrder.filter(name => allTableNames.includes(name)),
+                ...allTableNames.filter(name => !tableOrder.includes(name))
+              ];
+              
+              console.log(`🔄 Restoring ${orderedTables.length} tables in dependency order...`);
+              
+              // Clear all tables first (in dependency order)
+              console.log('\\n🧹 Clearing all table data...');
+              for (const tableName of orderedTables) {
+                try {
+                  console.log(`  🧹 Clearing ${tableName}...`);
+                  await executeD1Command(`DELETE FROM ${tableName};`);
+                } catch (error) {
+                  console.log(`  ⚠️  Could not clear ${tableName}: ${error.message}`);
+                }
+              }
+              
+              // Then restore data (in reverse order - parents first for inserts)
+              console.log('\\n📥 Restoring data...');
+              const restoreOrder = [...orderedTables].reverse();
+              
+              for (const tableName of restoreOrder) {
+                const tableData = backupData.tables[tableName];
+                if (!tableData) continue;
+                
+                console.log(`🔄 Restoring table: ${tableName} (${tableData.data ? tableData.data.length : 0} rows)`);
+                
+                try {
+                  // Insert backup data using proven batch method
+                  if (tableData.data && tableData.data.length > 0) {
+                    await insertDataBatch(tableName, tableData.data);
+                  }
+                  
+                  console.log(`  ✅ ${tableName} restored successfully`);
+                  
+                } catch (error) {
+                  console.error(`  ❌ Failed to restore table ${tableName}: ${error.message}`);
+                  throw new Error(`Table restore failed: ${tableName}`);
+                }
+              }
+              
+              // Re-enable foreign key constraints
+              console.log('\\n🔧 Re-enabling foreign key constraints...');
+              await executeD1Command('PRAGMA foreign_keys = ON;');
+              
+              console.log('\\n✅ PRODUCTION database restore completed successfully!');
+              console.log('📊 Restore completed from backup:', backupData.id);
+              
+              console.log('\\n📋 Post-restore checklist:');
+              console.log('1. Verify production application is functioning correctly');
+              console.log('2. Test critical user flows on production');
+              console.log('3. Check data integrity with spot checks');
+              console.log('4. Monitor error rates for issues');
+              console.log('5. This was a GitHub Actions production restore - SUCCESS!');
+              
+            } catch (error) {
+              console.error('\\n❌ PRODUCTION restore failed!');
+              console.error(`Error: ${error.message}`);
+              
+              console.log('\\n🚨 PRODUCTION database may be in inconsistent state!');
+              console.log('1. Check production application status immediately');
+              console.log('2. Consider emergency rollback using pre-restore backup');
+              console.log('3. Review restore logs for specific errors');
+              console.log('4. Alert team of production database issue');
+              
+              throw error;
+            }
+          }
+          
+          executeRestore().then(() => {
+            console.log('🎉 GitHub Actions PRODUCTION restore completed successfully');
+          }).catch(error => {
+            console.error('💥 GitHub Actions PRODUCTION restore failed:', error.message);
+            process.exit(1);
+          });
+          EOF
+          
+          chmod +x github-restore-production.js
+          
+          # Execute the production restore
+          node github-restore-production.js
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       
-      - name: Provide manual restoration guidance
+      - name: Verify restore success
         run: |
-          echo "📖 PRODUCTION DATA RESTORATION GUIDANCE"
-          echo "======================================="
-          echo ""
-          echo "✅ Backup files have been prepared for the Node.js restore script"
-          echo ""
-          echo "🔧 TO RESTORE PRODUCTION DATA MANUALLY (EMERGENCY ONLY):"
-          echo ""
-          echo "1. Download this backup release to your local machine"
-          echo "2. Extract backup files to backups-production/ directory"
-          echo "3. Ensure CLOUDFLARE_API_TOKEN is set in .env.local"
-          echo "4. Set emergency override: export PRODUCTION_RESTORE_OVERRIDE=true"
-          echo "5. Run the interactive restore script:"
-          echo "   PRODUCTION_RESTORE_OVERRIDE=true node scripts/restore-production.js"
-          echo ""
-          echo "⚠️  The restore script includes:"
-          echo "   - Backup selection and verification"
-          echo "   - Pre-restore safety backup creation"
-          echo "   - Multiple confirmation prompts"
-          echo "   - Comprehensive data restoration"
-          echo "   - Post-restore verification"
-          echo ""
-          echo "🚨 EXTREME CAUTION: This will overwrite ALL production data!"
-          echo ""
-          echo "📋 Backup files prepared:"
-          ls -la backups-production/ 2>/dev/null || echo "Backup directory not found"
-          echo ""
-          echo "🚨 RECOMMENDATION: Consider upgrading production backups to include"
-          echo "   comprehensive data backup like the staging system before proceeding"
-      
-      - name: Verify basic connectivity
-        run: |
-          echo "🔍 Verifying basic PRODUCTION database connectivity..."
+          echo "🔍 Verifying PRODUCTION restore success..."
           
           # Test basic database connectivity
-          wrangler d1 execute librarycard-db --config=wrangler.prod.toml --env=production --remote --command="SELECT name FROM sqlite_master WHERE type='table';" || echo "Table list check failed"
+          wrangler d1 execute librarycard-db --config=wrangler.prod.toml --env=production --remote --command="SELECT COUNT(*) as total_users FROM users;" || echo "User count check failed"
+          wrangler d1 execute librarycard-db --config=wrangler.prod.toml --env=production --remote --command="SELECT COUNT(*) as total_books FROM books;" || echo "Book count check failed"
+          wrangler d1 execute librarycard-db --config=wrangler.prod.toml --env=production --remote --command="SELECT COUNT(*) as total_locations FROM locations;" || echo "Location count check failed"
           
-          echo "✅ Basic connectivity verified"
+          echo "✅ Basic verification completed"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       
@@ -276,16 +477,16 @@ jobs:
       
       - name: Notify on success
         run: |
-          echo "✅ PRODUCTION restore completed!"
+          echo "✅ PRODUCTION restore completed successfully!"
           echo "🎯 Backup restored from: ${{ github.event.inputs.backup_tag }}"
           echo "📋 CRITICAL NEXT STEPS:"
-          echo "1. Verify production application is functioning"
-          echo "2. Test critical user flows immediately"
+          echo "1. Verify production application is functioning immediately"
+          echo "2. Test critical user flows on production"
           echo "3. Check data integrity thoroughly"
-          echo "4. Monitor for any restoration issues"
-          echo "5. Consider data restoration if schema-only restore was performed"
+          echo "4. Monitor error rates for any restoration issues"
+          echo "5. Alert team of successful production restore"
           echo ""
-          echo "🚨 PRODUCTION DATABASE RESTORE COMPLETED"
+          echo "🎉 PRODUCTION DATABASE RESTORE COMPLETED SUCCESSFULLY"
       
       - name: Notify on failure
         if: failure()
@@ -294,7 +495,7 @@ jobs:
           echo "🚨🚨🚨 PRODUCTION EMERGENCY 🚨🚨🚨"
           echo ""
           echo "📋 IMMEDIATE ACTIONS REQUIRED:"
-          echo "1. Check production application status"
+          echo "1. Check production application status immediately"
           echo "2. Assess database state"
           echo "3. Consider emergency rollback using pre-restore backup"
           echo "4. Contact technical team immediately"
