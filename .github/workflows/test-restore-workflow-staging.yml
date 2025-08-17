@@ -141,11 +141,21 @@ jobs:
           BACKUP_FILE=$(find . -name "prod-backup-*.json" | head -1)
           echo "📦 Using backup file: $BACKUP_FILE"
           
-          # Copy backup to expected location for staging restore
+          if [ -z "$BACKUP_FILE" ]; then
+            echo "❌ No production backup file found"
+            echo "📋 Available files:"
+            find . -name "*.json" | head -10
+            exit 1
+          fi
+          
+          # Copy backup to multiple expected locations for testing
           mkdir -p ../backups-production
           cp "$BACKUP_FILE" ../backups-production/
+          cp "$BACKUP_FILE" ../
           
-          echo "✅ Backup file prepared for restore testing"
+          echo "✅ Backup file copied to:"
+          echo "   ../backups-production/$(basename $BACKUP_FILE)"
+          echo "   ../$(basename $BACKUP_FILE)"
 
       - name: Execute staging restore using production restore logic
         run: |
@@ -166,15 +176,43 @@ jobs:
           cat > test_staging_restore.js << 'EOF'
           const { execSync } = require('child_process');
           const { readFileSync } = require('fs');
-          const { glob } = require('glob');
+          const fs = require('fs');
+          const path = require('path');
           
           async function testStagingRestore() {
             console.log('🧪 Testing production restore logic on staging environment');
             
-            // Find backup file
-            const backupFiles = glob.sync('../backups-production/prod-backup-*.json');
+            // Find backup file - check multiple possible locations
+            const possiblePaths = [
+              '../backups-production/prod-backup-*.json',
+              './backups-production/prod-backup-*.json',
+              '../prod-backup-*.json',
+              './prod-backup-*.json'
+            ];
+            
+            let backupFiles = [];
+            for (const pattern of possiblePaths) {
+              try {
+                const files = execSync(`ls ${pattern} 2>/dev/null || echo ""`, { encoding: 'utf8' })
+                  .split('\n')
+                  .filter(f => f.trim() && f.includes('prod-backup-'));
+                backupFiles = backupFiles.concat(files);
+              } catch (error) {
+                // Pattern didn't match
+              }
+            }
+            
             if (backupFiles.length === 0) {
-              throw new Error('No production backup file found');
+              console.log('🔍 Available files for debugging:');
+              try {
+                console.log('Current directory:', process.cwd());
+                console.log('Directory contents:', execSync('ls -la', { encoding: 'utf8' }));
+                console.log('Parent directory:', execSync('ls -la ../', { encoding: 'utf8' }));
+                console.log('Looking for JSON files:', execSync('find . -name "*.json" | head -10', { encoding: 'utf8' }));
+              } catch (err) {
+                console.log('Debug listing failed:', err.message);
+              }
+              throw new Error('No production backup file found in any expected location');
             }
             
             const backupFile = backupFiles[0];
