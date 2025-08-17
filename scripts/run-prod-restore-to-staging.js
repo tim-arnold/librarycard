@@ -64,6 +64,15 @@ async function restoreProductionToStaging() {
     'enhanced_genres_backup', 'curated_genres', 'locations', 'users'
   ];
   
+  // Disable foreign key constraints for restore
+  console.log('🔧 Disabling foreign key constraints...');
+  try {
+    executeStagingD1Command('PRAGMA foreign_keys = OFF;');
+    console.log('  ✅ Foreign key constraints disabled');
+  } catch (error) {
+    console.log('  ⚠️  Could not disable foreign key constraints, proceeding anyway');
+  }
+  
   console.log('🗑️  Clearing staging tables...');
   
   // Clear tables in dependency order
@@ -141,6 +150,15 @@ async function restoreProductionToStaging() {
     } catch (error) {
       console.error(`    ❌ Failed to restore ${tableName}: ${error.message}`);
     }
+  }
+  
+  // Re-enable foreign key constraints
+  console.log('\n🔧 Re-enabling foreign key constraints...');
+  try {
+    executeStagingD1Command('PRAGMA foreign_keys = ON;');
+    console.log('  ✅ Foreign key constraints re-enabled');
+  } catch (error) {
+    console.log('  ⚠️  Could not re-enable foreign key constraints');
   }
   
   console.log('\n🎉 PRODUCTION DATA RESTORED TO STAGING!');
