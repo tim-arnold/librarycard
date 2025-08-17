@@ -287,7 +287,10 @@ class DatabaseRestore {
         const vals = columns.map(col => {
           const val = row[col];
           if (val === null || val === undefined) return 'NULL';
-          if (typeof val === 'string') return `'${val.replace(/'/g, "''")}'`;
+          if (typeof val === 'string') {
+            // Use single quotes to avoid SQL parsing issues with complex text content
+            return `'${val.replace(/'/g, "''")}'`;
+          }
           return val;
         });
         return `(${vals.join(', ')})`;

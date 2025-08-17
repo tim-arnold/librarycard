@@ -22,9 +22,25 @@ yarn-error.log*
 /backups-staging/
 /backups-production/
 /cloudflare/
+/staging-cloudflare/
+/temp-backup-analysis/
+/restore-workspace/
+/sync-workspace/
 *.tar.gz
+*.zip
+*backup*.json
+prod-backup-*.json
+staging-backup-*.json
+cf-backup-*.json
+*-backup-20*.json
 staging-*.log
 production-*.log
+*.log
+
+# Failed SQL debugging files
+FAILED_BATCH_*.sql
+batch_sql_*.sql
+temp_sql_*.sql
 
 # Production
 /build

@@ -204,18 +204,18 @@ jobs:
             }
             console.log(`📊 Total rows to sync: ${totalRows}\n`);
             
-            // Create staging backup first
-            console.log('📦 Creating staging backup before sync...');
-            try {
-              execSync('node scripts/backup-staging.js create "pre-complete-prod-sync"', { 
-                stdio: 'inherit',
-                env: { ...process.env, CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN_STAGING_NEW }
-              });
-              console.log('✅ Staging backup created\n');
-            } catch (error) {
-              console.error('❌ Failed to create staging backup:', error.message);
-              process.exit(1);
-            }
+            // TEMPORARILY DISABLED: Create staging backup for faster debugging
+            console.log('⏭️  Skipping staging backup creation for faster debugging...');
+            // try {
+            //   execSync('node scripts/backup-staging.js create "pre-complete-prod-sync"', { 
+            //     stdio: 'inherit',
+            //     env: { ...process.env, CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN_STAGING_NEW }
+            //   });
+            //   console.log('✅ Staging backup created\n');
+            // } catch (error) {
+            //   console.error('❌ Failed to create staging backup:', error.message);
+            //   process.exit(1);
+            // }
             
             // Define table order for sync
             const tableOrder = [
@@ -243,11 +243,9 @@ jobs:
             }
             
             console.log('🗑️  Clearing staging tables...');
-            
-            // Skip tables that don't exist in staging or are legacy/orphaned
             const skipTables = ['enhanced_genres_backup']; // Legacy table not in staging schema
             
-            // Clear tables in dependency order
+            // Clear tables in dependency order  
             for (const tableName of tableOrder) {
               // Skip tables that don't exist in staging
               if (skipTables.includes(tableName)) {
@@ -257,7 +255,18 @@ jobs:
               
               if (backupData.tables[tableName] && !backupData.tables[tableName].error) {
                 try {
-                  executeStagingD1Command(`DELETE FROM ${tableName}`);
+                  // Use file-based execution for clearing too
+                  const clearSql = `DELETE FROM ${tableName};`;
+                  const tempFile = `./clear_${tableName}_${Date.now()}.sql`;
+                  const fs = require('fs');
+                  fs.writeFileSync(tempFile, clearSql);
+                  
+                  const result = execSync(`npx wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote --file="${tempFile}"`, {
+                    encoding: 'utf8',
+                    env: { ...process.env, CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN_STAGING_NEW }
+                  });
+                  
+                  fs.unlinkSync(tempFile);
                   console.log(`    ✅ Cleared ${tableName}`);
                 } catch (error) {
                   console.log(`    ⚠️  Could not clear ${tableName}: ${error.message}`);
@@ -268,7 +277,17 @@ jobs:
             // Create system user for curated_genres foreign key constraint
             console.log('\n👤 Creating system user for curated_genres...');
             try {
-              executeStagingD1Command(`INSERT INTO users (id, email, first_name, last_name, created_at, updated_at, password_hash, auth_provider, email_verified, user_role) VALUES ('system', 'system@library.local', 'System', 'User', '2025-01-01 00:00:00', '2025-01-01 00:00:00', NULL, 'system', 1, 'admin')`);
+              const systemUserSql = `INSERT INTO users (id, email, first_name, last_name, created_at, updated_at, password_hash, auth_provider, email_verified, user_role) VALUES ('system', 'system@library.local', 'System', 'User', '2025-01-01 00:00:00', '2025-01-01 00:00:00', NULL, 'system', 1, 'admin');`;
+              const tempFile = `./system_user_${Date.now()}.sql`;
+              const fs = require('fs');
+              fs.writeFileSync(tempFile, systemUserSql);
+              
+              const result = execSync(`npx wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote --file="${tempFile}"`, {
+                encoding: 'utf8',
+                env: { ...process.env, CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN_STAGING_NEW }
+              });
+              
+              fs.unlinkSync(tempFile);
               console.log('  ✅ System user created');
             } catch (error) {
               console.log('  ⚠️  Could not create system user, may already exist');
@@ -299,45 +318,174 @@ jobs:
               console.log(`    📥 Syncing ${tableName} (${tableData.data.length} rows)...`);
               
               try {
-                // Sync ALL data row by row with schema compatibility
-                for (const row of tableData.data) {
-                  // Get columns from production backup data
-                  const prodColumns = Object.keys(row);
+                // Switch to BATCH processing to avoid problematic row-by-row loop
+                console.log(`    🔄 Processing ${tableData.data.length} rows for ${tableName} in batches...`);
+                
+                // Process in small batches to avoid GitHub Actions termination
+                const batchSize = 5; // Small batches to prevent process termination
+                const totalBatches = Math.ceil(tableData.data.length / batchSize);
+                console.log(`    🎯 Will process ${totalBatches} batches of up to ${batchSize} rows each`);
+                
+                for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+                  const startRow = batchIndex * batchSize;
+                  const endRow = Math.min(startRow + batchSize, tableData.data.length);
+                  const batch = tableData.data.slice(startRow, endRow);
                   
-                  // Get staging table schema to handle schema differences
-                  let stagingColumns;
-                  try {
-                    const schemaResult = executeStagingD1Command(`PRAGMA table_info(${tableName})`);
-                    const schemaLines = schemaResult.split('\n');
-                    const schemaJsonStart = schemaLines.findIndex(line => line.trim().startsWith('['));
-                    if (schemaJsonStart !== -1) {
-                      const schemaJson = schemaLines.slice(schemaJsonStart).join('\n');
-                      const schemaData = JSON.parse(schemaJson);
-                      if (schemaData[0] && schemaData[0].results) {
-                        stagingColumns = schemaData[0].results.map(col => col.name);
+                  console.log(`    `);
+                  console.log(`    ==========================================`);
+                  console.log(`    🎯 BATCH ${batchIndex + 1}/${totalBatches}: Processing rows ${startRow + 1}-${endRow}`);
+                  console.log(`    ⏰ Batch start timestamp: ${new Date().toISOString()}`);
+                  console.log(`    ==========================================`);
+                  
+                  // Create batch INSERT statement
+                  const columns = Object.keys(batch[0]);
+                  const batchValues = batch.map((row, rowIdx) => {
+                    const values = columns.map(col => {
+                      const value = row[col];
+                      if (value === null || value === undefined) return 'NULL';
+                      if (typeof value === 'string') {
+                        // Comprehensive handling for book fields that are commonly JSON-encoded
+                        const jsonArrayFields = ['authors', 'categories', 'tags', 'subjects', 'enhanced_genres', 'assigned_genres', 'alternative_covers'];
+                        
+                        // Special handling for fields that are JSON arrays/objects
+                        if (jsonArrayFields.includes(col) || value.startsWith('[') || value.startsWith('{')) {
+                          try {
+                            // Validate it's valid JSON first
+                            JSON.parse(value);
+                            // For JSON fields, use single quotes to avoid SQL parsing issues with square brackets
+                            return `'${value.replace(/'/g, "''")}'`;
+                          } catch (parseError) {
+                            // Not valid JSON despite field name or appearance, treat as regular string
+                            console.log(`    ⚠️  Field ${col} looks like JSON but isn't valid: ${value.substring(0, 100)}...`);
+                          }
+                        }
+                        
+                        // Use single quotes for ALL string fields to avoid SQL parsing issues
+                        return `'${value.replace(/'/g, "''")}'`;
                       }
-                    }
-                  } catch (error) {
-                    stagingColumns = prodColumns;
-                  }
-                  
-                  // Use only columns that exist in both production data AND staging schema
-                  const commonColumns = prodColumns.filter(col => 
-                    stagingColumns ? stagingColumns.includes(col) : true
-                  );
-                  
-                  const values = commonColumns.map(col => {
-                    const value = row[col];
-                    if (value === null) return 'NULL';
-                    if (typeof value === 'string') {
-                      // Use JSON.stringify to properly escape all special characters including quotes, backslashes, etc.
-                      return JSON.stringify(value);
-                    }
-                    return value;
+                      if (typeof value === 'number') return value;
+                      if (typeof value === 'boolean') return value ? 1 : 0;
+                      
+                      // Handle objects/arrays (common in book data)
+                      try {
+                        return JSON.stringify(JSON.stringify(value));
+                      } catch (error) {
+                        console.log(`    ⚠️  Could not serialize ${col} value: ${error.message}`);
+                        return 'NULL';
+                      }
+                    });
+                    return `(${values.join(', ')})`;
                   });
                   
-                  const insertSql = `INSERT INTO ${tableName} (${commonColumns.join(', ')}) VALUES (${values.join(', ')})`;
-                  executeStagingD1Command(insertSql);
+                  const batchSql = `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES ${batchValues.join(', ')};`;
+                  
+                  console.log(`    📝 Batch SQL length: ${batchSql.length} characters`);
+                  console.log(`    📄 Batch SQL preview: ${batchSql.substring(0, 500)}...`);
+                  
+                  // Add comprehensive debugging for book batches to find Jeremy anywhere
+                  if (tableName === 'books') {
+                    console.log(`    📚 Book batch debug info:`);
+                    batch.forEach((book, idx) => {
+                      const title = book.title || 'Unknown';
+                      const authors = book.authors || 'Unknown';
+                      console.log(`    📖 Row ${startRow + idx + 1}: "${title}" by ${authors}`);
+                      
+                      // COMPREHENSIVE Jeremy search across ALL fields
+                      let foundJeremy = false;
+                      Object.keys(book).forEach(field => {
+                        const value = book[field];
+                        if (value && typeof value === 'string' && value.includes('Jeremy')) {
+                          console.log(`    🚨 FOUND JEREMY in field '${field}': ${value.substring(0, 200)}...`);
+                          console.log(`    🔍 Field type: ${typeof value}`);
+                          console.log(`    🔍 Field starts with [: ${value.startsWith('[')}`);
+                          console.log(`    🔍 Field ends with ]: ${value.endsWith(']')}`);
+                          
+                          // Test the escaping logic for this field
+                          try {
+                            const escaped = JSON.stringify(value);
+                            console.log(`    🔍 Escaped ${field}: ${escaped.substring(0, 200)}...`);
+                          } catch (e) {
+                            console.log(`    ❌ Escaping failed for ${field}: ${e.message}`);
+                          }
+                          foundJeremy = true;
+                        }
+                      });
+                      
+                      if (!foundJeremy) {
+                        console.log(`    ✅ No Jeremy found in row ${startRow + idx + 1}`);
+                      }
+                    });
+                    
+                    // Also check if Jeremy appears in the final SQL
+                    if (batchSql.includes('Jeremy')) {
+                      console.log(`    🚨 Jeremy found in final batch SQL at positions:`);
+                      let pos = 0;
+                      while ((pos = batchSql.indexOf('Jeremy', pos)) !== -1) {
+                        const start = Math.max(0, pos - 100);
+                        const end = Math.min(batchSql.length, pos + 200);
+                        console.log(`    🔍 Position ${pos}: ...${batchSql.substring(start, end)}...`);
+                        
+                        // Show more context around the error position (567)
+                        if (Math.abs(pos - 567) < 50) {
+                          console.log(`    🚨 CRITICAL: This Jeremy is near error position 567!`);
+                          const errorStart = Math.max(0, 567 - 150);
+                          const errorEnd = Math.min(batchSql.length, 567 + 150);
+                          console.log(`    🔍 Error context (pos 567): ...${batchSql.substring(errorStart, errorEnd)}...`);
+                        }
+                        pos++;
+                      }
+                    }
+                  }
+                  
+                  // Use file-based execution for batch
+                  const fs = require('fs');
+                  const tempFile = `./batch_sql_${Date.now()}_${Math.random().toString(36).slice(2)}.sql`;
+                  fs.writeFileSync(tempFile, batchSql);
+                  
+                  try {
+                    console.log(`    🔄 Executing batch SQL file with wrangler...`);
+                    console.log(`    ⏰ Starting batch wrangler execution at: ${new Date().toISOString()}`);
+                    
+                    const result = execSync(`npx wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote --file="${tempFile}"`, { 
+                      encoding: 'utf8',
+                      timeout: 120000,
+                      env: { ...process.env, CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN_STAGING_NEW }
+                    });
+                    
+                    console.log(`    ⏰ Batch wrangler execution completed at: ${new Date().toISOString()}`);
+                    console.log(`    ✅ Batch SQL executed successfully`);
+                    console.log(`    📊 Batch wrangler output: ${result.substring(0, 1000)}...`);
+                    
+                    // Verify batch using wrangler response
+                    if (result.includes('"success": true') && result.includes('"changes"')) {
+                      const changesMatch = result.match(/"changes":\s*(\d+)/);
+                      const changes = changesMatch ? parseInt(changesMatch[1]) : 0;
+                      console.log(`    ✅ Batch reports ${changes} database changes for ${batch.length} rows`);
+                    }
+                    
+                    // Clean up temp file
+                    fs.unlinkSync(tempFile);
+                    console.log(`    ✅ Batch ${batchIndex + 1}/${totalBatches} completed (rows ${startRow + 1}-${endRow})`);
+                    
+                  } catch (batchError) {
+                    console.log(`    🚨 CRITICAL BATCH FAILURE - STOPPING SYNC`);
+                    console.log(`    ❌ Batch execution failed: ${batchError.message}`);
+                    console.log(`    📄 Failed batch SQL: ${batchSql.substring(0, 500)}...`);
+                    
+                    // PRESERVE the failing SQL file for debugging
+                    const preservedFile = `./FAILED_BATCH_${batchIndex + 1}_${tableName}_${Date.now()}.sql`;
+                    try {
+                      fs.copyFileSync(tempFile, preservedFile);
+                      console.log(`    💾 PRESERVED failing SQL file: ${preservedFile}`);
+                      console.log(`    🔍 File size: ${fs.statSync(preservedFile).size} bytes`);
+                    } catch (preserveError) {
+                      console.log(`    ⚠️  Could not preserve SQL file: ${preserveError.message}`);
+                    }
+                    
+                    // Still clean up original temp file
+                    try { fs.unlinkSync(tempFile); } catch {}
+                    throw new Error(`BATCH SYNC FAILED: Batch ${batchIndex + 1} failed: ${batchError.message}`);
+                  }
                 }
                 
                 console.log(`    ✅ Synced ${tableName}: ${tableData.data.length} rows`);
@@ -345,7 +493,19 @@ jobs:
                 syncedRows += tableData.data.length;
                 
               } catch (error) {
+                console.error(`    🚨 CRITICAL TABLE FAILURE - STOPPING ENTIRE SYNC`);
                 console.error(`    ❌ Failed to sync ${tableName}: ${error.message}`);
+                console.error(`    📊 Tables completed before failure: ${syncedTables}`);
+                console.error(`    📊 Rows completed before failure: ${syncedRows}`);
+                console.error(`    🚨 STAGING DATABASE IS NOW IN INCONSISTENT STATE`);
+                
+                // Log the complete failure details
+                console.error(`    📋 Failure details:`);
+                console.error(`       - Table: ${tableName}`);
+                console.error(`       - Expected rows: ${tableData.data.length}`);
+                console.error(`       - Error: ${error.message}`);
+                
+                throw new Error(`COMPLETE SYNC FAILURE: Table ${tableName} failed, stopping sync to prevent partial data state: ${error.message}`);
               }
             }
             
