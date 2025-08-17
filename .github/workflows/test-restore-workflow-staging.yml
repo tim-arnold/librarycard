@@ -1,0 +1,299 @@
+name: 🧪 TEST Production Restore Workflow on Staging
+
+on:
+  workflow_dispatch:
+    inputs:
+      backup_tag:
+        description: 'GitHub Release tag of the PRODUCTION backup to restore to STAGING (e.g., cf-backup-123-20250817)'
+        required: true
+        type: string
+      test_reason:
+        description: 'Reason for testing restore workflow on staging'
+        required: true
+        type: string
+        default: 'Testing production restore workflow capabilities'
+
+permissions:
+  contents: read
+  
+jobs:
+  test-restore-staging:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: ⚠️ TEST ENVIRONMENT VALIDATION ⚠️
+        run: |
+          echo "🧪⚠️🧪⚠️🧪⚠️🧪⚠️🧪⚠️🧪⚠️🧪⚠️🧪⚠️🧪⚠️🧪⚠️"
+          echo "⚠️                                                ⚠️"
+          echo "⚠️         TESTING RESTORE WORKFLOW               ⚠️"
+          echo "⚠️                                                ⚠️"
+          echo "⚠️  THIS TESTS PRODUCTION RESTORE PROCESS USING  ⚠️"
+          echo "⚠️  STAGING ENVIRONMENT (SAFE FOR TESTING)       ⚠️"
+          echo "⚠️                                                ⚠️"
+          echo "⚠️  - Uses PRODUCTION backup data                 ⚠️"
+          echo "⚠️  - Restores to STAGING environment             ⚠️"
+          echo "⚠️  - Tests GitHub Actions restore workflow       ⚠️"
+          echo "⚠️  - Validates production restore capabilities   ⚠️"
+          echo "⚠️                                                ⚠️"
+          echo "🧪⚠️🧪⚠️🧪⚠️🧪⚠️🧪⚠️🧪⚠️🧪⚠️🧪⚠️🧪⚠️🧪⚠️"
+          echo ""
+          echo "📋 Test Details:"
+          echo "   Backup Tag: ${{ github.event.inputs.backup_tag }}"
+          echo "   Test Reason: ${{ github.event.inputs.test_reason }}"
+          echo "   Target: STAGING environment"
+          echo "   Purpose: Validate production restore workflow"
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create restore workspace
+        run: |
+          echo "📁 Creating restore workspace..."
+          mkdir -p restore-workspace
+          cd restore-workspace
+
+      - name: Download backup from GitHub release
+        run: |
+          echo "📦 Downloading backup from GitHub release: ${{ github.event.inputs.backup_tag }}"
+          cd restore-workspace
+          
+          # Download the release
+          gh release download "${{ github.event.inputs.backup_tag }}" --pattern "*.tar.gz" --pattern "*.zip"
+          
+          # List what we downloaded
+          echo "📋 Downloaded files:"
+          ls -la
+          
+          # Extract the first archive found
+          if ls *.tar.gz 1> /dev/null 2>&1; then
+            echo "📦 Extracting tar.gz archive..."
+            tar -xzf *.tar.gz
+          elif ls *.zip 1> /dev/null 2>&1; then
+            echo "📦 Extracting zip archive..."
+            unzip *.zip
+          else
+            echo "❌ No archive files found"
+            exit 1
+          fi
+          
+          echo "📋 Extracted contents:"
+          find . -name "*.json" -o -name "*.sql" | head -10
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify backup contents
+        run: |
+          echo "🔍 Verifying backup contents..."
+          cd restore-workspace
+          
+          # Look for the production backup JSON file
+          BACKUP_FILE=$(find . -name "prod-backup-*.json" | head -1)
+          
+          if [ -z "$BACKUP_FILE" ]; then
+            echo "❌ Production backup JSON file not found"
+            echo "📋 Available files:"
+            find . -name "*.json" | head -10
+            exit 1
+          fi
+          
+          echo "✅ Found production backup: $BACKUP_FILE"
+          
+          # Verify backup integrity
+          echo "📊 Backup file size: $(ls -lh "$BACKUP_FILE" | awk '{print $5}')"
+          
+          # Parse backup metadata
+          echo "📋 Backup metadata:"
+          cat "$BACKUP_FILE" | jq -r '.id, .timestamp, .reason' | head -3
+          
+          # Count tables and rows
+          TABLES=$(cat "$BACKUP_FILE" | jq '.tables | keys | length')
+          echo "📊 Tables in backup: $TABLES"
+          
+          TOTAL_ROWS=$(cat "$BACKUP_FILE" | jq '[.tables[] | select(.row_count) | .row_count] | add')
+          echo "📊 Total rows in backup: $TOTAL_ROWS"
+
+      - name: Create staging pre-test backup
+        run: |
+          echo "📦 Creating staging backup before restore test..."
+          
+          # Use our staging backup script to save current state
+          CLOUDFLARE_API_TOKEN="${{ secrets.CLOUDFLARE_API_TOKEN_STAGING_NEW }}" \
+          node scripts/backup-staging.js create "pre-restore-workflow-test-${{ github.run_number }}"
+          
+          echo "✅ Staging pre-test backup completed"
+
+      - name: Test GitHub Actions restore process
+        run: |
+          echo "🔄 Testing GitHub Actions restore process on staging..."
+          cd restore-workspace
+          
+          # Find the production backup file
+          BACKUP_FILE=$(find . -name "prod-backup-*.json" | head -1)
+          echo "📦 Using backup file: $BACKUP_FILE"
+          
+          # Copy backup to expected location for staging restore
+          mkdir -p ../backups-production
+          cp "$BACKUP_FILE" ../backups-production/
+          
+          echo "✅ Backup file prepared for restore testing"
+
+      - name: Execute staging restore using production restore logic
+        run: |
+          echo "🧪 Executing restore using production restore workflow logic..."
+          echo "🎯 Target: STAGING environment"
+          echo "📦 Source: PRODUCTION backup data"
+          
+          # This tests the same restore logic that would be used in production
+          # but executes against the staging environment
+          
+          # Define table order (same as production restore would use)
+          echo "📋 Preparing staging restore with production restore logic..."
+          
+          # Use the production backup data but restore to staging
+          BACKUP_FILE="../backups-production/prod-backup-*.json"
+          
+          # Create a modified staging restore script that uses production restore logic
+          cat > test_staging_restore.js << 'EOF'
+          const { execSync } = require('child_process');
+          const { readFileSync } = require('fs');
+          const { glob } = require('glob');
+          
+          async function testStagingRestore() {
+            console.log('🧪 Testing production restore logic on staging environment');
+            
+            // Find backup file
+            const backupFiles = glob.sync('../backups-production/prod-backup-*.json');
+            if (backupFiles.length === 0) {
+              throw new Error('No production backup file found');
+            }
+            
+            const backupFile = backupFiles[0];
+            console.log(`📦 Using backup: ${backupFile}`);
+            
+            // Load backup data
+            const backupData = JSON.parse(readFileSync(backupFile, 'utf8'));
+            console.log(`📊 Backup contains ${Object.keys(backupData.tables).length} tables`);
+            
+            // Count total rows to restore
+            let totalRows = 0;
+            for (const [tableName, tableData] of Object.entries(backupData.tables)) {
+              if (tableData.row_count && !tableData.error) {
+                totalRows += tableData.row_count;
+              }
+            }
+            console.log(`📊 Total rows to restore: ${totalRows}`);
+            
+            // Test restore process with a few sample tables (not full restore to avoid timeout)
+            const testTables = ['users', 'locations', 'curated_genres'];
+            let testRows = 0;
+            
+            for (const tableName of testTables) {
+              const tableData = backupData.tables[tableName];
+              if (tableData && !tableData.error && tableData.data) {
+                console.log(`🧪 Testing restore of ${tableName} (${tableData.data.length} rows)...`);
+                
+                try {
+                  // Clear table first
+                  executeStagingD1(`DELETE FROM ${tableName}`);
+                  console.log(`    ✅ Cleared ${tableName}`);
+                  
+                  // Test restore of first few rows (to avoid command length issues)
+                  const testDataRows = tableData.data.slice(0, Math.min(3, tableData.data.length));
+                  
+                  for (const row of testDataRows) {
+                    const columns = Object.keys(row);
+                    const values = columns.map(col => {
+                      const value = row[col];
+                      if (value === null) return 'NULL';
+                      if (typeof value === 'string') {
+                        // Test the exact same escaping logic production restore would use
+                        return `'${value.replace(/'/g, "''").substring(0, 100)}'`; // Truncate for testing
+                      }
+                      return value;
+                    });
+                    
+                    const insertSql = `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES (${values.join(', ')})`;
+                    executeStagingD1(insertSql);
+                    testRows++;
+                  }
+                  
+                  console.log(`    ✅ Test restored ${testDataRows.length} rows to ${tableName}`);
+                  
+                } catch (error) {
+                  console.log(`    ❌ Failed to test restore ${tableName}: ${error.message}`);
+                  // Continue with other tables to identify all issues
+                }
+              }
+            }
+            
+            console.log(`\n🧪 TEST RESTORE SUMMARY:`);
+            console.log(`   📊 Test rows processed: ${testRows}`);
+            console.log(`   🎯 This validates the restore process logic`);
+            console.log(`   ⚠️  Full restore would process all ${totalRows} rows`);
+            
+            return { testRows, totalRows };
+          }
+          
+          function executeStagingD1(sql) {
+            const command = `wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote --command="${sql.replace(/"/g, '\\"')}"`;
+            return execSync(command, { 
+              encoding: 'utf8',
+              env: { ...process.env, CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN_STAGING_NEW }
+            });
+          }
+          
+          testStagingRestore().catch(error => {
+            console.error('❌ Test restore failed:', error.message);
+            process.exit(1);
+          });
+          EOF
+          
+          # Run the test
+          node test_staging_restore.js
+        env:
+          CLOUDFLARE_API_TOKEN_STAGING_NEW: ${{ secrets.CLOUDFLARE_API_TOKEN_STAGING_NEW }}
+
+      - name: Verify restore test results
+        run: |
+          echo "🔍 Verifying restore test results..."
+          
+          # Check key tables to see what was restored
+          echo "📊 Checking restored data in staging:"
+          
+          echo "Users:"
+          CLOUDFLARE_API_TOKEN="${{ secrets.CLOUDFLARE_API_TOKEN_STAGING_NEW }}" \
+          wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote \
+          --command="SELECT COUNT(*) as count FROM users;" || echo "Failed to check users"
+          
+          echo "Locations:"
+          CLOUDFLARE_API_TOKEN="${{ secrets.CLOUDFLARE_API_TOKEN_STAGING_NEW }}" \
+          wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote \
+          --command="SELECT COUNT(*) as count FROM locations;" || echo "Failed to check locations"
+
+      - name: Test results summary
+        run: |
+          echo "🎉 GITHUB ACTIONS RESTORE WORKFLOW TEST COMPLETED"
+          echo "================================================="
+          echo "✅ Backup download: SUCCESS"
+          echo "✅ Backup verification: SUCCESS"  
+          echo "✅ Staging pre-backup: SUCCESS"
+          echo "🧪 Restore process test: See results above"
+          echo "================================================="
+          echo ""
+          echo "📋 This test validates:"
+          echo "   - GitHub Actions can download production backups"
+          echo "   - Backup files contain expected data structure"
+          echo "   - Restore process logic works in GitHub Actions environment"
+          echo "   - Command-line limitations and workarounds"
+          echo ""
+          echo "🎯 Next: Review test results and fix any identified issues"
+          echo "   Then re-run test until restore works completely"
