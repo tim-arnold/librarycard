@@ -169,6 +169,10 @@ jobs:
           # Define table order (same as production restore would use)
           echo "📋 Preparing staging restore with production restore logic..."
           
+          # Disable foreign key constraints for restore
+          echo "🔧 Disabling foreign key constraints..."
+          npx wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote --command="PRAGMA foreign_keys = OFF;" || echo "Could not disable foreign key constraints"
+          
           # Use the production backup data but restore to staging
           BACKUP_FILE="../backups-production/prod-backup-*.json"
           
@@ -329,6 +333,15 @@ jobs:
             console.log(`   📊 Test rows processed: ${testRows}`);
             console.log(`   🎯 This validates the restore process logic`);
             console.log(`   ⚠️  Full restore would process all ${totalRows} rows`);
+            
+            // Re-enable foreign key constraints
+            console.log('\n🔧 Re-enabling foreign key constraints...');
+            try {
+              executeStagingD1('PRAGMA foreign_keys = ON;');
+              console.log('   ✅ Foreign key constraints re-enabled');
+            } catch (error) {
+              console.log('   ⚠️  Could not re-enable foreign key constraints');
+            }
             
             return { testRows, totalRows };
           }
