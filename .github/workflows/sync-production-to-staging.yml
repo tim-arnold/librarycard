@@ -344,20 +344,23 @@ jobs:
                       const value = row[col];
                       if (value === null || value === undefined) return 'NULL';
                       if (typeof value === 'string') {
-                        // Special handling for fields that are already JSON-encoded (like authors arrays)
-                        if (value.startsWith('[') && value.endsWith(']')) {
-                          // This is likely a JSON array string - treat as raw JSON
+                        // Comprehensive handling for book fields that are commonly JSON-encoded
+                        const jsonArrayFields = ['authors', 'categories', 'tags', 'subjects', 'enhanced_genres', 'assigned_genres', 'alternative_covers'];
+                        
+                        // Special handling for fields that are JSON arrays/objects
+                        if (jsonArrayFields.includes(col) || value.startsWith('[') || value.startsWith('{')) {
                           try {
-                            // Validate it's valid JSON, then pass through as-is for SQL
+                            // Validate it's valid JSON first
                             JSON.parse(value);
-                            return JSON.stringify(value); // Still escape the outer quotes
+                            // If valid JSON, escape it for SQL (single layer of escaping)
+                            return JSON.stringify(value);
                           } catch (parseError) {
-                            // Not valid JSON despite appearance, treat as regular string
-                            console.log(`    ⚠️  Value looks like JSON array but isn't valid: ${value}`);
+                            // Not valid JSON despite field name or appearance, treat as regular string
+                            console.log(`    ⚠️  Field ${col} looks like JSON but isn't valid: ${value.substring(0, 100)}...`);
                           }
                         }
                         
-                        // Enhanced escaping for complex book data with nested quotes, JSON, etc.
+                        // Enhanced escaping for regular string fields
                         try {
                           return JSON.stringify(value);
                         } catch (jsonError) {
