@@ -335,7 +335,10 @@ class StagingDatabaseRestore {
         const vals = columns.map(col => {
           const val = row[col];
           if (val === null || val === undefined) return 'NULL';
-          if (typeof val === 'string') return `'${val.replace(/'/g, "''")}'`;
+          if (typeof val === 'string') {
+            // Use JSON.stringify to properly escape all special characters including quotes, backslashes, etc.
+            return JSON.stringify(val);
+          }
           return val;
         });
         
