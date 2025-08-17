@@ -289,7 +289,10 @@ class ProductionDatabaseRestore {
             const values = commonColumns.map(col => {
               const value = row[col];
               if (value === null) return 'NULL';
-              if (typeof value === 'string') return `'${value.replace(/'/g, "''")}'`;
+              if (typeof value === 'string') {
+                // Use single quotes to avoid SQL parsing issues with complex text content
+                return `'${value.replace(/'/g, "''")}'`;
+              }
               return value;
             });
             
