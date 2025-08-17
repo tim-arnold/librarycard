@@ -291,14 +291,47 @@ jobs:
               try {
                 // Execute using file instead of command parameter
                 const command = `wrangler d1 execute librarycard-db --config=wrangler.prod.toml --env=production --remote --file="${tempSqlFile}"`;
-                const result = execSync(command, { encoding: 'utf8' });
+                console.log(`🔧 Executing: ${command}`);
+                console.log(`📝 SQL file: ${tempSqlFile} (${sql.length} chars)`);
+                
+                const result = execSync(command, { 
+                  encoding: 'utf8',
+                  stdio: ['pipe', 'pipe', 'pipe'] // Capture both stdout and stderr
+                });
+                
+                console.log(`✅ Wrangler success:`, result.substring(0, 200) + (result.length > 200 ? '...' : ''));
                 return result;
+                
+              } catch (execError) {
+                // Enhanced error logging to capture actual wrangler error
+                console.log(`🚨 WRANGLER EXECUTION FAILED:`);
+                console.log(`❌ Command: ${command}`);
+                console.log(`❌ Exit code: ${execError.status}`);
+                console.log(`❌ Error message: ${execError.message}`);
+                
+                if (execError.stdout) {
+                  console.log(`📤 STDOUT:`, execError.stdout.toString());
+                }
+                
+                if (execError.stderr) {
+                  console.log(`📤 STDERR:`, execError.stderr.toString());
+                }
+                
+                // Preserve the SQL file for debugging
+                console.log(`🔍 SQL file preserved: ${tempSqlFile}`);
+                console.log(`🔍 SQL preview:`, sql.substring(0, 300) + (sql.length > 300 ? '...' : ''));
+                
+                throw execError; // Re-throw with enhanced logging
+                
               } finally {
-                // Clean up temporary file
+                // Only clean up on success or after logging
                 try {
-                  unlinkSync(tempSqlFile);
+                  if (require('fs').existsSync(tempSqlFile)) {
+                    unlinkSync(tempSqlFile);
+                    console.log(`🧹 Cleaned up: ${tempSqlFile}`);
+                  }
                 } catch (cleanupError) {
-                  // Ignore cleanup errors
+                  console.log(`⚠️  Cleanup failed ${tempSqlFile}: ${cleanupError.message}`);
                 }
               }
             } catch (error) {
