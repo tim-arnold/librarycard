@@ -298,7 +298,11 @@ jobs:
               
               try {
                 // Sync ALL data row by row with schema compatibility
-                for (const row of tableData.data) {
+                console.log(`    🔄 Processing ${tableData.data.length} rows for ${tableName}...`);
+                for (let rowIndex = 0; rowIndex < tableData.data.length; rowIndex++) {
+                  const row = tableData.data[rowIndex];
+                  console.log(`    📝 Processing row ${rowIndex + 1}/${tableData.data.length}: ${tableName} - ${row.id || row.email || 'unknown'}`);
+                  
                   // Get columns from production backup data
                   const prodColumns = Object.keys(row);
                   
