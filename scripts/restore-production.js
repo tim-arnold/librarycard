@@ -258,46 +258,59 @@ class ProductionDatabaseRestore {
         console.log(`    📥 Restoring ${tableName} (${tableData.data.length} rows)...`);
         
         try {
-          // Insert data row by row (safer for large datasets)
-          for (const row of tableData.data) {
-            // Get columns from backup data
-            const backupColumns = Object.keys(row);
+          // Use batch processing (same approach as successful sync workflow)
+          console.log(`    🔄 Processing ${tableData.data.length} rows for ${tableName} in batches...`);
+          const batchSize = 5; // Use same batch size as sync workflow
+          const totalBatches = Math.ceil(tableData.data.length / batchSize);
+          console.log(`    🎯 Will process ${totalBatches} batches of up to ${batchSize} rows each`);
+          
+          for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+            const startRow = batchIndex * batchSize;
+            const endRow = Math.min(startRow + batchSize, tableData.data.length);
+            const batch = tableData.data.slice(startRow, endRow);
             
-            // Get target table schema to handle any schema differences
-            let targetColumns;
-            try {
-              const schemaResult = this.executeD1Command(`PRAGMA table_info(${tableName})`);
-              const schemaLines = schemaResult.split('\n');
-              const schemaJsonStart = schemaLines.findIndex(line => line.trim().startsWith('['));
-              if (schemaJsonStart !== -1) {
-                const schemaJson = schemaLines.slice(schemaJsonStart).join('\n');
-                const schemaData = JSON.parse(schemaJson);
-                if (schemaData[0] && schemaData[0].results) {
-                  targetColumns = schemaData[0].results.map(col => col.name);
+            console.log(`    ==========================================`);
+            console.log(`    🎯 BATCH ${batchIndex + 1}/${totalBatches}: Processing rows ${startRow + 1}-${endRow}`);
+            console.log(`    ⏰ Batch start timestamp: ${new Date().toISOString()}`);
+            console.log(`    ==========================================`);
+            
+            // Get columns from first row of batch
+            const columns = Object.keys(batch[0]);
+            
+            // Create batch INSERT statement
+            const batchValues = batch.map(row => {
+              const values = columns.map(col => {
+                const value = row[col];
+                if (value === null || value === undefined) return 'NULL';
+                if (typeof value === 'string') {
+                  // Use single quotes to avoid SQL parsing issues with complex text content
+                  return `'${value.replace(/'/g, "''")}'`;
                 }
-              }
-            } catch (error) {
-              console.log(`    ⚠️  Could not get schema for ${tableName}, using backup columns only`);
-              targetColumns = backupColumns;
-            }
-            
-            // Use only columns that exist in both backup data AND target schema
-            const commonColumns = backupColumns.filter(col => 
-              targetColumns ? targetColumns.includes(col) : true
-            );
-            
-            const values = commonColumns.map(col => {
-              const value = row[col];
-              if (value === null) return 'NULL';
-              if (typeof value === 'string') {
-                // Use single quotes to avoid SQL parsing issues with complex text content
-                return `'${value.replace(/'/g, "''")}'`;
-              }
-              return value;
+                if (typeof value === 'number') return value;
+                if (typeof value === 'boolean') return value ? 1 : 0;
+                return value;
+              });
+              return `(${values.join(', ')})`;
             });
             
-            const insertSql = `INSERT INTO ${tableName} (${commonColumns.join(', ')}) VALUES (${values.join(', ')})`;
-            this.executeD1Command(insertSql);
+            const batchSql = `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES ${batchValues.join(', ')};`;
+            
+            console.log(`    📝 Batch SQL length: ${batchSql.length} characters`);
+            
+            try {
+              console.log(`    🔄 Executing batch SQL file with wrangler...`);
+              console.log(`    ⏰ Starting batch wrangler execution at: ${new Date().toISOString()}`);
+              
+              this.executeD1Command(batchSql);
+              
+              console.log(`    ⏰ Batch wrangler execution completed at: ${new Date().toISOString()}`);
+              console.log(`    ✅ Batch ${batchIndex + 1}/${totalBatches} completed (rows ${startRow + 1}-${endRow})`);
+              
+            } catch (batchError) {
+              console.log(`    🚨 CRITICAL BATCH FAILURE`);
+              console.log(`    ❌ Batch execution failed: ${batchError.message}`);
+              throw new Error(`BATCH RESTORE FAILED: Batch ${batchIndex + 1} failed: ${batchError.message}`);
+            }
           }
           
           console.log(`    ✅ Restored ${tableName}: ${tableData.data.length} rows`);
@@ -370,12 +383,28 @@ class ProductionDatabaseRestore {
   }
 
   executeD1Command(sql) {
-    const command = `wrangler d1 execute librarycard-db --config=wrangler.prod.toml --env=production --remote --command="${sql.replace(/"/g, '\\"')}"`;
-    
     try {
-      return execSync(command, { encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 });
+      // Use file-based execution to avoid command length limits
+      const { writeFileSync, unlinkSync } = require('fs');
+      const tempSqlFile = `temp_restore_prod_${Date.now()}.sql`;
+      
+      // Write SQL to temporary file
+      writeFileSync(tempSqlFile, sql);
+      
+      try {
+        // Execute using file instead of command parameter
+        const command = `wrangler d1 execute librarycard-db --config=wrangler.prod.toml --env=production --remote --file="${tempSqlFile}"`;
+        return execSync(command, { encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 });
+      } finally {
+        // Clean up temporary file
+        try {
+          unlinkSync(tempSqlFile);
+        } catch (cleanupError) {
+          // Ignore cleanup errors
+        }
+      }
     } catch (error) {
-      console.error(`D1 command failed: ${command}`);
+      console.error(`D1 command failed: ${sql.substring(0, 100)}...`);
       console.error('Error output:', error.stderr?.toString() || error.message);
       throw new Error(`D1 execution failed: ${error.message}`);
     }

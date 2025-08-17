@@ -311,10 +311,26 @@ class StagingDatabaseRestore {
 
   async executeD1Command(sql) {
     try {
-      // Use staging-new configuration
-      const command = `CLOUDFLARE_API_TOKEN=${process.env.CLOUDFLARE_API_TOKEN_STAGING_NEW} npx wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote --command="${sql.replace(/"/g, '\\"')}"`;
-      const result = execSync(command, { encoding: 'utf8' });
-      return result;
+      // Use file-based execution to avoid command length limits
+      const { writeFileSync, unlinkSync } = require('fs');
+      const tempSqlFile = `temp_restore_${Date.now()}.sql`;
+      
+      // Write SQL to temporary file
+      writeFileSync(tempSqlFile, sql);
+      
+      try {
+        // Execute using file instead of command parameter
+        const command = `CLOUDFLARE_API_TOKEN=${process.env.CLOUDFLARE_API_TOKEN_STAGING_NEW} npx wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote --file="${tempSqlFile}"`;
+        const result = execSync(command, { encoding: 'utf8' });
+        return result;
+      } finally {
+        // Clean up temporary file
+        try {
+          unlinkSync(tempSqlFile);
+        } catch (cleanupError) {
+          // Ignore cleanup errors
+        }
+      }
     } catch (error) {
       throw new Error(`Database command failed: ${error.message}`);
     }
@@ -325,31 +341,55 @@ class StagingDatabaseRestore {
     
     // Get column names from first row
     const columns = Object.keys(data[0]);
-    const batchSize = 10; // Smaller batch size to avoid command length limits
+    const batchSize = 5; // Use same batch size as successful sync workflow
     
-    for (let i = 0; i < data.length; i += batchSize) {
-      const batch = data.slice(i, i + batchSize);
+    console.log(`    🔄 Processing ${data.length} rows for ${tableName} in batches...`);
+    const totalBatches = Math.ceil(data.length / batchSize);
+    console.log(`    🎯 Will process ${totalBatches} batches of up to ${batchSize} rows each`);
+    
+    for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+      const startRow = batchIndex * batchSize;
+      const endRow = Math.min(startRow + batchSize, data.length);
+      const batch = data.slice(startRow, endRow);
       
-      // Insert each row individually to avoid command length issues
-      for (const row of batch) {
-        const vals = columns.map(col => {
-          const val = row[col];
-          if (val === null || val === undefined) return 'NULL';
-          if (typeof val === 'string') {
+      console.log(`    ==========================================`);
+      console.log(`    🎯 BATCH ${batchIndex + 1}/${totalBatches}: Processing rows ${startRow + 1}-${endRow}`);
+      console.log(`    ⏰ Batch start timestamp: ${new Date().toISOString()}`);
+      console.log(`    ==========================================`);
+      
+      // Create batch INSERT statement (same logic as sync workflow)
+      const batchValues = batch.map(row => {
+        const values = columns.map(col => {
+          const value = row[col];
+          if (value === null || value === undefined) return 'NULL';
+          if (typeof value === 'string') {
             // Use single quotes to avoid SQL parsing issues with complex text content
-            return `'${val.replace(/'/g, "''")}'`;
+            return `'${value.replace(/'/g, "''")}'`;
           }
-          return val;
+          if (typeof value === 'number') return value;
+          if (typeof value === 'boolean') return value ? 1 : 0;
+          return value;
         });
+        return `(${values.join(', ')})`;
+      });
+      
+      const batchSql = `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES ${batchValues.join(', ')};`;
+      
+      console.log(`    📝 Batch SQL length: ${batchSql.length} characters`);
+      
+      try {
+        console.log(`    🔄 Executing batch SQL file with wrangler...`);
+        console.log(`    ⏰ Starting batch wrangler execution at: ${new Date().toISOString()}`);
         
-        const sql = `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES (${vals.join(', ')});`;
+        await this.executeD1Command(batchSql);
         
-        try {
-          await this.executeD1Command(sql);
-        } catch (error) {
-          console.log(`    ⚠️  Failed to insert row in ${tableName}: ${error.message}`);
-          // Continue with other rows
-        }
+        console.log(`    ⏰ Batch wrangler execution completed at: ${new Date().toISOString()}`);
+        console.log(`    ✅ Batch ${batchIndex + 1}/${totalBatches} completed (rows ${startRow + 1}-${endRow})`);
+        
+      } catch (batchError) {
+        console.log(`    🚨 CRITICAL BATCH FAILURE`);
+        console.log(`    ❌ Batch execution failed: ${batchError.message}`);
+        throw new Error(`BATCH RESTORE FAILED: Batch ${batchIndex + 1} failed: ${batchError.message}`);
       }
     }
   }
