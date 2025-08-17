@@ -37,6 +37,11 @@ staging-*.log
 production-*.log
 *.log
 
+# Failed SQL debugging files
+FAILED_BATCH_*.sql
+batch_sql_*.sql
+temp_sql_*.sql
+
 # Production
 /build
 /dist
