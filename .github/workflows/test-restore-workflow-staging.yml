@@ -283,10 +283,10 @@ jobs:
           }
           
           function executeStagingD1(sql) {
-            const command = `wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote --command="${sql.replace(/"/g, '\\"')}"`;
+            const command = `npx wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote --command="${sql.replace(/"/g, '\\"')}"`;
             return execSync(command, { 
               encoding: 'utf8',
-              env: { ...process.env, CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN_STAGING_NEW }
+              env: { ...process.env, CLOUDFLARE_API_TOKEN_STAGING_NEW: process.env.CLOUDFLARE_API_TOKEN_STAGING_NEW }
             });
           }
           
@@ -309,11 +309,11 @@ jobs:
           echo "📊 Checking restored data in staging:"
           
           echo "Users:"
-          wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote \
+          npx wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote \
           --command="SELECT COUNT(*) as count FROM users;" || echo "Failed to check users"
           
           echo "Locations:"
-          wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote \
+          npx wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote \
           --command="SELECT COUNT(*) as count FROM locations;" || echo "Failed to check locations"
         env:
           CLOUDFLARE_API_TOKEN_STAGING_NEW: ${{ secrets.CLOUDFLARE_API_TOKEN_STAGING_NEW }}
