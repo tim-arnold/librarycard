@@ -364,34 +364,59 @@ jobs:
                       env: { ...process.env, CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN_STAGING_NEW }
                     });
                     console.log(`    ✅ SQL executed successfully`);
-                    console.log(`    📊 Wrangler output: ${result.substring(0, 500)}...`);
+                    console.log(`    📊 Wrangler output (full): ${result}`);
                     
-                    // Check for any error indicators in wrangler output
-                    if (result.includes('Error') || result.includes('error') || result.includes('failed')) {
-                      console.log(`    ⚠️  Possible error in wrangler output detected`);
+                    // Check for any error indicators in wrangler output - FAIL FAST
+                    if (result.includes('Error') || result.includes('error') || result.includes('failed') || result.includes('SQLITE_')) {
+                      console.log(`    🚨 ERROR DETECTED IN WRANGLER OUTPUT!`);
+                      console.log(`    📋 Full wrangler output: ${result}`);
+                      throw new Error(`SQL execution reported error in output: ${result.substring(0, 1000)}`);
                     }
                     
-                    // Quick verification - check if data was actually inserted
+                    // CRITICAL: Verify row was actually inserted - count must increase
+                    const expectedCount = rowIndex + 1 + 1; // +1 for system user, +1 for 0-based index
                     try {
                       const countResult = execSync(`npx wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote --command="SELECT COUNT(*) as count FROM ${tableName};"`, {
                         encoding: 'utf8',
                         env: { ...process.env, CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN_STAGING_NEW }
                       });
-                      console.log(`    🔢 Table count after insert: ${countResult.substring(countResult.indexOf('['), countResult.indexOf(']') + 1)}`);
-                    } catch (e) {
-                      console.log(`    ⚠️  Count check failed: ${e.message}`);
+                      
+                      // Parse the count result
+                      const countMatch = countResult.match(/"count":\s*(\d+)/);
+                      const actualCount = countMatch ? parseInt(countMatch[1]) : 0;
+                      
+                      console.log(`    🔢 Expected count: ${expectedCount}, Actual count: ${actualCount}`);
+                      
+                      if (actualCount !== expectedCount) {
+                        console.log(`    🚨 CRITICAL: Row count mismatch! Expected ${expectedCount}, got ${actualCount}`);
+                        console.log(`    📋 This means the row was not inserted properly`);
+                        console.log(`    📄 Failed SQL: ${insertSql}`);
+                        console.log(`    📊 Count query result: ${countResult}`);
+                        throw new Error(`Row count verification failed: expected ${expectedCount}, got ${actualCount}. Row was not inserted.`);
+                      }
+                      
+                      console.log(`    ✅ Row count verified: ${actualCount} rows in ${tableName}`);
+                    } catch (countError) {
+                      console.log(`    🚨 CRITICAL: Count verification failed: ${countError.message}`);
+                      throw new Error(`Cannot verify row insertion: ${countError.message}`);
                     }
                     
                     // Clean up temp file
                     fs.unlinkSync(tempFile);
+                    console.log(`    ✅ Row ${rowIndex + 1}/${tableData.data.length} successfully processed for ${tableName}`);
                     return result;
                   } catch (error) {
+                    console.log(`    🚨 CRITICAL FAILURE - STOPPING SYNC`);
                     console.log(`    ❌ SQL execution failed: ${error.message}`);
-                    console.log(`    📄 SQL content: ${insertSql.substring(0, 200)}...`);
+                    console.log(`    📄 Failed SQL content: ${insertSql}`);
+                    console.log(`    📋 Row data: ${JSON.stringify(row, null, 2)}`);
+                    console.log(`    📊 Table: ${tableName}, Row: ${rowIndex + 1}/${tableData.data.length}`);
                     
                     // Clean up temp file even on error
                     try { fs.unlinkSync(tempFile); } catch {}
-                    throw error;
+                    
+                    // FAIL FAST - do not continue with partial data
+                    throw new Error(`PRODUCTION SYNC FAILED: Cannot insert row ${rowIndex + 1} in ${tableName}: ${error.message}`);
                   }
                 }
                 
@@ -400,7 +425,19 @@ jobs:
                 syncedRows += tableData.data.length;
                 
               } catch (error) {
+                console.error(`    🚨 CRITICAL TABLE FAILURE - STOPPING ENTIRE SYNC`);
                 console.error(`    ❌ Failed to sync ${tableName}: ${error.message}`);
+                console.error(`    📊 Tables completed before failure: ${syncedTables}`);
+                console.error(`    📊 Rows completed before failure: ${syncedRows}`);
+                console.error(`    🚨 STAGING DATABASE IS NOW IN INCONSISTENT STATE`);
+                
+                // Log the complete failure details
+                console.error(`    📋 Failure details:`);
+                console.error(`       - Table: ${tableName}`);
+                console.error(`       - Expected rows: ${tableData.data.length}`);
+                console.error(`       - Error: ${error.message}`);
+                
+                throw new Error(`COMPLETE SYNC FAILURE: Table ${tableName} failed, stopping sync to prevent partial data state: ${error.message}`);
               }
             }
             
