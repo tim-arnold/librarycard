@@ -344,6 +344,19 @@ jobs:
                       const value = row[col];
                       if (value === null || value === undefined) return 'NULL';
                       if (typeof value === 'string') {
+                        // Special handling for fields that are already JSON-encoded (like authors arrays)
+                        if (value.startsWith('[') && value.endsWith(']')) {
+                          // This is likely a JSON array string - treat as raw JSON
+                          try {
+                            // Validate it's valid JSON, then pass through as-is for SQL
+                            JSON.parse(value);
+                            return JSON.stringify(value); // Still escape the outer quotes
+                          } catch (parseError) {
+                            // Not valid JSON despite appearance, treat as regular string
+                            console.log(`    ⚠️  Value looks like JSON array but isn't valid: ${value}`);
+                          }
+                        }
+                        
                         // Enhanced escaping for complex book data with nested quotes, JSON, etc.
                         try {
                           return JSON.stringify(value);
@@ -383,6 +396,17 @@ jobs:
                       // Check for potential problematic characters
                       if (authors && authors.includes('Jeremy')) {
                         console.log(`    🚨 FOUND JEREMY in authors: ${authors}`);
+                        console.log(`    🔍 Authors type: ${typeof authors}`);
+                        console.log(`    🔍 Authors starts with [: ${authors.startsWith('[')}`);
+                        console.log(`    🔍 Authors ends with ]: ${authors.endsWith(']')}`);
+                        
+                        // Test the escaping logic
+                        try {
+                          const escapedAuthors = JSON.stringify(authors);
+                          console.log(`    🔍 Escaped authors: ${escapedAuthors}`);
+                        } catch (e) {
+                          console.log(`    ❌ Escaping failed: ${e.message}`);
+                        }
                       }
                       if (title && title.includes('Jeremy')) {
                         console.log(`    🚨 FOUND JEREMY in title: ${title}`);
