@@ -288,8 +288,8 @@ jobs:
               // Write SQL to temporary file
               writeFileSync(tempSqlFile, sql);
               
-              // Define command variable in broader scope
-              const command = `wrangler d1 execute librarycard-db --config=wrangler.prod.toml --env=production --remote --file="${tempSqlFile}"`;
+              // Define command variable in broader scope - use absolute path to config file
+              const command = `wrangler d1 execute librarycard-db --config=../../wrangler.prod.toml --env=production --remote --file="${tempSqlFile}"`;
               
               try {
                 // Execute using file instead of command parameter
