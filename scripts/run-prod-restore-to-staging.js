@@ -87,6 +87,15 @@ async function restoreProductionToStaging() {
     }
   }
   
+  // Create system user for curated_genres foreign key constraint
+  console.log('👤 Creating system user for curated_genres...');
+  try {
+    executeStagingD1Command(`PRAGMA foreign_keys = OFF; INSERT INTO users (id, email, first_name, last_name, created_at, updated_at, password_hash, auth_provider, email_verified, user_role) VALUES ('system', 'system@library.local', 'System', 'User', '2025-01-01 00:00:00', '2025-01-01 00:00:00', NULL, 'system', 1, 'admin')`);
+    console.log('  ✅ System user created');
+  } catch (error) {
+    console.log('  ⚠️  Could not create system user, may already exist');
+  }
+
   console.log('\n📥 Restoring production data to staging...');
   
   // Restore in reverse order
