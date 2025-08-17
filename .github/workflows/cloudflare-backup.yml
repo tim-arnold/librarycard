@@ -57,81 +57,42 @@ jobs:
             tar -czf backup/cloudflare/migrations.tar.gz migrations/
           fi
       
-      - name: Backup D1 database schema
+      - name: Setup Node.js for backup script
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies for backup script
+        run: npm ci
+
+      - name: Execute production database backup using Node.js script
         run: |
-          echo "🗄️ Backing up D1 database schema..."
-          cd backup/cloudflare
+          echo "💾 Creating production database backup using tested Node.js script..."
           
-          # Test wrangler config first
-          echo "🔧 Testing wrangler configuration..."
-          wrangler --version
-          ls -la ../../wrangler.prod.toml || echo "Config file not found"
-          
-          # Export current schema (using SQL commands instead of .schema)
-          echo "-- Database Schema Backup $(date)" > database-schema-backup.sql
-          echo "📋 Attempting schema backup..."
-          if wrangler d1 execute librarycard-db --config=../../wrangler.prod.toml --env=production --remote --command="SELECT sql FROM sqlite_master WHERE type='table' AND sql IS NOT NULL;" >> database-schema-backup.sql 2>&1; then
-            echo "✅ Schema backup succeeded"
-          else
-            echo "❌ Schema backup failed"
-            cat database-schema-backup.sql
+          # Create backup reason from GitHub context
+          BACKUP_REASON="automated-github-backup-$(date +%Y%m%d)"
+          if [ -n "${{ github.event.inputs.reason }}" ]; then
+            BACKUP_REASON="${{ github.event.inputs.reason }}"
           fi
           
-          # Get table info for verification  
-          echo "📋 Attempting tables list..."
-          if wrangler d1 execute librarycard-db --config=../../wrangler.prod.toml --env=production --remote --command="SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;" > tables-list.txt 2>&1; then
-            echo "✅ Tables list succeeded"
-            cat tables-list.txt
-          else
-            echo "❌ Tables list failed"
-            cat tables-list.txt
-          fi
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      
-      - name: Backup D1 database data
-        run: |
-          echo "💾 Backing up D1 database data..."
-          cd backup/cloudflare
+          # Run the production backup script
+          node scripts/backup-production.js create "$BACKUP_REASON"
           
-          # Note: Full data export is complex with D1 and might hit limits
-          # We'll export table structures and row counts for verification
+          echo "✅ Production backup completed using Node.js script"
           
-          # Create data backup script for manual use
-          cat > backup-d1-data.sh << 'EOF'
-          #!/bin/bash
-          # Manual D1 data backup script
-          # Note: Large tables may need pagination
+          # Copy backup files to GitHub Actions backup directory for release
+          mkdir -p backup/cloudflare
+          cp -r backups-production/* backup/cloudflare/ 2>/dev/null || echo "No backup files to copy"
           
-          echo "Backing up D1 database data..."
-          
-          # Backup each table (adjust for your tables)
-          wrangler d1 execute librarycard-db --config=../../wrangler.prod.toml --env=production --remote --command="SELECT * FROM users;" > users-backup.sql
-          wrangler d1 execute librarycard-db --config=../../wrangler.prod.toml --env=production --remote --command="SELECT * FROM locations;" > locations-backup.sql
-          wrangler d1 execute librarycard-db --config=../../wrangler.prod.toml --env=production --remote --command="SELECT * FROM shelves;" > shelves-backup.sql
-          wrangler d1 execute librarycard-db --config=../../wrangler.prod.toml --env=production --remote --command="SELECT * FROM books;" > books-backup.sql
-          wrangler d1 execute librarycard-db --config=../../wrangler.prod.toml --env=production --remote --command="SELECT * FROM location_members;" > location_members-backup.sql
-          wrangler d1 execute librarycard-db --config=../../wrangler.prod.toml --env=production --remote --command="SELECT * FROM location_invitations;" > location_invitations-backup.sql
-          wrangler d1 execute librarycard-db --config=../../wrangler.prod.toml --env=production --remote --command="SELECT * FROM book_checkout_history;" > book_checkout_history-backup.sql
-          wrangler d1 execute librarycard-db --config=../../wrangler.prod.toml --env=production --remote --command="SELECT * FROM book_ratings;" > book_ratings-backup.sql
-          wrangler d1 execute librarycard-db --config=../../wrangler.prod.toml --env=production --remote --command="SELECT * FROM book_removal_requests;" > book_removal_requests-backup.sql
-          wrangler d1 execute librarycard-db --config=../../wrangler.prod.toml --env=production --remote --command="SELECT * FROM signup_approval_requests;" > signup_approval_requests-backup.sql
-          
-          echo "Data backup completed"
-          EOF
-          
-          chmod +x backup-d1-data.sh
-          
-          # Get row counts for verification
-          echo "📊 Getting database statistics..."
-          cat > database-stats.txt << EOF
-          Database Statistics - $(date -u)
-          ================================
-          
-          EOF
-          
-          # Try to get row counts (may fail if DB is busy)
-          wrangler d1 execute librarycard-db --config=../../wrangler.prod.toml --env=production --remote --command="SELECT 'users' as table_name, COUNT(*) as row_count FROM users UNION ALL SELECT 'locations', COUNT(*) FROM locations UNION ALL SELECT 'shelves', COUNT(*) FROM shelves UNION ALL SELECT 'books', COUNT(*) FROM books UNION ALL SELECT 'location_members', COUNT(*) FROM location_members;" >> database-stats.txt || echo "Row count query failed" >> database-stats.txt
+          # Create summary for GitHub release
+          echo "Production Database Backup Summary" > backup/cloudflare/backup-summary.txt
+          echo "=================================" >> backup/cloudflare/backup-summary.txt
+          echo "Created: $(date -u)" >> backup/cloudflare/backup-summary.txt
+          echo "Reason: $BACKUP_REASON" >> backup/cloudflare/backup-summary.txt
+          echo "Method: Node.js automated script" >> backup/cloudflare/backup-summary.txt
+          echo "" >> backup/cloudflare/backup-summary.txt
+          echo "Backup files created in backups-production/ directory" >> backup/cloudflare/backup-summary.txt
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       
