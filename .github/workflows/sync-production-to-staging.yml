@@ -344,7 +344,7 @@ jobs:
                   fs.writeFileSync(tempFile, insertSql);
                   
                   try {
-                    const result = execSync(`wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote --file="${tempFile}"`, { 
+                    const result = execSync(`npx wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote --file="${tempFile}"`, { 
                       encoding: 'utf8',
                       env: { ...process.env, CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN_STAGING_NEW }
                     });
