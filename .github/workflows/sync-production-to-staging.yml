@@ -344,6 +344,7 @@ jobs:
                   
                   console.log(`    📝 Writing SQL to temp file: ${tempFile}`);
                   console.log(`    📏 SQL length: ${insertSql.length} characters`);
+                  console.log(`    📄 SQL preview: ${insertSql.substring(0, 500)}...`);
                   fs.writeFileSync(tempFile, insertSql);
                   
                   try {
