@@ -204,18 +204,18 @@ jobs:
             }
             console.log(`📊 Total rows to sync: ${totalRows}\n`);
             
-            // Create staging backup first
-            console.log('📦 Creating staging backup before sync...');
-            try {
-              execSync('node scripts/backup-staging.js create "pre-complete-prod-sync"', { 
-                stdio: 'inherit',
-                env: { ...process.env, CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN_STAGING_NEW }
-              });
-              console.log('✅ Staging backup created\n');
-            } catch (error) {
-              console.error('❌ Failed to create staging backup:', error.message);
-              process.exit(1);
-            }
+            // TEMPORARILY DISABLED: Create staging backup for faster debugging
+            console.log('⏭️  Skipping staging backup creation for faster debugging...');
+            // try {
+            //   execSync('node scripts/backup-staging.js create "pre-complete-prod-sync"', { 
+            //     stdio: 'inherit',
+            //     env: { ...process.env, CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN_STAGING_NEW }
+            //   });
+            //   console.log('✅ Staging backup created\n');
+            // } catch (error) {
+            //   console.error('❌ Failed to create staging backup:', error.message);
+            //   process.exit(1);
+            // }
             
             // Define table order for sync
             const tableOrder = [
