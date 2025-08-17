@@ -343,6 +343,17 @@ jobs:
                     console.log(`    ✅ SQL executed successfully`);
                     console.log(`    📊 Wrangler output: ${result.substring(0, 200)}...`);
                     
+                    // Quick verification - check if data was actually inserted
+                    try {
+                      const countResult = execSync(`npx wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote --command="SELECT COUNT(*) as count FROM ${tableName};"`, {
+                        encoding: 'utf8',
+                        env: { ...process.env, CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN_STAGING_NEW }
+                      });
+                      console.log(`    🔢 Table count after insert: ${countResult.substring(countResult.indexOf('['), countResult.indexOf(']') + 1)}`);
+                    } catch (e) {
+                      console.log(`    ⚠️  Count check failed: ${e.message}`);
+                    }
+                    
                     // Clean up temp file
                     fs.unlinkSync(tempFile);
                     return result;
