@@ -339,14 +339,30 @@ jobs:
                   
                   // Create batch INSERT statement
                   const columns = Object.keys(batch[0]);
-                  const batchValues = batch.map(row => {
+                  const batchValues = batch.map((row, rowIdx) => {
                     const values = columns.map(col => {
                       const value = row[col];
-                      if (value === null) return 'NULL';
+                      if (value === null || value === undefined) return 'NULL';
                       if (typeof value === 'string') {
-                        return JSON.stringify(value);
+                        // Enhanced escaping for complex book data with nested quotes, JSON, etc.
+                        try {
+                          return JSON.stringify(value);
+                        } catch (jsonError) {
+                          // Fallback: manual escaping for problematic strings
+                          console.log(`    ⚠️  JSON.stringify failed for ${col} in row ${rowIdx + 1}: ${jsonError.message}`);
+                          return `'${value.replace(/'/g, "''").replace(/\\/g, "\\\\")}'`;
+                        }
                       }
-                      return value;
+                      if (typeof value === 'number') return value;
+                      if (typeof value === 'boolean') return value ? 1 : 0;
+                      
+                      // Handle objects/arrays (common in book data)
+                      try {
+                        return JSON.stringify(JSON.stringify(value));
+                      } catch (error) {
+                        console.log(`    ⚠️  Could not serialize ${col} value: ${error.message}`);
+                        return 'NULL';
+                      }
                     });
                     return `(${values.join(', ')})`;
                   });
@@ -355,6 +371,24 @@ jobs:
                   
                   console.log(`    📝 Batch SQL length: ${batchSql.length} characters`);
                   console.log(`    📄 Batch SQL preview: ${batchSql.substring(0, 500)}...`);
+                  
+                  // Add debugging for book batches to identify problematic data
+                  if (tableName === 'books') {
+                    console.log(`    📚 Book batch debug info:`);
+                    batch.forEach((book, idx) => {
+                      const title = book.title || 'Unknown';
+                      const authors = book.authors || 'Unknown';
+                      console.log(`    📖 Row ${startRow + idx + 1}: "${title}" by ${authors}`);
+                      
+                      // Check for potential problematic characters
+                      if (authors && authors.includes('Jeremy')) {
+                        console.log(`    🚨 FOUND JEREMY in authors: ${authors}`);
+                      }
+                      if (title && title.includes('Jeremy')) {
+                        console.log(`    🚨 FOUND JEREMY in title: ${title}`);
+                      }
+                    });
+                  }
                   
                   // Use file-based execution for batch
                   const fs = require('fs');
