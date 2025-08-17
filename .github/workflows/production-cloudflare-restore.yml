@@ -167,36 +167,39 @@ jobs:
           echo "📋 All available files:"
           ls -la
       
-      - name: Execute schema restore
+      - name: Setup Node.js for restore script
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies for restore script
+        run: npm ci
+
+      - name: Prepare backup files for Node.js restore script
         run: |
-          echo "🔄 Restoring PRODUCTION database schema..."
+          echo "📦 Preparing backup files for Node.js restore script..."
           cd restore-workspace/cloudflare
           
-          if [ -f "database-schema-backup.sql" ]; then
-            echo "📋 Applying schema backup..."
-            wrangler d1 execute librarycard-db-production --env=production --remote --file=database-schema-backup.sql
-            echo "✅ Schema restored"
-          else
-            echo "⚠️  No schema backup found - attempting schema.sql"
-            if [ -f "schema.sql" ]; then
-              wrangler d1 execute librarycard-db-production --env=production --remote --file=schema.sql
-              echo "✅ Base schema applied"
-            else
-              echo "❌ No schema files available"
-              exit 1
-            fi
-          fi
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      
-      - name: Data restore warning
+          # Create backups-production directory and copy backup files
+          mkdir -p ../../backups-production
+          
+          # Copy JSON backup files if they exist
+          cp -r *.json ../../backups-production/ 2>/dev/null || echo "No JSON backup files found"
+          
+          # Copy metadata file if it exists
+          cp backup-metadata.json ../../backups-production/ 2>/dev/null || echo "No metadata file found"
+          
+          echo "✅ Backup files prepared for Node.js restore script"
+
+      - name: Production restore instructions
         run: |
-          echo "⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️"
+          echo "🚨⚠️🚨⚠️🚨⚠️🚨⚠️🚨⚠️🚨⚠️🚨⚠️🚨⚠️🚨⚠️🚨⚠️"
           echo "⚠️                                                ⚠️"
-          echo "⚠️         PRODUCTION DATA RESTORE                ⚠️"
+          echo "⚠️         PRODUCTION DATABASE RESTORE            ⚠️"
           echo "⚠️                                                ⚠️"
-          echo "⚠️  CURRENT PRODUCTION BACKUPS MAY HAVE LIMITED  ⚠️"
-          echo "⚠️  DATA RESTORATION CAPABILITIES                 ⚠️"
+          echo "⚠️  AUTOMATED RESTORE CANNOT BE SAFELY AUTOMATED ⚠️"
+          echo "⚠️  THIS REQUIRES MANUAL CONFIRMATION FOR SAFETY ⚠️"
           echo "⚠️                                                ⚠️"
           echo "⚠️  MANUAL DATA RESTORATION MAY BE REQUIRED      ⚠️"
           echo "⚠️                                                ⚠️"
@@ -214,16 +217,28 @@ jobs:
           echo "📖 PRODUCTION DATA RESTORATION GUIDANCE"
           echo "======================================="
           echo ""
-          echo "Current production backups use the legacy format."
-          echo "For complete data restoration, you may need to:"
+          echo "✅ Backup files have been prepared for the Node.js restore script"
           echo ""
-          echo "1. Use the backup-d1-data.sh script to export data from a recent backup"
-          echo "2. Manually execute table-by-table restoration commands"
-          echo "3. Verify data integrity after restoration"
+          echo "🔧 TO RESTORE PRODUCTION DATA MANUALLY (EMERGENCY ONLY):"
           echo ""
-          echo "📋 Available restoration files in this backup:"
-          cd restore-workspace/cloudflare
-          ls -la *.sh *.sql *.txt 2>/dev/null || echo "No restoration files found"
+          echo "1. Download this backup release to your local machine"
+          echo "2. Extract backup files to backups-production/ directory"
+          echo "3. Ensure CLOUDFLARE_API_TOKEN is set in .env.local"
+          echo "4. Set emergency override: export PRODUCTION_RESTORE_OVERRIDE=true"
+          echo "5. Run the interactive restore script:"
+          echo "   PRODUCTION_RESTORE_OVERRIDE=true node scripts/restore-production.js"
+          echo ""
+          echo "⚠️  The restore script includes:"
+          echo "   - Backup selection and verification"
+          echo "   - Pre-restore safety backup creation"
+          echo "   - Multiple confirmation prompts"
+          echo "   - Comprehensive data restoration"
+          echo "   - Post-restore verification"
+          echo ""
+          echo "🚨 EXTREME CAUTION: This will overwrite ALL production data!"
+          echo ""
+          echo "📋 Backup files prepared:"
+          ls -la backups-production/ 2>/dev/null || echo "Backup directory not found"
           echo ""
           echo "🚨 RECOMMENDATION: Consider upgrading production backups to include"
           echo "   comprehensive data backup like the staging system before proceeding"
@@ -233,7 +248,7 @@ jobs:
           echo "🔍 Verifying basic PRODUCTION database connectivity..."
           
           # Test basic database connectivity
-          wrangler d1 execute librarycard-db-production --env=production --remote --command="SELECT name FROM sqlite_master WHERE type='table';" || echo "Table list check failed"
+          wrangler d1 execute librarycard-db --config=wrangler.prod.toml --env=production --remote --command="SELECT name FROM sqlite_master WHERE type='table';" || echo "Table list check failed"
           
           echo "✅ Basic connectivity verified"
         env:

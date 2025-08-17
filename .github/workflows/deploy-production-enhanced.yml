@@ -1,4 +1,4 @@
-name: Deploy to Production (Enhanced Safety)
+name: 🚀 Production Deployment
 
 on:
   workflow_dispatch:
@@ -10,12 +10,13 @@ on:
         default: 'worker-only'
         options:
           - worker-only
-          - database-migration
+          - automated-migrations
           - full-deployment
-      migration_file:
-        description: 'Migration file (if database-migration selected)'
+      migration_dry_run:
+        description: 'Run migration dry-run first (recommended)'
         required: false
-        type: string
+        type: boolean
+        default: true
       reason:
         description: 'Reason for production deployment'
         required: true
@@ -81,18 +82,21 @@ jobs:
         env:
           REASON: ${{ github.event.inputs.reason }}
 
-      - name: Validate migration file input
-        if: github.event.inputs.deployment_type == 'database-migration' || github.event.inputs.deployment_type == 'full-deployment'
+      - name: Check migration status
+        if: github.event.inputs.deployment_type == 'automated-migrations' || github.event.inputs.deployment_type == 'full-deployment'
         run: |
-          if [ -z "${{ github.event.inputs.migration_file }}" ]; then
-            echo "❌ Migration file required for database deployments"
-            exit 1
+          echo "🔍 Checking automated migration status for production..."
+          export MIGRATION_ENV="production"
+          
+          if [[ "${{ github.event.inputs.migration_dry_run }}" == "true" ]]; then
+            echo "🔍 Running migration dry-run preview..."
+            npm run migrate:dry-run
+          else
+            echo "📋 Checking for pending migrations..."
+            npm run migrate:status
           fi
-          if [ ! -f "migrations/${{ github.event.inputs.migration_file }}" ]; then
-            echo "❌ Migration file not found: migrations/${{ github.event.inputs.migration_file }}"
-            exit 1
-          fi
-          echo "✅ Migration file validated: ${{ github.event.inputs.migration_file }}"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
       - name: Check staging environment status
         id: staging-check
@@ -135,8 +139,9 @@ jobs:
           fi
           echo "Commit: ${{ github.sha }}"
           echo "Branch: ${{ github.ref_name }}"
-          if [ -n "${{ github.event.inputs.migration_file }}" ]; then
-            echo "Migration: ${{ github.event.inputs.migration_file }}"
+          if [ "${{ github.event.inputs.deployment_type }}" == "automated-migrations" ] || [ "${{ github.event.inputs.deployment_type }}" == "full-deployment" ]; then
+            echo "Migration: Automated migration system with smart bootstrap"
+            echo "Dry run: ${{ github.event.inputs.migration_dry_run }}"
           fi
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
@@ -253,11 +258,11 @@ jobs:
             exit 1
           fi
 
-  deploy-database:
-    name: Deploy Database Migration
+  automated-migrations:
+    name: Apply Automated Database Migrations
     runs-on: ubuntu-latest
     needs: [safety-validation, pre-deployment-backup, deploy-worker]
-    if: always() && needs.safety-validation.result == 'success' && (needs.pre-deployment-backup.result == 'success') && (needs.deploy-worker.result == 'success' || needs.deploy-worker.result == 'skipped') && (github.event.inputs.deployment_type == 'database-migration' || github.event.inputs.deployment_type == 'full-deployment')
+    if: always() && needs.safety-validation.result == 'success' && (needs.pre-deployment-backup.result == 'success') && (needs.deploy-worker.result == 'success' || needs.deploy-worker.result == 'skipped') && (github.event.inputs.deployment_type == 'automated-migrations' || github.event.inputs.deployment_type == 'full-deployment')
     environment: production
     
     steps:
@@ -270,47 +275,52 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Cache Next.js build
-        uses: actions/cache@v4
-        with:
-          path: |
-            .next/cache
-            node_modules/.cache
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
-          restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
-
       - name: Install dependencies
         run: npm ci
 
-      - name: Run production migration
+      - name: Apply automated migrations to production
         run: |
-          echo "🚨 APPLYING DATABASE MIGRATION TO PRODUCTION"
-          echo "Migration file: ${{ github.event.inputs.migration_file }}"
-          echo "🔄 Executing migration directly via wrangler..."
-          npx wrangler d1 execute librarycard-db --config=wrangler.prod.toml --file=migrations/${{ github.event.inputs.migration_file }} --env=production --remote
+          echo "🚨 APPLYING AUTOMATED MIGRATIONS TO PRODUCTION"
+          echo "🎯 Using smart bootstrap system for existing database"
+          export MIGRATION_ENV="production"
+          
+          if [[ "${{ github.event.inputs.migration_dry_run }}" == "true" ]]; then
+            echo "🔍 FINAL DRY RUN - Preview only, no changes"
+            npm run migrate:dry-run
+          else
+            echo "💾 Applying automated migrations with smart bootstrap"
+            npm run migrate:production
+          fi
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
       - name: Verify migration success
+        if: github.event.inputs.migration_dry_run != 'true'
         run: |
-          echo "🔍 Verifying migration was applied successfully..."
+          echo "🔍 Verifying automated migration completed successfully..."
+          export MIGRATION_ENV="production"
+          
+          # Check final migration status
+          npm run migrate:status
+          
           # Basic connectivity test after migration
-          sleep 5
+          sleep 10
           PROD_API_URL="https://librarycard-api-production.tim-arnold.workers.dev"
           if curl -f -s --max-time 15 "$PROD_API_URL/health" > /dev/null; then
-            echo "✅ Database migration completed successfully"
+            echo "✅ Automated database migration completed successfully"
           else
             echo "❌ Production API unresponsive after migration"
-            echo "🚨 Consider emergency rollback"
+            echo "🚨 Consider emergency rollback using backup/restore workflows"
             exit 1
           fi
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
   post-deployment-verification:
     name: Post-Deployment Verification
     runs-on: ubuntu-latest
-    needs: [deploy-worker, deploy-database]
-    if: always() && (needs.deploy-worker.result == 'success' || needs.deploy-worker.result == 'skipped') && (needs.deploy-database.result == 'success' || needs.deploy-database.result == 'skipped') && (needs.deploy-worker.result == 'success' || needs.deploy-database.result == 'success')
+    needs: [deploy-worker, automated-migrations]
+    if: always() && (needs.deploy-worker.result == 'success' || needs.deploy-worker.result == 'skipped') && (needs.automated-migrations.result == 'success' || needs.automated-migrations.result == 'skipped') && (needs.deploy-worker.result == 'success' || needs.automated-migrations.result == 'success')
     environment: production
     
     steps:
@@ -352,7 +362,7 @@ jobs:
   rollback-instructions:
     name: Rollback Instructions
     runs-on: ubuntu-latest
-    needs: [deploy-worker, deploy-database]
+    needs: [deploy-worker, automated-migrations]
     if: failure()
     
     steps:
