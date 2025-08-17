@@ -126,10 +126,11 @@ jobs:
           echo "📦 Creating staging backup before restore test..."
           
           # Use our staging backup script to save current state
-          CLOUDFLARE_API_TOKEN="${{ secrets.CLOUDFLARE_API_TOKEN_STAGING_NEW }}" \
           node scripts/backup-staging.js create "pre-restore-workflow-test-${{ github.run_number }}"
           
           echo "✅ Staging pre-test backup completed"
+        env:
+          CLOUDFLARE_API_TOKEN_STAGING_NEW: ${{ secrets.CLOUDFLARE_API_TOKEN_STAGING_NEW }}
 
       - name: Test GitHub Actions restore process
         run: |
@@ -270,14 +271,14 @@ jobs:
           echo "📊 Checking restored data in staging:"
           
           echo "Users:"
-          CLOUDFLARE_API_TOKEN="${{ secrets.CLOUDFLARE_API_TOKEN_STAGING_NEW }}" \
           wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote \
           --command="SELECT COUNT(*) as count FROM users;" || echo "Failed to check users"
           
           echo "Locations:"
-          CLOUDFLARE_API_TOKEN="${{ secrets.CLOUDFLARE_API_TOKEN_STAGING_NEW }}" \
           wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote \
           --command="SELECT COUNT(*) as count FROM locations;" || echo "Failed to check locations"
+        env:
+          CLOUDFLARE_API_TOKEN_STAGING_NEW: ${{ secrets.CLOUDFLARE_API_TOKEN_STAGING_NEW }}
 
       - name: Test results summary
         run: |
