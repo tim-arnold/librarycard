@@ -387,35 +387,32 @@ jobs:
                       throw new Error(`SQL execution reported error in output: ${result.substring(0, 1000)}`);
                     }
                     
-                    // CRITICAL: Verify row was actually inserted - count must increase
-                    const expectedCount = rowIndex + 1 + 1; // +1 for system user, +1 for 0-based index
+                    // CRITICAL: Verify row insertion using wrangler's built-in success response
+                    // Note: Removed hanging count verification - wrangler's "success": true is reliable
+                    
+                    // Parse wrangler response for verification
+                    let insertionVerified = false;
                     try {
-                      console.log(`    🔢 Starting count verification at: ${new Date().toISOString()}`);
-                      const countResult = execSync(`npx wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote --command="SELECT COUNT(*) as count FROM ${tableName};"`, {
-                        encoding: 'utf8',
-                        timeout: 60000, // 1 minute timeout for count
-                        env: { ...process.env, CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN_STAGING_NEW }
-                      });
-                      console.log(`    🔢 Count verification completed at: ${new Date().toISOString()}`);
-                      
-                      // Parse the count result
-                      const countMatch = countResult.match(/"count":\s*(\d+)/);
-                      const actualCount = countMatch ? parseInt(countMatch[1]) : 0;
-                      
-                      console.log(`    🔢 Expected count: ${expectedCount}, Actual count: ${actualCount}`);
-                      
-                      if (actualCount !== expectedCount) {
-                        console.log(`    🚨 CRITICAL: Row count mismatch! Expected ${expectedCount}, got ${actualCount}`);
-                        console.log(`    📋 This means the row was not inserted properly`);
-                        console.log(`    📄 Failed SQL: ${insertSql}`);
-                        console.log(`    📊 Count query result: ${countResult}`);
-                        throw new Error(`Row count verification failed: expected ${expectedCount}, got ${actualCount}. Row was not inserted.`);
+                      if (result.includes('"success": true') && result.includes('"changes"')) {
+                        const changesMatch = result.match(/"changes":\s*(\d+)/);
+                        const changes = changesMatch ? parseInt(changesMatch[1]) : 0;
+                        
+                        if (changes > 0) {
+                          console.log(`    ✅ Wrangler reports ${changes} database changes - row insertion verified`);
+                          insertionVerified = true;
+                        } else {
+                          console.log(`    ⚠️  Wrangler reports 0 changes - possible duplicate or failed insertion`);
+                        }
                       }
-                      
-                      console.log(`    ✅ Row count verified: ${actualCount} rows in ${tableName}`);
-                    } catch (countError) {
-                      console.log(`    🚨 CRITICAL: Count verification failed: ${countError.message}`);
-                      throw new Error(`Cannot verify row insertion: ${countError.message}`);
+                    } catch (parseError) {
+                      console.log(`    ⚠️  Could not parse wrangler response for verification: ${parseError.message}`);
+                    }
+                    
+                    if (!insertionVerified) {
+                      console.log(`    🚨 CRITICAL: Cannot verify row insertion from wrangler response`);
+                      console.log(`    📄 Failed SQL: ${insertSql}`);
+                      console.log(`    📊 Full wrangler output: ${result}`);
+                      throw new Error(`Row insertion verification failed - no database changes detected`);
                     }
                     
                     // Clean up temp file
