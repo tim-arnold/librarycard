@@ -286,8 +286,9 @@ jobs:
                 console.log(`🧪 Testing restore of ${tableName} (${tableData.data.length} rows)...`);
                 
                 try {
-                  // Test restore of first few rows (to avoid command length issues)
-                  const testDataRows = tableData.data.slice(0, Math.min(3, tableData.data.length));
+                  // Test restore of more rows for users to ensure referential integrity
+                  const maxRows = tableName === 'users' ? Math.min(10, tableData.data.length) : Math.min(3, tableData.data.length);
+                  const testDataRows = tableData.data.slice(0, maxRows);
                   
                   for (const row of testDataRows) {
                     // Get columns from production data
