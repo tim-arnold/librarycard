@@ -304,22 +304,9 @@ jobs:
                   // Get columns from production backup data
                   const prodColumns = Object.keys(row);
                   
-                  // Get staging table schema to handle schema differences
-                  let stagingColumns;
-                  try {
-                    const schemaResult = executeStagingD1Command(`PRAGMA table_info(${tableName})`);
-                    const schemaLines = schemaResult.split('\n');
-                    const schemaJsonStart = schemaLines.findIndex(line => line.trim().startsWith('['));
-                    if (schemaJsonStart !== -1) {
-                      const schemaJson = schemaLines.slice(schemaJsonStart).join('\n');
-                      const schemaData = JSON.parse(schemaJson);
-                      if (schemaData[0] && schemaData[0].results) {
-                        stagingColumns = schemaData[0].results.map(col => col.name);
-                      }
-                    }
-                  } catch (error) {
-                    stagingColumns = prodColumns;
-                  }
+                  // For now, assume all production columns exist in staging
+                  // TODO: Add proper schema compatibility check
+                  const stagingColumns = prodColumns;
                   
                   // Use only columns that exist in both production data AND staging schema
                   const commonColumns = prodColumns.filter(col => 
