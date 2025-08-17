@@ -427,9 +427,17 @@ jobs:
                       console.log(`    🚨 Jeremy found in final batch SQL at positions:`);
                       let pos = 0;
                       while ((pos = batchSql.indexOf('Jeremy', pos)) !== -1) {
-                        const start = Math.max(0, pos - 50);
-                        const end = Math.min(batchSql.length, pos + 50);
+                        const start = Math.max(0, pos - 100);
+                        const end = Math.min(batchSql.length, pos + 200);
                         console.log(`    🔍 Position ${pos}: ...${batchSql.substring(start, end)}...`);
+                        
+                        // Show more context around the error position (567)
+                        if (Math.abs(pos - 567) < 50) {
+                          console.log(`    🚨 CRITICAL: This Jeremy is near error position 567!`);
+                          const errorStart = Math.max(0, 567 - 150);
+                          const errorEnd = Math.min(batchSql.length, 567 + 150);
+                          console.log(`    🔍 Error context (pos 567): ...${batchSql.substring(errorStart, errorEnd)}...`);
+                        }
                         pos++;
                       }
                     }
