@@ -230,7 +230,7 @@ jobs:
               'location_user_permissions', 'location_admin_capabilities', 'location_members', 'location_invitations',
               'books', 'shelves',
               // Parent tables (referenced by others)
-              'enhanced_genres_backup', 'curated_genres', 'locations', 'users'
+              'curated_genres', 'locations', 'users'
             ];
             
             // Disable foreign key constraints
@@ -244,8 +244,17 @@ jobs:
             
             console.log('🗑️  Clearing staging tables...');
             
+            // Skip tables that don't exist in staging or are legacy/orphaned
+            const skipTables = ['enhanced_genres_backup']; // Legacy table not in staging schema
+            
             // Clear tables in dependency order
             for (const tableName of tableOrder) {
+              // Skip tables that don't exist in staging
+              if (skipTables.includes(tableName)) {
+                console.log(`    ⏭️  Skipping clear for ${tableName} (legacy/orphaned table)`);
+                continue;
+              }
+              
               if (backupData.tables[tableName] && !backupData.tables[tableName].error) {
                 try {
                   executeStagingD1Command(`DELETE FROM ${tableName}`);
@@ -267,13 +276,21 @@ jobs:
             
             console.log('\n📥 Syncing ALL production data to staging...');
             
-            // Restore in reverse order (parents first)
-            const reversedOrder = [...tableOrder].reverse();
+            // Sync in correct order: parents first, then children
+            // Note: tableOrder is already defined for clearing (children first)
+            // For syncing, we need the opposite order (parents first)
+            const syncOrder = [...tableOrder].reverse();
             let syncedTables = 0;
             let syncedRows = 0;
             
-            for (const tableName of reversedOrder) {
+            for (const tableName of syncOrder) {
               const tableData = backupData.tables[tableName];
+              
+              // Skip tables that don't exist in staging or are legacy/orphaned
+              if (skipTables.includes(tableName)) {
+                console.log(`    ⏭️  Skipping ${tableName} (legacy/orphaned table)`);
+                continue;
+              }
               
               if (!tableData || tableData.error || !tableData.data || tableData.data.length === 0) {
                 continue;
@@ -312,7 +329,10 @@ jobs:
                   const values = commonColumns.map(col => {
                     const value = row[col];
                     if (value === null) return 'NULL';
-                    if (typeof value === 'string') return `'${value.replace(/'/g, "''")}'`;
+                    if (typeof value === 'string') {
+                      // Use JSON.stringify to properly escape all special characters including quotes, backslashes, etc.
+                      return JSON.stringify(value);
+                    }
                     return value;
                   });
                   
