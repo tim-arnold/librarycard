@@ -149,8 +149,40 @@ jobs:
           async function syncProductionToStaging() {
             console.log('🔄 COMPLETE PRODUCTION TO STAGING SYNC 🔄\n');
             
-            // Find the production backup file
-            const backupFile = './cloudflare/prod-backup-2025-08-17T01-44-32-379Z.json';
+            // Find the production backup file dynamically
+            const fs = require('fs');
+            const path = require('path');
+            
+            let backupFile = null;
+            
+            // Check multiple possible locations for production backup
+            const possiblePaths = [
+              './cloudflare/',
+              './',
+              './sync-workspace/cloudflare/',
+              './sync-workspace/'
+            ];
+            
+            for (const dir of possiblePaths) {
+              if (fs.existsSync(dir)) {
+                const files = fs.readdirSync(dir);
+                const prodBackup = files.find(file => file.includes('prod-backup-') && file.endsWith('.json'));
+                if (prodBackup) {
+                  backupFile = path.join(dir, prodBackup);
+                  break;
+                }
+              }
+            }
+            
+            if (!backupFile) {
+              console.log('🔍 Available files for debugging:');
+              possiblePaths.forEach(dir => {
+                if (fs.existsSync(dir)) {
+                  console.log(`${dir}:`, fs.readdirSync(dir));
+                }
+              });
+              throw new Error('No production backup file found in any expected location');
+            }
             
             if (!existsSync(backupFile)) {
               console.error('❌ Production backup file not found:', backupFile);
