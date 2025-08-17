@@ -388,7 +388,7 @@ jobs:
                   console.log(`    📝 Batch SQL length: ${batchSql.length} characters`);
                   console.log(`    📄 Batch SQL preview: ${batchSql.substring(0, 500)}...`);
                   
-                  // Add debugging for book batches to identify problematic data
+                  // Add comprehensive debugging for book batches to find Jeremy anywhere
                   if (tableName === 'books') {
                     console.log(`    📚 Book batch debug info:`);
                     batch.forEach((book, idx) => {
@@ -396,25 +396,43 @@ jobs:
                       const authors = book.authors || 'Unknown';
                       console.log(`    📖 Row ${startRow + idx + 1}: "${title}" by ${authors}`);
                       
-                      // Check for potential problematic characters
-                      if (authors && authors.includes('Jeremy')) {
-                        console.log(`    🚨 FOUND JEREMY in authors: ${authors}`);
-                        console.log(`    🔍 Authors type: ${typeof authors}`);
-                        console.log(`    🔍 Authors starts with [: ${authors.startsWith('[')}`);
-                        console.log(`    🔍 Authors ends with ]: ${authors.endsWith(']')}`);
-                        
-                        // Test the escaping logic
-                        try {
-                          const escapedAuthors = JSON.stringify(authors);
-                          console.log(`    🔍 Escaped authors: ${escapedAuthors}`);
-                        } catch (e) {
-                          console.log(`    ❌ Escaping failed: ${e.message}`);
+                      // COMPREHENSIVE Jeremy search across ALL fields
+                      let foundJeremy = false;
+                      Object.keys(book).forEach(field => {
+                        const value = book[field];
+                        if (value && typeof value === 'string' && value.includes('Jeremy')) {
+                          console.log(`    🚨 FOUND JEREMY in field '${field}': ${value.substring(0, 200)}...`);
+                          console.log(`    🔍 Field type: ${typeof value}`);
+                          console.log(`    🔍 Field starts with [: ${value.startsWith('[')}`);
+                          console.log(`    🔍 Field ends with ]: ${value.endsWith(']')}`);
+                          
+                          // Test the escaping logic for this field
+                          try {
+                            const escaped = JSON.stringify(value);
+                            console.log(`    🔍 Escaped ${field}: ${escaped.substring(0, 200)}...`);
+                          } catch (e) {
+                            console.log(`    ❌ Escaping failed for ${field}: ${e.message}`);
+                          }
+                          foundJeremy = true;
                         }
-                      }
-                      if (title && title.includes('Jeremy')) {
-                        console.log(`    🚨 FOUND JEREMY in title: ${title}`);
+                      });
+                      
+                      if (!foundJeremy) {
+                        console.log(`    ✅ No Jeremy found in row ${startRow + idx + 1}`);
                       }
                     });
+                    
+                    // Also check if Jeremy appears in the final SQL
+                    if (batchSql.includes('Jeremy')) {
+                      console.log(`    🚨 Jeremy found in final batch SQL at positions:`);
+                      let pos = 0;
+                      while ((pos = batchSql.indexOf('Jeremy', pos)) !== -1) {
+                        const start = Math.max(0, pos - 50);
+                        const end = Math.min(batchSql.length, pos + 50);
+                        console.log(`    🔍 Position ${pos}: ...${batchSql.substring(start, end)}...`);
+                        pos++;
+                      }
+                    }
                   }
                   
                   // Use file-based execution for batch
