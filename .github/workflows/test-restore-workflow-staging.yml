@@ -231,20 +231,46 @@ jobs:
             }
             console.log(`📊 Total rows to restore: ${totalRows}`);
             
-            // Test restore process with a few sample tables (not full restore to avoid timeout)
-            const testTables = ['users', 'locations', 'curated_genres'];
+            // Use proper dependency order like staging restore does
+            const tableOrder = [
+              // Child tables (no foreign key dependencies) - clear these first
+              'webauthn_challenges', 'webauthn_credentials', 'jwt_sessions', 
+              'auth_audit_log', 'user_recovery_codes', 'user_global_permissions',
+              'book_genres', 'book_ratings', 'book_removal_requests',
+              'book_checkout_history', 'signup_approval_requests',
+              'location_user_permissions', 'location_admin_capabilities', 'location_members', 'location_invitations',
+              'books', 'shelves',
+              // Parent tables (referenced by others) - clear these last
+              'enhanced_genres_backup', 'curated_genres', 'locations', 'users'
+            ];
+            
+            // Test restore process with proper dependency order (sample tables only to avoid timeout)
+            const testTables = ['curated_genres', 'locations', 'users']; // Test in reverse dependency order
             let testRows = 0;
             
+            // First clear tables in dependency order (child tables first)
+            console.log('🧹 Clearing test tables in dependency order...');
             for (const tableName of testTables) {
+              if (backupData.tables[tableName] && !backupData.tables[tableName].error) {
+                try {
+                  executeStagingD1(`DELETE FROM ${tableName}`);
+                  console.log(`    ✅ Cleared ${tableName}`);
+                } catch (error) {
+                  console.log(`    ⚠️  Could not clear ${tableName}: ${error.message}`);
+                }
+              }
+            }
+            
+            // Then restore in reverse order (parent tables first)
+            console.log('📥 Restoring test tables in reverse dependency order...');
+            const reversedTestTables = [...testTables].reverse();
+            
+            for (const tableName of reversedTestTables) {
               const tableData = backupData.tables[tableName];
               if (tableData && !tableData.error && tableData.data) {
                 console.log(`🧪 Testing restore of ${tableName} (${tableData.data.length} rows)...`);
                 
                 try {
-                  // Clear table first
-                  executeStagingD1(`DELETE FROM ${tableName}`);
-                  console.log(`    ✅ Cleared ${tableName}`);
-                  
                   // Test restore of first few rows (to avoid command length issues)
                   const testDataRows = tableData.data.slice(0, Math.min(3, tableData.data.length));
                   
