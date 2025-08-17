@@ -62,11 +62,30 @@ jobs:
           echo "🗄️ Backing up D1 database schema..."
           cd backup/cloudflare
           
-          # Export current schema
-          wrangler d1 execute librarycard-db --config=../../wrangler.prod.toml --env=production --remote --command=".schema" > database-schema-backup.sql || echo "Schema backup failed"
+          # Test wrangler config first
+          echo "🔧 Testing wrangler configuration..."
+          wrangler --version
+          ls -la ../../wrangler.prod.toml || echo "Config file not found"
           
-          # Get table info for verification
-          wrangler d1 execute librarycard-db --config=../../wrangler.prod.toml --env=production --remote --command="SELECT name FROM sqlite_master WHERE type='table';" > tables-list.txt || echo "Tables list failed"
+          # Export current schema (using SQL commands instead of .schema)
+          echo "-- Database Schema Backup $(date)" > database-schema-backup.sql
+          echo "📋 Attempting schema backup..."
+          if wrangler d1 execute librarycard-db --config=../../wrangler.prod.toml --env=production --remote --command="SELECT sql FROM sqlite_master WHERE type='table' AND sql IS NOT NULL;" >> database-schema-backup.sql 2>&1; then
+            echo "✅ Schema backup succeeded"
+          else
+            echo "❌ Schema backup failed"
+            cat database-schema-backup.sql
+          fi
+          
+          # Get table info for verification  
+          echo "📋 Attempting tables list..."
+          if wrangler d1 execute librarycard-db --config=../../wrangler.prod.toml --env=production --remote --command="SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;" > tables-list.txt 2>&1; then
+            echo "✅ Tables list succeeded"
+            cat tables-list.txt
+          else
+            echo "❌ Tables list failed"
+            cat tables-list.txt
+          fi
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       
