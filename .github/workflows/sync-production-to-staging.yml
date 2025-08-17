@@ -244,7 +244,7 @@ jobs:
             
             // TEMPORARILY DISABLED: Clear staging tables for faster debugging
             console.log('⏭️  Skipping table clearing for faster debugging...');
-            // const skipTables = ['enhanced_genres_backup']; // Legacy table not in staging schema
+            const skipTables = ['enhanced_genres_backup']; // Legacy table not in staging schema
             // for (const tableName of tableOrder) {
             //   if (skipTables.includes(tableName)) {
             //     console.log(`    ⏭️  Skipping clear for ${tableName} (legacy/orphaned table)`);
