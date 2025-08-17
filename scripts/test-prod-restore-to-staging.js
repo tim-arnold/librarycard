@@ -215,6 +215,15 @@ class ProductionRestoreToStagingTest {
     ];
     
     try {
+      // Disable foreign key constraints for restore
+      console.log('🔧 Disabling foreign key constraints...');
+      try {
+        this.executeStagingD1Command('PRAGMA foreign_keys = OFF;');
+        console.log('  ✅ Foreign key constraints disabled');
+      } catch (error) {
+        console.log('  ⚠️  Could not disable foreign key constraints, proceeding anyway');
+      }
+      
       // Phase 1: Clear existing staging data
       console.log('🗑️  Phase 1: Clearing current staging data...');
       for (const tableName of tableOrder) {
@@ -298,6 +307,15 @@ class ProductionRestoreToStagingTest {
           console.error(`    ❌ Failed to restore ${tableName}: ${error.message}`);
           this.logAudit('TABLE_RESTORE_FAILED', `${tableName}: ${error.message}`);
         }
+      }
+      
+      // Re-enable foreign key constraints
+      console.log('\n🔧 Re-enabling foreign key constraints...');
+      try {
+        this.executeStagingD1Command('PRAGMA foreign_keys = ON;');
+        console.log('  ✅ Foreign key constraints re-enabled');
+      } catch (error) {
+        console.log('  ⚠️  Could not re-enable foreign key constraints');
       }
       
       console.log('\n🎉 PRODUCTION DATA RESTORED TO STAGING 🎉');
