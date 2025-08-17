@@ -253,15 +253,40 @@ class ProductionRestoreToStagingTest {
         try {
           // Insert data row by row (safer for large datasets)
           for (const row of tableData.data) {
-            const columns = Object.keys(row);
-            const values = columns.map(col => {
+            // Get columns from production backup data
+            const prodColumns = Object.keys(row);
+            
+            // Get staging table schema to handle schema differences
+            let stagingColumns;
+            try {
+              const schemaResult = this.executeStagingD1Command(`PRAGMA table_info(${tableName})`);
+              const schemaLines = schemaResult.split('\n');
+              const schemaJsonStart = schemaLines.findIndex(line => line.trim().startsWith('['));
+              if (schemaJsonStart !== -1) {
+                const schemaJson = schemaLines.slice(schemaJsonStart).join('\n');
+                const schemaData = JSON.parse(schemaJson);
+                if (schemaData[0] && schemaData[0].results) {
+                  stagingColumns = schemaData[0].results.map(col => col.name);
+                }
+              }
+            } catch (error) {
+              console.log(`    ⚠️  Could not get schema for ${tableName}, using production columns only`);
+              stagingColumns = prodColumns;
+            }
+            
+            // Use only columns that exist in both production data AND staging schema
+            const commonColumns = prodColumns.filter(col => 
+              stagingColumns ? stagingColumns.includes(col) : true
+            );
+            
+            const values = commonColumns.map(col => {
               const value = row[col];
               if (value === null) return 'NULL';
               if (typeof value === 'string') return `'${value.replace(/'/g, "''")}'`;
               return value;
             });
             
-            const insertSql = `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES (${values.join(', ')})`;
+            const insertSql = `INSERT INTO ${tableName} (${commonColumns.join(', ')}) VALUES (${values.join(', ')})`;
             this.executeStagingD1Command(insertSql);
           }
           
