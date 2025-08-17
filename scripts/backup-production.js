@@ -76,9 +76,15 @@ class ProductionDatabaseBackup {
     };
 
     try {
-      // Get list of all tables
+      // Get list of all tables (excluding system tables)
       console.log('📋 Discovering database tables...');
-      const tablesOutput = this.executeD1Command("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name");
+      const tablesOutput = this.executeD1Command(`
+        SELECT name FROM sqlite_master 
+        WHERE type='table' 
+        AND name NOT LIKE 'sqlite_%'
+        AND name NOT LIKE '_cf_%'
+        ORDER BY name
+      `);
       const tables = this.parseD1Output(tablesOutput);
       
       if (tables.length === 0) {

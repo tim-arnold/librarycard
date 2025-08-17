@@ -26,6 +26,7 @@
     "backup:production:list": "echo '🚨 BLOCKED: Production operations only via GitHub Actions' && exit 1", 
     "backup:production:verify": "echo '🚨 BLOCKED: Production operations only via GitHub Actions' && exit 1",
     "backup:production:restore": "echo '🚨 BLOCKED: Production restore requires PRODUCTION_RESTORE_OVERRIDE=true for emergency use only' && exit 1",
+    "test:prod-restore": "node scripts/test-prod-restore-to-staging.js",
     "deploy:staging": "wrangler deploy --env=staging",
     "deploy:staging-new": "CLOUDFLARE_API_TOKEN=$CLOUDFLARE_API_TOKEN_STAGING_NEW wrangler deploy --config=wrangler.staging-new.toml --env=staging",
     "migrate": "node scripts/migrate.js migrate",
