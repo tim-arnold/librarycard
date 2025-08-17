@@ -290,8 +290,8 @@ class ProductionDatabaseRestore {
               const value = row[col];
               if (value === null) return 'NULL';
               if (typeof value === 'string') {
-                // Use JSON.stringify to properly escape all special characters including quotes, backslashes, etc.
-                return JSON.stringify(value);
+                // Use single quotes to avoid SQL parsing issues with complex text content
+                return `'${value.replace(/'/g, "''")}'`;
               }
               return value;
             });
