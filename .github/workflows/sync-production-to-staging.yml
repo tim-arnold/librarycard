@@ -478,7 +478,17 @@ jobs:
                     console.log(`    ❌ Batch execution failed: ${batchError.message}`);
                     console.log(`    📄 Failed batch SQL: ${batchSql.substring(0, 500)}...`);
                     
-                    // Clean up temp file
+                    // PRESERVE the failing SQL file for debugging
+                    const preservedFile = `./FAILED_BATCH_${batchIndex + 1}_${tableName}_${Date.now()}.sql`;
+                    try {
+                      fs.copyFileSync(tempFile, preservedFile);
+                      console.log(`    💾 PRESERVED failing SQL file: ${preservedFile}`);
+                      console.log(`    🔍 File size: ${fs.statSync(preservedFile).size} bytes`);
+                    } catch (preserveError) {
+                      console.log(`    ⚠️  Could not preserve SQL file: ${preserveError.message}`);
+                    }
+                    
+                    // Still clean up original temp file
                     try { fs.unlinkSync(tempFile); } catch {}
                     throw new Error(`BATCH SYNC FAILED: Batch ${batchIndex + 1} failed: ${batchError.message}`);
                   }
