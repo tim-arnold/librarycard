@@ -340,18 +340,27 @@ jobs:
                   
                   // Use file-based execution to avoid command length limits
                   const fs = require('fs');
-                  const tempFile = `/tmp/sql_${Date.now()}_${Math.random().toString(36).slice(2)}.sql`;
+                  const tempFile = `./temp_sql_${Date.now()}_${Math.random().toString(36).slice(2)}.sql`;
+                  
+                  console.log(`    📝 Writing SQL to temp file: ${tempFile}`);
+                  console.log(`    📏 SQL length: ${insertSql.length} characters`);
                   fs.writeFileSync(tempFile, insertSql);
                   
                   try {
+                    console.log(`    🔄 Executing SQL file with wrangler...`);
                     const result = execSync(`npx wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote --file="${tempFile}"`, { 
                       encoding: 'utf8',
                       env: { ...process.env, CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN_STAGING_NEW }
                     });
+                    console.log(`    ✅ SQL executed successfully`);
+                    
                     // Clean up temp file
                     fs.unlinkSync(tempFile);
                     return result;
                   } catch (error) {
+                    console.log(`    ❌ SQL execution failed: ${error.message}`);
+                    console.log(`    📄 SQL content: ${insertSql.substring(0, 200)}...`);
+                    
                     // Clean up temp file even on error
                     try { fs.unlinkSync(tempFile); } catch {}
                     throw error;
