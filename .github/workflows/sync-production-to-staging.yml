@@ -341,6 +341,7 @@ jobs:
                       env: { ...process.env, CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN_STAGING_NEW }
                     });
                     console.log(`    ✅ SQL executed successfully`);
+                    console.log(`    📊 Wrangler output: ${result.substring(0, 200)}...`);
                     
                     // Clean up temp file
                     fs.unlinkSync(tempFile);
