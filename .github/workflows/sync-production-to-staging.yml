@@ -321,7 +321,7 @@ jobs:
                     return value;
                   });
                   
-                  const insertSql = `INSERT OR REPLACE INTO ${tableName} (${commonColumns.join(', ')}) VALUES (${values.join(', ')});`;
+                  const insertSql = `INSERT INTO ${tableName} (${commonColumns.join(', ')}) VALUES (${values.join(', ')});`;
                   
                   // Use file-based execution to avoid command length limits
                   const fs = require('fs');
@@ -339,7 +339,12 @@ jobs:
                       env: { ...process.env, CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN_STAGING_NEW }
                     });
                     console.log(`    ✅ SQL executed successfully`);
-                    console.log(`    📊 Wrangler output: ${result.substring(0, 200)}...`);
+                    console.log(`    📊 Wrangler output: ${result.substring(0, 500)}...`);
+                    
+                    // Check for any error indicators in wrangler output
+                    if (result.includes('Error') || result.includes('error') || result.includes('failed')) {
+                      console.log(`    ⚠️  Possible error in wrangler output detected`);
+                    }
                     
                     // Quick verification - check if data was actually inserted
                     try {
