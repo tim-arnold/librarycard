@@ -21,7 +21,32 @@ const METADATA_FILE = './backups-production/backup-metadata.json';
 
 class ProductionDatabaseBackup {
   constructor() {
+    this.validateGitHubActionsEnvironment();
     this.ensureBackupDirectory();
+  }
+
+  validateGitHubActionsEnvironment() {
+    // CRITICAL SAFETY: Only allow execution in GitHub Actions
+    if (!process.env.GITHUB_ACTIONS) {
+      console.error('🚨 PRODUCTION SAFETY VIOLATION 🚨');
+      console.error('❌ Production backup scripts can ONLY be executed via GitHub Actions');
+      console.error('❌ Local execution is BLOCKED for production safety');
+      console.error('');
+      console.error('✅ Use GitHub Actions workflow: "💾 Production Cloudflare Workers & D1 Backup"');
+      console.error('✅ Or for staging: npm run backup:staging:create');
+      process.exit(1);
+    }
+
+    // Verify we're in the expected GitHub Actions environment
+    if (!process.env.GITHUB_REPOSITORY || !process.env.GITHUB_WORKFLOW) {
+      console.error('🚨 INVALID EXECUTION ENVIRONMENT 🚨');
+      console.error('❌ Missing required GitHub Actions environment variables');
+      process.exit(1);
+    }
+
+    console.log('✅ GitHub Actions environment validated for production backup');
+    console.log(`📋 Repository: ${process.env.GITHUB_REPOSITORY}`);
+    console.log(`📋 Workflow: ${process.env.GITHUB_WORKFLOW}`);
   }
 
   ensureBackupDirectory() {
