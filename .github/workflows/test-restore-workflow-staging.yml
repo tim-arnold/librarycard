@@ -275,8 +275,33 @@ jobs:
                   const testDataRows = tableData.data.slice(0, Math.min(3, tableData.data.length));
                   
                   for (const row of testDataRows) {
-                    const columns = Object.keys(row);
-                    const values = columns.map(col => {
+                    // Get columns from production data
+                    const prodColumns = Object.keys(row);
+                    
+                    // Get staging table schema to filter out columns that don't exist in production
+                    let stagingColumns;
+                    try {
+                      const schemaResult = executeStagingD1(`PRAGMA table_info(${tableName})`);
+                      const schemaLines = schemaResult.split('\n');
+                      const schemaJsonStart = schemaLines.findIndex(line => line.trim().startsWith('['));
+                      if (schemaJsonStart !== -1) {
+                        const schemaJson = schemaLines.slice(schemaJsonStart).join('\n');
+                        const schemaData = JSON.parse(schemaJson);
+                        if (schemaData[0] && schemaData[0].results) {
+                          stagingColumns = schemaData[0].results.map(col => col.name);
+                        }
+                      }
+                    } catch (error) {
+                      console.log(`    ⚠️  Could not get schema for ${tableName}, using production columns only`);
+                      stagingColumns = prodColumns;
+                    }
+                    
+                    // Use only columns that exist in both production data AND staging schema
+                    const commonColumns = prodColumns.filter(col => 
+                      stagingColumns ? stagingColumns.includes(col) : true
+                    );
+                    
+                    const values = commonColumns.map(col => {
                       const value = row[col];
                       if (value === null) return 'NULL';
                       if (typeof value === 'string') {
@@ -286,7 +311,7 @@ jobs:
                       return value;
                     });
                     
-                    const insertSql = `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES (${values.join(', ')})`;
+                    const insertSql = `INSERT INTO ${tableName} (${commonColumns.join(', ')}) VALUES (${values.join(', ')})`;
                     executeStagingD1(insertSql);
                     testRows++;
                   }
