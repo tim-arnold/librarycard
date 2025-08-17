@@ -243,32 +243,38 @@ jobs:
             // Use proper dependency order like staging restore does
             const tableOrder = [
               // Child tables (no foreign key dependencies) - clear these first
-              'webauthn_challenges', 'webauthn_credentials', 'jwt_sessions', 
+              'notification_queue', 'notification_log', 'notification_read_status', 'notification_preferences',
+              'in_app_notifications', 'webauthn_challenges', 'webauthn_credentials', 'jwt_sessions', 
               'auth_audit_log', 'user_recovery_codes', 'user_global_permissions',
-              'book_genres', 'book_ratings', 'book_removal_requests',
-              'book_checkout_history', 'signup_approval_requests',
+              'genre_suggestions', 'genre_requests', 'book_genres', 'book_ratings', 'book_removal_requests',
+              'book_checkout_history', 'migration_rollbacks', 'migrations_applied', 'migration_batches',
+              'signup_approval_requests',
+              // Tables with dependencies  
               'location_user_permissions', 'location_admin_capabilities', 'location_members', 'location_invitations',
               'books', 'shelves',
               // Parent tables (referenced by others) - clear these last
               'enhanced_genres_backup', 'curated_genres', 'locations', 'users'
             ];
             
-            // Test restore process with proper dependency order (sample tables only to avoid timeout)
-            const testTables = ['curated_genres', 'locations', 'users']; // Test in reverse dependency order
+            // Test restore process with proper dependency order 
+            // Clear ALL tables in dependency order first (like staging restore does)
             let testRows = 0;
             
-            // First clear tables in dependency order (child tables first)
-            console.log('🧹 Clearing test tables in dependency order...');
-            for (const tableName of testTables) {
-              if (backupData.tables[tableName] && !backupData.tables[tableName].error) {
+            console.log('🧹 Clearing ALL tables in dependency order (like staging restore)...');
+            for (const tableName of tableOrder) {
+              if (backupData.tables[tableName]) {
                 try {
-                  executeStagingD1(`DELETE FROM ${tableName}`);
+                  // Disable foreign keys and clear table in single command
+                  executeStagingD1(`PRAGMA foreign_keys = OFF; DELETE FROM ${tableName}`);
                   console.log(`    ✅ Cleared ${tableName}`);
                 } catch (error) {
                   console.log(`    ⚠️  Could not clear ${tableName}: ${error.message}`);
                 }
               }
             }
+            
+            // Test restore on sample tables only (to avoid timeout)
+            const testTables = ['curated_genres', 'locations', 'users']; // Test in reverse dependency order
             
             // Then restore in reverse order (parent tables first)
             console.log('📥 Restoring test tables in reverse dependency order...');
@@ -320,7 +326,7 @@ jobs:
                       return value;
                     });
                     
-                    const insertSql = `INSERT INTO ${tableName} (${commonColumns.join(', ')}) VALUES (${values.join(', ')})`;
+                    const insertSql = `PRAGMA foreign_keys = OFF; INSERT INTO ${tableName} (${commonColumns.join(', ')}) VALUES (${values.join(', ')})`;
                     executeStagingD1(insertSql);
                     testRows++;
                   }
