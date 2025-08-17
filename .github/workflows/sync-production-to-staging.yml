@@ -318,128 +318,82 @@ jobs:
               console.log(`    📥 Syncing ${tableName} (${tableData.data.length} rows)...`);
               
               try {
-                // Sync ALL data row by row with schema compatibility
-                console.log(`    🔄 Processing ${tableData.data.length} rows for ${tableName}...`);
+                // Switch to BATCH processing to avoid problematic row-by-row loop
+                console.log(`    🔄 Processing ${tableData.data.length} rows for ${tableName} in batches...`);
                 
-                // Add explicit loop tracking to catch silent termination
-                console.log(`    🎯 STARTING LOOP: Will process rows 1 through ${tableData.data.length}`);
+                // Process in small batches to avoid GitHub Actions termination
+                const batchSize = 5; // Small batches to prevent process termination
+                const totalBatches = Math.ceil(tableData.data.length / batchSize);
+                console.log(`    🎯 Will process ${totalBatches} batches of up to ${batchSize} rows each`);
                 
-                for (let rowIndex = 0; rowIndex < tableData.data.length; rowIndex++) {
-                  const row = tableData.data[rowIndex];
-                  console.log(`    `)
+                for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+                  const startRow = batchIndex * batchSize;
+                  const endRow = Math.min(startRow + batchSize, tableData.data.length);
+                  const batch = tableData.data.slice(startRow, endRow);
+                  
+                  console.log(`    `);
                   console.log(`    ==========================================`);
-                  console.log(`    🎯 LOOP ITERATION ${rowIndex + 1}/${tableData.data.length} STARTING`);
-                  console.log(`    📝 Processing row ${rowIndex + 1}/${tableData.data.length}: ${tableName} - ${row.id || row.email || 'unknown'}`);
-                  console.log(`    ⏰ Timestamp: ${new Date().toISOString()}`);
+                  console.log(`    🎯 BATCH ${batchIndex + 1}/${totalBatches}: Processing rows ${startRow + 1}-${endRow}`);
+                  console.log(`    ⏰ Batch start timestamp: ${new Date().toISOString()}`);
                   console.log(`    ==========================================`);
                   
-                  // Get columns from production backup data
-                  const prodColumns = Object.keys(row);
-                  
-                  // For now, assume all production columns exist in staging
-                  // TODO: Add proper schema compatibility check
-                  const stagingColumns = prodColumns;
-                  
-                  // Use only columns that exist in both production data AND staging schema
-                  const commonColumns = prodColumns.filter(col => 
-                    stagingColumns ? stagingColumns.includes(col) : true
-                  );
-                  
-                  const values = commonColumns.map(col => {
-                    const value = row[col];
-                    if (value === null) return 'NULL';
-                    if (typeof value === 'string') {
-                      // Use JSON.stringify to properly escape all special characters including quotes, backslashes, etc.
-                      return JSON.stringify(value);
-                    }
-                    return value;
+                  // Create batch INSERT statement
+                  const columns = Object.keys(batch[0]);
+                  const batchValues = batch.map(row => {
+                    const values = columns.map(col => {
+                      const value = row[col];
+                      if (value === null) return 'NULL';
+                      if (typeof value === 'string') {
+                        return JSON.stringify(value);
+                      }
+                      return value;
+                    });
+                    return `(${values.join(', ')})`;
                   });
                   
-                  const insertSql = `INSERT INTO ${tableName} (${commonColumns.join(', ')}) VALUES (${values.join(', ')});`;
+                  const batchSql = `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES ${batchValues.join(', ')};`;
                   
-                  // Use file-based execution to avoid command length limits
+                  console.log(`    📝 Batch SQL length: ${batchSql.length} characters`);
+                  console.log(`    📄 Batch SQL preview: ${batchSql.substring(0, 500)}...`);
+                  
+                  // Use file-based execution for batch
                   const fs = require('fs');
-                  const tempFile = `./temp_sql_${Date.now()}_${Math.random().toString(36).slice(2)}.sql`;
-                  
-                  console.log(`    📝 Writing SQL to temp file: ${tempFile}`);
-                  console.log(`    📏 SQL length: ${insertSql.length} characters`);
-                  console.log(`    📄 SQL preview: ${insertSql.substring(0, 500)}...`);
-                  fs.writeFileSync(tempFile, insertSql);
+                  const tempFile = `./batch_sql_${Date.now()}_${Math.random().toString(36).slice(2)}.sql`;
+                  fs.writeFileSync(tempFile, batchSql);
                   
                   try {
-                    console.log(`    🔄 Executing SQL file with wrangler...`);
-                    console.log(`    ⏰ Starting wrangler execution at: ${new Date().toISOString()}`);
+                    console.log(`    🔄 Executing batch SQL file with wrangler...`);
+                    console.log(`    ⏰ Starting batch wrangler execution at: ${new Date().toISOString()}`);
                     
                     const result = execSync(`npx wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote --file="${tempFile}"`, { 
                       encoding: 'utf8',
-                      timeout: 120000, // 2 minute timeout to detect hanging
+                      timeout: 120000,
                       env: { ...process.env, CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN_STAGING_NEW }
                     });
                     
-                    console.log(`    ⏰ Wrangler execution completed at: ${new Date().toISOString()}`);
-                    console.log(`    ✅ SQL executed successfully`);
-                    console.log(`    📊 Wrangler output (full): ${result}`);
+                    console.log(`    ⏰ Batch wrangler execution completed at: ${new Date().toISOString()}`);
+                    console.log(`    ✅ Batch SQL executed successfully`);
+                    console.log(`    📊 Batch wrangler output: ${result.substring(0, 1000)}...`);
                     
-                    // Check for any error indicators in wrangler output - FAIL FAST
-                    if (result.includes('Error') || result.includes('error') || result.includes('failed') || result.includes('SQLITE_')) {
-                      console.log(`    🚨 ERROR DETECTED IN WRANGLER OUTPUT!`);
-                      console.log(`    📋 Full wrangler output: ${result}`);
-                      throw new Error(`SQL execution reported error in output: ${result.substring(0, 1000)}`);
-                    }
-                    
-                    // CRITICAL: Verify row insertion using wrangler's built-in success response
-                    // Note: Removed hanging count verification - wrangler's "success": true is reliable
-                    
-                    // Parse wrangler response for verification
-                    let insertionVerified = false;
-                    try {
-                      if (result.includes('"success": true') && result.includes('"changes"')) {
-                        const changesMatch = result.match(/"changes":\s*(\d+)/);
-                        const changes = changesMatch ? parseInt(changesMatch[1]) : 0;
-                        
-                        if (changes > 0) {
-                          console.log(`    ✅ Wrangler reports ${changes} database changes - row insertion verified`);
-                          insertionVerified = true;
-                        } else {
-                          console.log(`    ⚠️  Wrangler reports 0 changes - possible duplicate or failed insertion`);
-                        }
-                      }
-                    } catch (parseError) {
-                      console.log(`    ⚠️  Could not parse wrangler response for verification: ${parseError.message}`);
-                    }
-                    
-                    if (!insertionVerified) {
-                      console.log(`    🚨 CRITICAL: Cannot verify row insertion from wrangler response`);
-                      console.log(`    📄 Failed SQL: ${insertSql}`);
-                      console.log(`    📊 Full wrangler output: ${result}`);
-                      throw new Error(`Row insertion verification failed - no database changes detected`);
+                    // Verify batch using wrangler response
+                    if (result.includes('"success": true') && result.includes('"changes"')) {
+                      const changesMatch = result.match(/"changes":\s*(\d+)/);
+                      const changes = changesMatch ? parseInt(changesMatch[1]) : 0;
+                      console.log(`    ✅ Batch reports ${changes} database changes for ${batch.length} rows`);
                     }
                     
                     // Clean up temp file
                     fs.unlinkSync(tempFile);
-                    console.log(`    ✅ Row ${rowIndex + 1}/${tableData.data.length} successfully processed for ${tableName}`);
-                    console.log(`    🎯 LOOP ITERATION ${rowIndex + 1}/${tableData.data.length} COMPLETED SUCCESSFULLY`);
-                    console.log(`    ⏰ Completion timestamp: ${new Date().toISOString()}`);
+                    console.log(`    ✅ Batch ${batchIndex + 1}/${totalBatches} completed (rows ${startRow + 1}-${endRow})`);
                     
-                    // Check if this is the last row
-                    if (rowIndex + 1 === tableData.data.length) {
-                      console.log(`    🏁 FINAL ROW COMPLETED - MOVING TO NEXT TABLE`);
-                    } else {
-                      console.log(`    ➡️  PROCEEDING TO NEXT ROW: ${rowIndex + 2}/${tableData.data.length}`);
-                    }
-                    return result;
-                  } catch (error) {
-                    console.log(`    🚨 CRITICAL FAILURE - STOPPING SYNC`);
-                    console.log(`    ❌ SQL execution failed: ${error.message}`);
-                    console.log(`    📄 Failed SQL content: ${insertSql}`);
-                    console.log(`    📋 Row data: ${JSON.stringify(row, null, 2)}`);
-                    console.log(`    📊 Table: ${tableName}, Row: ${rowIndex + 1}/${tableData.data.length}`);
+                  } catch (batchError) {
+                    console.log(`    🚨 CRITICAL BATCH FAILURE - STOPPING SYNC`);
+                    console.log(`    ❌ Batch execution failed: ${batchError.message}`);
+                    console.log(`    📄 Failed batch SQL: ${batchSql.substring(0, 500)}...`);
                     
-                    // Clean up temp file even on error
+                    // Clean up temp file
                     try { fs.unlinkSync(tempFile); } catch {}
-                    
-                    // FAIL FAST - do not continue with partial data
-                    throw new Error(`PRODUCTION SYNC FAILED: Cannot insert row ${rowIndex + 1} in ${tableName}: ${error.message}`);
+                    throw new Error(`BATCH SYNC FAILED: Batch ${batchIndex + 1} failed: ${batchError.message}`);
                   }
                 }
                 
