@@ -286,7 +286,10 @@ jobs:
             const command = `npx wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote --command="${sql.replace(/"/g, '\\"')}"`;
             return execSync(command, { 
               encoding: 'utf8',
-              env: { ...process.env, CLOUDFLARE_API_TOKEN_STAGING_NEW: process.env.CLOUDFLARE_API_TOKEN_STAGING_NEW }
+              env: { 
+                ...process.env, 
+                CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN_STAGING_NEW 
+              }
             });
           }
           
@@ -316,7 +319,7 @@ jobs:
           npx wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote \
           --command="SELECT COUNT(*) as count FROM locations;" || echo "Failed to check locations"
         env:
-          CLOUDFLARE_API_TOKEN_STAGING_NEW: ${{ secrets.CLOUDFLARE_API_TOKEN_STAGING_NEW }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_STAGING_NEW }}
 
       - name: Test results summary
         run: |
