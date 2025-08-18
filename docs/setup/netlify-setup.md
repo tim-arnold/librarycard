@@ -134,7 +134,7 @@ curl -X POST https://api.netlify.com/build_hooks/your-hook-id
 
 ### Branch Deploys
 - **Production**: `main` branch → your main domain
-- **Staging**: `develop` branch → `develop--yoursite.netlify.app`
+- **Staging**: Standalone staging site with independent configuration and deployment
 - **Feature**: Feature branches → `featurename--yoursite.netlify.app`
 
 ### Forms (Future Enhancement)
@@ -177,4 +177,4 @@ After initial setup:
 
 ---
 
-**Last updated**: July 2025
+**Last updated**: August 2025
