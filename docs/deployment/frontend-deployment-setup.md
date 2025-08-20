@@ -50,17 +50,16 @@ Add these secrets to your GitHub repository:
 5. Fill in required fields and run
 
 ### Staging Deployment
-Staging has two modes:
+Staging deployments are now **manual-only**:
 
-#### Auto-Deploy (Default)
-- Pushes to `staging` branch automatically deploy backend + frontend
-- Uses the existing auto-deploy behavior
-
-#### Manual Deploy (New)
-1. Go to **Actions** → **"Staging Auto-Deploy"**
+1. Go to **Actions** → **"Staging Deployment"**
 2. Click **Run workflow**
-3. Select deployment type (same 4 options as production)
-4. Manually trigger specific components
+3. Select deployment type (same 4 options as production):
+   - **frontend-only**: For UI changes, legal pages, styling
+   - **worker-only**: For API changes, bug fixes  
+   - **automated-migrations**: For API + database changes
+   - **full-deployment**: For coordinated frontend + backend changes
+4. Manually trigger specific components as needed
 
 ## Use Cases
 
