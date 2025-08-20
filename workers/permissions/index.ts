@@ -396,7 +396,7 @@ export async function grantUserPermission(request: Request, userId: string, env:
     }
 
     // Validate permission type
-    const validPermissions = ['can_add_books', 'can_delete_books', 'can_move_books', 'can_create_shelves', 'can_edit_genres'];
+    const validPermissions = ['can_add_books', 'can_delete_books', 'can_move_books', 'can_create_shelves', 'can_edit_genres', 'allow_checkout_override'];
     if (!validPermissions.includes(permission)) {
       return new Response(JSON.stringify({ error: 'Invalid permission type' }), {
         status: 400,
@@ -535,19 +535,24 @@ export async function hasUserPermission(userId: string, locationId: number, perm
       return true;
     }
 
-    // Check if user is location admin (inherits all user permissions)
-    // Include both location owners and members with admin role
-    const isLocationAdmin = await env.DB.prepare(`
-      SELECT 1 FROM (
-        SELECT user_id FROM location_members WHERE location_id = ? AND user_id = ?
-        UNION
-        SELECT owner_id as user_id FROM locations WHERE id = ? AND owner_id = ?
-      ) lm
-      JOIN users u ON lm.user_id = u.id
-      WHERE u.user_role IN ('admin', 'super_admin')
-    `).bind(locationId, userId, locationId, userId).first();
+    // Check if user is location owner (location owners get all permissions)
+    const isLocationOwner = await env.DB.prepare(`
+      SELECT 1 FROM locations WHERE id = ? AND owner_id = ?
+    `).bind(locationId, userId).first();
 
-    if (isLocationAdmin) {
+    if (isLocationOwner) {
+      return true;
+    }
+
+    // Check if user has admin capabilities for this specific location
+    // Only users with explicit admin capabilities get automatic permissions
+    const hasAdminCapabilities = await env.DB.prepare(`
+      SELECT 1 FROM location_user_permissions 
+      WHERE location_id = ? AND user_id = ? 
+      AND permission IN ('can_control_user_capabilities', 'can_manage_location_settings')
+    `).bind(locationId, userId).first();
+
+    if (hasAdminCapabilities) {
       return true;
     }
 
@@ -733,7 +738,7 @@ export async function getUserPermissions(request: Request, userId: string, env: 
 
     // Super admins have all permissions
     if (await isUserSuperAdmin(userId, env)) {
-      permissions.push('can_add_books', 'can_delete_books', 'can_move_books', 'can_create_shelves', 'can_edit_genres');
+      permissions.push('can_add_books', 'can_delete_books', 'can_move_books', 'can_create_shelves', 'can_edit_genres', 'allow_checkout_override');
     } else {
       // Check if user is location admin (inherits all user permissions)
       const isLocationAdmin = await env.DB.prepare(`
@@ -747,7 +752,7 @@ export async function getUserPermissions(request: Request, userId: string, env: 
       `).bind(locationId, userId, locationId, userId).first();
 
       if (isLocationAdmin) {
-        permissions.push('can_add_books', 'can_delete_books', 'can_move_books', 'can_create_shelves', 'can_edit_genres');
+        permissions.push('can_add_books', 'can_delete_books', 'can_move_books', 'can_create_shelves', 'can_edit_genres', 'allow_checkout_override');
       } else {
         // Get specific user permissions
         const userPermissions = await env.DB.prepare(`
