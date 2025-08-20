@@ -145,7 +145,7 @@ export async function getCachedUserBooksByLocation(userId: string, locationId: n
            b.extended_description, b.subjects, b.page_count, b.google_average_rating, b.google_ratings_count, b.rating_updated_at,
            b.publisher_info, b.open_library_key, b.enhanced_genres, b.series, b.series_number,
            s.name as shelf_name, l.name as location_name,
-           br.rating as user_rating, br.review_text as user_review, br.review_status as user_review_status,
+           br.rating as user_rating, br.review_text as user_review, br.review_status as user_review_status, br.review_rejection_reason as user_review_rejection_reason,
            -- Get assigned genres as JSON array
            (SELECT json_group_array(json_object('id', cg.id, 'name', cg.name, 'description', cg.description))
             FROM book_genres bg 
@@ -204,6 +204,7 @@ export async function getCachedUserBooksByLocation(userId: string, locationId: n
     userRating: book.user_rating,
     userReview: book.user_review,
     userReviewStatus: book.user_review_status,
+    userReviewRejectionReason: book.user_review_rejection_reason,
     publisherInfo: book.publisher_info,
     openLibraryKey: book.open_library_key,
     seriesNumber: book.series_number,

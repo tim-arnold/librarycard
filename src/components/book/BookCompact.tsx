@@ -226,6 +226,7 @@ export default function BookList({
                     onClick={onRateBook ? () => onRateBook(book) : undefined}
                     userReview={book.userReview}
                     userReviewStatus={book.userReviewStatus}
+                    userReviewRejectionReason={book.userReviewRejectionReason}
                   />
                   
                   {/* Rate this book button - only show when user hasn't rated yet */}
@@ -406,6 +407,7 @@ export default function BookList({
             userLocations={userLocations}
             shelves={shelves}
             pendingRemovalRequests={pendingRemovalRequests}
+            currentUserId={currentUserId}
             viewMode="compact"
             onCheckout={onCheckout}
             onCheckin={onCheckin}
