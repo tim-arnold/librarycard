@@ -274,6 +274,7 @@ r            <Typography variant="body2" color="text.secondary" gutterBottom>
                 onClick={onRateBook ? handleRateBookClick : undefined}
                 userReview={book.userReview}
                 userReviewStatus={book.userReviewStatus}
+                userReviewRejectionReason={book.userReviewRejectionReason}
               />
               
               {!book.userRating && onRateBook && (
@@ -391,6 +392,7 @@ r            <Typography variant="body2" color="text.secondary" gutterBottom>
           userLocations={userLocations}
           shelves={shelves}
           pendingRemovalRequests={pendingRemovalRequests}
+          currentUserId={currentUserId}
           viewMode="card"
           onCheckout={onCheckout}
           onCheckin={onCheckin}

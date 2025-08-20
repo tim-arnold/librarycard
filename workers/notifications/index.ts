@@ -3,7 +3,8 @@ import {
   sendLocationAccessNotification, 
   sendPermissionChangeNotification,
   sendBookActionNotification,
-  sendGenreSuggestionNotification
+  sendGenreSuggestionNotification,
+  sendBookReviewNotification
 } from '../email/index';
 
 export type NotificationType = 
@@ -236,7 +237,7 @@ export async function getUserNotifications(
       FROM in_app_notifications n
       LEFT JOIN users u ON n.related_user_id = u.id
       LEFT JOIN locations l ON n.related_location_id = l.id
-      WHERE n.recipient_user_id = ?
+      WHERE n.recipient_user_id = ? AND n.notification_type != 'book_review_rejected'
     `;
 
     if (unreadOnly) {
@@ -258,11 +259,15 @@ export async function getUserNotifications(
 
 export async function getUnreadNotificationCount(env: Env, userId: string): Promise<number> {
   try {
+    // Count unread notifications directly from in_app_notifications table
+    // This is more accurate than relying on the cached notification_read_status table
+    // Exclude book_review_rejected notifications to avoid double-counting with rejected reviews
     const result = await env.DB.prepare(`
-      SELECT total_unread FROM notification_read_status WHERE user_id = ?
+      SELECT COUNT(*) as count FROM in_app_notifications 
+      WHERE recipient_user_id = ? AND is_read = FALSE AND notification_type != 'book_review_rejected'
     `).bind(userId).first() as any;
 
-    return result?.total_unread || 0;
+    return result?.count || 0;
   } catch (error) {
     console.error('Error getting unread notification count:', error);
     return 0;
