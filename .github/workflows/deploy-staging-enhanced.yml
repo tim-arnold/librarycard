@@ -160,7 +160,7 @@ jobs:
       - name: Verify staging frontend deployment
         run: |
           echo "🔍 Verifying staging frontend deployment..."
-          STAGING_FRONTEND="https://staging--libarycard.netlify.app"
+          STAGING_FRONTEND="https://librarycard-staging.tim52.io/"
           MAX_RETRIES=5
           RETRY_COUNT=0
           
