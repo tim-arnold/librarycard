@@ -1,4 +1,4 @@
-name: Staging Cloudflare Workers & D1 Backup
+name: 💾 Staging Workers & DB Backup
 
 on:
   workflow_dispatch: # Manual trigger for testing
