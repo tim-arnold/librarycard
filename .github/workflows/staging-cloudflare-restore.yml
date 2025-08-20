@@ -1,4 +1,4 @@
-name: Staging Cloudflare Database Restore
+name: 🚨 Staging Database Restore
 
 on:
   workflow_dispatch:
