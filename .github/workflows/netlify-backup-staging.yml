@@ -1,0 +1,154 @@
+name: 🌐 Staging Netlify Frontend Backup
+
+on:
+  schedule:
+    # Run daily at 3 AM UTC (1 hour after production backup)
+    - cron: '0 3 * * *'
+  workflow_dispatch: # Allow manual trigger
+    inputs:
+      reason:
+        description: 'Reason for staging backup (optional)'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  
+jobs:
+  backup-netlify-staging:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Get full history for comprehensive backup
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build frontend for staging
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: https://librarycard-api-staging.librarycard-staging.workers.dev
+      
+      - name: Create backup metadata
+        run: |
+          echo "Creating staging backup metadata..."
+          mkdir -p backup
+          
+          # Backup metadata
+          cat > backup/backup-metadata.json << EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "environment": "staging",
+            "commit_sha": "${{ github.sha }}",
+            "commit_message": "$(git log -1 --pretty=%B)",
+            "build_status": "success",
+            "node_version": "$(node --version)",
+            "npm_version": "$(npm --version)",
+            "reason": "${{ github.event.inputs.reason || 'scheduled' }}"
+          }
+          EOF
+          
+          # Backup package files
+          cp package.json backup/
+          cp package-lock.json backup/
+          cp netlify.toml backup/
+          
+          # Backup environment template
+          if [ -f .env.example ]; then
+            cp .env.example backup/
+          fi
+          
+          # Create deployment info
+          echo "# Staging Deployment Information" > backup/deployment-info.md
+          echo "" >> backup/deployment-info.md
+          echo "**Backup Date:** $(date -u)" >> backup/deployment-info.md
+          echo "**Environment:** Staging" >> backup/deployment-info.md
+          echo "**Commit:** ${{ github.sha }}" >> backup/deployment-info.md
+          echo "**Branch:** ${{ github.ref_name }}" >> backup/deployment-info.md
+          echo "" >> backup/deployment-info.md
+          echo "## Build Configuration" >> backup/deployment-info.md
+          echo "- Node.js: $(node --version)" >> backup/deployment-info.md
+          echo "- npm: $(npm --version)" >> backup/deployment-info.md
+          echo "" >> backup/deployment-info.md
+          echo "## Staging Environment Variables" >> backup/deployment-info.md
+          echo "- \`NEXT_PUBLIC_API_URL\`: https://librarycard-api-staging.librarycard-staging.workers.dev" >> backup/deployment-info.md
+          echo "" >> backup/deployment-info.md
+          echo "## Staging URLs" >> backup/deployment-info.md
+          echo "- **Frontend:** https://staging--libarycard.netlify.app" >> backup/deployment-info.md
+          echo "- **API:** https://librarycard-api-staging.librarycard-staging.workers.dev" >> backup/deployment-info.md
+      
+      - name: Archive build artifacts
+        run: |
+          echo "Creating staging build archive..."
+          tar -czf backup/build-artifacts.tar.gz .next
+          
+          # Create source code backup (excluding node_modules and build artifacts)
+          tar --exclude='node_modules' \
+              --exclude='.next' \
+              --exclude='backup' \
+              --exclude='.git' \
+              -czf backup/source-code.tar.gz .
+      
+      - name: Set release variables
+        run: |
+          echo "RELEASE_DATE=$(date +%Y%m%d)" >> $GITHUB_ENV
+          echo "RELEASE_DATE_READABLE=$(date +%Y-%m-%d)" >> $GITHUB_ENV
+          echo "BACKUP_DATE=$(date -u)" >> $GITHUB_ENV
+      
+      - name: Upload backup to GitHub Releases
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: staging-frontend-backup-${{ github.run_number }}-${{ env.RELEASE_DATE }}
+          name: "Staging Frontend Backup - ${{ env.RELEASE_DATE_READABLE }}"
+          body: |
+            ## Automated Staging Frontend Backup
+            
+            **Backup Date:** ${{ env.BACKUP_DATE }}
+            **Environment:** Staging
+            **Commit:** ${{ github.sha }}
+            **Build Status:** ✅ Success
+            **Reason:** ${{ github.event.inputs.reason || 'Scheduled backup' }}
+            
+            ### Contents:
+            - 📦 Complete source code backup
+            - 🏗️ Built frontend artifacts (.next) for staging
+            - ⚙️ Configuration files (package.json, netlify.toml)
+            - 📋 Staging deployment metadata and instructions
+            
+            ### Staging Environment:
+            - **Frontend URL:** https://staging--libarycard.netlify.app
+            - **API URL:** https://librarycard-api-staging.librarycard-staging.workers.dev
+            
+            ### Restore Instructions:
+            1. Download and extract `source-code.tar.gz`
+            2. Run `npm install`
+            3. Configure staging environment variables (see deployment-info.md)
+            4. Deploy to staging Netlify project or run locally with `npm run dev`
+            
+            This backup can be used to restore the complete staging frontend application.
+          files: |
+            backup/*
+          draft: false
+          prerelease: true # Mark staging backups as prerelease
+      
+      - name: Cleanup old staging backups
+        run: |
+          echo "Note: Staging backup retention policy"
+          echo "Consider implementing automated cleanup of old staging backup releases"
+          echo "Staging backups are marked as prerelease for easier identification"
+          
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "❌ Staging backup failed!"
+          echo "Check the workflow logs for details"
+          echo "Verify staging environment configuration and build process"
