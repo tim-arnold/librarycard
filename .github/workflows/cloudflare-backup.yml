@@ -1,4 +1,4 @@
-name: 💾 Production Cloudflare Workers & D1 Backup
+name: 💾 Production Workers & DB Backup
 
 on:
   schedule:

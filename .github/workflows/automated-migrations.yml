@@ -1,4 +1,4 @@
-name: Automated Database Migrations
+name: 🔄 Automated Database Migrations
 
 on:
   workflow_dispatch:
