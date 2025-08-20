@@ -1,4 +1,4 @@
-name: 🚨 PRODUCTION Database Restore
+name: 🚨 Production Database Restore
 
 on:
   workflow_dispatch:
