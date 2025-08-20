@@ -13,7 +13,6 @@ interface ConditionalAppLayoutProps {
 const PUBLIC_PAGES = [
   '/auth/signin',
   '/auth/reset-password',
-  '/privacy',
 ]
 
 // Function to determine current page from pathname
@@ -37,8 +36,18 @@ export default function ConditionalAppLayout({ children }: ConditionalAppLayoutP
   
   const currentPage = currentPageRef.current
 
-  // Don't show AppLayout for public pages or when not authenticated
-  if (!session || PUBLIC_PAGES.includes(pathname) || pathname === '/') {
+  // Don't show AppLayout for public pages or home page when not authenticated
+  if (PUBLIC_PAGES.includes(pathname) || pathname === '/') {
+    return <>{children}</>
+  }
+
+  // Show legal pages without AppLayout if not authenticated
+  if (!session && (pathname === '/privacy' || pathname === '/terms')) {
+    return <>{children}</>
+  }
+
+  // If not authenticated and not a legal/public page, show without layout
+  if (!session) {
     return <>{children}</>
   }
 
