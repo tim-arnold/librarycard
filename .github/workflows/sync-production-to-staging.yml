@@ -1,4 +1,4 @@
-name: 🔄 Sync Production Data to Staging
+name: 🔄 Production Sync Data to Staging
 
 on:
   workflow_dispatch:
