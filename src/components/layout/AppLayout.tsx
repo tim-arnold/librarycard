@@ -33,9 +33,11 @@ import {
   Settings,
   CreditCard,
   Notifications,
+  Lock,
 } from '@mui/icons-material'
 import Footer from './Footer'
 import HelpModal from '@/components/modals/HelpModal'
+import ThemeMenu from './ThemeMenu'
 import { useTheme } from '@/lib/ThemeContext'
 import AccessibleIcon from '@/components/ui/AccessibleIcon'
 import { useUnreadNotificationCount, useNotifications } from '@/hooks/useNotifications'
@@ -299,7 +301,7 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
   }
 
   const handleSettingsClick = () => {
-    router.push('/settings')
+    router.push('/security')
     handleMenuClose()
   }
 
@@ -323,6 +325,8 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
           <Typography variant="body2" sx={{ mr: 2 }}>
             Hello, {userFirstName || session?.user?.name?.split(' ')[0] || 'User'}!
           </Typography>
+          
+          <ThemeMenu />
           
           <Badge 
             badgeContent={(unreadCount + unreadRejectedCount) > 0 ? (unreadCount + unreadRejectedCount) : undefined} 
@@ -386,8 +390,8 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
               Checkout History
             </MenuItem>
             <MenuItem onClick={handleSettingsClick}>
-              <Settings sx={{ mr: 1 }} />
-              Settings
+              <Lock sx={{ mr: 1 }} />
+              Security
             </MenuItem>
             <MenuItem onClick={handleHelpClick}>
               <Help sx={{ mr: 1 }} />
