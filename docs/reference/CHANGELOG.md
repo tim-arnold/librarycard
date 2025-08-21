@@ -1066,7 +1066,7 @@ This file documents all completed features, fixes, and improvements to the Libra
 
 ### Staging Development Workflow & Documentation
 - **WORKFLOW ESTABLISHMENT**: Documented feature branch → staging → main workflow preventing staging pollution and maintaining clean commit history
-- **BRANCH NAMING**: Standardized branch naming with examples: `feature/user-metrics`, `fix/auth-bug`, `enhancement/ui-improvements`
+- **BRANCH NAMING**: Standardized branch naming with Jira integration: `LCWEB-{issue-number}-{description}` (e.g., `LCWEB-31-user-metrics`, `LCWEB-42-fix-auth-bug`)
 - **TESTING INFRASTRUCTURE**: Complete staging test environment with admin, regular admin, and user accounts for comprehensive feature testing
 - **DOCUMENTATION UPDATES**: Enhanced development workflow guide and worker deployment guide with staging environment details and best practices
 - **ENVIRONMENT ISOLATION**: Proper separation between local development, staging testing, and production deployment with auto-deployment pipelines
