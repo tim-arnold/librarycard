@@ -12,6 +12,7 @@ on:
           - worker-only
           - automated-migrations
           - full-deployment
+          - frontend-only
       migration_dry_run:
         description: 'Run migration dry-run first (recommended)'
         required: false
@@ -149,7 +150,7 @@ jobs:
     name: Create Pre-Deployment Backup
     runs-on: ubuntu-latest
     needs: safety-validation
-    if: github.event.inputs.deployment_type == 'database-migration' || github.event.inputs.deployment_type == 'full-deployment'
+    if: github.event.inputs.deployment_type == 'automated-migrations' || github.event.inputs.deployment_type == 'full-deployment'
     environment: production
     
     steps:
@@ -262,7 +263,7 @@ jobs:
     name: Apply Automated Database Migrations
     runs-on: ubuntu-latest
     needs: [safety-validation, pre-deployment-backup, deploy-worker]
-    if: always() && needs.safety-validation.result == 'success' && (needs.pre-deployment-backup.result == 'success') && (needs.deploy-worker.result == 'success' || needs.deploy-worker.result == 'skipped') && (github.event.inputs.deployment_type == 'automated-migrations' || github.event.inputs.deployment_type == 'full-deployment')
+    if: always() && needs.safety-validation.result == 'success' && (needs.pre-deployment-backup.result == 'success' || needs.pre-deployment-backup.result == 'skipped') && ((github.event.inputs.deployment_type == 'automated-migrations') || (github.event.inputs.deployment_type == 'full-deployment' && (needs.deploy-worker.result == 'success' || needs.deploy-worker.result == 'skipped')))
     environment: production
     
     steps:
@@ -303,11 +304,12 @@ jobs:
           # Check final migration status
           npm run migrate:status
           
-          # Basic connectivity test after migration
-          sleep 10
+          # Enhanced health check with longer timeout for stability
+          echo "🔍 Verifying production API health after migration..."
+          sleep 15
           PROD_API_URL="https://librarycard-api-production.tim-arnold.workers.dev"
-          if curl -f -s --max-time 15 "$PROD_API_URL/health" > /dev/null; then
-            echo "✅ Automated database migration completed successfully"
+          if curl -f -s --max-time 30 "$PROD_API_URL/health" > /dev/null; then
+            echo "✅ Production API is healthy after migration"
           else
             echo "❌ Production API unresponsive after migration"
             echo "🚨 Consider emergency rollback using backup/restore workflows"
@@ -316,11 +318,203 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
+      - name: Migration completion notification
+        if: github.event.inputs.migration_dry_run != 'true'
+        run: |
+          echo "🎉 AUTOMATED DATABASE MIGRATION COMPLETED SUCCESSFULLY"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Deployment type: ${{ github.event.inputs.deployment_type }}"
+          echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "Initiated by: ${{ github.actor }}"
+          echo "Commit: ${{ github.sha }}"
+          if [ -n "${{ github.event.inputs.reason }}" ]; then
+            echo "Reason: ${{ github.event.inputs.reason }}"
+          fi
+          echo "Migration system: Automated with smart bootstrap"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+  deploy-frontend-full:
+    name: Deploy Frontend (Full Deployment)
+    runs-on: ubuntu-latest
+    needs: [safety-validation, automated-migrations]
+    if: github.event.inputs.deployment_type == 'full-deployment' && needs.safety-validation.result == 'success' && (needs.automated-migrations.result == 'success' || needs.automated-migrations.result == 'skipped')
+    environment: production
+    
+    steps:
+      - name: Validate full deployment frontend trigger
+        run: |
+          echo "🎯 FRONTEND DEPLOYMENT - FULL DEPLOYMENT MODE"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "This is the frontend component of a full deployment:"
+          echo "✅ Worker deployment completed"
+          echo "✅ Database migrations completed (if applicable)"
+          echo "🚀 Now deploying frontend to complete full deployment"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+      - name: Trigger Netlify frontend build
+        run: |
+          echo "🚀 Triggering Netlify production frontend build..."
+          
+          if [ -z "${{ secrets.NETLIFY_PROD_BUILD_HOOK }}" ]; then
+            echo "❌ NETLIFY_PROD_BUILD_HOOK secret not configured"
+            echo "Please add the Netlify build hook URL to GitHub Secrets"
+            exit 1
+          fi
+          
+          # Trigger the build
+          BUILD_RESPONSE=$(curl -X POST -s -w "HTTP_STATUS:%{http_code}" "${{ secrets.NETLIFY_PROD_BUILD_HOOK }}")
+          HTTP_STATUS=$(echo $BUILD_RESPONSE | grep -o "HTTP_STATUS:[0-9]*" | cut -d: -f2)
+          
+          if [ "$HTTP_STATUS" -eq 200 ]; then
+            echo "✅ Netlify build triggered successfully"
+          else
+            echo "❌ Failed to trigger Netlify build (HTTP $HTTP_STATUS)"
+            echo "Response: $BUILD_RESPONSE"
+            echo "⚠️  Backend deployment completed successfully but frontend deployment failed"
+            exit 1
+          fi
+
+      - name: Wait for build completion
+        run: |
+          echo "⏳ Waiting for Netlify build to complete..."
+          echo "Build time estimate: 2-3 minutes"
+          
+          # Wait for build completion (initial implementation: fixed wait)
+          sleep 180  # 3 minutes
+          
+          echo "✅ Build wait period completed"
+
+      - name: Verify frontend deployment
+        run: |
+          echo "🔍 Verifying production frontend deployment..."
+          
+          PROD_FRONTEND="https://librarycard.tim52.io"
+          MAX_RETRIES=5
+          RETRY_COUNT=0
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            if curl -f -s --max-time 15 "$PROD_FRONTEND" > /dev/null; then
+              echo "✅ Production frontend accessible and responding"
+              break
+            else
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                echo "⏳ Frontend not ready yet, retrying in 30 seconds... (attempt $RETRY_COUNT/$MAX_RETRIES)"
+                sleep 30
+              else
+                echo "❌ Frontend verification failed after $MAX_RETRIES attempts"
+                echo "⚠️  Backend deployment completed but frontend deployment failed"
+                echo "Check Netlify dashboard: https://app.netlify.com"
+                exit 1
+              fi
+            fi
+          done
+
+      - name: Full deployment frontend success
+        run: |
+          echo "🎉 FULL DEPLOYMENT FRONTEND COMPONENT COMPLETED"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "✅ Worker deployment: COMPLETED"
+          echo "✅ Database migrations: COMPLETED"
+          echo "✅ Frontend deployment: COMPLETED" 
+          echo ""
+          echo "Full deployment successful!"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+  deploy-frontend-only:
+    name: Deploy Frontend to Production
+    runs-on: ubuntu-latest
+    needs: safety-validation
+    if: github.event.inputs.deployment_type == 'frontend-only' && needs.safety-validation.result == 'success'
+    environment: production
+    
+    steps:
+      - name: Validate frontend-only deployment
+        run: |
+          echo "🎯 FRONTEND-ONLY DEPLOYMENT TO PRODUCTION"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "This deployment will:"
+          echo "✅ Trigger Netlify frontend build"
+          echo "✅ Deploy latest frontend code to production"
+          echo "❌ NOT deploy worker changes"
+          echo "❌ NOT run database migrations"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+      - name: Trigger Netlify frontend build
+        run: |
+          echo "🚀 Triggering Netlify production frontend build..."
+          
+          if [ -z "${{ secrets.NETLIFY_PROD_BUILD_HOOK }}" ]; then
+            echo "❌ NETLIFY_PROD_BUILD_HOOK secret not configured"
+            echo "Please add the Netlify build hook URL to GitHub Secrets"
+            exit 1
+          fi
+          
+          # Trigger the build
+          BUILD_RESPONSE=$(curl -X POST -s -w "HTTP_STATUS:%{http_code}" "${{ secrets.NETLIFY_PROD_BUILD_HOOK }}")
+          HTTP_STATUS=$(echo $BUILD_RESPONSE | grep -o "HTTP_STATUS:[0-9]*" | cut -d: -f2)
+          
+          if [ "$HTTP_STATUS" -eq 200 ]; then
+            echo "✅ Netlify build triggered successfully"
+          else
+            echo "❌ Failed to trigger Netlify build (HTTP $HTTP_STATUS)"
+            echo "Response: $BUILD_RESPONSE"
+            exit 1
+          fi
+
+      - name: Wait for build completion
+        run: |
+          echo "⏳ Waiting for Netlify build to complete..."
+          echo "Build time estimate: 2-3 minutes"
+          
+          # Wait for build completion (initial implementation: fixed wait)
+          # TODO: Future enhancement - poll Netlify API for actual build status
+          sleep 180  # 3 minutes
+          
+          echo "✅ Build wait period completed"
+
+      - name: Verify frontend deployment
+        run: |
+          echo "🔍 Verifying production frontend deployment..."
+          
+          PROD_FRONTEND="https://librarycard.tim52.io"
+          MAX_RETRIES=5
+          RETRY_COUNT=0
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            if curl -f -s --max-time 15 "$PROD_FRONTEND" > /dev/null; then
+              echo "✅ Production frontend accessible and responding"
+              break
+            else
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                echo "⏳ Frontend not ready yet, retrying in 30 seconds... (attempt $RETRY_COUNT/$MAX_RETRIES)"
+                sleep 30
+              else
+                echo "❌ Frontend verification failed after $MAX_RETRIES attempts"
+                echo "The build may have failed or is taking longer than expected"
+                echo "Check Netlify dashboard: https://app.netlify.com"
+                exit 1
+              fi
+            fi
+          done
+
+      - name: Frontend deployment success
+        run: |
+          echo "🎉 FRONTEND DEPLOYMENT COMPLETED SUCCESSFULLY"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Frontend URL: https://librarycard.tim52.io"
+          echo "Deployment type: frontend-only"
+          echo "Completed at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "Deployed by: ${{ github.actor }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
   post-deployment-verification:
     name: Post-Deployment Verification
     runs-on: ubuntu-latest
-    needs: [deploy-worker, automated-migrations]
-    if: always() && (needs.deploy-worker.result == 'success' || needs.deploy-worker.result == 'skipped') && (needs.automated-migrations.result == 'success' || needs.automated-migrations.result == 'skipped') && (needs.deploy-worker.result == 'success' || needs.automated-migrations.result == 'success')
+    needs: [deploy-worker, automated-migrations, deploy-frontend-full, deploy-frontend-only]
+    if: always() && (((needs.deploy-worker.result == 'success' || needs.deploy-worker.result == 'skipped') && (needs.automated-migrations.result == 'success' || needs.automated-migrations.result == 'skipped') && (needs.deploy-worker.result == 'success' || needs.automated-migrations.result == 'success')) || (needs.deploy-frontend-only.result == 'success') || (needs.deploy-frontend-full.result == 'success'))
     environment: production
     
     steps:
@@ -362,7 +556,7 @@ jobs:
   rollback-instructions:
     name: Rollback Instructions
     runs-on: ubuntu-latest
-    needs: [deploy-worker, automated-migrations]
+    needs: [deploy-worker, automated-migrations, deploy-frontend-full, deploy-frontend-only]
     if: failure()
     
     steps:
@@ -371,8 +565,27 @@ jobs:
           echo "🚨 DEPLOYMENT FAILED - ROLLBACK INSTRUCTIONS"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "1. Check the failed job logs above for specific error details"
-          echo "2. If database migration failed, use emergency restore:"
-          echo "   npm run backup:restore"
-          echo "3. If worker deployment failed, previous version should still be active"
-          echo "4. For emergency assistance, check docs/production/emergency-procedures.md"
+          echo ""
+          echo "Frontend Rollback:"
+          echo "- Go to Netlify Dashboard: https://app.netlify.com"
+          echo "- Navigate to LibraryCard production site"
+          echo "- Click 'Deploys' → Find last successful deploy → Click 'Publish deploy'"
+          echo "- Frontend rollback is immediate and safe"
+          echo ""
+          echo "Backend Rollback:"
+          echo "- If database migration failed, use emergency restore: npm run backup:restore" 
+          echo "- If worker deployment failed, previous version should still be active"
+          echo ""
+          echo "Deployment Type Specific:"
+          if [[ "${{ github.event.inputs.deployment_type }}" == "frontend-only" ]]; then
+            echo "- Frontend-only deployment failed - no backend changes were made"
+            echo "- Only frontend rollback needed (see Netlify instructions above)"
+          elif [[ "${{ github.event.inputs.deployment_type }}" == "full-deployment" ]]; then
+            echo "- Full deployment failed - may need both frontend and backend rollback"
+            echo "- Check which component failed and rollback accordingly"
+          else
+            echo "- Backend deployment failed - frontend should be unaffected"
+          fi
+          echo ""
+          echo "Emergency assistance: docs/production/emergency-procedures.md"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

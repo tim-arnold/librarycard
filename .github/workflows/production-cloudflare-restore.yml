@@ -1,4 +1,4 @@
-name: 🚨 PRODUCTION Cloudflare Database Restore
+name: 🚨 Production Database Restore
 
 on:
   workflow_dispatch:
