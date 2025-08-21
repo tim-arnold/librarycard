@@ -171,6 +171,34 @@ git commit -m "LCWEB-156 fix: resolve ISBN scanning timeout issue"
 git commit -m "LCWEB-89 docs: update API reference for new endpoints"
 ```
 
+### Jira Issue Management
+
+#### Issue Updates
+- **Use comments** instead of editing descriptions for progress updates
+- **Preserve original description** to maintain context and requirements
+- **Add completion comments** with branch name, commit hash, and summary of changes
+
+#### Status Management
+- Move to **In Progress** when starting work on an issue
+- Move to **Done** when work is completed and committed
+- Use **appropriate transitions** based on your team's workflow
+
+#### Comment Examples
+```bash
+# Starting work
+jira issue move LCWEB-123 "In Progress"
+jira issue comment add LCWEB-123 "Starting work on this issue. Branch: LCWEB-123-feature-name"
+
+# Completion comment
+jira issue comment add LCWEB-123 "✅ Feature completed
+Branch: LCWEB-123-feature-name  
+Commit: LCWEB-123 feat: add feature description
+Files changed: component.tsx, api.ts
+Testing: All tests pass, build successful"
+
+jira issue move LCWEB-123 "Done"
+```
+
 ## Deployment Process
 
 ### Staging-First Development Workflow
