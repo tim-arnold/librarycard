@@ -65,7 +65,7 @@ export default function SettingsPage() {
 
         <Alert severity="info" sx={{ mb: 3 }}>
           <Typography variant="body2">
-            General application settings. Theme settings are now available in the header menu (gear icon), 
+            General application settings. Theme settings are now available in the header menu (palette icon), 
             and security settings have moved to their own dedicated page.
           </Typography>
         </Alert>
@@ -93,7 +93,7 @@ export default function SettingsPage() {
           <Typography variant="body2">
             Additional customization options will be added here in future updates, including notification preferences, display options, and more.
             <br /><br />
-            <strong>Theme settings</strong> (Dark Mode, Theme Color) are now available via the gear icon in the header.
+            <strong>Theme settings</strong> (Dark Mode, Theme Color) are now available via the palette icon in the header.
             <br />
             <strong>Security settings</strong> (Password, 2FA, Passkeys) have moved to the Security page accessible from the user menu.
           </Typography>
