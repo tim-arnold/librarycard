@@ -1,4 +1,4 @@
-name: Automated Database Rollbacks
+name: ⏪ Automated Database Rollbacks
 
 on:
   workflow_dispatch:

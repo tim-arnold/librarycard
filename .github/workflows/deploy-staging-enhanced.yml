@@ -1,10 +1,18 @@
-name: Staging Auto-Deploy
+name: 🚀 Staging Deployment
 
 on:
-  push:
-    branches: [ staging ]
   workflow_dispatch:
     inputs:
+      deployment_type:
+        description: 'Type of deployment (manual trigger only)'
+        required: true
+        type: choice
+        default: 'full-deployment'
+        options:
+          - worker-only
+          - automated-migrations
+          - full-deployment
+          - frontend-only
       reason:
         description: 'Reason for staging deployment (optional)'
         required: false
@@ -14,6 +22,7 @@ jobs:
   deploy-worker:
     name: Deploy Worker to Staging (Isolated Account)
     runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && (github.event.inputs.deployment_type == 'worker-only' || github.event.inputs.deployment_type == 'full-deployment')
     
     steps:
       - name: Validate branch
@@ -54,22 +63,6 @@ jobs:
           DISABLE_ESLINT_PLUGIN=true npx next build
           echo "🔍 ESLint disabled for performance optimization deployment"
 
-      - name: Apply database migrations
-        run: |
-          echo "🗄️  Applying database migrations to staging..."
-          export MIGRATION_ENV="staging-new"
-          export CI=true  # Tell migration system this is CI environment
-          
-          echo "📊 Checking migration status..."
-          npm run migrate:status || echo "⚠️  Migration status check completed with warnings"
-          
-          echo "🚀 Applying pending migrations..."
-          node scripts/migrate.js migrate
-          
-          echo "✅ Database migration step completed"
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_STAGING_NEW }}
-
       - name: Deploy to Staging (Isolated Account)
         uses: cloudflare/wrangler-action@v3
         with:
@@ -104,18 +97,225 @@ jobs:
           fi
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
+  automated-migrations:
+    name: Apply Automated Database Migrations to Staging
+    runs-on: ubuntu-latest
+    needs: deploy-worker
+    if: github.event_name == 'workflow_dispatch' && (github.event.inputs.deployment_type == 'automated-migrations' || (github.event.inputs.deployment_type == 'full-deployment' && (needs.deploy-worker.result == 'success' || needs.deploy-worker.result == 'skipped')))
+    
+    steps:
+      - name: Validate branch
+        run: |
+          if [ "${{ github.ref_name }}" != "staging" ]; then
+            echo "❌ This workflow can only be run from the 'staging' branch"
+            echo "Current branch: ${{ github.ref_name }}"
+            echo "Required branch: staging"
+            exit 1
+          fi
+          echo "✅ Branch validation passed: ${{ github.ref_name }}"
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply database migrations to staging
+        run: |
+          echo "🚨 APPLYING AUTOMATED MIGRATIONS TO STAGING"
+          echo "🎯 Using smart migration system for staging environment"
+          export MIGRATION_ENV="staging-new"
+          export CI=true  # Tell migration system this is CI environment
+          
+          echo "📊 Checking migration status..."
+          npm run migrate:status || echo "⚠️  Migration status check completed with warnings"
+          
+          echo "🚀 Applying pending migrations..."
+          npm run migrate:staging
+          
+          echo "✅ Database migration step completed"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_STAGING_NEW }}
+
+      - name: Verify migration success
+        run: |
+          echo "🔍 Verifying staging migration completed successfully..."
+          export MIGRATION_ENV="staging-new"
+          
+          # Check final migration status
+          npm run migrate:status
+          
+          # Enhanced health check after migration
+          echo "🔍 Verifying staging API health after migration..."
+          sleep 15
+          STAGING_API_URL="https://librarycard-api-staging.librarycard-staging.workers.dev"
+          if curl -f -s --max-time 30 "$STAGING_API_URL/health" > /dev/null; then
+            echo "✅ Staging API is healthy after migration"
+          else
+            echo "❌ Staging API unresponsive after migration"
+            exit 1
+          fi
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_STAGING_NEW }}
+
+      - name: Migration completion notification
+        run: |
+          echo "🎉 AUTOMATED DATABASE MIGRATION COMPLETED SUCCESSFULLY"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Environment: Staging"
+          echo "Deployment type: ${{ github.event.inputs.deployment_type }}"
+          echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "Initiated by: ${{ github.actor }}"
+          echo "Commit: ${{ github.sha }}"
+          if [ -n "${{ github.event.inputs.reason }}" ]; then
+            echo "Reason: ${{ github.event.inputs.reason }}"
+          fi
+          echo "Migration system: Automated with smart bootstrap"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+  deploy-frontend-full:
+    name: Deploy Frontend (Full Deployment)
+    runs-on: ubuntu-latest
+    needs: [deploy-worker, automated-migrations]
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.deployment_type == 'full-deployment' && needs.deploy-worker.result == 'success' && (needs.automated-migrations.result == 'success' || needs.automated-migrations.result == 'skipped')
+    
+    steps:
+      - name: Validate staging full deployment frontend trigger
+        run: |
+          echo "🎯 STAGING FRONTEND DEPLOYMENT - FULL DEPLOYMENT MODE"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "This is the frontend component of a staging full deployment:"
+          echo "✅ Worker deployment completed"
+          echo "🚀 Now deploying frontend to complete full deployment"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+      - name: Trigger Netlify staging frontend build
+        run: |
+          echo "🚀 Triggering Netlify staging frontend build..."
+          
+          if [ -z "${{ secrets.NETLIFY_STAGING_BUILD_HOOK }}" ]; then
+            echo "❌ NETLIFY_STAGING_BUILD_HOOK secret not configured"
+            echo "Please add the Netlify staging build hook URL to GitHub Secrets"
+            exit 1
+          fi
+          
+          # Trigger the build
+          BUILD_RESPONSE=$(curl -X POST -s -w "HTTP_STATUS:%{http_code}" "${{ secrets.NETLIFY_STAGING_BUILD_HOOK }}")
+          HTTP_STATUS=$(echo $BUILD_RESPONSE | grep -o "HTTP_STATUS:[0-9]*" | cut -d: -f2)
+          
+          if [ "$HTTP_STATUS" -eq 200 ]; then
+            echo "✅ Netlify staging build triggered successfully"
+          else
+            echo "❌ Failed to trigger Netlify staging build (HTTP $HTTP_STATUS)"
+            echo "Response: $BUILD_RESPONSE"
+            exit 1
+          fi
+
+      - name: Wait for staging build completion
+        run: |
+          echo "⏳ Waiting for Netlify staging build to complete..."
+          echo "Build time estimate: 2-3 minutes"
+          sleep 180  # 3 minutes
+
+      - name: Verify staging frontend deployment
+        run: |
+          echo "🔍 Verifying staging frontend deployment..."
+          STAGING_FRONTEND="https://librarycard-staging.tim52.io/"
+          MAX_RETRIES=5
+          RETRY_COUNT=0
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            if curl -f -s --max-time 15 "$STAGING_FRONTEND" > /dev/null; then
+              echo "✅ Staging frontend accessible and responding"
+              break
+            else
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                echo "⏳ Frontend not ready yet, retrying in 30 seconds... (attempt $RETRY_COUNT/$MAX_RETRIES)"
+                sleep 30
+              else
+                echo "❌ Staging frontend verification failed after $MAX_RETRIES attempts"
+                exit 1
+              fi
+            fi
+          done
+
+  deploy-frontend-only:
+    name: Deploy Frontend to Staging
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.deployment_type == 'frontend-only'
+    
+    steps:
+      - name: Validate staging frontend-only deployment
+        run: |
+          echo "🎯 STAGING FRONTEND-ONLY DEPLOYMENT"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "This deployment will:"
+          echo "✅ Trigger Netlify staging frontend build"
+          echo "✅ Deploy latest frontend code to staging"
+          echo "❌ NOT deploy worker changes"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+      - name: Trigger Netlify staging frontend build
+        run: |
+          echo "🚀 Triggering Netlify staging frontend build..."
+          
+          if [ -z "${{ secrets.NETLIFY_STAGING_BUILD_HOOK }}" ]; then
+            echo "❌ NETLIFY_STAGING_BUILD_HOOK secret not configured"
+            exit 1
+          fi
+          
+          BUILD_RESPONSE=$(curl -X POST -s -w "HTTP_STATUS:%{http_code}" "${{ secrets.NETLIFY_STAGING_BUILD_HOOK }}")
+          HTTP_STATUS=$(echo $BUILD_RESPONSE | grep -o "HTTP_STATUS:[0-9]*" | cut -d: -f2)
+          
+          if [ "$HTTP_STATUS" -eq 200 ]; then
+            echo "✅ Netlify staging build triggered successfully"
+          else
+            echo "❌ Failed to trigger Netlify staging build (HTTP $HTTP_STATUS)"
+            exit 1
+          fi
+
+      - name: Wait for staging build completion
+        run: |
+          echo "⏳ Waiting for Netlify staging build to complete..."
+          sleep 180
+
+      - name: Verify staging frontend deployment
+        run: |
+          echo "🔍 Verifying staging frontend deployment..."
+          STAGING_FRONTEND="https://librarycard-staging.tim52.io/"
+          
+          if curl -f -s --max-time 15 "$STAGING_FRONTEND" > /dev/null; then
+            echo "✅ Staging frontend deployment successful"
+          else
+            echo "❌ Staging frontend verification failed"
+            exit 1
+          fi
+
+      - name: Staging frontend deployment success
+        run: |
+          echo "🎉 STAGING FRONTEND DEPLOYMENT COMPLETED"
+          echo "Frontend URL: https://librarycard-staging.tim52.io/"
+          echo "Deployment type: frontend-only"
+
   staging-smoke-tests:
     name: Run Staging Smoke Tests
     runs-on: ubuntu-latest
-    needs: deploy-worker
-    if: needs.deploy-worker.result == 'success'
+    needs: [deploy-worker, automated-migrations, deploy-frontend-full, deploy-frontend-only]
+    if: always() && ((needs.deploy-worker.result == 'success') || (needs.automated-migrations.result == 'success') || (needs.deploy-frontend-only.result == 'success') || (needs.deploy-frontend-full.result == 'success'))
     
     steps:
       - name: Basic functionality tests
         run: |
           echo "🧪 Running staging smoke tests..."
           
-          STAGING_FRONTEND="https://staging--libarycard.netlify.app"
+          STAGING_FRONTEND="https://librarycard-staging.tim52.io/"
           STAGING_API="https://librarycard-api-staging.librarycard-staging.workers.dev"
           
           # Test frontend accessibility

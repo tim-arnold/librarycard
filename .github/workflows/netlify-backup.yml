@@ -1,4 +1,4 @@
-name: 🌐 Production Netlify Frontend Backup
+name: 🌐 Production Frontend Backup
 
 on:
   schedule:

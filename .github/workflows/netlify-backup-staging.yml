@@ -1,4 +1,4 @@
-name: 🌐 Staging Netlify Frontend Backup
+name: 🌐 Staging Frontend Backup
 
 on:
   schedule:
