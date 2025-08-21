@@ -39,6 +39,11 @@ This file contains AI-specific context and working preferences for Claude Code w
 - **No co-authoring**: Never include "Co-Authored-By: Claude" or similar
 - **Focused commits**: Make atomic commits for single features/fixes
 
+### Jira Issue Management
+- **Updates**: Use comments to document progress rather than editing descriptions
+- **Status changes**: Move issues to appropriate status (In Progress, Done) when starting/completing work
+- **Comments**: Add completion comments with branch name, commit details, and summary of changes
+
 ### Codebase Navigation
 - **Frontend**: `src/components/` for React components, `src/lib/` for utilities
 - **Backend**: `workers/` with modular structure (auth/, books/, locations/, ocr/)
