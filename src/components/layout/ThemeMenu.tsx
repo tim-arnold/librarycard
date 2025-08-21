@@ -15,7 +15,7 @@ import {
   useTheme as useMuiTheme,
 } from '@mui/material'
 import {
-  Settings,
+  Palette,
   DarkMode,
   LightMode,
   ColorLens,
@@ -47,7 +47,7 @@ export default function ThemeMenu() {
   return (
     <>
       <AccessibleIcon
-        icon={<Settings />}
+        icon={<Palette />}
         ariaLabel="Open theme settings to customize appearance and colors"
         tooltip="Theme Settings"
         onClick={handleMenuOpen}
