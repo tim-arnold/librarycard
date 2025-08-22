@@ -32,8 +32,8 @@ import {
   History,
   Settings,
   CreditCard,
-  Notifications,
   Lock,
+  Notifications,
 } from '@mui/icons-material'
 import Footer from './Footer'
 import HelpModal from '@/components/modals/HelpModal'
