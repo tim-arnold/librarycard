@@ -173,3 +173,124 @@ export async function getDashboardData(userId: string, env: Env, corsHeaders: Re
     });
   }
 }
+
+export async function getUserRejectedReviews(userId: string, env: Env, corsHeaders: Record<string, string>) {
+  try {
+    // Get rejected reviews for the user with related notification status
+    const rejectedReviews = await env.DB.prepare(`
+      SELECT 
+        br.id,
+        b.title as book_title,
+        b.authors as book_authors,
+        br.review_rejection_reason,
+        br.reviewed_at as rejected_at,
+        br.review_text,
+        n.id as notification_id,
+        n.is_read as is_notification_read
+      FROM book_ratings br
+      JOIN books b ON br.book_id = b.id
+      LEFT JOIN in_app_notifications n ON n.recipient_user_id = ? 
+        AND n.notification_type = 'book_review_rejected'
+        AND JSON_EXTRACT(n.metadata, '$.bookTitle') = b.title
+      WHERE br.user_id = ? 
+        AND br.review_status = 'rejected'
+        AND br.review_rejection_reason IS NOT NULL
+      ORDER BY br.reviewed_at DESC
+    `).bind(userId, userId).all();
+
+    // Count unread rejected review notifications
+    // Only count actual unread notifications - no fallback logic
+    const unreadNotificationsCount = await env.DB.prepare(`
+      SELECT COUNT(*) as count
+      FROM in_app_notifications n
+      WHERE n.recipient_user_id = ? 
+        AND n.notification_type = 'book_review_rejected'
+        AND n.is_read = FALSE
+    `).bind(userId).first() as any;
+
+    // Debug: Let's see what notifications exist
+    const allRejectedNotifications = await env.DB.prepare(`
+      SELECT id, title, message, is_read, created_at, metadata
+      FROM in_app_notifications n
+      WHERE n.recipient_user_id = ? 
+        AND n.notification_type = 'book_review_rejected'
+      ORDER BY created_at DESC
+    `).bind(userId).all();
+
+    console.log(`🔍 Debug getUserRejectedReviews for user ${userId}:`);
+    console.log(`📊 Rejected reviews found: ${rejectedReviews.results.length}`);
+    console.log(`📬 All book_review_rejected notifications:`, allRejectedNotifications.results);
+    console.log(`🔢 Unread count from query: ${unreadNotificationsCount?.count || 0}`);
+
+    let unreadCount = unreadNotificationsCount?.count || 0;
+
+    // ENHANCED BACKFILL FIX: Create missing notifications for rejected reviews without notifications
+    if (rejectedReviews.results.length > 0) {
+      console.log('🔧 Checking for rejected reviews without notifications...');
+      
+      const { createInAppNotification } = await import('../notifications/index');
+      let createdCount = 0;
+      
+      for (const review of rejectedReviews.results as any[]) {
+        // Check if this specific review already has a notification
+        const existingNotification = allRejectedNotifications.results.find((notif: any) => {
+          const metadata = JSON.parse(notif.metadata || '{}');
+          return metadata.bookTitle === review.book_title;
+        });
+        
+        if (!existingNotification) {
+          try {
+            await createInAppNotification(
+              env,
+              userId,
+              'book_review_rejected',
+              'Book Review Rejected',
+              `Your review for "${review.book_title}" was not approved. ${review.review_rejection_reason || 'No reason provided.'}`,
+              `/library?search=${encodeURIComponent(review.book_title)}`,
+              'View Book',
+              undefined,
+              undefined,
+              { bookTitle: review.book_title, bookAuthors: review.book_authors, comment: review.review_rejection_reason }
+            );
+            console.log(`✅ Created missing notification for: ${review.book_title}`);
+            createdCount++;
+          } catch (error) {
+            console.error(`❌ Failed to create notification for ${review.book_title}:`, error);
+          }
+        } else {
+          console.log(`📋 Notification already exists for: ${review.book_title}`);
+        }
+      }
+      
+      if (createdCount > 0) {
+        // Recount after creating notifications
+        const newUnreadCount = await env.DB.prepare(`
+          SELECT COUNT(*) as count
+          FROM in_app_notifications n
+          WHERE n.recipient_user_id = ? 
+            AND n.notification_type = 'book_review_rejected'
+            AND n.is_read = FALSE
+        `).bind(userId).first() as any;
+        
+        unreadCount = newUnreadCount?.count || 0;
+        console.log(`🔢 New unread count after creating ${createdCount} notifications: ${unreadCount}`);
+      } else {
+        console.log('📋 No missing notifications found to create');
+      }
+    }
+
+    return new Response(JSON.stringify({
+      rejectedReviews: rejectedReviews.results || [],
+      unreadCount: unreadCount || 0
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (error) {
+    console.error('Error fetching rejected reviews:', error);
+    return new Response(JSON.stringify({ error: 'Failed to fetch rejected reviews' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+}

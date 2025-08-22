@@ -78,6 +78,7 @@ const userPermissions = [
   { id: 'can_move_books', label: 'Move Books', description: 'Move books between shelves' },
   { id: 'can_create_shelves', label: 'Create Shelves', description: 'Create new shelves in the location' },
   { id: 'can_edit_genres', label: 'Edit Genres', description: 'Manage genre assignments' },
+  { id: 'allow_checkout_override', label: 'Allow Checkout Override', description: 'Take over books checked out by other users' },
 ]
 
 export default function LocationOnboardingStepper({
