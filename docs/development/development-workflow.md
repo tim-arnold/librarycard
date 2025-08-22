@@ -43,12 +43,10 @@ gh pr create --title "feat: your feature" --body "Description"
 ## Branch Management
 
 ### Branch Naming Conventions
-- **Features**: `feature/gh[issue#]-description` (e.g., `feature/gh31-user-metrics`, `feature/gh45-book-ratings`)
-- **Bug fixes**: `fix/gh[issue#]-description` (e.g., `fix/gh12-auth-bug`, `fix/gh23-isbn-scanner`)
-- **Enhancements**: `enhancement/gh[issue#]-description` (e.g., `enhancement/gh56-ui-improvements`)
-- **Documentation**: `docs/gh[issue#]-description`
-- **Refactoring**: `refactor/gh[issue#]-description`
-- **Performance**: `perf/gh[issue#]-description`
+- **All Jira issues**: `LCWEB-{issue-number}-{description}` (e.g., `LCWEB-31-user-metrics`, `LCWEB-45-book-ratings`)
+- **Non-issue work**: Use descriptive names (e.g., `feature/hotfix-deployment`, `docs/readme-update`)
+- **Use kebab-case** for all branch names
+- **Keep descriptions concise** but descriptive
 
 ### Branch Protection Rules
 🚨 **IMPORTANT**: Never work directly on the `main` branch!
@@ -59,16 +57,93 @@ gh pr create --title "feat: your feature" --body "Description"
 4. **Build must pass** before merging
 5. **Delete feature branches** after merging
 
-### Example Workflow
+## Jira Integration Workflow
+
+### Automated Issue Creation
+LibraryCard uses a custom REST API script for seamless Jira integration:
+
 ```bash
-# Start from main
-git checkout main
-git pull origin main
+# Create basic issue
+./scripts/jira-create-issue.sh LCWEB Task "Add book ratings feature" "Allow users to rate books 1-5 stars"
 
-# Create feature branch with GitHub issue number
-git checkout -b feature/gh42-add-book-ratings
+# Create issue assigned to EPIC  
+./scripts/jira-create-issue.sh LCWEB Task "Add book ratings feature" "Allow users to rate books 1-5 stars" LCWEB-124
 
-# Work on feature
+# Available EPICs:
+#   LCWEB-124 - Library Features
+#   LCWEB-123 - Admin Features
+#   LCWEB-122 - UX/UI  
+#   LCWEB-121 - DevOps
+```
+
+### Issue Management Commands
+After creating issues, use the CLI for management:
+
+```bash
+# Set PATH for CLI (add to ~/.zshrc for permanent)
+export PATH=/opt/homebrew/bin:$PATH
+
+# View issue details
+jira issue view LCWEB-42
+
+# Update issue with progress
+echo "Started implementation of rating system" | jira issue edit LCWEB-42 --no-input
+
+# Transition issue status
+jira issue transition LCWEB-42 "In Progress"
+jira issue transition LCWEB-42 Done
+```
+
+### Complete Development Workflow
+
+```bash
+# 1. Create Jira issue with EPIC assignment
+ISSUE_KEY=$(./scripts/jira-create-issue.sh LCWEB Task "Add book ratings" "Implement 5-star rating system" LCWEB-124)
+echo "Created: $ISSUE_KEY"
+
+# 2. Create and checkout branch
+git checkout main && git pull
+git checkout -b $ISSUE_KEY-add-book-ratings
+
+# 3. Develop feature
+# ... make changes ...
+npm run build && npm run lint  # Verify
+
+# 4. Commit with Jira reference
+git add .
+git commit -m "$ISSUE_KEY feat: Add book ratings component
+
+- Add StarRating component with 5-star display
+- Integrate rating API calls with backend
+- Add rating display to book cards
+- Include rating filter in search"
+
+# 5. Update Jira with progress
+echo "## Implementation Complete
+
+✅ **Changes Made:**
+- Created StarRating component
+- Added rating API integration  
+- Updated book display cards
+- Added rating filter to search
+
+✅ **Testing:**
+- Build passed
+- Linting clean
+- Manual testing complete
+
+🔗 **Branch:** $ISSUE_KEY-add-book-ratings
+📝 **Ready for review**" | jira issue edit $ISSUE_KEY --no-input
+
+# 6. Create pull request
+git push -u origin $ISSUE_KEY-add-book-ratings
+gh pr create --title "$ISSUE_KEY feat: Add book ratings system" --body "Implements 5-star rating system. Resolves $ISSUE_KEY"
+
+# 7. After PR approval and merge, close issue
+jira issue transition $ISSUE_KEY Done
+```
+
+### Example Workflow
 # ... make changes ...
 
 # Test locally
@@ -85,14 +160,14 @@ git commit -m "feat: add book rating system
 - Add rating display in book cards"
 
 # Push and create PR
-git push -u origin feature/gh42-add-book-ratings
+git push -u origin LCWEB-42-add-book-ratings
 gh pr create --title "feat: add book rating system" \
              --body "Implements 5-star rating system for books"
 
 # After PR approval and merge
 git checkout main
 git pull origin main
-git branch -d feature/gh42-add-book-ratings
+git branch -d LCWEB-42-add-book-ratings
 ```
 
 ## Local Development Environment
@@ -155,9 +230,9 @@ Before committing code, ensure:
 - [ ] No hardcoded personal URLs or credentials
 
 ### Commit Message Format
-Follow conventional commits:
+Always start with Jira ticket number, then follow conventional commits:
 ```
-type(scope): description
+LCWEB-123 type(scope): description
 
 body (optional)
 
@@ -168,9 +243,37 @@ footer (optional)
 
 **Examples**:
 ```bash
-git commit -m "feat: add book checkout system"
-git commit -m "fix: resolve ISBN scanning timeout issue"
-git commit -m "docs: update API reference for new endpoints"
+git commit -m "LCWEB-42 feat: add book checkout system"
+git commit -m "LCWEB-156 fix: resolve ISBN scanning timeout issue"
+git commit -m "LCWEB-89 docs: update API reference for new endpoints"
+```
+
+### Jira Issue Management
+
+#### Issue Updates
+- **Use comments** instead of editing descriptions for progress updates
+- **Preserve original description** to maintain context and requirements
+- **Add completion comments** with branch name, commit hash, and summary of changes
+
+#### Status Management
+- Move to **In Progress** when starting work on an issue
+- Move to **Done** when work is completed and committed
+- Use **appropriate transitions** based on your team's workflow
+
+#### Comment Examples
+```bash
+# Starting work
+jira issue move LCWEB-123 "In Progress"
+jira issue comment add LCWEB-123 "Starting work on this issue. Branch: LCWEB-123-feature-name"
+
+# Completion comment
+jira issue comment add LCWEB-123 "✅ Feature completed
+Branch: LCWEB-123-feature-name  
+Commit: LCWEB-123 feat: add feature description
+Files changed: component.tsx, api.ts
+Testing: All tests pass, build successful"
+
+jira issue move LCWEB-123 "Done"
 ```
 
 ## Deployment Process
@@ -179,8 +282,8 @@ git commit -m "docs: update API reference for new endpoints"
 
 **Recommended branch workflow**:
 ```
-feature/gh31-my-feature → staging (for testing)
-feature/gh31-my-feature → main (after testing passes)
+LCWEB-31-my-feature → staging (for testing)
+LCWEB-31-my-feature → main (after testing passes)
 ```
 
 #### Why NOT merge staging → main:

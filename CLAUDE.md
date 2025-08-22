@@ -30,15 +30,55 @@ This file contains AI-specific context and working preferences for Claude Code w
 - **Never work directly on main**: Direct commits to main branch are prohibited
 - **Pull request required**: All changes must be submitted via pull request for review
 - **Branch naming conventions**:
-  - **For GitHub issues**: `feature/gh{issue-number}-{feature-name}` (e.g., `feature/gh39-worker-deployment-strategy`)
-  - **For bugs from issues**: `fix/gh{issue-number}-{bug-description}` (e.g., `fix/gh42-user-login-error`)
+  - **For Jira issues**: `LCWEB-{issue-number}-{branch-name}` (e.g., `LCWEB-123-add-book-ratings`, `LCWEB-45-fix-auth-bug`)
   - **For non-issue work**: `feature/{feature-name}`, `fix/{bug-description}`, `enhancement/{improvement-name}`
   - Always use kebab-case for branch names and keep descriptions concise but descriptive
 
 ### Commit Guidelines
-- **Commit messages**: Use clear, descriptive messages without AI tool attribution
+- **Commit messages**: Always start with Jira ticket number: `LCWEB-123 <commit message>`
 - **No co-authoring**: Never include "Co-Authored-By: Claude" or similar
 - **Focused commits**: Make atomic commits for single features/fixes
+
+### Jira Issue Management
+- **Updates**: Use comments to document progress rather than editing descriptions
+- **Status changes**: Move issues to appropriate status (In Progress, Done) when starting/completing work
+- **Comments**: Add completion comments with branch name, commit details, and summary of changes
+
+#### Automated Jira Workflow
+**Issue Creation** (REST API script):
+```bash
+# Basic issue creation
+./scripts/jira-create-issue.sh LCWEB Task "Summary" "Description"
+
+# Issue with EPIC assignment
+./scripts/jira-create-issue.sh LCWEB Task "Summary" "Description" LCWEB-124
+
+# Available EPICs:
+#   LCWEB-124 - Library Features
+#   LCWEB-123 - Admin Features  
+#   LCWEB-122 - UX/UI
+#   LCWEB-121 - DevOps
+```
+
+**Issue Management** (CLI - requires PATH setup):
+```bash
+# Set PATH to use correct CLI
+export PATH=/opt/homebrew/bin:$PATH
+
+# View and edit issues
+jira issue view LCWEB-123
+echo "Progress update..." | jira issue edit LCWEB-123 --no-input
+
+# Transition issues
+jira issue transition LCWEB-123 Done
+```
+
+**Complete Development Workflow**:
+1. Create issue: `./scripts/jira-create-issue.sh LCWEB Task "Feature" "Description" EPIC-KEY`
+2. Create branch: `git checkout -b LCWEB-{number}-{description}`  
+3. Code and commit with Jira reference: `git commit -m "LCWEB-123 feat: ..."`
+4. Update issue: `echo "Progress..." | jira issue edit LCWEB-123 --no-input`
+5. Close issue: `jira issue transition LCWEB-123 Done`
 
 ### Codebase Navigation
 - **Frontend**: `src/components/` for React components, `src/lib/` for utilities
@@ -96,6 +136,7 @@ npm run validate:env                 # Validate environment before production op
 # CLOUDFLARE_API_TOKEN_STAGING_NEW=your-token  # For staging environment in new isolated account
 # SCREENSHOT_USER=test-username                # For screenshot testing  
 # SCREENSHOT_PASSWORD=test-password            # For screenshot testing
+# JIRA_API_TOKEN=your-jira-api-token           # For automated Jira issue creation (get from https://id.atlassian.com/manage-profile/security/api-tokens)
 
 # CRITICAL SAFETY NOTES (Updated Phase 3 - GitHub Actions Required):
 # - PRODUCTION DEPLOYMENT: MUST use GitHub Actions workflows (local commands blocked for safety)
