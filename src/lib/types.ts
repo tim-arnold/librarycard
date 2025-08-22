@@ -80,6 +80,7 @@ export interface EnhancedBook extends Book {
   userRating?: number | null      // Current user's rating (1-5 stars)
   userReview?: string | null      // Current user's review text
   userReviewStatus?: 'pending' | 'approved' | 'rejected' | null  // Current user's review moderation status
+  userReviewRejectionReason?: string | null  // Reason for review rejection (if applicable)
   averageRating?: number | null   // Library-specific average rating
   ratingCount?: number            // Number of library-specific ratings
   googleAverageRating?: number | null  // Google Books average rating (for More Details)

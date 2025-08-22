@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useSession, signOut } from 'next-auth/react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { getApiBaseUrl } from '@/lib/apiConfig'
 import { authenticatedApiCall } from '@/lib/api'
 import { isAdmin, isSuperAdmin } from '@/lib/permissions'
@@ -32,13 +32,17 @@ import {
   History,
   Settings,
   CreditCard,
+  Lock,
+  Notifications,
 } from '@mui/icons-material'
 import Footer from './Footer'
 import HelpModal from '@/components/modals/HelpModal'
+import ThemeMenu from './ThemeMenu'
 import { useTheme } from '@/lib/ThemeContext'
 import AccessibleIcon from '@/components/ui/AccessibleIcon'
-import { useUnreadNotificationCount } from '@/hooks/useNotifications'
+import { useUnreadNotificationCount, useNotifications } from '@/hooks/useNotifications'
 import { useAdminPendingCounts } from '@/hooks/useAdminPendingCounts'
+import { useRejectedReviewNotifications } from '@/hooks/useRejectedReviewNotifications'
 
 interface AppLayoutProps {
   children: React.ReactNode
@@ -49,6 +53,7 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
   const { data: session } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const pathname = usePathname()
   const { isDarkMode: _isDarkMode, toggleTheme: _toggleTheme } = useTheme()
   const [userRole, setUserRole] = useState<string | null>(null)
   const [userFirstName, setUserFirstName] = useState<string | null>(null)
@@ -58,8 +63,9 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [helpModalOpen, setHelpModalOpen] = useState(false)
   const dataLoadedRef = useRef(false)
-  const { unreadCount } = useUnreadNotificationCount()
+  const { unreadCount, refreshCount } = useUnreadNotificationCount()
   const { counts: adminCounts } = useAdminPendingCounts()
+  const { unreadRejectedCount, refreshRejectedReviews } = useRejectedReviewNotifications()
 
   useEffect(() => {
     if (session && !dataLoadedRef.current) {
@@ -89,6 +95,60 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
       setCanAddBooks(true) // Reset to default
     }
   }, [session])
+
+  // Refresh notification counts when user returns to the page/tab
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && session?.user?.email) {
+        // User returned to the tab, refresh notification counts
+        refreshCount()
+        refreshRejectedReviews()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    // Also refresh when the component mounts or session changes
+    if (session?.user?.email) {
+      refreshCount()
+      refreshRejectedReviews()
+    }
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [session?.user?.email, refreshCount, refreshRejectedReviews])
+
+  // Refresh notification counts when user navigates to different pages
+  useEffect(() => {
+    if (session?.user?.email) {
+      refreshCount()
+      refreshRejectedReviews()
+    }
+  }, [pathname, session?.user?.email, refreshCount, refreshRejectedReviews])
+
+  // Listen for notification updates from other components
+  useEffect(() => {
+    const handleNotificationUpdate = () => {
+      if (session?.user?.email) {
+        refreshCount()
+        refreshRejectedReviews()
+      }
+    }
+
+    window.addEventListener('notificationUpdated', handleNotificationUpdate)
+    
+    return () => {
+      window.removeEventListener('notificationUpdated', handleNotificationUpdate)
+    }
+  }, [session?.user?.email, refreshCount, refreshRejectedReviews])
+
+  // Debug badge counts
+  useEffect(() => {
+    console.log('🏷️ AppLayout Badge counts - unreadCount:', unreadCount, 'unreadRejectedCount:', unreadRejectedCount, 'total:', unreadCount + unreadRejectedCount)
+    console.log('🏷️ Badge display calculation:', `(${unreadCount} + ${unreadRejectedCount}) = ${unreadCount + unreadRejectedCount}`)
+    console.log('🏷️ AppLayout component refresh triggered by:', { unreadCount, unreadRejectedCount })
+  }, [unreadCount, unreadRejectedCount])
 
   const loadUserData = async () => {
     
@@ -241,7 +301,7 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
   }
 
   const handleSettingsClick = () => {
-    router.push('/settings')
+    router.push('/security')
     handleMenuClose()
   }
 
@@ -266,14 +326,33 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
             Hello, {userFirstName || session?.user?.name?.split(' ')[0] || 'User'}!
           </Typography>
           
-          <AccessibleIcon
-            icon={<AccountCircle />}
-            ariaLabel="Open user menu to access profile, settings, and account options"
-            tooltip="Profile & Settings"
-            onClick={handleMenuOpen}
-            color="inherit"
-            size="small"
-          />
+          <ThemeMenu />
+          
+          <Badge 
+            badgeContent={(unreadCount + unreadRejectedCount) > 0 ? (unreadCount + unreadRejectedCount) : undefined} 
+            color="error"
+            max={99}
+            sx={{
+              '& .MuiBadge-badge': {
+                fontSize: '0.85rem',
+                height: '22px',
+                minWidth: '22px',
+                borderRadius: '11px',
+                fontWeight: 'bold',
+                top: '8px',
+                right: '8px',
+              }
+            }}
+          >
+            <AccessibleIcon
+              icon={<AccountCircle sx={{ fontSize: '2.5rem' }} />}
+              ariaLabel="Open user menu to access profile, settings, and account options"
+              tooltip="Profile & Settings"
+              onClick={handleMenuOpen}
+              color="inherit"
+              size="medium"
+            />
+          </Badge>
           
           <Menu
             anchorEl={anchorEl}
@@ -292,6 +371,16 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
               <AccountCircle sx={{ mr: 1 }} />
               Profile
             </MenuItem>
+            <MenuItem onClick={() => { handleMenuClose(); router.push('/notifications'); }}>
+              <Badge 
+                badgeContent={(unreadCount + unreadRejectedCount) > 0 ? (unreadCount + unreadRejectedCount) : undefined} 
+                color="error"
+                sx={{ mr: 1 }}
+              >
+                <Notifications />
+              </Badge>
+              Notifications
+            </MenuItem>
             <MenuItem onClick={handleLocationsClick}>
               <LocationOn sx={{ mr: 1 }} />
               Locations
@@ -301,8 +390,8 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
               Checkout History
             </MenuItem>
             <MenuItem onClick={handleSettingsClick}>
-              <Settings sx={{ mr: 1 }} />
-              Settings
+              <Lock sx={{ mr: 1 }} />
+              Security
             </MenuItem>
             <MenuItem onClick={handleHelpClick}>
               <Help sx={{ mr: 1 }} />

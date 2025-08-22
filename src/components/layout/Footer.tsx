@@ -32,23 +32,55 @@ export default function Footer() {
             gap: 2
           }}
         >
-          <Typography variant="body2" color="text.secondary">
-            &copy; 2025{' '}
-            <Link
-              href="https://tim52.io"
-              target="_blank"
-              rel="noopener noreferrer"
-              color="inherit"
-              sx={{
-                textDecoration: 'none',
-                '&:hover': {
-                  textDecoration: 'underline'
-                }
-              }}
-            >
-              tim52.io
-            </Link>
-          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+            <Typography variant="body2" color="text.secondary">
+              &copy; 2025{' '}
+              <Link
+                href="https://tim52.io"
+                target="_blank"
+                rel="noopener noreferrer"
+                color="inherit"
+                sx={{
+                  textDecoration: 'none',
+                  '&:hover': {
+                    textDecoration: 'underline'
+                  }
+                }}
+              >
+                tim52.io
+              </Link>
+            </Typography>
+            
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+              <Link
+                href="/privacy"
+                variant="body2"
+                color="text.secondary"
+                sx={{
+                  textDecoration: 'none',
+                  '&:hover': {
+                    textDecoration: 'underline'
+                  }
+                }}
+              >
+                Privacy Policy
+              </Link>
+              <Typography variant="body2" color="text.secondary">•</Typography>
+              <Link
+                href="/terms"
+                variant="body2"
+                color="text.secondary"
+                sx={{
+                  textDecoration: 'none',
+                  '&:hover': {
+                    textDecoration: 'underline'
+                  }
+                }}
+              >
+                Terms of Use
+              </Link>
+            </Box>
+          </Box>
           
           <Link
             component="button"

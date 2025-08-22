@@ -74,6 +74,7 @@ export function useBookActions({
   // Modal states
   const [showRemovalReasonModal, setShowRemovalReasonModal] = useState(false)
   const [removalReasonCallback, setRemovalReasonCallback] = useState<((result: { value: string; label: string; details?: string } | null) => void) | null>(null)
+  const [currentBookForRemoval, setCurrentBookForRemoval] = useState<EnhancedBook | null>(null)
   
   // Animation states
   const [animatingCovers, setAnimatingCovers] = useState<Set<string>>(new Set())
@@ -179,8 +180,12 @@ export function useBookActions({
   const requestBookRemoval = async (bookId: string, bookTitle: string) => {
     if (!session?.user?.email) return
 
+    // Find the book object for context
+    const book = books.find(b => b.id === bookId)
+    if (!book) return
+
     // First, ask user to select a reason
-    const reason = await selectRemovalReason()
+    const reason = await selectRemovalReason(book)
     if (!reason) return // User cancelled reason selection
 
     const confirmed = await confirmAsync(
@@ -245,8 +250,9 @@ export function useBookActions({
     }
   }
 
-  const selectRemovalReason = async (): Promise<{ value: string; label: string; details?: string } | null> => {
+  const selectRemovalReason = async (book: EnhancedBook): Promise<{ value: string; label: string; details?: string } | null> => {
     return new Promise((resolve) => {
+      setCurrentBookForRemoval(book)
       setRemovalReasonCallback(() => resolve)
       setShowRemovalReasonModal(true)
     })
@@ -254,6 +260,7 @@ export function useBookActions({
 
   const handleRemovalReasonModalClose = (result: { value: string; label: string; details?: string } | null) => {
     setShowRemovalReasonModal(false)
+    setCurrentBookForRemoval(null)
     if (removalReasonCallback) {
       removalReasonCallback(result)
       setRemovalReasonCallback(null)
@@ -350,14 +357,14 @@ export function useBookActions({
     const isReturningSomeoneElsesBook = book?.checked_out_by && book.checked_out_by !== currentUserId
 
     const message = isReturningSomeoneElsesBook 
-      ? `Return "${bookTitle}" even though it was checked out by another person? This will mark the book as available and you will be able to immediately check it out.`
+      ? `Return "${bookTitle}" to the shelf? This will make it available for anyone to check out.`
       : `Return "${bookTitle}"? This will mark the book as available.`
 
     const confirmed = await confirmAsync(
       {
-        title: 'Return Book',
+        title: isReturningSomeoneElsesBook ? 'Return to Shelf' : 'Return Book',
         message,
-        confirmText: 'Return Book',
+        confirmText: isReturningSomeoneElsesBook ? 'Return to Shelf' : 'Return Book',
         variant: 'info'
       },
       async () => {
@@ -603,5 +610,6 @@ export function useBookActions({
     // Modal states
     showRemovalReasonModal,
     handleRemovalReasonModalClose,
+    currentBookForRemoval,
   }
 }

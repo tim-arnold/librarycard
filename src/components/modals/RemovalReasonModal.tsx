@@ -20,18 +20,24 @@ import { Cancel, Send } from '@mui/icons-material'
 interface RemovalReasonModalProps {
   open: boolean
   onClose: (result: { value: string; label: string; details?: string } | null) => void
+  bookStatus?: string
+  allowCheckoutOverride?: boolean
 }
 
-export default function RemovalReasonModal({ open, onClose }: RemovalReasonModalProps) {
+export default function RemovalReasonModal({ open, onClose, bookStatus, allowCheckoutOverride }: RemovalReasonModalProps) {
   const [selectedReason, setSelectedReason] = useState('')
   const [details, setDetails] = useState('')
   const [error, setError] = useState('')
 
+  // Show "returned" option only for checked out books when user can't override checkout
+  const shouldShowReturnedOption = bookStatus === 'checked_out' && !allowCheckoutOverride
+  
   const reasonLabels: Record<string, string> = {
     lost: 'Book is lost',
     damaged: 'Book is damaged beyond repair',
     missing: 'Book is missing from its location',
     overdue: 'Book has been checked out for a very long time',
+    ...(shouldShowReturnedOption && { returned: 'Book has been physically returned' }),
     other: 'Other reason'
   }
 
@@ -98,11 +104,20 @@ export default function RemovalReasonModal({ open, onClose }: RemovalReasonModal
                 control={<Radio />} 
                 label="Book is missing from its location" 
               />
-              <FormControlLabel 
-                value="overdue" 
-                control={<Radio />} 
-                label="Book has been checked out for a very long time" 
-              />
+              {bookStatus === 'checked_out' && (
+                <FormControlLabel 
+                  value="overdue" 
+                  control={<Radio />} 
+                  label="Book has been checked out for a very long time" 
+                />
+              )}
+              {shouldShowReturnedOption && (
+                <FormControlLabel 
+                  value="returned" 
+                  control={<Radio />} 
+                  label="Book has been physically returned" 
+                />
+              )}
               <FormControlLabel 
                 value="other" 
                 control={<Radio />} 

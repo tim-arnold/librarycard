@@ -113,7 +113,17 @@ export async function markAllNotificationsRead(
   corsHeaders: Record<string, string>
 ) {
   try {
+    // Mark all general in-app notifications as read
     await markAllNotificationsAsRead(env, userId);
+
+    // Also mark all rejected review notifications as read specifically
+    await env.DB.prepare(`
+      UPDATE in_app_notifications 
+      SET is_read = TRUE, read_at = CURRENT_TIMESTAMP 
+      WHERE recipient_user_id = ? 
+        AND notification_type = 'book_review_rejected'
+        AND is_read = FALSE
+    `).bind(userId).run();
 
     return new Response(JSON.stringify({ 
       success: true,
