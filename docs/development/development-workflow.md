@@ -43,12 +43,10 @@ gh pr create --title "feat: your feature" --body "Description"
 ## Branch Management
 
 ### Branch Naming Conventions
-- **Features**: `feature/gh[issue#]-description` (e.g., `feature/gh31-user-metrics`, `feature/gh45-book-ratings`)
-- **Bug fixes**: `fix/gh[issue#]-description` (e.g., `fix/gh12-auth-bug`, `fix/gh23-isbn-scanner`)
-- **Enhancements**: `enhancement/gh[issue#]-description` (e.g., `enhancement/gh56-ui-improvements`)
-- **Documentation**: `docs/gh[issue#]-description`
-- **Refactoring**: `refactor/gh[issue#]-description`
-- **Performance**: `perf/gh[issue#]-description`
+- **All Jira issues**: `LCWEB-{issue-number}-{description}` (e.g., `LCWEB-31-user-metrics`, `LCWEB-45-book-ratings`)
+- **Non-issue work**: Use descriptive names (e.g., `feature/hotfix-deployment`, `docs/readme-update`)
+- **Use kebab-case** for all branch names
+- **Keep descriptions concise** but descriptive
 
 ### Branch Protection Rules
 🚨 **IMPORTANT**: Never work directly on the `main` branch!
@@ -65,8 +63,8 @@ gh pr create --title "feat: your feature" --body "Description"
 git checkout main
 git pull origin main
 
-# Create feature branch with GitHub issue number
-git checkout -b feature/gh42-add-book-ratings
+# Create feature branch with Jira issue number
+git checkout -b LCWEB-42-add-book-ratings
 
 # Work on feature
 # ... make changes ...
@@ -85,14 +83,14 @@ git commit -m "feat: add book rating system
 - Add rating display in book cards"
 
 # Push and create PR
-git push -u origin feature/gh42-add-book-ratings
+git push -u origin LCWEB-42-add-book-ratings
 gh pr create --title "feat: add book rating system" \
              --body "Implements 5-star rating system for books"
 
 # After PR approval and merge
 git checkout main
 git pull origin main
-git branch -d feature/gh42-add-book-ratings
+git branch -d LCWEB-42-add-book-ratings
 ```
 
 ## Local Development Environment
@@ -155,9 +153,9 @@ Before committing code, ensure:
 - [ ] No hardcoded personal URLs or credentials
 
 ### Commit Message Format
-Follow conventional commits:
+Always start with Jira ticket number, then follow conventional commits:
 ```
-type(scope): description
+LCWEB-123 type(scope): description
 
 body (optional)
 
@@ -168,9 +166,37 @@ footer (optional)
 
 **Examples**:
 ```bash
-git commit -m "feat: add book checkout system"
-git commit -m "fix: resolve ISBN scanning timeout issue"
-git commit -m "docs: update API reference for new endpoints"
+git commit -m "LCWEB-42 feat: add book checkout system"
+git commit -m "LCWEB-156 fix: resolve ISBN scanning timeout issue"
+git commit -m "LCWEB-89 docs: update API reference for new endpoints"
+```
+
+### Jira Issue Management
+
+#### Issue Updates
+- **Use comments** instead of editing descriptions for progress updates
+- **Preserve original description** to maintain context and requirements
+- **Add completion comments** with branch name, commit hash, and summary of changes
+
+#### Status Management
+- Move to **In Progress** when starting work on an issue
+- Move to **Done** when work is completed and committed
+- Use **appropriate transitions** based on your team's workflow
+
+#### Comment Examples
+```bash
+# Starting work
+jira issue move LCWEB-123 "In Progress"
+jira issue comment add LCWEB-123 "Starting work on this issue. Branch: LCWEB-123-feature-name"
+
+# Completion comment
+jira issue comment add LCWEB-123 "✅ Feature completed
+Branch: LCWEB-123-feature-name  
+Commit: LCWEB-123 feat: add feature description
+Files changed: component.tsx, api.ts
+Testing: All tests pass, build successful"
+
+jira issue move LCWEB-123 "Done"
 ```
 
 ## Deployment Process
@@ -179,8 +205,8 @@ git commit -m "docs: update API reference for new endpoints"
 
 **Recommended branch workflow**:
 ```
-feature/gh31-my-feature → staging (for testing)
-feature/gh31-my-feature → main (after testing passes)
+LCWEB-31-my-feature → staging (for testing)
+LCWEB-31-my-feature → main (after testing passes)
 ```
 
 #### Why NOT merge staging → main:

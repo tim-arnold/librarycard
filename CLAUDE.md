@@ -30,15 +30,19 @@ This file contains AI-specific context and working preferences for Claude Code w
 - **Never work directly on main**: Direct commits to main branch are prohibited
 - **Pull request required**: All changes must be submitted via pull request for review
 - **Branch naming conventions**:
-  - **For GitHub issues**: `feature/gh{issue-number}-{feature-name}` (e.g., `feature/gh39-worker-deployment-strategy`)
-  - **For bugs from issues**: `fix/gh{issue-number}-{bug-description}` (e.g., `fix/gh42-user-login-error`)
+  - **For Jira issues**: `LCWEB-{issue-number}-{branch-name}` (e.g., `LCWEB-123-add-book-ratings`, `LCWEB-45-fix-auth-bug`)
   - **For non-issue work**: `feature/{feature-name}`, `fix/{bug-description}`, `enhancement/{improvement-name}`
   - Always use kebab-case for branch names and keep descriptions concise but descriptive
 
 ### Commit Guidelines
-- **Commit messages**: Use clear, descriptive messages without AI tool attribution
+- **Commit messages**: Always start with Jira ticket number: `LCWEB-123 <commit message>`
 - **No co-authoring**: Never include "Co-Authored-By: Claude" or similar
 - **Focused commits**: Make atomic commits for single features/fixes
+
+### Jira Issue Management
+- **Updates**: Use comments to document progress rather than editing descriptions
+- **Status changes**: Move issues to appropriate status (In Progress, Done) when starting/completing work
+- **Comments**: Add completion comments with branch name, commit details, and summary of changes
 
 ### Codebase Navigation
 - **Frontend**: `src/components/` for React components, `src/lib/` for utilities
