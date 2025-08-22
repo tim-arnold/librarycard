@@ -1,7 +1,7 @@
 'use client'
 
 import { Box, Typography, Chip, Tooltip } from '@mui/material'
-import { Star, StarBorder, StarHalf } from '@mui/icons-material'
+import { Star, StarBorder, StarHalf, ErrorOutline } from '@mui/icons-material'
 
 interface StarRatingProps {
   userRating?: number | null       // Current user's rating (1-5)
@@ -15,6 +15,7 @@ interface StarRatingProps {
   className?: string
   userReview?: string | null      // Current user's review text
   userReviewStatus?: 'pending' | 'approved' | 'rejected' | null  // Current user's review status
+  userReviewRejectionReason?: string | null  // Reason for review rejection
 }
 
 export default function StarRating({
@@ -28,12 +29,15 @@ export default function StarRating({
   onClick,
   className,
   userReview,
-  userReviewStatus
+  userReviewStatus,
+  userReviewRejectionReason
 }: StarRatingProps) {
-  // Only show rating if there's an actual rating - no empty stars
+  // Only show rating if there's an actual rating - no empty stars, OR if there's a rejected review
   const hasAnyRating = (userRating && userRating > 0) || (averageRating && averageRating > 0)
+  const hasRejectedReview = userReviewStatus === 'rejected'
   
-  if (!hasAnyRating) {
+  // Show rejection indicator even if no rating exists
+  if (!hasAnyRating && !hasRejectedReview) {
     return null
   }
   
@@ -44,9 +48,21 @@ export default function StarRating({
   
   // Generate contextual tooltip text
   const getTooltipText = () => {
-    if (!onClick) return undefined
+    if (!onClick) {
+      // If no click handler, show rejection reason for rejected reviews
+      if (hasRejectedReview && userReviewRejectionReason) {
+        return `Review rejected: ${userReviewRejectionReason}`
+      }
+      return undefined
+    }
     
-    if (hasUserRating && hasUserReview) {
+    if (hasRejectedReview) {
+      const baseText = 'Click to update your rejected review'
+      if (userReviewRejectionReason) {
+        return `${baseText} (Reason: ${userReviewRejectionReason})`
+      }
+      return baseText
+    } else if (hasUserRating && hasUserReview) {
       return 'Click to change your rating or review'
     } else if (hasUserRating && !hasUserReview) {
       return 'Click to change your rating or add a review'
@@ -65,6 +81,27 @@ export default function StarRating({
   }
   
   const config = sizeConfig[size]
+
+  // Render rejection indicator
+  const renderRejectionIndicator = () => {
+    if (!hasRejectedReview) return null
+    
+    return (
+      <Tooltip 
+        title={userReviewRejectionReason ? `Review rejected: ${userReviewRejectionReason}` : 'Review rejected'}
+        arrow
+      >
+        <ErrorOutline 
+          sx={{
+            fontSize: config.starSize,
+            color: 'error.main',
+            cursor: onClick ? 'pointer' : 'default'
+          }}
+          aria-label="Review rejected"
+        />
+      </Tooltip>
+    )
+  }
 
   // Render individual star icon
   const renderStar = (index: number, rating: number) => {
@@ -92,26 +129,62 @@ export default function StarRating({
 
   // Chip variant - ultra compact for list views
   if (variant === 'chip') {
+    // Show rejection indicator instead of rating if review is rejected
+    if (hasRejectedReview && !displayRating) {
+      return (
+        <Chip
+          icon={<ErrorOutline sx={{ fontSize: `${config.starSize - 2}px !important` }} aria-label="Review rejected" />}
+          label="Rejected"
+          size={size === 'large' ? 'medium' : size as 'small' | 'medium'}
+          color="error"
+          variant="outlined"
+          sx={{
+            height: config.chipHeight,
+            fontSize: config.fontSize,
+            cursor: onClick ? 'pointer' : 'default',
+            '& .MuiChip-icon': {
+              color: 'error.main'
+            }
+          }}
+          onClick={onClick}
+          className={className}
+        />
+      )
+    }
+    
     if (!displayRating) return null
     
     const chipComponent = (
-      <Chip
-        icon={<Star sx={{ fontSize: `${config.starSize - 2}px !important` }} aria-label={`${displayRating.toFixed(1)} out of 5 stars`} />}
-        label={`${displayRating.toFixed(1)}${showCount && ratingCount > 0 ? ` (${ratingCount})` : ''}`}
-        size={size === 'large' ? 'medium' : size as 'small' | 'medium'}
-        color={hasUserRating ? 'primary' : 'default'}
-        variant={hasUserRating ? 'filled' : 'outlined'}
-        sx={{
-          height: config.chipHeight,
-          fontSize: config.fontSize,
-          cursor: onClick ? 'pointer' : 'default',
-          '& .MuiChip-icon': {
-            color: 'warning.main'
-          }
-        }}
-        onClick={onClick}
-        className={className}
-      />
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+        <Chip
+          icon={<Star sx={{ fontSize: `${config.starSize - 2}px !important` }} aria-label={`${displayRating.toFixed(1)} out of 5 stars`} />}
+          label={`${displayRating.toFixed(1)}${showCount && ratingCount > 0 ? ` (${ratingCount})` : ''}`}
+          size={size === 'large' ? 'medium' : size as 'small' | 'medium'}
+          color={hasUserRating ? 'primary' : 'default'}
+          variant={hasUserRating ? 'filled' : 'outlined'}
+          sx={{
+            height: config.chipHeight,
+            fontSize: config.fontSize,
+            cursor: onClick ? 'pointer' : 'default',
+            '& .MuiChip-icon': {
+              color: 'warning.main'
+            }
+          }}
+          onClick={onClick}
+          className={className}
+        />
+        {hasRejectedReview && (
+          <ErrorOutline 
+            sx={{
+              fontSize: config.starSize - 2,
+              color: 'error.main',
+              cursor: onClick ? 'pointer' : 'default'
+            }}
+            aria-label="Review rejected"
+            onClick={onClick}
+          />
+        )}
+      </Box>
     )
     
     if (tooltipText && onClick) {
@@ -127,6 +200,44 @@ export default function StarRating({
 
   // Mini variant - single star + rating for ultra-compact spaces
   if (variant === 'mini') {
+    // Show rejection indicator instead of rating if review is rejected and no rating
+    if (hasRejectedReview && !displayRating) {
+      const miniRejectionComponent = (
+        <Box 
+          sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 0.25,
+            cursor: onClick ? 'pointer' : 'default'
+          }}
+          onClick={onClick}
+          className={className}
+        >
+          <ErrorOutline sx={{ fontSize: config.starSize, color: 'error.main' }} aria-label="Review rejected" />
+          <Typography 
+            variant="caption" 
+            sx={{ 
+              fontSize: config.fontSize,
+              fontWeight: 600,
+              color: 'error.main'
+            }}
+          >
+            Rejected
+          </Typography>
+        </Box>
+      )
+      
+      if (tooltipText && onClick) {
+        return (
+          <Tooltip title={tooltipText} arrow>
+            {miniRejectionComponent}
+          </Tooltip>
+        )
+      }
+      
+      return miniRejectionComponent
+    }
+    
     if (!displayRating) return null
     
     const miniComponent = (
@@ -160,6 +271,16 @@ export default function StarRating({
             ({ratingCount})
           </Typography>
         )}
+        {hasRejectedReview && (
+          <ErrorOutline 
+            sx={{ 
+              fontSize: config.starSize - 2, 
+              color: 'error.main',
+              cursor: onClick ? 'pointer' : 'default'
+            }} 
+            aria-label="Review rejected"
+          />
+        )}
       </Box>
     )
     
@@ -175,7 +296,7 @@ export default function StarRating({
   }
 
   // Default display variant - shows all 5 stars
-  if (!displayRating && !showAverage) return null
+  if (!displayRating && !showAverage && !hasRejectedReview) return null
 
   const displayComponent = (
     <Box
@@ -228,6 +349,18 @@ export default function StarRating({
           >
             ({ratingCount})
           </Typography>
+        )}
+        
+        {/* Rejection indicator */}
+        {hasRejectedReview && (
+          <ErrorOutline 
+            sx={{ 
+              fontSize: config.starSize, 
+              color: 'error.main',
+              cursor: onClick ? 'pointer' : 'default'
+            }} 
+            aria-label="Review rejected"
+          />
         )}
       </Box>
     </Box>

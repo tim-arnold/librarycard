@@ -75,6 +75,7 @@ const USER_PERMISSIONS = [
   { key: 'can_move_books', label: 'Move Books', description: 'Move books between shelves' },
   { key: 'can_create_shelves', label: 'Create Shelves', description: 'Create new shelves in the location' },
   { key: 'can_edit_genres', label: 'Edit Genres', description: 'Manage genre assignments' },
+  { key: 'allow_checkout_override', label: 'Allow Checkout Override', description: 'Take over books checked out by other users' },
 ]
 
 const ADMIN_CAPABILITIES = [

@@ -150,6 +150,7 @@ export default function BookText({
                 onClick={onRateBook ? () => onRateBook(book) : undefined}
                 userReview={book.userReview}
                 userReviewStatus={book.userReviewStatus}
+                userReviewRejectionReason={book.userReviewRejectionReason}
               />
               
               {/* Rate this book button - ultra compact */}
@@ -283,6 +284,7 @@ export default function BookText({
               userLocations={userLocations}
               shelves={shelves}
               pendingRemovalRequests={pendingRemovalRequests}
+              currentUserId={currentUserId}
               viewMode="list"
               onCheckout={onCheckout}
               onCheckin={onCheckin}

@@ -237,6 +237,7 @@ export default function ProfilePage() {
             {saving ? 'Saving...' : 'Save Changes'}
           </Button>
         </Box>
+      </Paper>
 
         
         {/* Modal Components */}
@@ -264,7 +265,6 @@ export default function ProfilePage() {
             buttonText={modalState.options.buttonText}
           />
         )}
-      </Paper>
       
       <Footer />
     </Container>

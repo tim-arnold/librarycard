@@ -27,6 +27,7 @@ export async function getUserBooks(userId: string, env: Env, corsHeaders: Record
         br.rating as user_rating, 
         br.review_text as user_review,
         br.review_status as user_review_status,
+        br.review_rejection_reason as user_review_rejection_reason,
         COALESCE((
           SELECT json_group_array(json_object('id', cg.id, 'name', cg.name, 'description', cg.description))
           FROM book_genres bg 
@@ -61,6 +62,7 @@ export async function getUserBooks(userId: string, env: Env, corsHeaders: Record
         br.rating as user_rating, 
         br.review_text as user_review,
         br.review_status as user_review_status,
+        br.review_rejection_reason as user_review_rejection_reason,
         COALESCE((
           SELECT json_group_array(json_object('id', cg.id, 'name', cg.name, 'description', cg.description))
           FROM book_genres bg 
@@ -106,6 +108,7 @@ export async function getUserBooks(userId: string, env: Env, corsHeaders: Record
     userRating: book.user_rating,
     userReview: book.user_review,
     userReviewStatus: book.user_review_status,
+    userReviewRejectionReason: book.user_review_rejection_reason,
     publisherInfo: book.publisher_info,
     openLibraryKey: book.open_library_key,
     seriesNumber: book.series_number,
@@ -527,7 +530,23 @@ export async function checkinBook(bookId: number, userId: string, env: Env, cors
       });
     }
 
-    // Regular user can check in any book within their accessible locations
+    // Check if user can check in this book
+    // User can check in if: they checked it out OR they have checkout override permission
+    const isCheckedOutByUser = (book as any).checked_out_by === userId;
+    
+    if (!isCheckedOutByUser) {
+      // User didn't check it out - check if they have override permission
+      const locationId = (book as any).location_id;
+      const canOverrideCheckout = await hasUserPermission(userId, locationId, 'allow_checkout_override', env);
+      
+      if (!canOverrideCheckout) {
+        return new Response(JSON.stringify({ error: 'You can only return books you checked out yourself, or if you have checkout override permission' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
     // Update book status
     const updateBookStmt = env.DB.prepare(`
       UPDATE books 
@@ -646,9 +665,9 @@ export async function createBookRemovalRequest(request: Request, userId: string,
   }
 
   // Validate reason
-  const validReasons = ['lost', 'damaged', 'missing', 'overdue', 'other'];
+  const validReasons = ['lost', 'damaged', 'missing', 'overdue', 'returned', 'other'];
   if (!validReasons.includes(reason)) {
-    return new Response(JSON.stringify({ error: 'Invalid reason. Must be one of: lost, damaged, missing, overdue, other' }), {
+    return new Response(JSON.stringify({ error: 'Invalid reason. Must be one of: lost, damaged, missing, overdue, returned, other' }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -1044,6 +1063,13 @@ export async function rateBook(request: Request, bookId: number, userId: string,
         }
       }
     } else {
+      // Check if there was a previously rejected review to mark its notification as read
+      const previousReviewStmt = env.DB.prepare(`
+        SELECT review_status FROM book_ratings WHERE book_id = ? AND user_id = ?
+      `);
+      const previousReview = await previousReviewStmt.bind(bookId, userId).first();
+      const wasPreviouslyRejected = (previousReview as any)?.review_status === 'rejected';
+      
       // Determine review status based on user permissions and content
       const isAdmin = await isUserAdmin(userId, env);
       const hasReviewText = reviewText && reviewText.trim().length > 0;
@@ -1095,6 +1121,32 @@ export async function rateBook(request: Request, bookId: number, userId: string,
         } catch (cacheError) {
           console.error('Failed to invalidate admin analytics cache:', cacheError);
           // Don't fail the review submission if cache invalidation fails
+        }
+      }
+
+      // If this was a resubmission of a previously rejected review, mark the rejection notification as read
+      if (wasPreviouslyRejected && hasReviewText) {
+        try {
+          // Find and mark the rejection notification as read
+          const notificationStmt = env.DB.prepare(`
+            SELECT id FROM in_app_notifications 
+            WHERE recipient_user_id = ? 
+              AND notification_type = 'book_review_rejected'
+              AND is_read = FALSE
+              AND JSON_EXTRACT(metadata, '$.bookTitle') = ?
+            ORDER BY created_at DESC 
+            LIMIT 1
+          `);
+          
+          const notification = await notificationStmt.bind(userId, (bookAccess as any).title).first();
+          
+          if (notification) {
+            const { markNotificationAsRead } = await import('../notifications/index');
+            await markNotificationAsRead(env, (notification as any).id, userId);
+          }
+        } catch (notificationError) {
+          console.error('Failed to mark rejection notification as read:', notificationError);
+          // Don't fail the review submission if notification update fails
         }
       }
     }
@@ -1660,7 +1712,7 @@ export async function moderateReview(request: Request, reviewId: number, userId:
         reviewId
       ).run();
       
-      message = `Review ${action}d successfully`;
+      message = action === 'approve' ? 'Review approved successfully' : 'Review rejected successfully';
     }
 
     if (result.changes === 0) {
