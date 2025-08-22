@@ -172,8 +172,8 @@ export default function ProfilePage() {
             Signed in with {profile.auth_provider === 'google' ? 'Google' : 'Email/Password'}
             {profile.auth_provider === 'email' && (
               <>
-                {' '}• <Button variant="text" size="small" onClick={() => router.push('/settings')} sx={{ p: 0, minWidth: 'auto', textTransform: 'none' }}>
-                  Change password in Settings
+                {' '}• <Button variant="text" size="small" onClick={() => router.push('/security')} sx={{ p: 0, minWidth: 'auto', textTransform: 'none' }}>
+                  Change password in Security
                 </Button>
               </>
             )}
