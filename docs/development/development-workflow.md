@@ -57,16 +57,93 @@ gh pr create --title "feat: your feature" --body "Description"
 4. **Build must pass** before merging
 5. **Delete feature branches** after merging
 
-### Example Workflow
+## Jira Integration Workflow
+
+### Automated Issue Creation
+LibraryCard uses a custom REST API script for seamless Jira integration:
+
 ```bash
-# Start from main
-git checkout main
-git pull origin main
+# Create basic issue
+./scripts/jira-create-issue.sh LCWEB Task "Add book ratings feature" "Allow users to rate books 1-5 stars"
 
-# Create feature branch with Jira issue number
-git checkout -b LCWEB-42-add-book-ratings
+# Create issue assigned to EPIC  
+./scripts/jira-create-issue.sh LCWEB Task "Add book ratings feature" "Allow users to rate books 1-5 stars" LCWEB-124
 
-# Work on feature
+# Available EPICs:
+#   LCWEB-124 - Library Features
+#   LCWEB-123 - Admin Features
+#   LCWEB-122 - UX/UI  
+#   LCWEB-121 - DevOps
+```
+
+### Issue Management Commands
+After creating issues, use the CLI for management:
+
+```bash
+# Set PATH for CLI (add to ~/.zshrc for permanent)
+export PATH=/opt/homebrew/bin:$PATH
+
+# View issue details
+jira issue view LCWEB-42
+
+# Update issue with progress
+echo "Started implementation of rating system" | jira issue edit LCWEB-42 --no-input
+
+# Transition issue status
+jira issue transition LCWEB-42 "In Progress"
+jira issue transition LCWEB-42 Done
+```
+
+### Complete Development Workflow
+
+```bash
+# 1. Create Jira issue with EPIC assignment
+ISSUE_KEY=$(./scripts/jira-create-issue.sh LCWEB Task "Add book ratings" "Implement 5-star rating system" LCWEB-124)
+echo "Created: $ISSUE_KEY"
+
+# 2. Create and checkout branch
+git checkout main && git pull
+git checkout -b $ISSUE_KEY-add-book-ratings
+
+# 3. Develop feature
+# ... make changes ...
+npm run build && npm run lint  # Verify
+
+# 4. Commit with Jira reference
+git add .
+git commit -m "$ISSUE_KEY feat: Add book ratings component
+
+- Add StarRating component with 5-star display
+- Integrate rating API calls with backend
+- Add rating display to book cards
+- Include rating filter in search"
+
+# 5. Update Jira with progress
+echo "## Implementation Complete
+
+✅ **Changes Made:**
+- Created StarRating component
+- Added rating API integration  
+- Updated book display cards
+- Added rating filter to search
+
+✅ **Testing:**
+- Build passed
+- Linting clean
+- Manual testing complete
+
+🔗 **Branch:** $ISSUE_KEY-add-book-ratings
+📝 **Ready for review**" | jira issue edit $ISSUE_KEY --no-input
+
+# 6. Create pull request
+git push -u origin $ISSUE_KEY-add-book-ratings
+gh pr create --title "$ISSUE_KEY feat: Add book ratings system" --body "Implements 5-star rating system. Resolves $ISSUE_KEY"
+
+# 7. After PR approval and merge, close issue
+jira issue transition $ISSUE_KEY Done
+```
+
+### Example Workflow
 # ... make changes ...
 
 # Test locally
