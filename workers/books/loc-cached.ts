@@ -1,5 +1,6 @@
 import { Env } from '../types';
 import { CacheManager, CacheKeys, CacheTTL } from '../cache/kv';
+import { trackApiCall, trackOptimizedSkip } from '../analytics/openLibraryAnalytics';
 
 /**
  * Library of Congress SRU API integration with caching
@@ -654,13 +655,39 @@ export async function getEnhancedBookEditions(title: string, author: string, env
     if (googleCount < 3) {
       console.log(`📖 Google Books returned ${googleCount} covers, fetching OpenLibrary to supplement`);
       try {
+        const startTime = performance.now();
         openLibraryResults = await fetchOpenLibraryEditions(title, author);
+        const responseTime = performance.now() - startTime;
+        
+        // Track the OpenLibrary API call
+        trackApiCall(
+          'covers.openlibrary.org',
+          'cover-selection',
+          responseTime,
+          true
+        );
       } catch (error) {
         console.warn('OpenLibrary fetch failed:', error);
+        
+        // Track the failed API call
+        trackApiCall(
+          'covers.openlibrary.org',
+          'cover-selection',
+          0,
+          false,
+          error instanceof Error ? error.message : 'Unknown error'
+        );
+        
         openLibraryResults = [];
       }
     } else {
       console.log(`✅ Google Books returned ${googleCount} covers, skipping OpenLibrary (sufficient covers available)`);
+      
+      // Track the optimized skip
+      trackOptimizedSkip(
+        'cover-selection',
+        `Google Books sufficient: ${googleCount} covers found (>= 3 threshold)`
+      );
     }
     
     // Combine and deduplicate results with smart relevance sorting

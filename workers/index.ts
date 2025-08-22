@@ -152,6 +152,7 @@ import { RateLimiter } from './auth/rate-limiter';
 import { TwoFactorAuth } from './auth/two-factor';
 import { requireCSRFToken, getCSRFTokenEndpoint, shouldProtectWithCSRF } from './csrf';
 import { CommonErrors, withGlobalErrorHandling, ErrorCategory, createSecureErrorResponse } from './errors';
+import { getSessionAnalytics, logSessionAnalytics } from './analytics/openLibraryAnalytics';
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -1797,6 +1798,43 @@ To review this request, log in as a super administrator and go to Admin Dashboar
           });
         } catch (error) {
           return new Response(JSON.stringify({ error: 'Failed to get cache metrics' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      // OpenLibrary Analytics endpoint (development only)
+      if (path === '/api/admin/openlibrary-analytics' && request.method === 'GET') {
+        // Check admin permission
+        const user = await env.DB.prepare(`
+          SELECT user_role FROM users WHERE id = ?
+        `).bind(userId).first() as any;
+        
+        if (!user || user.user_role !== 'admin') {
+          return new Response(JSON.stringify({ error: 'Admin access required' }), {
+            status: 403,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        try {
+          const analytics = getSessionAnalytics();
+          // Also log to worker console for debugging
+          logSessionAnalytics();
+          
+          return new Response(JSON.stringify({
+            ...analytics,
+            recommendation: analytics.savingsPercentage > 70 
+              ? 'Excellent optimization performance'
+              : analytics.savingsPercentage > 50
+              ? 'Good optimization performance' 
+              : 'Consider reviewing optimization strategies'
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error) {
+          return new Response(JSON.stringify({ error: 'Failed to get OpenLibrary analytics' }), {
             status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
