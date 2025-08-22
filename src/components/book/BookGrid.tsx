@@ -231,6 +231,7 @@ const BookCard = React.memo<BookCardProps>(({
                 onClick={onRateBook ? handleRateBookClick : undefined}
                 userReview={book.userReview}
                 userReviewStatus={book.userReviewStatus}
+                userReviewRejectionReason={book.userReviewRejectionReason}
               />
               
               {/* Rate this book button - only show when user hasn't rated yet */}
@@ -365,6 +366,7 @@ const BookCard = React.memo<BookCardProps>(({
           userLocations={userLocations}
           shelves={shelves}
           pendingRemovalRequests={pendingRemovalRequests}
+          currentUserId={currentUserId}
           viewMode="card"
           onCheckout={onCheckout}
           onCheckin={onCheckin}

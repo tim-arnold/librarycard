@@ -20,6 +20,7 @@ export interface BookActionsProps {
   userLocations: Array<{ id: number; name: string }>
   shelves: Array<{ id: number; name: string; location_id: number; created_at: string }>
   pendingRemovalRequests: Record<string, number>
+  currentUserId: string | null
   viewMode: 'card' | 'compact' | 'list'
   onCheckout: (bookId: string, bookTitle: string) => Promise<void>
   onCheckin: (bookId: string, bookTitle: string) => Promise<void>
@@ -37,6 +38,7 @@ export default function BookActions({
   userLocations,
   shelves,
   pendingRemovalRequests,
+  currentUserId,
   viewMode,
   onCheckout,
   onCheckin,
@@ -45,7 +47,8 @@ export default function BookActions({
   onRequestRemoval,
   onCancelRemovalRequest,
 }: BookActionsProps) {
-  const isCheckedOut = book.checked_out_by && book.checked_out_by !== ''
+  const isCheckedOut = book.status === 'checked_out'
+  const isCheckedOutByCurrentUser = book.checked_out_by === currentUserId
   const hasPendingRemovalRequest = pendingRemovalRequests[book.id]
   const hasMultipleShelves = shelves.length > 1
   
@@ -53,9 +56,11 @@ export default function BookActions({
   const canDelete = isAdmin(userRole) || userPermissions.includes('can_delete_books')
   const canMove = isAdmin(userRole) || userPermissions.includes('can_move_books')
   const canCreateShelves = isAdmin(userRole) || userPermissions.includes('can_create_shelves')
+  const allowCheckoutOverride = isAdmin(userRole) || userPermissions.includes('allow_checkout_override')
   
-  // Allow any user to return any checked out book (trusting community approach)
-  const canReturn = isCheckedOut
+  // Determine checkout/checkin actions based on book status and permissions
+  const canCheckout = !isCheckedOut
+  const canReturn = isCheckedOut && (isCheckedOutByCurrentUser || allowCheckoutOverride)
   
   // Show relocate button if:
   // 1. Book is not checked out
@@ -115,8 +120,8 @@ export default function BookActions({
           </Tooltip>
         )}
         
-        {/* Show checkout/checkin buttons for all users */}
-        {!isCheckedOut ? (
+        {/* Enhanced checkout/checkin buttons based on permissions */}
+        {canCheckout ? (
           <Tooltip title="Check out book" arrow>
             <Button
               size="small"
@@ -135,13 +140,13 @@ export default function BookActions({
             </Button>
           </Tooltip>
         ) : canReturn ? (
-          <Tooltip title="Return book" arrow>
+          <Tooltip title={isCheckedOutByCurrentUser ? "Return your book" : "Return to shelf"} arrow>
             <Button
               size="small"
               variant="contained"
               color="secondary"
               onClick={() => onCheckin(book.id, book.title)}
-              aria-label="Return checked out book"
+              aria-label={isCheckedOutByCurrentUser ? "Return your checked out book" : "Return book to shelf"}
               sx={{ 
                 minWidth: 'auto',
                 p: { xs: 1, sm: 0.5 },
@@ -154,47 +159,43 @@ export default function BookActions({
           </Tooltip>
         ) : null}
         
-        {/* Show removal request buttons for users without delete permission */}
-        {!canDelete && (
-          <>
-            {!hasPendingRemovalRequest ? (
-              <Tooltip title="Notify librarian about book issue" arrow>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  color="warning"
-                  onClick={() => onRequestRemoval(book.id, book.title)}
-                  aria-label="Notify librarian about book issue or request removal"
-                  sx={{ 
-                    minWidth: 'auto',
-                    p: { xs: 1, sm: 0.5 },
-                    minHeight: { xs: 40, sm: 32 },
-                    width: { xs: 40, sm: 32 }
-                  }}
-                >
-                  <ReportProblem sx={{ fontSize: { xs: '1.25rem', sm: '1rem' } }} />
-                </Button>
-              </Tooltip>
-            ) : (
-              <Tooltip title="Cancel removal request" arrow>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  color="info"
-                  onClick={() => onCancelRemovalRequest(book.id, book.title)}
-                  aria-label="Cancel pending book removal request"
-                  sx={{ 
-                    minWidth: 'auto',
-                    p: { xs: 1, sm: 0.5 },
-                    minHeight: { xs: 40, sm: 32 },
-                    width: { xs: 40, sm: 32 }
-                  }}
-                >
-                  <Cancel sx={{ fontSize: { xs: '1.25rem', sm: '1rem' } }} />
-                </Button>
-              </Tooltip>
-            )}
-          </>
+        {/* Show notify librarian button for all users */}
+        {!hasPendingRemovalRequest ? (
+          <Tooltip title="Notify librarian about book issue" arrow>
+            <Button
+              size="small"
+              variant="outlined"
+              color="warning"
+              onClick={() => onRequestRemoval(book.id, book.title)}
+              aria-label="Notify librarian about book issue or request removal"
+              sx={{ 
+                minWidth: 'auto',
+                p: { xs: 1, sm: 0.5 },
+                minHeight: { xs: 40, sm: 32 },
+                width: { xs: 40, sm: 32 }
+              }}
+            >
+              <ReportProblem sx={{ fontSize: { xs: '1.25rem', sm: '1rem' } }} />
+            </Button>
+          </Tooltip>
+        ) : (
+          <Tooltip title="Cancel removal request" arrow>
+            <Button
+              size="small"
+              variant="outlined"
+              color="info"
+              onClick={() => onCancelRemovalRequest(book.id, book.title)}
+              aria-label="Cancel pending book removal request"
+              sx={{ 
+                minWidth: 'auto',
+                p: { xs: 1, sm: 0.5 },
+                minHeight: { xs: 40, sm: 32 },
+                width: { xs: 40, sm: 32 }
+              }}
+            >
+              <Cancel sx={{ fontSize: { xs: '1.25rem', sm: '1rem' } }} />
+            </Button>
+          </Tooltip>
         )}
       </Box>
     )
@@ -203,15 +204,16 @@ export default function BookActions({
   if (viewMode === 'compact') {
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-        {/* Show checkout/checkin buttons for all users */}
+        {/* Enhanced checkout/checkin buttons based on permissions */}
         <Box sx={{ display: 'flex', gap: 1 }}>
-          {!isCheckedOut ? (
+          {canCheckout ? (
             <Button
               size="small"
               variant="contained"
               color="primary"
               startIcon={<CheckCircle />}
               onClick={() => onCheckout(book.id, book.title)}
+              title="Check out book"
             >
               Check Out
             </Button>
@@ -222,8 +224,9 @@ export default function BookActions({
               color="secondary"
               startIcon={<Undo />}
               onClick={() => onCheckin(book.id, book.title)}
+              title={isCheckedOutByCurrentUser ? "Return your book" : "Return to shelf"}
             >
-              Return
+              {isCheckedOutByCurrentUser ? "Return" : "Return to Shelf"}
             </Button>
           ) : null}
         </Box>
@@ -253,35 +256,31 @@ export default function BookActions({
             </Button>
           )}
           
-          {/* Show request removal buttons for users without delete permission */}
-          {!canDelete && (
-            <>
-              {!hasPendingRemovalRequest ? (
-                <Tooltip title="Notify librarian about book issue" arrow>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    color="warning"
-                    onClick={() => onRequestRemoval(book.id, book.title)}
-                    aria-label="Notify librarian about book issue or request removal"
-                  >
-                    <ReportProblem />
-                  </Button>
-                </Tooltip>
-              ) : (
-                <Tooltip title="Cancel removal request" arrow>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    color="info"
-                    onClick={() => onCancelRemovalRequest(book.id, book.title)}
-                    aria-label="Cancel pending book removal request"
-                  >
-                    <Cancel />
-                  </Button>
-                </Tooltip>
-              )}
-            </>
+          {/* Show notify librarian button for all users */}
+          {!hasPendingRemovalRequest ? (
+            <Tooltip title="Notify librarian about book issue" arrow>
+              <Button
+                size="small"
+                variant="outlined"
+                color="warning"
+                onClick={() => onRequestRemoval(book.id, book.title)}
+                aria-label="Notify librarian about book issue or request removal"
+              >
+                <ReportProblem />
+              </Button>
+            </Tooltip>
+          ) : (
+            <Tooltip title="Cancel removal request" arrow>
+              <Button
+                size="small"
+                variant="outlined"
+                color="info"
+                onClick={() => onCancelRemovalRequest(book.id, book.title)}
+                aria-label="Cancel pending book removal request"
+              >
+                <Cancel />
+              </Button>
+            </Tooltip>
           )}
         </Box>
       </Box>
@@ -316,14 +315,15 @@ export default function BookActions({
           </Button>
         )}
         
-        {/* Show checkout/checkin buttons for all users */}
-        {!isCheckedOut ? (
+        {/* Enhanced checkout/checkin buttons based on permissions */}
+        {canCheckout ? (
           <Button
             size="small"
             variant="contained"
             color="primary"
             startIcon={<CheckCircle />}
             onClick={() => onCheckout(book.id, book.title)}
+            title="Check out book"
           >
             Check Out
           </Button>
@@ -334,42 +334,41 @@ export default function BookActions({
             color="secondary"
             startIcon={<Undo />}
             onClick={() => onCheckin(book.id, book.title)}
+            title={isCheckedOutByCurrentUser ? "Return your book" : "Return to shelf"}
           >
-            Return
+            {isCheckedOutByCurrentUser ? "Return" : "Return to Shelf"}
           </Button>
         ) : null}
       </Box>
 
-      {/* Show request removal buttons for users without delete permission */}
-      {!canDelete && (
-        <Box sx={{ ml: 1 }}>
-          {!hasPendingRemovalRequest ? (
-            <Tooltip title="Notify librarian about book issue" arrow>
-              <Button
-                size="small"
-                variant="outlined"
-                color="warning"
-                onClick={() => onRequestRemoval(book.id, book.title)}
-                aria-label="Notify librarian about book issue or request removal"
-              >
-                <ReportProblem />
-              </Button>
-            </Tooltip>
-          ) : (
-            <Tooltip title="Cancel removal request" arrow>
-              <Button
-                size="small"
-                variant="outlined"
-                color="info"
-                onClick={() => onCancelRemovalRequest(book.id, book.title)}
-                aria-label="Cancel pending book removal request"
-              >
-                <Cancel />
-              </Button>
-            </Tooltip>
-          )}
-        </Box>
-      )}
+      {/* Show notify librarian button for all users */}
+      <Box sx={{ ml: 1 }}>
+        {!hasPendingRemovalRequest ? (
+          <Tooltip title="Notify librarian about book issue" arrow>
+            <Button
+              size="small"
+              variant="outlined"
+              color="warning"
+              onClick={() => onRequestRemoval(book.id, book.title)}
+              aria-label="Notify librarian about book issue or request removal"
+            >
+              <ReportProblem />
+            </Button>
+          </Tooltip>
+        ) : (
+          <Tooltip title="Cancel removal request" arrow>
+            <Button
+              size="small"
+              variant="outlined"
+              color="info"
+              onClick={() => onCancelRemovalRequest(book.id, book.title)}
+              aria-label="Cancel pending book removal request"
+            >
+              <Cancel />
+            </Button>
+          </Tooltip>
+        )}
+      </Box>
     </Box>
   )
 }

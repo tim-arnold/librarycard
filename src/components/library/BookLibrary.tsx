@@ -81,6 +81,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
     startCoverAnimation,
     showRemovalReasonModal,
     handleRemovalReasonModalClose,
+    currentBookForRemoval,
   } = useBookActions({
     books,
     setBooks,
@@ -513,6 +514,8 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
         <RemovalReasonModal
           open={showRemovalReasonModal}
           onClose={handleRemovalReasonModalClose}
+          bookStatus={currentBookForRemoval?.status}
+          allowCheckoutOverride={userPermissions.includes('allow_checkout_override')}
         />
 
         {selectedBookForRating && (

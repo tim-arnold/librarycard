@@ -110,7 +110,8 @@ import {
 import {
   getUserProfile,
   updateUserProfile,
-  getDashboardData
+  getDashboardData,
+  getUserRejectedReviews
 } from './profile';
 import {
   getUserFromRequest
@@ -1159,6 +1160,10 @@ export default {
 
       if (path === '/api/profile' && request.method === 'PUT') {
         return await updateUserProfile(request, userId, env, corsHeaders);
+      }
+
+      if (path === '/api/user/rejected-reviews' && request.method === 'GET') {
+        return await getUserRejectedReviews(userId, env, corsHeaders);
       }
 
       // Batched dashboard endpoint - combines all initial page load data

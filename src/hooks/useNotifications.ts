@@ -91,6 +91,7 @@ export function useNotifications(): UseNotificationsReturn {
         headers: {
           'Authorization': `Bearer ${session.user.email}`,
           'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
         },
         body: JSON.stringify({ notificationId }),
       });
@@ -107,6 +108,9 @@ export function useNotifications(): UseNotificationsReturn {
               : n
           )
         );
+
+        // Trigger badge refresh in AppLayout
+        window.dispatchEvent(new CustomEvent('notificationUpdated'));
       }
     } catch (err) {
       console.error('Error marking notification as read:', err);
@@ -121,6 +125,8 @@ export function useNotifications(): UseNotificationsReturn {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.user.email}`,
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
         },
       });
 
@@ -135,6 +141,9 @@ export function useNotifications(): UseNotificationsReturn {
             read_at: n.read_at || new Date().toISOString() 
           }))
         );
+
+        // Trigger badge refresh in AppLayout
+        window.dispatchEvent(new CustomEvent('notificationUpdated'));
       }
     } catch (err) {
       console.error('Error marking all notifications as read:', err);
@@ -149,6 +158,8 @@ export function useNotifications(): UseNotificationsReturn {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.user.email}`,
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
         },
       });
 
@@ -157,16 +168,20 @@ export function useNotifications(): UseNotificationsReturn {
         setUnreadCount(data.unreadCount || 0);
         // Refresh notifications to show the new test notification
         await refreshNotifications();
+        
+        // Trigger badge refresh in AppLayout
+        window.dispatchEvent(new CustomEvent('notificationUpdated'));
       }
     } catch (err) {
       console.error('Error creating test notification:', err);
     }
   }, [session?.user?.email, refreshNotifications]);
 
-  // Fetch unread count on mount and when session changes
+  // Fetch notifications and unread count on mount and when session changes
   useEffect(() => {
+    refreshNotifications();
     fetchUnreadCount();
-  }, [fetchUnreadCount]);
+  }, [refreshNotifications, fetchUnreadCount]);
 
   // Set up periodic refresh of unread count (every 2 minutes)
   useEffect(() => {
