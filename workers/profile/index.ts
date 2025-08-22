@@ -217,16 +217,13 @@ export async function getUserRejectedReviews(userId: string, env: Env, corsHeade
       ORDER BY created_at DESC
     `).bind(userId).all();
 
-    console.log(`🔍 Debug getUserRejectedReviews for user ${userId}:`);
-    console.log(`📊 Rejected reviews found: ${rejectedReviews.results.length}`);
-    console.log(`📬 All book_review_rejected notifications:`, allRejectedNotifications.results);
-    console.log(`🔢 Unread count from query: ${unreadNotificationsCount?.count || 0}`);
+    // Debug logging removed to reduce noise
 
     let unreadCount = unreadNotificationsCount?.count || 0;
 
     // ENHANCED BACKFILL FIX: Create missing notifications for rejected reviews without notifications
     if (rejectedReviews.results.length > 0) {
-      console.log('🔧 Checking for rejected reviews without notifications...');
+      // Checking for rejected reviews without notifications...
       
       const { createInAppNotification } = await import('../notifications/index');
       let createdCount = 0;
@@ -252,13 +249,13 @@ export async function getUserRejectedReviews(userId: string, env: Env, corsHeade
               undefined,
               { bookTitle: review.book_title, bookAuthors: review.book_authors, comment: review.review_rejection_reason }
             );
-            console.log(`✅ Created missing notification for: ${review.book_title}`);
+            // Created missing notification for: ${review.book_title}
             createdCount++;
           } catch (error) {
             console.error(`❌ Failed to create notification for ${review.book_title}:`, error);
           }
         } else {
-          console.log(`📋 Notification already exists for: ${review.book_title}`);
+          // Notification already exists for: ${review.book_title}
         }
       }
       
@@ -273,9 +270,9 @@ export async function getUserRejectedReviews(userId: string, env: Env, corsHeade
         `).bind(userId).first() as any;
         
         unreadCount = newUnreadCount?.count || 0;
-        console.log(`🔢 New unread count after creating ${createdCount} notifications: ${unreadCount}`);
+        // New unread count after creating ${createdCount} notifications: ${unreadCount}
       } else {
-        console.log('📋 No missing notifications found to create');
+        // No missing notifications found to create
       }
     }
 
