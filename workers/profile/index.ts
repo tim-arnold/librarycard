@@ -87,21 +87,21 @@ export async function getDashboardData(userId: string, env: Env, corsHeaders: Re
 
     // Call the existing working API functions that are already being used
     const profileResponse = await getUserProfile(userId, env, corsHeaders);
-    const profileData = await profileResponse.json();
+    const profileData = await profileResponse.json() as any;
     
     const locationsResponse = await getUserLocations(userId, env, corsHeaders);
-    const locations = await locationsResponse.json();
+    const locations = await locationsResponse.json() as any;
     
     const booksResponse = await getCachedUserBooks(userId, env, corsHeaders);
-    const books = await booksResponse.json();
+    const books = await booksResponse.json() as any;
     
     const removalRequestsResponse = await getBookRemovalRequests(userId, env, corsHeaders);
-    const removalRequests = await removalRequestsResponse.json();
+    const removalRequests = await removalRequestsResponse.json() as any;
     
     // Mock request for global permissions (since it expects a Request object)
     const mockRequest = new Request('http://localhost/api/permissions/global', { method: 'GET' });
     const globalPermissionsResponse = await getUserGlobalPermissions(mockRequest, userId, env, corsHeaders);
-    const globalPermissions = await globalPermissionsResponse.json();
+    const globalPermissions = await globalPermissionsResponse.json() as any;
 
     // Get location-specific permissions for first location (as done in useBookLibrary)
     let userPermissions = [];
@@ -109,7 +109,7 @@ export async function getDashboardData(userId: string, env: Env, corsHeaders: Re
       const permissionUrl = `http://localhost/api/permissions/user?locationId=${locations[0].id}`;
       const mockPermissionRequest = new Request(permissionUrl, { method: 'GET' });
       const userPermissionsResponse = await getUserPermissions(mockPermissionRequest, userId, env, corsHeaders);
-      const userPermissionsData = await userPermissionsResponse.json();
+      const userPermissionsData = await userPermissionsResponse.json() as any;
       userPermissions = userPermissionsData.permissions || [];
     }
 
@@ -119,7 +119,7 @@ export async function getDashboardData(userId: string, env: Env, corsHeaders: Re
     if (locations && locations.length > 0) {
       for (const location of locations) {
         const shelvesResponse = await getLocationShelves(location.id, userId, env, corsHeaders);
-        const shelves = await shelvesResponse.json();
+        const shelves = await shelvesResponse.json() as any;
         allShelves.push(...shelves);
       }
     }
