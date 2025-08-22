@@ -160,7 +160,7 @@ jobs:
           else
             echo "❌ Staging API unresponsive after migration"
             exit 1
-          fi
+          fi.."
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_STAGING_NEW }}
 

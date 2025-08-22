@@ -812,24 +812,25 @@ export default {
       // Enhanced book editions endpoint for cover selection (multi-source)
       if (path === '/api/books/editions' && request.method === 'GET') {
         console.log('🔍 Enhanced book editions request received');
-        const query = url.searchParams.get('q'); // General search query
+        const title = url.searchParams.get('title');
+        const author = url.searchParams.get('author');
+        const query = url.searchParams.get('q'); // Fallback for general search
         const enhanced = url.searchParams.get('enhanced') === 'true';
         
-        console.log('📝 Request params:', { query, enhanced });
+        console.log('📝 Request params:', { title, author, query, enhanced });
         
-        // Require query parameter
-        if (!query) {
-          return new Response(JSON.stringify({ error: 'Query parameter (q) is required' }), {
+        // Require either title+author or general query
+        if (!title && !author && !query) {
+          return new Response(JSON.stringify({ error: 'Title and author parameters, or general query (q) parameter is required' }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
         
         if (enhanced) {
-          // Use the same search query for both title and author searches
-          // This allows each API to handle the query in its own way
-          const searchTitle = query;
-          const searchAuthor = query;
+          // Use specific title and author if provided, otherwise use general query
+          const searchTitle = title || query || '';
+          const searchAuthor = author || query || '';
           
           console.log('🚀 Calling getEnhancedBookEditions with:', { searchTitle, searchAuthor });
           console.log('ℹ️  Enhanced search always filters for books with cover art');
