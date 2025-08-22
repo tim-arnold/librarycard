@@ -36,8 +36,7 @@ export default function ActiveFilters({
 
   return (
     <Box sx={{ 
-      mb: 3, 
-      minHeight: 48, // Reserve space for one row of chips (32px height + 16px gap)
+      mb: hasActiveFilters ? 3 : 0, 
       transition: 'opacity 0.3s ease-in-out, transform 0.3s ease-in-out',
       opacity: hasActiveFilters ? 1 : 0,
       transform: hasActiveFilters ? 'translateY(0)' : 'translateY(-8px)',
