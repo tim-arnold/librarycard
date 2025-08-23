@@ -1,0 +1,398 @@
+/* Marketing Card Components */
+
+/* Base card styles */
+.marketing-card {
+  background: var(--marketing-white);
+  border-radius: var(--marketing-radius-lg);
+  box-shadow: var(--marketing-shadow);
+  overflow: hidden;
+  transition: all 0.3s ease-in-out;
+}
+
+.marketing-card:hover {
+  box-shadow: var(--marketing-shadow-lg);
+  transform: translateY(-2px);
+}
+
+/* Card sizes */
+.marketing-card-sm {
+  padding: var(--marketing-spacing-4);
+}
+
+.marketing-card-md {
+  padding: var(--marketing-spacing-6);
+}
+
+.marketing-card-lg {
+  padding: var(--marketing-spacing-8);
+}
+
+.marketing-card-xl {
+  padding: var(--marketing-spacing-12);
+}
+
+/* Card variants */
+.marketing-card-elevated {
+  box-shadow: var(--marketing-shadow-xl);
+}
+
+.marketing-card-flat {
+  box-shadow: none;
+  border: 1px solid var(--marketing-gray-200);
+}
+
+.marketing-card-bordered {
+  border: 2px solid var(--marketing-gray-200);
+  box-shadow: var(--marketing-shadow-sm);
+}
+
+.marketing-card-primary {
+  background: linear-gradient(135deg, var(--marketing-primary) 0%, var(--marketing-primary-dark) 100%);
+  color: var(--marketing-white);
+}
+
+.marketing-card-secondary {
+  background: linear-gradient(135deg, var(--marketing-secondary) 0%, var(--marketing-secondary-dark) 100%);
+  color: var(--marketing-white);
+}
+
+.marketing-card-gradient {
+  background: linear-gradient(135deg, var(--marketing-primary) 0%, var(--marketing-secondary) 100%);
+  color: var(--marketing-white);
+}
+
+/* Pricing card styles */
+.marketing-pricing-card {
+  background: var(--marketing-white);
+  border-radius: var(--marketing-radius-xl);
+  border: 2px solid var(--marketing-gray-200);
+  padding: var(--marketing-spacing-8);
+  position: relative;
+  transition: all 0.3s ease-in-out;
+  text-align: center;
+}
+
+.marketing-pricing-card:hover {
+  border-color: var(--marketing-primary);
+  box-shadow: var(--marketing-shadow-lg);
+  transform: translateY(-4px);
+}
+
+.marketing-pricing-card-featured {
+  border-color: var(--marketing-primary);
+  box-shadow: var(--marketing-shadow-lg);
+  transform: scale(1.05);
+  z-index: 1;
+}
+
+.marketing-pricing-card-featured::before {
+  content: 'Most Popular';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, var(--marketing-primary) 0%, var(--marketing-secondary) 100%);
+  color: var(--marketing-white);
+  padding: var(--marketing-spacing-2) var(--marketing-spacing-6);
+  border-radius: 0 0 var(--marketing-radius-lg) var(--marketing-radius-lg);
+  font-size: var(--marketing-text-sm);
+  font-weight: var(--marketing-font-semibold);
+}
+
+.marketing-pricing-card-featured:hover {
+  transform: scale(1.05) translateY(-4px);
+}
+
+.marketing-pricing-header {
+  margin-bottom: var(--marketing-spacing-6);
+}
+
+.marketing-pricing-title {
+  font-size: var(--marketing-text-xl);
+  font-weight: var(--marketing-font-bold);
+  color: var(--marketing-gray-900);
+  margin-bottom: var(--marketing-spacing-2);
+}
+
+.marketing-pricing-subtitle {
+  font-size: var(--marketing-text-sm);
+  color: var(--marketing-gray-500);
+  margin-bottom: var(--marketing-spacing-4);
+}
+
+.marketing-pricing-price {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: var(--marketing-spacing-1);
+  margin-bottom: var(--marketing-spacing-6);
+}
+
+.marketing-pricing-currency {
+  font-size: var(--marketing-text-xl);
+  font-weight: var(--marketing-font-semibold);
+  color: var(--marketing-gray-600);
+}
+
+.marketing-pricing-amount {
+  font-size: var(--marketing-text-4xl);
+  font-weight: var(--marketing-font-bold);
+  color: var(--marketing-gray-900);
+  line-height: 1;
+}
+
+.marketing-pricing-period {
+  font-size: var(--marketing-text-base);
+  color: var(--marketing-gray-500);
+}
+
+.marketing-pricing-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--marketing-spacing-8) 0;
+}
+
+.marketing-pricing-feature {
+  display: flex;
+  align-items: center;
+  gap: var(--marketing-spacing-3);
+  padding: var(--marketing-spacing-2) 0;
+  font-size: var(--marketing-text-sm);
+  color: var(--marketing-gray-600);
+}
+
+.marketing-pricing-feature::before {
+  content: '✓';
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: var(--marketing-success);
+  color: var(--marketing-white);
+  border-radius: 50%;
+  font-size: var(--marketing-text-xs);
+  font-weight: var(--marketing-font-bold);
+  flex-shrink: 0;
+}
+
+.marketing-pricing-feature-unavailable {
+  opacity: 0.5;
+}
+
+.marketing-pricing-feature-unavailable::before {
+  content: '✗';
+  background: var(--marketing-gray-400);
+}
+
+/* Feature card styles */
+.marketing-feature-card {
+  background: var(--marketing-white);
+  border-radius: var(--marketing-radius-lg);
+  padding: var(--marketing-spacing-6);
+  text-align: center;
+  border: 1px solid var(--marketing-gray-200);
+  transition: all 0.3s ease-in-out;
+}
+
+.marketing-feature-card:hover {
+  border-color: var(--marketing-primary);
+  box-shadow: var(--marketing-shadow-lg);
+  transform: translateY(-2px);
+}
+
+.marketing-feature-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto var(--marketing-spacing-4);
+  background: linear-gradient(135deg, var(--marketing-primary) 0%, var(--marketing-secondary) 100%);
+  border-radius: var(--marketing-radius-xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--marketing-white);
+  font-size: var(--marketing-text-2xl);
+}
+
+.marketing-feature-title {
+  font-size: var(--marketing-text-lg);
+  font-weight: var(--marketing-font-semibold);
+  color: var(--marketing-gray-900);
+  margin-bottom: var(--marketing-spacing-2);
+}
+
+.marketing-feature-description {
+  font-size: var(--marketing-text-sm);
+  color: var(--marketing-gray-600);
+  line-height: var(--marketing-leading-relaxed);
+}
+
+/* Testimonial card styles */
+.marketing-testimonial-card {
+  background: var(--marketing-white);
+  border-radius: var(--marketing-radius-lg);
+  padding: var(--marketing-spacing-6);
+  border: 1px solid var(--marketing-gray-200);
+  position: relative;
+}
+
+.marketing-testimonial-card::before {
+  content: '"';
+  position: absolute;
+  top: var(--marketing-spacing-4);
+  left: var(--marketing-spacing-6);
+  font-size: var(--marketing-text-4xl);
+  color: var(--marketing-primary);
+  font-weight: var(--marketing-font-bold);
+  line-height: 1;
+}
+
+.marketing-testimonial-content {
+  margin: var(--marketing-spacing-6) 0;
+  font-size: var(--marketing-text-base);
+  color: var(--marketing-gray-700);
+  font-style: italic;
+  line-height: var(--marketing-leading-relaxed);
+}
+
+.marketing-testimonial-author {
+  display: flex;
+  align-items: center;
+  gap: var(--marketing-spacing-3);
+}
+
+.marketing-testimonial-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--marketing-gray-200);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--marketing-font-semibold);
+  color: var(--marketing-gray-600);
+}
+
+.marketing-testimonial-details h4 {
+  font-size: var(--marketing-text-sm);
+  font-weight: var(--marketing-font-semibold);
+  color: var(--marketing-gray-900);
+  margin: 0;
+}
+
+.marketing-testimonial-details p {
+  font-size: var(--marketing-text-xs);
+  color: var(--marketing-gray-500);
+  margin: 0;
+}
+
+/* Stats card styles */
+.marketing-stats-card {
+  background: var(--marketing-white);
+  border-radius: var(--marketing-radius-lg);
+  padding: var(--marketing-spacing-6);
+  text-align: center;
+  border: 1px solid var(--marketing-gray-200);
+}
+
+.marketing-stats-number {
+  font-size: var(--marketing-text-3xl);
+  font-weight: var(--marketing-font-bold);
+  color: var(--marketing-primary);
+  margin-bottom: var(--marketing-spacing-2);
+  display: block;
+}
+
+.marketing-stats-label {
+  font-size: var(--marketing-text-sm);
+  color: var(--marketing-gray-600);
+  font-weight: var(--marketing-font-medium);
+}
+
+/* Blog card styles */
+.marketing-blog-card {
+  background: var(--marketing-white);
+  border-radius: var(--marketing-radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--marketing-gray-200);
+  transition: all 0.3s ease-in-out;
+}
+
+.marketing-blog-card:hover {
+  box-shadow: var(--marketing-shadow-lg);
+  transform: translateY(-2px);
+}
+
+.marketing-blog-image {
+  width: 100%;
+  height: 200px;
+  background: var(--marketing-gray-200);
+  position: relative;
+  overflow: hidden;
+}
+
+.marketing-blog-content {
+  padding: var(--marketing-spacing-6);
+}
+
+.marketing-blog-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--marketing-spacing-4);
+  font-size: var(--marketing-text-xs);
+  color: var(--marketing-gray-500);
+  margin-bottom: var(--marketing-spacing-3);
+}
+
+.marketing-blog-title {
+  font-size: var(--marketing-text-lg);
+  font-weight: var(--marketing-font-semibold);
+  color: var(--marketing-gray-900);
+  margin-bottom: var(--marketing-spacing-2);
+  line-height: var(--marketing-leading-tight);
+}
+
+.marketing-blog-excerpt {
+  font-size: var(--marketing-text-sm);
+  color: var(--marketing-gray-600);
+  line-height: var(--marketing-leading-relaxed);
+}
+
+/* Responsive card adjustments */
+@media (max-width: 640px) {
+  .marketing-card-lg,
+  .marketing-card-xl {
+    padding: var(--marketing-spacing-6);
+  }
+  
+  .marketing-pricing-card {
+    padding: var(--marketing-spacing-6);
+  }
+  
+  .marketing-feature-icon {
+    width: 48px;
+    height: 48px;
+    font-size: var(--marketing-text-xl);
+  }
+  
+  .marketing-pricing-amount {
+    font-size: var(--marketing-text-3xl);
+  }
+}
+
+/* Dark mode support (future) */
+@media (prefers-color-scheme: dark) {
+  .marketing-card,
+  .marketing-pricing-card,
+  .marketing-feature-card,
+  .marketing-testimonial-card,
+  .marketing-stats-card,
+  .marketing-blog-card {
+    background: var(--marketing-gray-800);
+    border-color: var(--marketing-gray-700);
+  }
+  
+  .marketing-card-flat {
+    border-color: var(--marketing-gray-700);
+  }
+}

@@ -1,0 +1,321 @@
+/* Marketing Button Components */
+
+/* Base button styles */
+.marketing-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--marketing-spacing-2);
+  font-family: var(--marketing-font-primary);
+  font-weight: var(--marketing-font-medium);
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  border-radius: var(--marketing-radius-lg);
+  white-space: nowrap;
+  user-select: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.marketing-button:focus {
+  outline: 2px solid var(--marketing-primary);
+  outline-offset: 2px;
+}
+
+.marketing-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Button sizes */
+.marketing-button-sm {
+  font-size: var(--marketing-text-sm);
+  padding: var(--marketing-spacing-2) var(--marketing-spacing-4);
+  height: 36px;
+}
+
+.marketing-button-md {
+  font-size: var(--marketing-text-base);
+  padding: var(--marketing-spacing-3) var(--marketing-spacing-6);
+  height: 44px;
+}
+
+.marketing-button-lg {
+  font-size: var(--marketing-text-lg);
+  padding: var(--marketing-spacing-4) var(--marketing-spacing-8);
+  height: 52px;
+}
+
+.marketing-button-xl {
+  font-size: var(--marketing-text-xl);
+  padding: var(--marketing-spacing-5) var(--marketing-spacing-10);
+  height: 60px;
+}
+
+/* Button variants */
+.marketing-button-primary {
+  background: linear-gradient(135deg, var(--marketing-primary) 0%, var(--marketing-primary-dark) 100%);
+  color: var(--marketing-white);
+  box-shadow: var(--marketing-shadow);
+}
+
+.marketing-button-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--marketing-shadow-lg);
+  background: linear-gradient(135deg, var(--marketing-primary-hover) 0%, var(--marketing-primary-dark) 100%);
+}
+
+.marketing-button-primary:active {
+  transform: translateY(0);
+  box-shadow: var(--marketing-shadow);
+}
+
+.marketing-button-secondary {
+  background: var(--marketing-white);
+  color: var(--marketing-primary);
+  border: 2px solid var(--marketing-primary);
+  box-shadow: var(--marketing-shadow-sm);
+}
+
+.marketing-button-secondary:hover {
+  background: var(--marketing-primary);
+  color: var(--marketing-white);
+  transform: translateY(-1px);
+  box-shadow: var(--marketing-shadow-md);
+}
+
+.marketing-button-secondary:active {
+  transform: translateY(0);
+  box-shadow: var(--marketing-shadow-sm);
+}
+
+.marketing-button-outline {
+  background: transparent;
+  color: var(--marketing-gray-700);
+  border: 2px solid var(--marketing-gray-300);
+}
+
+.marketing-button-outline:hover {
+  background: var(--marketing-gray-50);
+  border-color: var(--marketing-gray-400);
+  color: var(--marketing-gray-900);
+}
+
+.marketing-button-ghost {
+  background: transparent;
+  color: var(--marketing-gray-600);
+  border: none;
+  box-shadow: none;
+}
+
+.marketing-button-ghost:hover {
+  background: var(--marketing-gray-100);
+  color: var(--marketing-gray-900);
+}
+
+.marketing-button-success {
+  background: linear-gradient(135deg, var(--marketing-success) 0%, var(--marketing-success-dark) 100%);
+  color: var(--marketing-white);
+  box-shadow: var(--marketing-shadow);
+}
+
+.marketing-button-success:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--marketing-shadow-lg);
+  background: linear-gradient(135deg, var(--marketing-success-light) 0%, var(--marketing-success) 100%);
+}
+
+.marketing-button-gradient {
+  background: linear-gradient(135deg, var(--marketing-primary) 0%, var(--marketing-secondary) 100%);
+  color: var(--marketing-white);
+  box-shadow: var(--marketing-shadow);
+  position: relative;
+}
+
+.marketing-button-gradient::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, var(--marketing-primary-hover) 0%, var(--marketing-secondary-hover) 100%);
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+  border-radius: inherit;
+}
+
+.marketing-button-gradient:hover::before {
+  opacity: 1;
+}
+
+.marketing-button-gradient:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--marketing-shadow-lg);
+}
+
+.marketing-button-gradient * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Button shapes */
+.marketing-button-rounded {
+  border-radius: var(--marketing-radius-full);
+}
+
+.marketing-button-square {
+  border-radius: var(--marketing-radius-base);
+  aspect-ratio: 1;
+  padding: var(--marketing-spacing-3);
+}
+
+/* Button states */
+.marketing-button-loading {
+  position: relative;
+  color: transparent;
+}
+
+.marketing-button-loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: marketing-spin 1s linear infinite;
+}
+
+@keyframes marketing-spin {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+/* Button groups */
+.marketing-button-group {
+  display: inline-flex;
+  border-radius: var(--marketing-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--marketing-shadow-sm);
+}
+
+.marketing-button-group .marketing-button {
+  border-radius: 0;
+  border-right: 1px solid var(--marketing-gray-200);
+  box-shadow: none;
+}
+
+.marketing-button-group .marketing-button:first-child {
+  border-radius: var(--marketing-radius-lg) 0 0 var(--marketing-radius-lg);
+}
+
+.marketing-button-group .marketing-button:last-child {
+  border-radius: 0 var(--marketing-radius-lg) var(--marketing-radius-lg) 0;
+  border-right: none;
+}
+
+.marketing-button-group .marketing-button:only-child {
+  border-radius: var(--marketing-radius-lg);
+  border-right: none;
+}
+
+/* Icon buttons */
+.marketing-button-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: var(--marketing-radius-lg);
+}
+
+.marketing-button-icon-sm {
+  width: 36px;
+  height: 36px;
+}
+
+.marketing-button-icon-lg {
+  width: 52px;
+  height: 52px;
+}
+
+/* Full width buttons */
+.marketing-button-full {
+  width: 100%;
+  justify-content: center;
+}
+
+/* Responsive button utilities */
+@media (max-width: 640px) {
+  .marketing-button-responsive {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .marketing-button-group-responsive {
+    flex-direction: column;
+  }
+  
+  .marketing-button-group-responsive .marketing-button {
+    border-radius: 0;
+    border-right: none;
+    border-bottom: 1px solid var(--marketing-gray-200);
+  }
+  
+  .marketing-button-group-responsive .marketing-button:first-child {
+    border-radius: var(--marketing-radius-lg) var(--marketing-radius-lg) 0 0;
+  }
+  
+  .marketing-button-group-responsive .marketing-button:last-child {
+    border-radius: 0 0 var(--marketing-radius-lg) var(--marketing-radius-lg);
+    border-bottom: none;
+  }
+}
+
+/* Special effects */
+.marketing-button-glow {
+  box-shadow: 
+    var(--marketing-shadow),
+    0 0 0 1px var(--marketing-primary),
+    0 0 20px var(--marketing-primary);
+}
+
+.marketing-button-glow:hover {
+  box-shadow: 
+    var(--marketing-shadow-lg),
+    0 0 0 1px var(--marketing-primary),
+    0 0 30px var(--marketing-primary);
+}
+
+/* Dark mode support (future) */
+@media (prefers-color-scheme: dark) {
+  .marketing-button-outline {
+    color: var(--marketing-gray-300);
+    border-color: var(--marketing-gray-600);
+  }
+  
+  .marketing-button-outline:hover {
+    background: var(--marketing-gray-800);
+    color: var(--marketing-white);
+  }
+  
+  .marketing-button-ghost {
+    color: var(--marketing-gray-400);
+  }
+  
+  .marketing-button-ghost:hover {
+    background: var(--marketing-gray-800);
+    color: var(--marketing-white);
+  }
+}
