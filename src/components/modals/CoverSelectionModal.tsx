@@ -84,7 +84,8 @@ export default function CoverSelectionModal({
     
     try {
       const params = new URLSearchParams({
-        q: queryToSearch,
+        title: title,
+        author: author,
         enhanced: enhancedMode.toString()
       })
       
