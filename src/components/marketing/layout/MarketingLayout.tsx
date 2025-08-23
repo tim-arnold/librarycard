@@ -1,5 +1,5 @@
 import React from 'react'
-import MarketingHeader from './MarketingHeader'
+import GlobalHeader from '@/components/layout/GlobalHeader'
 import MarketingFooter from './MarketingFooter'
 
 interface MarketingLayoutProps {
@@ -10,7 +10,7 @@ export default function MarketingLayout({ children }: MarketingLayoutProps) {
   return (
     <div className="marketing-page">
       <div className="marketing-content">
-        <MarketingHeader />
+        <GlobalHeader />
         <main>
           {children}
         </main>
