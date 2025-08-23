@@ -2,14 +2,13 @@
 
 import { useSession } from 'next-auth/react'
 import { usePathname } from 'next/navigation'
-import { useRef } from 'react'
-import AppLayout from '@/components/layout/AppLayout'
+import AppLayoutWithGlobalHeader from '@/components/layout/AppLayoutWithGlobalHeader'
 
 interface ConditionalAppLayoutProps {
   children: React.ReactNode
 }
 
-// Pages that should NOT have the AppLayout
+// Pages that should NOT have any layout (raw pages)
 const PUBLIC_PAGES = [
   '/auth/signin',
   '/auth/reset-password',
@@ -24,50 +23,34 @@ const MARKETING_PAGES = [
   '/contact',
 ]
 
-// Function to determine current page from pathname
-function getCurrentPageFromPath(pathname: string): 'library' | 'add-books' | 'admin' {
-  if (pathname.startsWith('/admin')) return 'admin'
-  if (pathname.startsWith('/add-books')) return 'add-books'
-  return 'library' // default, includes /library and /profile
-}
-
 export default function ConditionalAppLayout({ children }: ConditionalAppLayoutProps) {
   const { data: session } = useSession()
   const pathname = usePathname()
 
-  // Use ref to store stable currentPage value - only update when main section changes
-  const currentPageRef = useRef<'library' | 'add-books' | 'admin'>('library')
-  
-  const newCurrentPage = getCurrentPageFromPath(pathname)
-  if (currentPageRef.current !== newCurrentPage) {
-    currentPageRef.current = newCurrentPage
-  }
-  
-  const currentPage = currentPageRef.current
-
-  // Don't show AppLayout for auth pages
+  // Don't show any layout for auth pages (they need to be completely standalone)
   if (PUBLIC_PAGES.includes(pathname)) {
     return <>{children}</>
   }
 
-  // Don't show AppLayout for marketing pages (they handle their own layout)
+  // Marketing pages handle their own layout (including global header)
   if (MARKETING_PAGES.includes(pathname)) {
     return <>{children}</>
   }
 
-  // Show legal pages without AppLayout if not authenticated
+  // Show legal pages without layout if not authenticated
   if (!session && (pathname === '/privacy' || pathname === '/terms' || pathname === '/security')) {
     return <>{children}</>
   }
 
-  // If not authenticated and not a marketing/legal/public page, show without layout
+  // If not authenticated and not a marketing/legal/public page, redirect handled by individual pages
   if (!session) {
     return <>{children}</>
   }
 
+  // All authenticated app pages use the new global header layout
   return (
-    <AppLayout currentPage={currentPage}>
+    <AppLayoutWithGlobalHeader>
       {children}
-    </AppLayout>
+    </AppLayoutWithGlobalHeader>
   )
 }
