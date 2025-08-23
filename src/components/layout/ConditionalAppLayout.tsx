@@ -15,6 +15,15 @@ const PUBLIC_PAGES = [
   '/auth/reset-password',
 ]
 
+// Marketing pages (public, use marketing layout)
+const MARKETING_PAGES = [
+  '/',
+  '/pricing',
+  '/features',
+  '/about',
+  '/contact',
+]
+
 // Function to determine current page from pathname
 function getCurrentPageFromPath(pathname: string): 'library' | 'add-books' | 'admin' {
   if (pathname.startsWith('/admin')) return 'admin'
@@ -36,17 +45,22 @@ export default function ConditionalAppLayout({ children }: ConditionalAppLayoutP
   
   const currentPage = currentPageRef.current
 
-  // Don't show AppLayout for public pages or home page when not authenticated
-  if (PUBLIC_PAGES.includes(pathname) || pathname === '/') {
+  // Don't show AppLayout for auth pages
+  if (PUBLIC_PAGES.includes(pathname)) {
+    return <>{children}</>
+  }
+
+  // Don't show AppLayout for marketing pages (they handle their own layout)
+  if (MARKETING_PAGES.includes(pathname)) {
     return <>{children}</>
   }
 
   // Show legal pages without AppLayout if not authenticated
-  if (!session && (pathname === '/privacy' || pathname === '/terms')) {
+  if (!session && (pathname === '/privacy' || pathname === '/terms' || pathname === '/security')) {
     return <>{children}</>
   }
 
-  // If not authenticated and not a legal/public page, show without layout
+  // If not authenticated and not a marketing/legal/public page, show without layout
   if (!session) {
     return <>{children}</>
   }
