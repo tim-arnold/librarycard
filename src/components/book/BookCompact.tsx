@@ -9,10 +9,11 @@ import {
   Button,
   Grow,
 } from '@mui/material'
-import { Info, Star, Edit, MenuBook } from '@mui/icons-material'
+import { Info, Star, Edit, MenuBook, EditOutlined } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
 import BookActions from './BookActions'
 import { getDisplayGenres } from '@/lib/genreUtils'
+import { getCategoryColor } from '@/lib/theme'
 import StarRating from './StarRating'
 import AnimatedCheckoutStatus from './AnimatedCheckoutStatus'
 
@@ -257,27 +258,77 @@ export default function BookList({
                   {/* Genre chip */}
                   {(() => {
                     const { genres, source } = getDisplayGenres(book)
-                    return genres.length > 0 && (
-                      <Grow in={true} timeout={source === 'assigned' ? 800 : 0}>
+                    if (genres.length === 0) return null
+                    
+                    const genreColor = getCategoryColor(genres[0])
+                    const isAssigned = source === 'assigned'
+                    const handleGenreEditClick = () => onGenreEdit?.(book)
+                    
+                    return (
+                      <Grow in={true} timeout={isAssigned ? 800 : 0}>
                         <Chip 
                           label={genres[0]} 
                           size="small" 
-                          color={source === 'assigned' ? 'secondary' : source === 'enhanced' ? 'primary' : 'default'}
-                          onClick={undefined}
-                          sx={{ 
+                          onClick={onGenreEdit ? handleGenreEditClick : undefined}
+                          deleteIcon={onGenreEdit ? <EditOutlined sx={{ fontSize: '12px !important' }} /> : undefined}
+                          onDelete={onGenreEdit ? handleGenreEditClick : undefined}
+                          sx={(theme) => ({ 
                             fontSize: { xs: '0.7rem', sm: '0.75rem', md: '0.8125rem' },
                             height: { xs: 20, sm: 24, md: 28 },
-                            maxWidth: '120px',
-                            animation: source === 'assigned' ? 'pulse 2s ease-in-out' : undefined,
-                            '@keyframes pulse': {
+                            maxWidth: onGenreEdit ? '140px' : '120px',
+                            backgroundColor: theme.palette.mode === 'dark' 
+                              ? `${genreColor}40` 
+                              : `${genreColor}20`,
+                            color: theme.palette.mode === 'dark' 
+                              ? '#ffffff' 
+                              : genreColor,
+                            border: theme.palette.mode === 'dark' 
+                              ? `1px solid ${genreColor}60` 
+                              : `1px solid ${genreColor}40`,
+                            fontWeight: 500,
+                            cursor: onGenreEdit ? 'pointer' : 'default',
+                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                            animation: isAssigned ? 'genrePulse 2s ease-in-out' : undefined,
+                            '&:hover': onGenreEdit ? {
+                              backgroundColor: theme.palette.mode === 'dark' 
+                                ? `${genreColor}50` 
+                                : `${genreColor}30`,
+                              border: theme.palette.mode === 'dark' 
+                                ? `1px solid ${genreColor}80` 
+                                : `1px solid ${genreColor}60`,
+                              transform: 'scale(1.05)',
+                              '& .MuiChip-deleteIcon': {
+                                color: theme.palette.mode === 'dark' ? '#ffffff' : genreColor,
+                                transform: 'scale(1.1)',
+                              },
+                            } : {
+                              backgroundColor: theme.palette.mode === 'dark' 
+                                ? `${genreColor}50` 
+                                : `${genreColor}30`,
+                              transform: 'scale(1.05)',
+                            },
+                            '&:active': onGenreEdit ? {
+                              transform: 'scale(1.02)',
+                            } : {},
+                            '& .MuiChip-deleteIcon': {
+                              color: theme.palette.mode === 'dark' 
+                                ? '#ffffff90' 
+                                : `${genreColor}80`,
+                              margin: '0 2px 0 2px',
+                              transition: 'all 0.2s ease',
+                              '&:hover': {
+                                color: theme.palette.mode === 'dark' ? '#ffffff' : genreColor,
+                              },
+                            },
+                            '@keyframes genrePulse': {
                               '0%': {
-                                boxShadow: '0 0 0 0 rgba(156, 39, 176, 0.4)'
+                                boxShadow: `0 0 0 0 ${genreColor}60`
                               },
                               '70%': {
-                                boxShadow: '0 0 0 10px rgba(156, 39, 176, 0)'
+                                boxShadow: `0 0 0 4px ${genreColor}00`
                               },
                               '100%': {
-                                boxShadow: '0 0 0 0 rgba(156, 39, 176, 0)'
+                                boxShadow: `0 0 0 0 ${genreColor}00`
                               }
                             },
                             '& .MuiChip-label': {
@@ -285,7 +336,7 @@ export default function BookList({
                               overflow: 'hidden',
                               whiteSpace: 'nowrap'
                             }
-                          }} 
+                          })} 
                         />
                       </Grow>
                     )
@@ -310,20 +361,6 @@ export default function BookList({
                     </Button>
                   )}
                   
-                  {/* Edit Genres button */}
-                  {onGenreEdit && (
-                    <Button
-                      size="small"
-                      startIcon={<Edit />}
-                      onClick={() => onGenreEdit(book)}
-                      sx={{ 
-                        textTransform: 'none',
-                        fontSize: { xs: '0.75rem', sm: '0.8125rem' }
-                      }}
-                    >
-                      Edit Genres
-                    </Button>
-                  )}
                 </Box>
               ) : null}
 
