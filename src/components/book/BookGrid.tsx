@@ -11,7 +11,7 @@ import {
   Button,
   Grow,
 } from '@mui/material'
-import { Info, Star, Edit, Image, MenuBook } from '@mui/icons-material'
+import { Info, Star, Edit, Image, MenuBook, EditOutlined } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
 import { getDisplayGenres } from '@/lib/genreUtils'
 import BookActions from './BookActions'
@@ -285,21 +285,43 @@ const BookCard = React.memo<BookCardProps>(({
                     <Chip 
                       label={genres[0]} 
                       size="small" 
-                      onClick={undefined}
+                      onClick={onGenreEdit ? handleGenreEditClick : undefined}
+                      deleteIcon={onGenreEdit ? <EditOutlined sx={{ fontSize: '14px !important' }} /> : undefined}
+                      onDelete={onGenreEdit ? handleGenreEditClick : undefined}
                       sx={{ 
                         fontSize: '0.7rem', 
                         height: 20,
-                        maxWidth: '120px',
+                        maxWidth: onGenreEdit ? '140px' : '120px', // Slightly wider when edit icon present
                         backgroundColor: `${genreColor}20`,
                         color: genreColor,
                         border: `1px solid ${genreColor}40`,
                         fontWeight: 500,
+                        cursor: onGenreEdit ? 'pointer' : 'default',
                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                         animation: isAssigned ? 'genrePulse 2s ease-in-out' : undefined,
-                        '&:hover': {
+                        '&:hover': onGenreEdit ? {
                           backgroundColor: `${genreColor}30`,
                           border: `1px solid ${genreColor}60`,
                           transform: 'scale(1.05)',
+                          '& .MuiChip-deleteIcon': {
+                            color: genreColor,
+                            transform: 'scale(1.1)',
+                          },
+                        } : {
+                          backgroundColor: `${genreColor}30`,
+                          border: `1px solid ${genreColor}60`,
+                          transform: 'scale(1.05)',
+                        },
+                        '&:active': onGenreEdit ? {
+                          transform: 'scale(1.02)',
+                        } : {},
+                        '& .MuiChip-deleteIcon': {
+                          color: `${genreColor}80`,
+                          margin: '0 2px 0 4px',
+                          transition: 'all 0.2s ease',
+                          '&:hover': {
+                            color: genreColor,
+                          },
                         },
                         '@keyframes genrePulse': {
                           '0%': {
@@ -337,16 +359,6 @@ const BookCard = React.memo<BookCardProps>(({
                   sx={{ textTransform: 'none' }}
                 >
                   More Details
-                </Button>
-              )}
-              {onGenreEdit && (
-                <Button
-                  size="small"
-                  startIcon={<Edit />}
-                  onClick={handleGenreEditClick}
-                  sx={{ textTransform: 'none' }}
-                >
-                  Edit Genres
                 </Button>
               )}
             </Box>
