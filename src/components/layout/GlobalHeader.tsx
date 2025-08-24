@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useTheme } from '@/lib/ThemeContext'
+import { useTheme as useMuiTheme } from '@mui/material/styles'
 import { 
   CreditCard, 
   Menu, 
@@ -35,6 +36,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
   const router = useRouter()
   const pathname = usePathname()
   const { isDarkMode, themeVariant, toggleTheme, setThemeVariant } = useTheme()
+  const muiTheme = useMuiTheme()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [accountMenuOpen, setAccountMenuOpen] = useState(false)
   const [themeMenuOpen, setThemeMenuOpen] = useState(false)
@@ -119,13 +121,16 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
 
   return (
     <header 
-      className="marketing-bg-white" 
       style={{ 
-        borderBottom: '1px solid var(--marketing-gray-200)',
+        backgroundColor: muiTheme.palette.background.paper,
+        borderBottom: `1px solid ${muiTheme.palette.divider}`,
         position: 'sticky',
         top: 0,
-        zIndex: 1000
-      }}
+        zIndex: 1000,
+        // Fallback to CSS variables for compatibility
+        '--marketing-white': muiTheme.palette.background.paper,
+        '--marketing-gray-200': muiTheme.palette.divider,
+      } as React.CSSProperties}
     >
       <div className="marketing-container marketing-container-xl">
         <div 
@@ -140,7 +145,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
           >
             <CreditCard 
               style={{ 
-                color: 'var(--marketing-primary)',
+                color: muiTheme.palette.primary.main,
                 fontSize: '2rem'
               }} 
             />
@@ -148,7 +153,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
               style={{ 
                 fontSize: 'var(--marketing-text-xl)',
                 fontWeight: 'var(--marketing-font-bold)',
-                color: 'var(--marketing-gray-900)'
+                color: muiTheme.palette.text.primary
               }}
             >
               LibraryCard
