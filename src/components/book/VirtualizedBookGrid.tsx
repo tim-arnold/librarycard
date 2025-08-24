@@ -9,6 +9,7 @@ import { getDisplayGenres } from '@/lib/genreUtils'
 import BookActions from './BookActions'
 import StarRating from './StarRating'
 import AnimatedBookCover from './AnimatedBookCover'
+import AnimatedCheckoutStatus from './AnimatedCheckoutStatus'
 
 interface VirtualizedBookGridProps {
   books: EnhancedBook[]
@@ -367,24 +368,7 @@ r            <Typography variant="body2" color="text.secondary" gutterBottom>
           </Box>
         )}
         
-        {book.status === 'checked_out' && (
-          <Box sx={{ mt: 2, p: 1, border: 1, borderColor: 'warning.main', borderRadius: 1 }}>
-            <Typography variant="body2" color="text.primary" sx={{ fontWeight: 500 }}>
-              <MenuBook sx={{ mr: 1, verticalAlign: 'middle', fontSize: 'inherit' }} />
-              {book.checked_out_date && (() => {
-                const checkoutDate = new Date(book.checked_out_date)
-                const today = new Date()
-                const diffTime = Math.abs(today.getTime() - checkoutDate.getTime())
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-                if (book.checked_out_by === currentUserId) {
-                  return `You checked this book out ${diffDays} day${diffDays !== 1 ? 's' : ''} ago`
-                } else {
-                  return `Checked out since ${checkoutDate.toLocaleDateString()} (${diffDays} day${diffDays !== 1 ? 's' : ''})`
-                }
-              })()}
-            </Typography>
-          </Box>
-        )}
+        <AnimatedCheckoutStatus book={book} currentUserId={currentUserId} />
       </CardContent>
 
       <CardActions>
