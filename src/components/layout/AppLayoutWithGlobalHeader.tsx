@@ -121,26 +121,24 @@ export default function AppLayoutWithGlobalHeader({ children }: AppLayoutWithGlo
   }
 
   return (
-    <div className="marketing-page">
-      <div className="marketing-content">
-        <GlobalHeader 
-          userRole={userRole}
-          userFirstName={userFirstName}
-        />
-        
-        <main>
-          <Container maxWidth="xl" sx={{ py: 3 }}>
-            {children}
-          </Container>
-        </main>
-        
-        <Footer />
-        
-        <HelpModal 
-          open={helpModalOpen} 
-          onClose={() => setHelpModalOpen(false)} 
-        />
-      </div>
+    <div>
+      <GlobalHeader 
+        userRole={userRole}
+        userFirstName={userFirstName}
+      />
+      
+      <main>
+        <Container maxWidth="xl" sx={{ py: 3 }}>
+          {children}
+        </Container>
+      </main>
+      
+      <Footer />
+      
+      <HelpModal 
+        open={helpModalOpen} 
+        onClose={() => setHelpModalOpen(false)} 
+      />
     </div>
   )
 }
