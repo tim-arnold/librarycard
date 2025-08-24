@@ -289,7 +289,8 @@ function CommunityImpactSection() {
         </div>
 
         {/* Stats */}
-        <Grid cols={2} mdCols={4} gap={6} style={{ marginBottom: 'var(--marketing-spacing-16)' }}>
+        <div style={{ marginBottom: 'var(--marketing-spacing-16)' }}>
+          <Grid cols={2} mdCols={4} gap={6}>
           {stats.map((stat, index) => (
             <StatsCard
               key={index}
@@ -297,7 +298,8 @@ function CommunityImpactSection() {
               label={stat.label}
             />
           ))}
-        </Grid>
+          </Grid>
+        </div>
 
         {/* Community Types */}
         <Grid cols={1} mdCols={3} gap={8}>

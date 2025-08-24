@@ -23,6 +23,7 @@ import {
 import { isAdmin } from '@/lib/permissions'
 import { useUnreadNotificationCount } from '@/hooks/useNotifications'
 import { useRejectedReviewNotifications } from '@/hooks/useRejectedReviewNotifications'
+import { themeVariants, type ThemeVariant } from '@/lib/theme'
 
 interface GlobalHeaderProps {
   userRole?: string | null
@@ -33,13 +34,24 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
   const { data: session } = useSession()
   const router = useRouter()
   const pathname = usePathname()
-  const { isDarkMode, toggleTheme } = useTheme()
+  const { isDarkMode, themeVariant, toggleTheme, setThemeVariant } = useTheme()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [accountMenuOpen, setAccountMenuOpen] = useState(false)
+  const [themeMenuOpen, setThemeMenuOpen] = useState(false)
   const { unreadCount } = useUnreadNotificationCount()
   const { unreadRejectedCount } = useRejectedReviewNotifications()
 
   const totalNotifications = unreadCount + unreadRejectedCount
+
+  // Theme options
+  const themeOptions: { value: ThemeVariant; label: string; color: string }[] = [
+    { value: 'indigo', label: 'Indigo', color: '#6366f1' },
+    { value: 'green', label: 'Forest Green', color: '#22c55e' },
+    { value: 'red', label: 'Crimson Red', color: '#ef4444' },
+    { value: 'blue', label: 'Ocean Blue', color: '#3b82f6' },
+    { value: 'purple', label: 'Royal Purple', color: '#a855f7' },
+    { value: 'amber', label: 'Golden Amber', color: '#f59e0b' },
+  ]
 
   // Define navigation items based on authentication state
   const getNavigationItems = () => {
@@ -189,33 +201,184 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
 
           {/* Desktop User Controls */}
           <div className="marketing-hidden-mobile marketing-flex marketing-items-center marketing-gap-4">
-            {/* Theme Toggle */}
-            <button
-              onClick={toggleTheme}
-              style={{
-                background: 'none',
-                border: '1px solid var(--marketing-gray-300)',
-                borderRadius: 'var(--marketing-radius-base)',
-                padding: 'var(--marketing-spacing-2)',
-                cursor: 'pointer',
-                color: 'var(--marketing-gray-600)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.borderColor = 'var(--marketing-primary)'
-                e.currentTarget.style.color = 'var(--marketing-primary)'
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.borderColor = 'var(--marketing-gray-300)'
-                e.currentTarget.style.color = 'var(--marketing-gray-600)'
-              }}
-              title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-            >
-              {isDarkMode ? <LightMode /> : <DarkMode />}
-            </button>
+            {/* Theme Options Menu */}
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => setThemeMenuOpen(!themeMenuOpen)}
+                style={{
+                  background: 'none',
+                  border: '1px solid var(--marketing-gray-300)',
+                  borderRadius: 'var(--marketing-radius-base)',
+                  padding: 'var(--marketing-spacing-2)',
+                  cursor: 'pointer',
+                  color: 'var(--marketing-gray-600)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.2s ease',
+                  gap: 'var(--marketing-spacing-1)'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--marketing-primary)'
+                  e.currentTarget.style.color = 'var(--marketing-primary)'
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--marketing-gray-300)'
+                  e.currentTarget.style.color = 'var(--marketing-gray-600)'
+                }}
+                title="Theme options"
+              >
+                <Palette />
+                {isDarkMode ? <DarkMode /> : <LightMode />}
+              </button>
+
+              {/* Theme Dropdown Menu */}
+              {themeMenuOpen && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '100%',
+                    right: 0,
+                    marginTop: 'var(--marketing-spacing-2)',
+                    background: 'var(--marketing-white)',
+                    border: '1px solid var(--marketing-gray-200)',
+                    borderRadius: 'var(--marketing-radius-lg)',
+                    boxShadow: 'var(--marketing-shadow-lg)',
+                    minWidth: '200px',
+                    zIndex: 1000,
+                    padding: 'var(--marketing-spacing-2) 0'
+                  }}
+                >
+                  {/* Light/Dark Mode Toggle */}
+                  <div style={{ padding: '0 var(--marketing-spacing-4)', marginBottom: 'var(--marketing-spacing-3)' }}>
+                    <div style={{ 
+                      fontSize: 'var(--marketing-text-sm)', 
+                      fontWeight: 'var(--marketing-font-medium)',
+                      color: 'var(--marketing-gray-700)',
+                      marginBottom: 'var(--marketing-spacing-2)'
+                    }}>
+                      Mode
+                    </div>
+                    <div className="marketing-flex marketing-gap-2">
+                      <button
+                        onClick={() => {
+                          if (isDarkMode) toggleTheme()
+                          setThemeMenuOpen(false)
+                        }}
+                        style={{
+                          flex: 1,
+                          background: !isDarkMode ? 'var(--marketing-primary)' : 'var(--marketing-gray-100)',
+                          color: !isDarkMode ? 'var(--marketing-white)' : 'var(--marketing-gray-600)',
+                          border: 'none',
+                          borderRadius: 'var(--marketing-radius-base)',
+                          padding: 'var(--marketing-spacing-2)',
+                          cursor: 'pointer',
+                          fontSize: 'var(--marketing-text-sm)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 'var(--marketing-spacing-1)',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        <LightMode style={{ fontSize: '1rem' }} />
+                        Light
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (!isDarkMode) toggleTheme()
+                          setThemeMenuOpen(false)
+                        }}
+                        style={{
+                          flex: 1,
+                          background: isDarkMode ? 'var(--marketing-primary)' : 'var(--marketing-gray-100)',
+                          color: isDarkMode ? 'var(--marketing-white)' : 'var(--marketing-gray-600)',
+                          border: 'none',
+                          borderRadius: 'var(--marketing-radius-base)',
+                          padding: 'var(--marketing-spacing-2)',
+                          cursor: 'pointer',
+                          fontSize: 'var(--marketing-text-sm)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 'var(--marketing-spacing-1)',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        <DarkMode style={{ fontSize: '1rem' }} />
+                        Dark
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Divider */}
+                  <div style={{ 
+                    height: '1px', 
+                    background: 'var(--marketing-gray-200)', 
+                    margin: 'var(--marketing-spacing-2) var(--marketing-spacing-4)' 
+                  }} />
+
+                  {/* Color Scheme Options */}
+                  <div style={{ padding: '0 var(--marketing-spacing-4)' }}>
+                    <div style={{ 
+                      fontSize: 'var(--marketing-text-sm)', 
+                      fontWeight: 'var(--marketing-font-medium)',
+                      color: 'var(--marketing-gray-700)',
+                      marginBottom: 'var(--marketing-spacing-2)'
+                    }}>
+                      Color Scheme
+                    </div>
+                    <div className="marketing-grid marketing-grid-cols-2 marketing-gap-2">
+                      {themeOptions.map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => {
+                            setThemeVariant(option.value)
+                            setThemeMenuOpen(false)
+                          }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 'var(--marketing-spacing-2)',
+                            padding: 'var(--marketing-spacing-2)',
+                            background: themeVariant === option.value ? 'var(--marketing-gray-100)' : 'none',
+                            border: '1px solid',
+                            borderColor: themeVariant === option.value ? 'var(--marketing-primary)' : 'transparent',
+                            borderRadius: 'var(--marketing-radius-base)',
+                            cursor: 'pointer',
+                            fontSize: 'var(--marketing-text-sm)',
+                            color: 'var(--marketing-gray-700)',
+                            transition: 'all 0.2s ease',
+                            textAlign: 'left'
+                          }}
+                          onMouseOver={(e) => {
+                            if (themeVariant !== option.value) {
+                              e.currentTarget.style.backgroundColor = 'var(--marketing-gray-50)'
+                            }
+                          }}
+                          onMouseOut={(e) => {
+                            if (themeVariant !== option.value) {
+                              e.currentTarget.style.backgroundColor = 'transparent'
+                            }
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: '16px',
+                              height: '16px',
+                              borderRadius: '50%',
+                              backgroundColor: option.color,
+                              flexShrink: 0
+                            }}
+                          />
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {session ? (
               <>
@@ -467,12 +630,12 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
             >
               <div className="marketing-flex marketing-items-center marketing-justify-between marketing-gap-4">
                 <button
-                  onClick={toggleTheme}
+                  onClick={() => setThemeMenuOpen(!themeMenuOpen)}
                   className="marketing-button marketing-button-outline marketing-button-sm"
                   style={{ flex: 1 }}
                 >
-                  {isDarkMode ? <LightMode style={{ marginRight: '8px' }} /> : <DarkMode style={{ marginRight: '8px' }} />}
-                  {isDarkMode ? 'Light' : 'Dark'}
+                  <Palette style={{ marginRight: '8px' }} />
+                  Theme
                 </button>
 
                 {session ? (
@@ -557,12 +720,115 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                   </div>
                 </div>
               )}
+
+              {/* Mobile Theme Options Menu */}
+              {themeMenuOpen && (
+                <div 
+                  style={{
+                    marginTop: 'var(--marketing-spacing-4)',
+                    paddingTop: 'var(--marketing-spacing-4)',
+                    borderTop: '1px solid var(--marketing-gray-200)',
+                    background: 'var(--marketing-white)',
+                    borderRadius: 'var(--marketing-radius-lg)',
+                    border: '1px solid var(--marketing-gray-200)',
+                    padding: 'var(--marketing-spacing-4)'
+                  }}
+                >
+                  {/* Light/Dark Mode Toggle */}
+                  <div style={{ marginBottom: 'var(--marketing-spacing-4)' }}>
+                    <div style={{ 
+                      fontSize: 'var(--marketing-text-sm)', 
+                      fontWeight: 'var(--marketing-font-medium)',
+                      color: 'var(--marketing-gray-700)',
+                      marginBottom: 'var(--marketing-spacing-2)'
+                    }}>
+                      Mode
+                    </div>
+                    <div className="marketing-flex marketing-gap-2">
+                      <button
+                        onClick={() => {
+                          if (isDarkMode) toggleTheme()
+                          setThemeMenuOpen(false)
+                          setMobileMenuOpen(false)
+                        }}
+                        className={`marketing-button ${!isDarkMode ? 'marketing-button-primary' : 'marketing-button-outline'} marketing-button-sm`}
+                        style={{ flex: 1 }}
+                      >
+                        <LightMode style={{ marginRight: '8px', fontSize: '1rem' }} />
+                        Light
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (!isDarkMode) toggleTheme()
+                          setThemeMenuOpen(false)
+                          setMobileMenuOpen(false)
+                        }}
+                        className={`marketing-button ${isDarkMode ? 'marketing-button-primary' : 'marketing-button-outline'} marketing-button-sm`}
+                        style={{ flex: 1 }}
+                      >
+                        <DarkMode style={{ marginRight: '8px', fontSize: '1rem' }} />
+                        Dark
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Color Scheme Options */}
+                  <div>
+                    <div style={{ 
+                      fontSize: 'var(--marketing-text-sm)', 
+                      fontWeight: 'var(--marketing-font-medium)',
+                      color: 'var(--marketing-gray-700)',
+                      marginBottom: 'var(--marketing-spacing-2)'
+                    }}>
+                      Color Scheme
+                    </div>
+                    <div className="marketing-grid marketing-grid-cols-2 marketing-gap-2">
+                      {themeOptions.map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => {
+                            setThemeVariant(option.value)
+                            setThemeMenuOpen(false)
+                            setMobileMenuOpen(false)
+                          }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 'var(--marketing-spacing-2)',
+                            padding: 'var(--marketing-spacing-2)',
+                            background: themeVariant === option.value ? 'var(--marketing-gray-100)' : 'var(--marketing-white)',
+                            border: '1px solid',
+                            borderColor: themeVariant === option.value ? 'var(--marketing-primary)' : 'var(--marketing-gray-200)',
+                            borderRadius: 'var(--marketing-radius-base)',
+                            cursor: 'pointer',
+                            fontSize: 'var(--marketing-text-sm)',
+                            color: 'var(--marketing-gray-700)',
+                            transition: 'all 0.2s ease',
+                            textAlign: 'left'
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: '16px',
+                              height: '16px',
+                              borderRadius: '50%',
+                              backgroundColor: option.color,
+                              flexShrink: 0
+                            }}
+                          />
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
       </div>
 
-      {/* Click outside to close account menu */}
+      {/* Click outside to close menus */}
       {accountMenuOpen && (
         <div
           style={{
@@ -574,6 +840,19 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
             zIndex: 999
           }}
           onClick={() => setAccountMenuOpen(false)}
+        />
+      )}
+      {themeMenuOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 999
+          }}
+          onClick={() => setThemeMenuOpen(false)}
         />
       )}
     </header>
