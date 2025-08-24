@@ -288,7 +288,7 @@ const BookCard = React.memo<BookCardProps>(({
                       onClick={onGenreEdit ? handleGenreEditClick : undefined}
                       deleteIcon={onGenreEdit ? <EditOutlined sx={{ fontSize: '14px !important' }} /> : undefined}
                       onDelete={onGenreEdit ? handleGenreEditClick : undefined}
-                      sx={({ theme }) => ({ 
+                      sx={(theme) => ({ 
                         fontSize: '0.7rem', 
                         height: 20,
                         maxWidth: onGenreEdit ? '140px' : '120px', // Slightly wider when edit icon present
