@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import { 
-  Bug, 
+  BugReport, 
   Email, 
   Phone,
   AccountCircle,
@@ -662,7 +662,7 @@ export default function SupportPageClient() {
       <SupportHeader />
       <Section background="white">
         <Container>
-          <Grid cols={1} lgCols={2} gap={12}>
+          <Grid cols={1} lgCols={2} gap={8}>
             <SupportForm />
             <SupportInfo />
           </Grid>

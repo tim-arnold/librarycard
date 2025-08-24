@@ -17,6 +17,7 @@ interface AnimatedBookCoverProps {
   isAnimating?: boolean
   onAnimationComplete?: () => void
   sx?: any
+  className?: string
 }
 
 export default function AnimatedBookCover({
@@ -31,7 +32,8 @@ export default function AnimatedBookCover({
   bookId,
   isAnimating = false,
   onAnimationComplete,
-  sx = {}
+  sx = {},
+  className
 }: AnimatedBookCoverProps) {
   const [showOldCover, setShowOldCover] = useState(true)
   const [showNewCover, setShowNewCover] = useState(false)
@@ -109,7 +111,7 @@ export default function AnimatedBookCover({
   if (!isAnimating) {
     // Normal state - just show the image
     return (
-      <Box sx={baseStyle} onClick={onClick}>
+      <Box sx={baseStyle} onClick={onClick} className={className}>
         {src ? (
           <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
             <Box
@@ -163,7 +165,7 @@ export default function AnimatedBookCover({
 
   // Animation state
   return (
-    <Box sx={baseStyle} onClick={onClick}>
+    <Box sx={baseStyle} onClick={onClick} className={className}>
       {/* Old Cover - fades out */}
       <Fade in={showOldCover} timeout={300}>
         <Box sx={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}>
@@ -238,7 +240,9 @@ export default function AnimatedBookCover({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'radial-gradient(circle, rgba(255,215,0,0.3) 0%, transparent 70%)',
+          background: (theme) => theme.palette.mode === 'dark'
+            ? `radial-gradient(circle, ${theme.palette.primary.light}40 0%, transparent 70%)`
+            : `radial-gradient(circle, ${theme.palette.primary.main}30 0%, transparent 70%)`,
           '&::before': {
             content: '""',
             position: 'absolute',
@@ -246,7 +250,9 @@ export default function AnimatedBookCover({
             left: '20%',
             width: '8px',
             height: '8px',
-            background: 'gold',
+            background: (theme) => theme.palette.mode === 'dark' 
+              ? theme.palette.primary.light 
+              : theme.palette.primary.main,
             borderRadius: '50%',
             animation: 'sparkle 0.8s ease-in-out infinite alternate'
           },
@@ -257,7 +263,9 @@ export default function AnimatedBookCover({
             right: '15%',
             width: '6px',
             height: '6px',
-            background: 'gold',
+            background: (theme) => theme.palette.mode === 'dark' 
+              ? theme.palette.primary.light 
+              : theme.palette.primary.main,
             borderRadius: '50%',
             animation: 'sparkle 0.8s ease-in-out infinite alternate 0.3s'
           },
