@@ -159,9 +159,28 @@ const commonComponents = {
     styleOverrides: {
       root: ({ theme }: { theme: Theme }) => ({
         borderRadius: '12px',
-        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04)',
+        border: '1px solid rgba(0, 0, 0, 0.08)',
+        position: 'relative',
+        overflow: 'hidden',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '3px',
+          background: `linear-gradient(135deg, ${theme.palette.primary.main}40 0%, ${theme.palette.primary.dark}40 100%)`,
+          opacity: 0,
+          transition: 'opacity 0.3s ease',
+        },
         '&:hover': {
-          transform: 'translateY(-1px)',
+          transform: 'translateY(-2px) scale(1.01)',
+          boxShadow: '0 8px 25px rgba(0, 0, 0, 0.12), 0 4px 10px rgba(0, 0, 0, 0.08)',
+          '&::before': {
+            opacity: 1,
+          },
         },
       }),
     },
@@ -181,25 +200,87 @@ const commonComponents = {
       }),
       contained: ({ theme }: { theme: Theme }) => ({
         background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-        boxShadow: `0 1px 3px ${theme.palette.primary.main}40, 0 1px 2px ${theme.palette.primary.main}20`,
+        boxShadow: `0 2px 4px ${theme.palette.primary.main}30, 0 1px 2px ${theme.palette.primary.main}20`,
+        borderRadius: '10px',
+        position: 'relative',
+        overflow: 'hidden',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: `linear-gradient(135deg, ${theme.palette.primary.light}20 0%, ${theme.palette.primary.main}20 100%)`,
+          opacity: 0,
+          transition: 'opacity 0.2s ease',
+        },
         '&:hover': {
           background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
-          boxShadow: `0 4px 6px ${theme.palette.primary.main}40, 0 2px 4px ${theme.palette.primary.main}25`,
-          transform: 'translateY(-1px)',
+          boxShadow: `0 6px 12px ${theme.palette.primary.main}35, 0 3px 6px ${theme.palette.primary.main}25`,
+          transform: 'translateY(-2px) scale(1.02)',
+          '&::before': {
+            opacity: 1,
+          },
+        },
+        '&:active': {
+          transform: 'translateY(-1px) scale(1.01)',
         },
       }),
       outlined: ({ theme }: { theme: Theme }) => ({
         borderColor: theme.palette.primary.main,
+        borderRadius: '10px',
+        borderWidth: '2px',
+        position: 'relative',
+        overflow: 'hidden',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: `linear-gradient(135deg, ${theme.palette.primary.main}08 0%, ${theme.palette.primary.dark}08 100%)`,
+          opacity: 0,
+          transition: 'opacity 0.2s ease',
+        },
         '&:hover': {
           borderColor: theme.palette.primary.dark,
-          backgroundColor: `${theme.palette.primary.main}10`,
-          transform: 'translateY(-1px)',
+          backgroundColor: `${theme.palette.primary.main}12`,
+          transform: 'translateY(-2px) scale(1.02)',
+          boxShadow: `0 4px 8px ${theme.palette.primary.main}20`,
+          '&::before': {
+            opacity: 1,
+          },
+        },
+        '&:active': {
+          transform: 'translateY(-1px) scale(1.01)',
         },
       }),
       text: ({ theme }: { theme: Theme }) => ({
+        borderRadius: '8px',
+        position: 'relative',
+        overflow: 'hidden',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: `radial-gradient(circle, ${theme.palette.primary.main}15 0%, transparent 70%)`,
+          opacity: 0,
+          transition: 'opacity 0.2s ease',
+        },
         '&:hover': {
-          backgroundColor: `${theme.palette.primary.main}10`,
-          transform: 'translateY(-1px)',
+          backgroundColor: `${theme.palette.primary.main}12`,
+          transform: 'translateY(-1px) scale(1.02)',
+          '&::before': {
+            opacity: 1,
+          },
+        },
+        '&:active': {
+          transform: 'translateY(0) scale(1.01)',
         },
       }),
     },
@@ -208,20 +289,191 @@ const commonComponents = {
     styleOverrides: {
       root: ({ theme }: { theme: Theme }) => ({
         '& .MuiOutlinedInput-root': {
-          borderRadius: '8px',
-          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-          '&:hover .MuiOutlinedInput-notchedOutline': {
-            borderColor: theme.palette.primary.main,
+          borderRadius: '12px',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)',
+          position: 'relative',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            borderRadius: '12px',
+            background: `linear-gradient(135deg, ${theme.palette.primary.main}08 0%, ${theme.palette.primary.light}08 100%)`,
+            opacity: 0,
+            transition: 'opacity 0.3s ease',
           },
-          '&.Mui-focused': {
+          '& .MuiOutlinedInput-notchedOutline': {
+            borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          },
+          '&:hover': {
+            '&::before': {
+              opacity: 1,
+            },
             '& .MuiOutlinedInput-notchedOutline': {
               borderColor: theme.palette.primary.main,
               borderWidth: '2px',
-              boxShadow: `0 0 0 3px ${theme.palette.primary.main}30`,
+            },
+          },
+          '&.Mui-focused': {
+            backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
+            transform: 'scale(1.01)',
+            '&::before': {
+              opacity: 1,
+            },
+            '& .MuiOutlinedInput-notchedOutline': {
+              borderColor: theme.palette.primary.main,
+              borderWidth: '2px',
+              boxShadow: `0 0 0 4px ${theme.palette.primary.main}20, 0 2px 8px ${theme.palette.primary.main}15`,
             },
           },
         },
+        '& .MuiInputLabel-root': {
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          '&.Mui-focused': {
+            color: theme.palette.primary.main,
+            fontWeight: 500,
+          },
+        },
       }),
+    },
+  },
+  // Enhanced Skeleton styling
+  MuiSkeleton: {
+    styleOverrides: {
+      root: ({ theme }: { theme: Theme }) => ({
+        borderRadius: '8px',
+        background: `linear-gradient(90deg, ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'} 25%, ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'} 50%, ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'} 75%)`,
+        backgroundSize: '200% 100%',
+        animation: 'shimmer 1.8s infinite ease-in-out',
+        '@keyframes shimmer': {
+          '0%': {
+            backgroundPosition: '200% 0',
+          },
+          '100%': {
+            backgroundPosition: '-200% 0',
+          },
+        },
+      }),
+    },
+  },
+  // Enhanced Dialog/Modal styling
+  MuiDialog: {
+    styleOverrides: {
+      root: {
+        '& .MuiBackdrop-root': {
+          animation: 'fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          backdropFilter: 'blur(4px)',
+        },
+        '@keyframes fadeIn': {
+          '0%': {
+            opacity: 0,
+          },
+          '100%': {
+            opacity: 1,
+          },
+        },
+      },
+      paper: ({ theme }: { theme: Theme }) => ({
+        borderRadius: '16px',
+        boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15), 0 10px 20px rgba(0, 0, 0, 0.1)',
+        border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
+        animation: 'slideInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+        '@keyframes slideInUp': {
+          '0%': {
+            opacity: 0,
+            transform: 'translateY(30px) scale(0.95)',
+          },
+          '100%': {
+            opacity: 1,
+            transform: 'translateY(0) scale(1)',
+          },
+        },
+      }),
+    },
+  },
+  // Enhanced Drawer styling
+  MuiDrawer: {
+    styleOverrides: {
+      paper: ({ theme }: { theme: Theme }) => ({
+        boxShadow: '0 8px 40px rgba(0, 0, 0, 0.12)',
+        border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
+        animation: 'slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        '@keyframes slideIn': {
+          '0%': {
+            transform: 'translateX(-100%)',
+          },
+          '100%': {
+            transform: 'translateX(0)',
+          },
+        },
+      }),
+    },
+  },
+  // Enhanced Chip styling with micro-interactions
+  MuiChip: {
+    styleOverrides: {
+      root: ({ theme }: { theme: Theme }) => ({
+        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+        '&:hover': {
+          transform: 'scale(1.05) translateY(-1px)',
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+        },
+        '&:active': {
+          transform: 'scale(1.02) translateY(0)',
+        },
+      }),
+    },
+  },
+  // Enhanced MenuItem styling
+  MuiMenuItem: {
+    styleOverrides: {
+      root: ({ theme }: { theme: Theme }) => ({
+        borderRadius: '6px',
+        margin: '2px 8px',
+        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+        position: 'relative',
+        overflow: 'hidden',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: `linear-gradient(135deg, ${theme.palette.primary.main}10 0%, ${theme.palette.primary.light}10 100%)`,
+          opacity: 0,
+          transition: 'opacity 0.2s ease',
+        },
+        '&:hover': {
+          transform: 'translateX(4px)',
+          '&::before': {
+            opacity: 1,
+          },
+        },
+      }),
+    },
+  },
+  // Enhanced Switch styling
+  MuiSwitch: {
+    styleOverrides: {
+      switchBase: ({ theme }: { theme: Theme }) => ({
+        '&.Mui-checked': {
+          '& + .MuiSwitch-track': {
+            background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.light} 100%)`,
+          },
+        },
+      }),
+      thumb: {
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+        '&:hover': {
+          boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
+        },
+      },
     },
   },
 }
@@ -560,23 +812,40 @@ function createThemeOptions(isDark: boolean, variant: ThemeVariant): ThemeOption
           borderBottomRightRadius: 0,
           margin: '0 4px',
           minHeight: '48px',
-          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          position: 'relative',
+          overflow: 'hidden',
           // Default inactive state - subtle outline to show tabs exist
           backgroundColor: 'transparent',
           border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
           borderBottom: 'none',
           color: theme.palette.text.secondary,
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: '2px',
+            background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.light} 100%)`,
+            opacity: 0,
+            transition: 'opacity 0.3s ease',
+          },
           
           '&.Mui-selected': {
             // Active tab matches content background exactly  
             backgroundColor: theme.palette.mode === 'dark'
               ? theme.palette.background.paper 
               : theme.palette.background.paper,
-            color: theme.palette.text.primary,
+            color: theme.palette.primary.main,
             border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
             borderBottom: 'none',
             position: 'relative',
             zIndex: 1,
+            transform: 'translateY(-1px)',
+            '&::before': {
+              opacity: 1,
+            },
           },
           '&:hover:not(.Mui-selected)': {
             // Hover state - lighter than active but darker than inactive
@@ -584,6 +853,10 @@ function createThemeOptions(isDark: boolean, variant: ThemeVariant): ThemeOption
               ? 'rgba(255,255,255,0.05)' 
               : 'rgba(0,0,0,0.02)',
             borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
+            transform: 'translateY(-0.5px)',
+            '&::before': {
+              opacity: 0.3,
+            },
           },
         }),
       },

@@ -17,6 +17,7 @@ import { getDisplayGenres } from '@/lib/genreUtils'
 import BookActions from './BookActions'
 import StarRating from './StarRating'
 import AnimatedBookCover from './AnimatedBookCover'
+import { getCategoryColor } from '@/lib/theme'
 
 interface BookCardProps {
   book: EnhancedBook
@@ -125,7 +126,20 @@ const BookCard = React.memo<BookCardProps>(({
   }, [onCoverAnimationComplete, book.id])
 
   return (
-    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <Card sx={{ 
+      height: '100%', 
+      display: 'flex', 
+      flexDirection: 'column',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      position: 'relative',
+      overflow: 'hidden',
+      '&:hover': {
+        transform: 'translateY(-3px)',
+        '& .book-cover': {
+          transform: 'scale(1.05)',
+        },
+      },
+    }}>
       <CardContent sx={{ flex: 1 }}>
         <Box sx={{ display: 'flex', gap: 2 }}>
           <Box sx={{ position: 'relative' }}>
@@ -141,7 +155,11 @@ const BookCard = React.memo<BookCardProps>(({
               bookId={book.id}
               isAnimating={isAnimating}
               onAnimationComplete={handleCoverAnimationComplete}
-              sx={{ flexShrink: 0 }}
+              sx={{ 
+                flexShrink: 0,
+                transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              }}
+              className="book-cover"
             />
             {onCoverEdit && userPermissions.includes('can_add_books') && (
               <Box
@@ -257,27 +275,41 @@ const BookCard = React.memo<BookCardProps>(({
               {/* Genre chip */}
               {(() => {
                 const { genres, source } = getDisplayGenres(book)
-                return genres.length > 0 && (
-                  <Grow in={true} timeout={source === 'assigned' ? 800 : 0}>
+                if (genres.length === 0) return null
+                
+                const genreColor = getCategoryColor(genres[0])
+                const isAssigned = source === 'assigned'
+                
+                return (
+                  <Grow in={true} timeout={isAssigned ? 800 : 0}>
                     <Chip 
                       label={genres[0]} 
                       size="small" 
-                      color={source === 'assigned' ? 'secondary' : source === 'enhanced' ? 'primary' : 'default'}
                       onClick={undefined}
                       sx={{ 
                         fontSize: '0.7rem', 
                         height: 20,
                         maxWidth: '120px',
-                        animation: source === 'assigned' ? 'pulse 2s ease-in-out' : undefined,
-                        '@keyframes pulse': {
+                        backgroundColor: `${genreColor}20`,
+                        color: genreColor,
+                        border: `1px solid ${genreColor}40`,
+                        fontWeight: 500,
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        animation: isAssigned ? 'genrePulse 2s ease-in-out' : undefined,
+                        '&:hover': {
+                          backgroundColor: `${genreColor}30`,
+                          border: `1px solid ${genreColor}60`,
+                          transform: 'scale(1.05)',
+                        },
+                        '@keyframes genrePulse': {
                           '0%': {
-                            boxShadow: '0 0 0 0 rgba(156, 39, 176, 0.4)'
+                            boxShadow: `0 0 0 0 ${genreColor}60`
                           },
                           '70%': {
-                            boxShadow: '0 0 0 10px rgba(156, 39, 176, 0)'
+                            boxShadow: `0 0 0 6px ${genreColor}00`
                           },
                           '100%': {
-                            boxShadow: '0 0 0 0 rgba(156, 39, 176, 0)'
+                            boxShadow: `0 0 0 0 ${genreColor}00`
                           }
                         },
                         '& .MuiChip-label': {
@@ -416,7 +448,22 @@ const BookGrid = React.memo<BookGridProps>(({
         sm: 'repeat(2, 1fr)', // Tablet: exactly 2 columns
         lg: 'repeat(3, 1fr)' // Large Desktop: exactly 3 columns (1200px+)
       }, 
-      gap: 2 
+      gap: { xs: 2, sm: 2.5, lg: 3 },
+      padding: { xs: 1, sm: 1.5, lg: 2 },
+      '& > *': {
+        animation: 'fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+        animationFillMode: 'both',
+      },
+      '@keyframes fadeInUp': {
+        '0%': {
+          opacity: 0,
+          transform: 'translateY(20px)',
+        },
+        '100%': {
+          opacity: 1,
+          transform: 'translateY(0)',
+        },
+      },
     }}>
       {books.map(book => (
         <BookCard

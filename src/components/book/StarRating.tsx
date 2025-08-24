@@ -120,7 +120,12 @@ export default function StarRating({
         sx={{
           fontSize: config.starSize,
           color: rating >= starValue - 0.4 ? 'warning.main' : 'action.disabled',
-          transition: 'color 0.2s ease'
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          filter: rating >= starValue - 0.4 ? 'drop-shadow(0 1px 2px rgba(245, 158, 11, 0.3))' : 'none',
+          '&:hover': onClick ? {
+            transform: 'scale(1.1) rotate(5deg)',
+            filter: 'drop-shadow(0 2px 4px rgba(245, 158, 11, 0.4))',
+          } : {},
         }}
         aria-label={`${starValue} out of 5 stars`}
       />
@@ -310,7 +315,14 @@ export default function StarRating({
       className={className}
     >
       {/* Star display */}
-      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+      <Box sx={{ 
+        display: 'flex', 
+        alignItems: 'center',
+        transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+        '&:hover': onClick ? {
+          transform: 'scale(1.02)',
+        } : {},
+      }}>
         {[0, 1, 2, 3, 4].map(index => renderStar(index, displayRating))}
       </Box>
       
