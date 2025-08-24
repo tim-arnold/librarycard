@@ -261,10 +261,14 @@ const BookCard = React.memo<BookCardProps>(({
                   sx={{ 
                     textTransform: 'none',
                     fontSize: '0.75rem',
-                    color: 'warning.main',
+                    color: (theme) => theme.palette.mode === 'dark' 
+                      ? theme.palette.primary.light 
+                      : theme.palette.primary.main,
                     minHeight: 20,
                     '&:hover': {
-                      backgroundColor: 'warning.50'
+                      backgroundColor: (theme) => theme.palette.mode === 'dark' 
+                        ? `${theme.palette.primary.light}15` 
+                        : `${theme.palette.primary.main}15`
                     }
                   }}
                 >

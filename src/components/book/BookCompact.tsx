@@ -238,10 +238,14 @@ export default function BookList({
                       sx={{ 
                         textTransform: 'none',
                         fontSize: { xs: '0.7rem', sm: '0.75rem' },
-                        color: 'warning.main',
+                        color: (theme) => theme.palette.mode === 'dark' 
+                          ? theme.palette.primary.light 
+                          : theme.palette.primary.main,
                         minHeight: { xs: 20, sm: 24 },
                         '&:hover': {
-                          backgroundColor: 'warning.50'
+                          backgroundColor: (theme) => theme.palette.mode === 'dark' 
+                            ? `${theme.palette.primary.light}15` 
+                            : `${theme.palette.primary.main}15`
                         }
                       }}
                     >
