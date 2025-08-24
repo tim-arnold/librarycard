@@ -1,0 +1,136 @@
+/* LibraryCard Marketing Design System Variables */
+
+:root {
+  /* Primary Brand Colors */
+  --marketing-primary: #2563eb;
+  --marketing-primary-hover: #1d4ed8;
+  --marketing-primary-dark: #1e40af;
+  --marketing-primary-light: #3b82f6;
+  
+  /* Secondary Colors */
+  --marketing-secondary: #06b6d4;
+  --marketing-secondary-hover: #0891b2;
+  --marketing-secondary-dark: #0e7490;
+  --marketing-secondary-light: #22d3ee;
+  
+  /* Neutral Colors */
+  --marketing-white: #ffffff;
+  --marketing-gray-50: #f9fafb;
+  --marketing-gray-100: #f3f4f6;
+  --marketing-gray-200: #e5e7eb;
+  --marketing-gray-300: #d1d5db;
+  --marketing-gray-400: #9ca3af;
+  --marketing-gray-500: #6b7280;
+  --marketing-gray-600: #4b5563;
+  --marketing-gray-700: #374151;
+  --marketing-gray-800: #1f2937;
+  --marketing-gray-900: #111827;
+  
+  /* Semantic Colors */
+  --marketing-success: #10b981;
+  --marketing-success-light: #34d399;
+  --marketing-success-dark: #059669;
+  --marketing-warning: #f59e0b;
+  --marketing-warning-light: #fbbf24;
+  --marketing-warning-dark: #d97706;
+  --marketing-error: #ef4444;
+  --marketing-error-light: #f87171;
+  --marketing-error-dark: #dc2626;
+  
+  /* Typography */
+  --marketing-font-primary: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --marketing-font-display: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --marketing-font-mono: 'SF Mono', Monaco, 'Inconsolata', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  
+  /* Font Sizes */
+  --marketing-text-xs: 0.75rem;    /* 12px */
+  --marketing-text-sm: 0.875rem;   /* 14px */
+  --marketing-text-base: 1rem;     /* 16px */
+  --marketing-text-lg: 1.125rem;   /* 18px */
+  --marketing-text-xl: 1.25rem;    /* 20px */
+  --marketing-text-2xl: 1.5rem;    /* 24px */
+  --marketing-text-3xl: 1.875rem;  /* 30px */
+  --marketing-text-4xl: 2.25rem;   /* 36px */
+  --marketing-text-5xl: 3rem;      /* 48px */
+  --marketing-text-6xl: 3.75rem;   /* 60px */
+  --marketing-text-7xl: 4.5rem;    /* 72px */
+  
+  /* Font Weights */
+  --marketing-font-light: 300;
+  --marketing-font-normal: 400;
+  --marketing-font-medium: 500;
+  --marketing-font-semibold: 600;
+  --marketing-font-bold: 700;
+  --marketing-font-extrabold: 800;
+  --marketing-font-black: 900;
+  
+  /* Line Heights */
+  --marketing-leading-tight: 1.25;
+  --marketing-leading-snug: 1.375;
+  --marketing-leading-normal: 1.5;
+  --marketing-leading-relaxed: 1.625;
+  --marketing-leading-loose: 2;
+  
+  /* Spacing Scale */
+  --marketing-spacing-0: 0;
+  --marketing-spacing-1: 0.25rem;  /* 4px */
+  --marketing-spacing-2: 0.5rem;   /* 8px */
+  --marketing-spacing-3: 0.75rem;  /* 12px */
+  --marketing-spacing-4: 1rem;     /* 16px */
+  --marketing-spacing-5: 1.25rem;  /* 20px */
+  --marketing-spacing-6: 1.5rem;   /* 24px */
+  --marketing-spacing-7: 1.75rem;  /* 28px */
+  --marketing-spacing-8: 2rem;     /* 32px */
+  --marketing-spacing-10: 2.5rem;  /* 40px */
+  --marketing-spacing-12: 3rem;    /* 48px */
+  --marketing-spacing-16: 4rem;    /* 64px */
+  --marketing-spacing-20: 5rem;    /* 80px */
+  --marketing-spacing-24: 6rem;    /* 96px */
+  --marketing-spacing-32: 8rem;    /* 128px */
+  --marketing-spacing-40: 10rem;   /* 160px */
+  --marketing-spacing-48: 12rem;   /* 192px */
+  --marketing-spacing-56: 14rem;   /* 224px */
+  --marketing-spacing-64: 16rem;   /* 256px */
+  
+  /* Border Radius */
+  --marketing-radius-none: 0;
+  --marketing-radius-sm: 0.125rem; /* 2px */
+  --marketing-radius-base: 0.25rem; /* 4px */
+  --marketing-radius-md: 0.375rem; /* 6px */
+  --marketing-radius-lg: 0.5rem;   /* 8px */
+  --marketing-radius-xl: 0.75rem;  /* 12px */
+  --marketing-radius-2xl: 1rem;    /* 16px */
+  --marketing-radius-3xl: 1.5rem;  /* 24px */
+  --marketing-radius-full: 9999px;
+  
+  /* Shadows */
+  --marketing-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --marketing-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --marketing-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --marketing-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --marketing-shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --marketing-shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+  --marketing-shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
+  
+  /* Z-Index Scale */
+  --marketing-z-0: 0;
+  --marketing-z-10: 10;
+  --marketing-z-20: 20;
+  --marketing-z-30: 30;
+  --marketing-z-40: 40;
+  --marketing-z-50: 50;
+  
+  /* Container Max Widths */
+  --marketing-container-sm: 640px;
+  --marketing-container-md: 768px;
+  --marketing-container-lg: 1024px;
+  --marketing-container-xl: 1280px;
+  --marketing-container-2xl: 1536px;
+  
+  /* Breakpoints */
+  --marketing-screen-sm: 640px;
+  --marketing-screen-md: 768px;
+  --marketing-screen-lg: 1024px;
+  --marketing-screen-xl: 1280px;
+  --marketing-screen-2xl: 1536px;
+}
