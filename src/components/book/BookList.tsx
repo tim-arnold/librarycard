@@ -160,9 +160,13 @@ export default function BookText({
                   onClick={() => onRateBook(book)}
                   sx={{ 
                     p: 0.5,
-                    color: 'warning.main',
+                    color: (theme) => theme.palette.mode === 'dark' 
+                      ? theme.palette.primary.light 
+                      : theme.palette.primary.main,
                     '&:hover': {
-                      backgroundColor: 'warning.50'
+                      backgroundColor: (theme) => theme.palette.mode === 'dark' 
+                        ? `${theme.palette.primary.light}15` 
+                        : `${theme.palette.primary.main}15`
                     }
                   }}
                   title="Rate this book"

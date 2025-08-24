@@ -256,64 +256,64 @@ const commonComponents = {
         '&:active': {
           transform: 'translateY(-1px) scale(1.01)',
         },
-        // Enhanced error button styling for better visual harmony
+        // Enhanced error button styling - theme integrated with subtle danger indication
         '&.MuiButton-colorError': {
           borderColor: theme.palette.mode === 'dark' ? '#6b7280' : '#9ca3af',
-          color: theme.palette.mode === 'dark' ? '#f87171' : '#dc2626',
-          backgroundColor: theme.palette.mode === 'dark' ? 'rgba(248, 113, 113, 0.1)' : 'rgba(220, 38, 38, 0.05)',
+          color: theme.palette.mode === 'dark' ? '#e5e7eb' : '#374151',
+          backgroundColor: theme.palette.mode === 'dark' ? 'rgba(248, 113, 113, 0.08)' : 'rgba(220, 38, 38, 0.03)',
           '&::before': {
             background: theme.palette.mode === 'dark' 
-              ? 'linear-gradient(135deg, rgba(248, 113, 113, 0.08) 0%, rgba(220, 38, 38, 0.08) 100%)'
-              : 'linear-gradient(135deg, rgba(220, 38, 38, 0.03) 0%, rgba(185, 28, 28, 0.03) 100%)',
+              ? 'linear-gradient(135deg, rgba(248, 113, 113, 0.05) 0%, rgba(220, 38, 38, 0.05) 100%)'
+              : 'linear-gradient(135deg, rgba(220, 38, 38, 0.02) 0%, rgba(185, 28, 28, 0.02) 100%)',
           },
           '&:hover': {
             borderColor: theme.palette.mode === 'dark' ? '#9ca3af' : '#6b7280',
-            backgroundColor: theme.palette.mode === 'dark' ? 'rgba(248, 113, 113, 0.15)' : 'rgba(220, 38, 38, 0.08)',
-            color: theme.palette.mode === 'dark' ? '#fca5a5' : '#b91c1c',
+            backgroundColor: theme.palette.mode === 'dark' ? 'rgba(248, 113, 113, 0.12)' : 'rgba(220, 38, 38, 0.05)',
+            color: theme.palette.mode === 'dark' ? '#f3f4f6' : '#1f2937',
             transform: 'translateY(-1px) scale(1.01)',
             boxShadow: theme.palette.mode === 'dark' 
-              ? '0 2px 8px rgba(248, 113, 113, 0.2)'
-              : '0 2px 8px rgba(220, 38, 38, 0.15)',
+              ? '0 2px 8px rgba(0, 0, 0, 0.3)'
+              : '0 2px 8px rgba(0, 0, 0, 0.1)',
           },
         },
-        // Enhanced warning button styling for better visual harmony
+        // Enhanced warning button styling - theme integrated with subtle warning indication
         '&.MuiButton-colorWarning': {
           borderColor: theme.palette.mode === 'dark' ? '#6b7280' : '#9ca3af',
-          color: theme.palette.mode === 'dark' ? '#fbbf24' : '#d97706',
-          backgroundColor: theme.palette.mode === 'dark' ? 'rgba(251, 191, 36, 0.1)' : 'rgba(217, 119, 6, 0.05)',
+          color: theme.palette.mode === 'dark' ? '#e5e7eb' : '#374151',
+          backgroundColor: theme.palette.mode === 'dark' ? 'rgba(251, 191, 36, 0.08)' : 'rgba(217, 119, 6, 0.03)',
           '&::before': {
             background: theme.palette.mode === 'dark' 
-              ? 'linear-gradient(135deg, rgba(251, 191, 36, 0.08) 0%, rgba(217, 119, 6, 0.08) 100%)'
-              : 'linear-gradient(135deg, rgba(217, 119, 6, 0.03) 0%, rgba(180, 83, 9, 0.03) 100%)',
+              ? 'linear-gradient(135deg, rgba(251, 191, 36, 0.05) 0%, rgba(217, 119, 6, 0.05) 100%)'
+              : 'linear-gradient(135deg, rgba(217, 119, 6, 0.02) 0%, rgba(180, 83, 9, 0.02) 100%)',
           },
           '&:hover': {
             borderColor: theme.palette.mode === 'dark' ? '#9ca3af' : '#6b7280',
-            backgroundColor: theme.palette.mode === 'dark' ? 'rgba(251, 191, 36, 0.15)' : 'rgba(217, 119, 6, 0.08)',
-            color: theme.palette.mode === 'dark' ? '#fde047' : '#b45309',
+            backgroundColor: theme.palette.mode === 'dark' ? 'rgba(251, 191, 36, 0.12)' : 'rgba(217, 119, 6, 0.05)',
+            color: theme.palette.mode === 'dark' ? '#f3f4f6' : '#1f2937',
             transform: 'translateY(-1px) scale(1.01)',
             boxShadow: theme.palette.mode === 'dark' 
-              ? '0 2px 8px rgba(251, 191, 36, 0.2)'
-              : '0 2px 8px rgba(217, 119, 6, 0.15)',
+              ? '0 2px 8px rgba(0, 0, 0, 0.3)'
+              : '0 2px 8px rgba(0, 0, 0, 0.1)',
           },
         },
-        // Enhanced info button styling for better visual harmony
+        // Enhanced info button styling - theme integrated
         '&.MuiButton-colorInfo': {
           borderColor: theme.palette.mode === 'dark' ? '#6b7280' : '#9ca3af',
-          color: theme.palette.mode === 'dark' ? '#60a5fa' : '#2563eb',
-          backgroundColor: theme.palette.mode === 'dark' ? 'rgba(96, 165, 250, 0.1)' : 'rgba(37, 99, 235, 0.05)',
+          color: theme.palette.mode === 'dark' ? '#e5e7eb' : '#374151',
+          backgroundColor: theme.palette.mode === 'dark' ? 'rgba(96, 165, 250, 0.08)' : 'rgba(37, 99, 235, 0.03)',
           '&::before': {
             background: theme.palette.mode === 'dark' 
-              ? 'linear-gradient(135deg, rgba(96, 165, 250, 0.08) 0%, rgba(37, 99, 235, 0.08) 100%)'
-              : 'linear-gradient(135deg, rgba(37, 99, 235, 0.03) 0%, rgba(30, 64, 175, 0.03) 100%)',
+              ? 'linear-gradient(135deg, rgba(96, 165, 250, 0.05) 0%, rgba(37, 99, 235, 0.05) 100%)'
+              : 'linear-gradient(135deg, rgba(37, 99, 235, 0.02) 0%, rgba(30, 64, 175, 0.02) 100%)',
           },
           '&:hover': {
             borderColor: theme.palette.mode === 'dark' ? '#9ca3af' : '#6b7280',
-            backgroundColor: theme.palette.mode === 'dark' ? 'rgba(96, 165, 250, 0.15)' : 'rgba(37, 99, 235, 0.08)',
-            color: theme.palette.mode === 'dark' ? '#93c5fd' : '#1d4ed8',
+            backgroundColor: theme.palette.mode === 'dark' ? 'rgba(96, 165, 250, 0.12)' : 'rgba(37, 99, 235, 0.05)',
+            color: theme.palette.mode === 'dark' ? '#f3f4f6' : '#1f2937',
             transform: 'translateY(-1px) scale(1.01)',
             boxShadow: theme.palette.mode === 'dark' 
-              ? '0 2px 8px rgba(96, 165, 250, 0.2)'
-              : '0 2px 8px rgba(37, 99, 235, 0.15)',
+              ? '0 2px 8px rgba(0, 0, 0, 0.3)'
+              : '0 2px 8px rgba(0, 0, 0, 0.1)',
           },
         },
       }),
@@ -875,7 +875,7 @@ function createThemeOptions(isDark: boolean, variant: ThemeVariant): ThemeOption
         main: variantConfig.secondary[500],
         light: variantConfig.secondary[300],
         dark: variantConfig.secondary[700],
-        contrastText: '#000000',
+        contrastText: '#ffffff',
       },
     error: {
       main: '#ef4444',        // Modern red
@@ -1017,7 +1017,7 @@ function createThemeOptions(isDark: boolean, variant: ThemeVariant): ThemeOption
         main: variantConfig.secondary[400],
         light: variantConfig.secondary[300],
         dark: variantConfig.secondary[500],
-        contrastText: '#000000',
+        contrastText: '#ffffff',
       },
     error: {
       main: '#f87171',        // Lighter red for dark mode
