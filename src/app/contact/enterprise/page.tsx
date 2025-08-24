@@ -4,7 +4,7 @@ import EnterprisePageClient from './EnterprisePageClient'
 import { 
   Business, 
   Security, 
-  Integration,
+  Hub as Integration,
   Assessment,
   AccountBalance,
   Schedule,
