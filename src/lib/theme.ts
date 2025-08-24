@@ -256,6 +256,66 @@ const commonComponents = {
         '&:active': {
           transform: 'translateY(-1px) scale(1.01)',
         },
+        // Enhanced error button styling for better dark theme contrast
+        '&.MuiButton-colorError': {
+          borderColor: theme.palette.mode === 'dark' ? '#f87171' : theme.palette.error.main,
+          color: theme.palette.mode === 'dark' ? '#ffffff' : theme.palette.error.main,
+          backgroundColor: theme.palette.mode === 'dark' ? `${theme.palette.error.main}20` : 'transparent',
+          '&::before': {
+            background: theme.palette.mode === 'dark' 
+              ? `linear-gradient(135deg, ${theme.palette.error.main}15 0%, ${theme.palette.error.dark}15 100%)`
+              : `linear-gradient(135deg, ${theme.palette.error.main}08 0%, ${theme.palette.error.dark}08 100%)`,
+          },
+          '&:hover': {
+            borderColor: theme.palette.mode === 'dark' ? '#ef4444' : theme.palette.error.dark,
+            backgroundColor: theme.palette.mode === 'dark' ? `${theme.palette.error.main}30` : `${theme.palette.error.main}12`,
+            color: theme.palette.mode === 'dark' ? '#ffffff' : theme.palette.error.dark,
+            transform: 'translateY(-2px) scale(1.02)',
+            boxShadow: theme.palette.mode === 'dark' 
+              ? `0 4px 8px ${theme.palette.error.main}40`
+              : `0 4px 8px ${theme.palette.error.main}20`,
+          },
+        },
+        // Enhanced warning button styling
+        '&.MuiButton-colorWarning': {
+          borderColor: theme.palette.mode === 'dark' ? '#fbbf24' : theme.palette.warning.main,
+          color: theme.palette.mode === 'dark' ? '#ffffff' : theme.palette.warning.main,
+          backgroundColor: theme.palette.mode === 'dark' ? `${theme.palette.warning.main}20` : 'transparent',
+          '&::before': {
+            background: theme.palette.mode === 'dark' 
+              ? `linear-gradient(135deg, ${theme.palette.warning.main}15 0%, ${theme.palette.warning.dark}15 100%)`
+              : `linear-gradient(135deg, ${theme.palette.warning.main}08 0%, ${theme.palette.warning.dark}08 100%)`,
+          },
+          '&:hover': {
+            borderColor: theme.palette.mode === 'dark' ? '#f59e0b' : theme.palette.warning.dark,
+            backgroundColor: theme.palette.mode === 'dark' ? `${theme.palette.warning.main}30` : `${theme.palette.warning.main}12`,
+            color: theme.palette.mode === 'dark' ? '#ffffff' : theme.palette.warning.dark,
+            transform: 'translateY(-2px) scale(1.02)',
+            boxShadow: theme.palette.mode === 'dark' 
+              ? `0 4px 8px ${theme.palette.warning.main}40`
+              : `0 4px 8px ${theme.palette.warning.main}20`,
+          },
+        },
+        // Enhanced info button styling
+        '&.MuiButton-colorInfo': {
+          borderColor: theme.palette.mode === 'dark' ? '#60a5fa' : theme.palette.info.main,
+          color: theme.palette.mode === 'dark' ? '#ffffff' : theme.palette.info.main,
+          backgroundColor: theme.palette.mode === 'dark' ? `${theme.palette.info.main}20` : 'transparent',
+          '&::before': {
+            background: theme.palette.mode === 'dark' 
+              ? `linear-gradient(135deg, ${theme.palette.info.main}15 0%, ${theme.palette.info.dark}15 100%)`
+              : `linear-gradient(135deg, ${theme.palette.info.main}08 0%, ${theme.palette.info.dark}08 100%)`,
+          },
+          '&:hover': {
+            borderColor: theme.palette.mode === 'dark' ? '#3b82f6' : theme.palette.info.dark,
+            backgroundColor: theme.palette.mode === 'dark' ? `${theme.palette.info.main}30` : `${theme.palette.info.main}12`,
+            color: theme.palette.mode === 'dark' ? '#ffffff' : theme.palette.info.dark,
+            transform: 'translateY(-2px) scale(1.02)',
+            boxShadow: theme.palette.mode === 'dark' 
+              ? `0 4px 8px ${theme.palette.info.main}40`
+              : `0 4px 8px ${theme.palette.info.main}20`,
+          },
+        },
       }),
       text: ({ theme }: { theme: Theme }) => ({
         borderRadius: '8px',
