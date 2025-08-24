@@ -119,8 +119,23 @@ export default function StarRating({
         key={index}
         sx={{
           fontSize: config.starSize,
-          color: rating >= starValue - 0.4 ? 'warning.main' : 'action.disabled',
-          transition: 'color 0.2s ease'
+          color: rating >= starValue - 0.4 
+            ? (theme) => theme.palette.mode === 'dark' 
+              ? theme.palette.primary.light 
+              : theme.palette.primary.main
+            : 'action.disabled',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          filter: rating >= starValue - 0.4 
+            ? (theme) => theme.palette.mode === 'dark' 
+              ? `drop-shadow(0 1px 2px ${theme.palette.primary.light}30)`
+              : `drop-shadow(0 1px 2px ${theme.palette.primary.main}30)`
+            : 'none',
+          '&:hover': onClick ? {
+            transform: 'scale(1.1) rotate(5deg)',
+            filter: (theme) => theme.palette.mode === 'dark' 
+              ? `drop-shadow(0 2px 4px ${theme.palette.primary.light}40)`
+              : `drop-shadow(0 2px 4px ${theme.palette.primary.main}40)`,
+          } : {},
         }}
         aria-label={`${starValue} out of 5 stars`}
       />
@@ -251,7 +266,12 @@ export default function StarRating({
         onClick={onClick}
         className={className}
       >
-        <Star sx={{ fontSize: config.starSize, color: 'warning.main' }} aria-label={`${displayRating.toFixed(1)} out of 5 stars`} />
+        <Star sx={{ 
+          fontSize: config.starSize, 
+          color: (theme) => theme.palette.mode === 'dark' 
+            ? theme.palette.primary.light 
+            : theme.palette.primary.main
+        }} aria-label={`${displayRating.toFixed(1)} out of 5 stars`} />
         <Typography 
           variant="caption" 
           sx={{ 
@@ -310,7 +330,14 @@ export default function StarRating({
       className={className}
     >
       {/* Star display */}
-      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+      <Box sx={{ 
+        display: 'flex', 
+        alignItems: 'center',
+        transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+        '&:hover': onClick ? {
+          transform: 'scale(1.02)',
+        } : {},
+      }}>
         {[0, 1, 2, 3, 4].map(index => renderStar(index, displayRating))}
       </Box>
       

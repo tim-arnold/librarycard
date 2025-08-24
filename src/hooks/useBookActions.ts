@@ -327,12 +327,6 @@ export function useBookActions({
               : book
           )
           setBooks(updatedBooks)
-          
-          await alert({
-            title: 'Book Checked Out',
-            message: `"${bookTitle}" has been checked out to you.`,
-            variant: 'success'
-          })
         } catch (error) {
           console.error('Error checking out book:', error)
           await alert({
@@ -362,9 +356,9 @@ export function useBookActions({
 
     const confirmed = await confirmAsync(
       {
-        title: isReturningSomeoneElsesBook ? 'Return to Shelf' : 'Return Book',
+        title: isReturningSomeoneElsesBook ? 'Check In Book' : 'Return Book',
         message,
-        confirmText: isReturningSomeoneElsesBook ? 'Return to Shelf' : 'Return Book',
+        confirmText: isReturningSomeoneElsesBook ? 'Check In' : 'Return Book',
         variant: 'info'
       },
       async () => {
@@ -406,12 +400,6 @@ export function useBookActions({
               : book
           )
           setBooks(updatedBooks)
-          
-          await alert({
-            title: 'Book Returned',
-            message: `"${bookTitle}" has been returned and is now available.`,
-            variant: 'success'
-          })
         } catch (error) {
           console.error('Error returning book:', error)
           await alert({

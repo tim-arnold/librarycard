@@ -159,9 +159,28 @@ const commonComponents = {
     styleOverrides: {
       root: ({ theme }: { theme: Theme }) => ({
         borderRadius: '12px',
-        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04)',
+        border: '1px solid rgba(0, 0, 0, 0.08)',
+        position: 'relative' as const,
+        overflow: 'hidden',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '3px',
+          background: `linear-gradient(135deg, ${theme.palette.primary.main}40 0%, ${theme.palette.primary.dark}40 100%)`,
+          opacity: 0,
+          transition: 'opacity 0.3s ease',
+        },
         '&:hover': {
-          transform: 'translateY(-1px)',
+          transform: 'translateY(-2px) scale(1.01)',
+          boxShadow: '0 8px 25px rgba(0, 0, 0, 0.12), 0 4px 10px rgba(0, 0, 0, 0.08)',
+          '&::before': {
+            opacity: 1,
+          },
         },
       }),
     },
@@ -181,25 +200,147 @@ const commonComponents = {
       }),
       contained: ({ theme }: { theme: Theme }) => ({
         background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-        boxShadow: `0 1px 3px ${theme.palette.primary.main}40, 0 1px 2px ${theme.palette.primary.main}20`,
+        boxShadow: `0 2px 4px ${theme.palette.primary.main}30, 0 1px 2px ${theme.palette.primary.main}20`,
+        borderRadius: '10px',
+        position: 'relative' as const,
+        overflow: 'hidden',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: `linear-gradient(135deg, ${theme.palette.primary.light}20 0%, ${theme.palette.primary.main}20 100%)`,
+          opacity: 0,
+          transition: 'opacity 0.2s ease',
+        },
         '&:hover': {
           background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
-          boxShadow: `0 4px 6px ${theme.palette.primary.main}40, 0 2px 4px ${theme.palette.primary.main}25`,
-          transform: 'translateY(-1px)',
+          boxShadow: `0 6px 12px ${theme.palette.primary.main}35, 0 3px 6px ${theme.palette.primary.main}25`,
+          transform: 'translateY(-2px) scale(1.02)',
+          '&::before': {
+            opacity: 1,
+          },
+        },
+        '&:active': {
+          transform: 'translateY(-1px) scale(1.01)',
         },
       }),
       outlined: ({ theme }: { theme: Theme }) => ({
         borderColor: theme.palette.primary.main,
+        borderRadius: '10px',
+        borderWidth: '2px',
+        position: 'relative' as const,
+        overflow: 'hidden',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: `linear-gradient(135deg, ${theme.palette.primary.main}08 0%, ${theme.palette.primary.dark}08 100%)`,
+          opacity: 0,
+          transition: 'opacity 0.2s ease',
+        },
         '&:hover': {
           borderColor: theme.palette.primary.dark,
-          backgroundColor: `${theme.palette.primary.main}10`,
-          transform: 'translateY(-1px)',
+          backgroundColor: `${theme.palette.primary.main}12`,
+          transform: 'translateY(-2px) scale(1.02)',
+          boxShadow: `0 4px 8px ${theme.palette.primary.main}20`,
+          '&::before': {
+            opacity: 1,
+          },
+        },
+        '&:active': {
+          transform: 'translateY(-1px) scale(1.01)',
+        },
+        // Enhanced error button styling - theme integrated with subtle danger indication
+        '&.MuiButton-colorError': {
+          borderColor: theme.palette.mode === 'dark' ? '#6b7280' : '#9ca3af',
+          color: theme.palette.mode === 'dark' ? '#e5e7eb' : '#374151',
+          backgroundColor: theme.palette.mode === 'dark' ? 'rgba(248, 113, 113, 0.08)' : 'rgba(220, 38, 38, 0.03)',
+          '&::before': {
+            background: theme.palette.mode === 'dark' 
+              ? 'linear-gradient(135deg, rgba(248, 113, 113, 0.05) 0%, rgba(220, 38, 38, 0.05) 100%)'
+              : 'linear-gradient(135deg, rgba(220, 38, 38, 0.02) 0%, rgba(185, 28, 28, 0.02) 100%)',
+          },
+          '&:hover': {
+            borderColor: theme.palette.mode === 'dark' ? '#9ca3af' : '#6b7280',
+            backgroundColor: theme.palette.mode === 'dark' ? 'rgba(248, 113, 113, 0.12)' : 'rgba(220, 38, 38, 0.05)',
+            color: theme.palette.mode === 'dark' ? '#f3f4f6' : '#1f2937',
+            transform: 'translateY(-1px) scale(1.01)',
+            boxShadow: theme.palette.mode === 'dark' 
+              ? '0 2px 8px rgba(0, 0, 0, 0.3)'
+              : '0 2px 8px rgba(0, 0, 0, 0.1)',
+          },
+        },
+        // Enhanced warning button styling - theme integrated with subtle warning indication
+        '&.MuiButton-colorWarning': {
+          borderColor: theme.palette.mode === 'dark' ? '#6b7280' : '#9ca3af',
+          color: theme.palette.mode === 'dark' ? '#e5e7eb' : '#374151',
+          backgroundColor: theme.palette.mode === 'dark' ? 'rgba(251, 191, 36, 0.08)' : 'rgba(217, 119, 6, 0.03)',
+          '&::before': {
+            background: theme.palette.mode === 'dark' 
+              ? 'linear-gradient(135deg, rgba(251, 191, 36, 0.05) 0%, rgba(217, 119, 6, 0.05) 100%)'
+              : 'linear-gradient(135deg, rgba(217, 119, 6, 0.02) 0%, rgba(180, 83, 9, 0.02) 100%)',
+          },
+          '&:hover': {
+            borderColor: theme.palette.mode === 'dark' ? '#9ca3af' : '#6b7280',
+            backgroundColor: theme.palette.mode === 'dark' ? 'rgba(251, 191, 36, 0.12)' : 'rgba(217, 119, 6, 0.05)',
+            color: theme.palette.mode === 'dark' ? '#f3f4f6' : '#1f2937',
+            transform: 'translateY(-1px) scale(1.01)',
+            boxShadow: theme.palette.mode === 'dark' 
+              ? '0 2px 8px rgba(0, 0, 0, 0.3)'
+              : '0 2px 8px rgba(0, 0, 0, 0.1)',
+          },
+        },
+        // Enhanced info button styling - theme integrated
+        '&.MuiButton-colorInfo': {
+          borderColor: theme.palette.mode === 'dark' ? '#6b7280' : '#9ca3af',
+          color: theme.palette.mode === 'dark' ? '#e5e7eb' : '#374151',
+          backgroundColor: theme.palette.mode === 'dark' ? 'rgba(96, 165, 250, 0.08)' : 'rgba(37, 99, 235, 0.03)',
+          '&::before': {
+            background: theme.palette.mode === 'dark' 
+              ? 'linear-gradient(135deg, rgba(96, 165, 250, 0.05) 0%, rgba(37, 99, 235, 0.05) 100%)'
+              : 'linear-gradient(135deg, rgba(37, 99, 235, 0.02) 0%, rgba(30, 64, 175, 0.02) 100%)',
+          },
+          '&:hover': {
+            borderColor: theme.palette.mode === 'dark' ? '#9ca3af' : '#6b7280',
+            backgroundColor: theme.palette.mode === 'dark' ? 'rgba(96, 165, 250, 0.12)' : 'rgba(37, 99, 235, 0.05)',
+            color: theme.palette.mode === 'dark' ? '#f3f4f6' : '#1f2937',
+            transform: 'translateY(-1px) scale(1.01)',
+            boxShadow: theme.palette.mode === 'dark' 
+              ? '0 2px 8px rgba(0, 0, 0, 0.3)'
+              : '0 2px 8px rgba(0, 0, 0, 0.1)',
+          },
         },
       }),
       text: ({ theme }: { theme: Theme }) => ({
+        borderRadius: '8px',
+        position: 'relative' as const,
+        overflow: 'hidden',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: `radial-gradient(circle, ${theme.palette.primary.main}15 0%, transparent 70%)`,
+          opacity: 0,
+          transition: 'opacity 0.2s ease',
+        },
         '&:hover': {
-          backgroundColor: `${theme.palette.primary.main}10`,
-          transform: 'translateY(-1px)',
+          backgroundColor: `${theme.palette.primary.main}12`,
+          transform: 'translateY(-1px) scale(1.02)',
+          '&::before': {
+            opacity: 1,
+          },
+        },
+        '&:active': {
+          transform: 'translateY(0) scale(1.01)',
         },
       }),
     },
@@ -208,20 +349,191 @@ const commonComponents = {
     styleOverrides: {
       root: ({ theme }: { theme: Theme }) => ({
         '& .MuiOutlinedInput-root': {
-          borderRadius: '8px',
-          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-          '&:hover .MuiOutlinedInput-notchedOutline': {
-            borderColor: theme.palette.primary.main,
+          borderRadius: '12px',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)',
+          position: 'relative',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            borderRadius: '12px',
+            background: `linear-gradient(135deg, ${theme.palette.primary.main}08 0%, ${theme.palette.primary.light}08 100%)`,
+            opacity: 0,
+            transition: 'opacity 0.3s ease',
           },
-          '&.Mui-focused': {
+          '& .MuiOutlinedInput-notchedOutline': {
+            borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          },
+          '&:hover': {
+            '&::before': {
+              opacity: 1,
+            },
             '& .MuiOutlinedInput-notchedOutline': {
               borderColor: theme.palette.primary.main,
               borderWidth: '2px',
-              boxShadow: `0 0 0 3px ${theme.palette.primary.main}30`,
+            },
+          },
+          '&.Mui-focused': {
+            backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
+            transform: 'scale(1.01)',
+            '&::before': {
+              opacity: 1,
+            },
+            '& .MuiOutlinedInput-notchedOutline': {
+              borderColor: theme.palette.primary.main,
+              borderWidth: '2px',
+              boxShadow: `0 0 0 4px ${theme.palette.primary.main}20, 0 2px 8px ${theme.palette.primary.main}15`,
             },
           },
         },
+        '& .MuiInputLabel-root': {
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          '&.Mui-focused': {
+            color: theme.palette.primary.main,
+            fontWeight: 500,
+          },
+        },
       }),
+    },
+  },
+  // Enhanced Skeleton styling
+  MuiSkeleton: {
+    styleOverrides: {
+      root: ({ theme }: { theme: Theme }) => ({
+        borderRadius: '8px',
+        background: `linear-gradient(90deg, ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'} 25%, ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'} 50%, ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'} 75%)`,
+        backgroundSize: '200% 100%',
+        animation: 'shimmer 1.8s infinite ease-in-out',
+        '@keyframes shimmer': {
+          '0%': {
+            backgroundPosition: '200% 0',
+          },
+          '100%': {
+            backgroundPosition: '-200% 0',
+          },
+        },
+      }),
+    },
+  },
+  // Enhanced Dialog/Modal styling
+  MuiDialog: {
+    styleOverrides: {
+      root: {
+        '& .MuiBackdrop-root': {
+          animation: 'fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          backdropFilter: 'blur(4px)',
+        },
+        '@keyframes fadeIn': {
+          '0%': {
+            opacity: 0,
+          },
+          '100%': {
+            opacity: 1,
+          },
+        },
+      },
+      paper: ({ theme }: { theme: Theme }) => ({
+        borderRadius: '16px',
+        boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15), 0 10px 20px rgba(0, 0, 0, 0.1)',
+        border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
+        animation: 'slideInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+        '@keyframes slideInUp': {
+          '0%': {
+            opacity: 0,
+            transform: 'translateY(30px) scale(0.95)',
+          },
+          '100%': {
+            opacity: 1,
+            transform: 'translateY(0) scale(1)',
+          },
+        },
+      }),
+    },
+  },
+  // Enhanced Drawer styling
+  MuiDrawer: {
+    styleOverrides: {
+      paper: ({ theme }: { theme: Theme }) => ({
+        boxShadow: '0 8px 40px rgba(0, 0, 0, 0.12)',
+        border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
+        animation: 'slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        '@keyframes slideIn': {
+          '0%': {
+            transform: 'translateX(-100%)',
+          },
+          '100%': {
+            transform: 'translateX(0)',
+          },
+        },
+      }),
+    },
+  },
+  // Enhanced Chip styling with micro-interactions
+  MuiChip: {
+    styleOverrides: {
+      root: ({ theme }: { theme: Theme }) => ({
+        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+        '&:hover': {
+          transform: 'scale(1.05) translateY(-1px)',
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+        },
+        '&:active': {
+          transform: 'scale(1.02) translateY(0)',
+        },
+      }),
+    },
+  },
+  // Enhanced MenuItem styling
+  MuiMenuItem: {
+    styleOverrides: {
+      root: ({ theme }: { theme: Theme }) => ({
+        borderRadius: '6px',
+        margin: '2px 8px',
+        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+        position: 'relative' as const,
+        overflow: 'hidden',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: `linear-gradient(135deg, ${theme.palette.primary.main}10 0%, ${theme.palette.primary.light}10 100%)`,
+          opacity: 0,
+          transition: 'opacity 0.2s ease',
+        },
+        '&:hover': {
+          transform: 'translateX(4px)',
+          '&::before': {
+            opacity: 1,
+          },
+        },
+      }),
+    },
+  },
+  // Enhanced Switch styling
+  MuiSwitch: {
+    styleOverrides: {
+      switchBase: ({ theme }: { theme: Theme }) => ({
+        '&.Mui-checked': {
+          '& + .MuiSwitch-track': {
+            background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.light} 100%)`,
+          },
+        },
+      }),
+      thumb: {
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+        '&:hover': {
+          boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
+        },
+      },
     },
   },
 }
@@ -258,18 +570,82 @@ const enhancedColors = {
     900: '#78350f',
   },
   
-  // Category colors for books
+  // Theme-integrated category colors for books - harmonized with design system
   categories: {
-    fiction: '#8b5cf6',      // Purple
-    nonfiction: '#10b981',   // Emerald
-    biography: '#f59e0b',    // Amber
-    science: '#3b82f6',     // Blue
-    history: '#ef4444',     // Red
-    mystery: '#6366f1',     // Indigo
-    romance: '#ec4899',     // Pink
-    fantasy: '#8b5cf6',     // Purple
-    children: '#10b981',    // Green
-    reference: '#6b7280',   // Gray
+    // Core fiction genres - using primary palette variations
+    fiction: '#8b5cf6',         // Purple (primary variant)
+    fantasy: '#a855f7',         // Bright Purple (primary light)
+    sciencefiction: '#6366f1',  // Indigo (theme secondary)
+    mystery: '#4f46e5',         // Deep Indigo (secondary dark)
+    thriller: '#3730a3',        // Very Deep Indigo
+    horror: '#7f1d1d',          // Dark Red (muted)
+    romance: '#be185d',         // Pink (muted)
+    drama: '#c2410c',           // Orange (muted)
+    adventure: '#047857',       // Emerald Green (muted)
+    
+    // Non-fiction categories - muted earth tones
+    nonfiction: '#047857',      // Forest Green (muted)
+    biography: '#c2410c',       // Orange (muted)
+    autobiography: '#b45309',   // Dark Amber (muted)
+    memoir: '#c2410c',          // Orange (muted)
+    history: '#b91c1c',         // Red (muted)
+    politics: '#991b1b',        // Dark Red (muted)
+    philosophy: '#6d28d9',      // Purple (keeping for distinction)
+    religion: '#5b21b6',        // Deep Purple (muted)
+    spirituality: '#7c3aed',    // Light Purple (muted)
+    
+    // Educational and reference
+    science: '#3b82f6',         // Blue
+    technology: '#06b6d4',      // Cyan
+    medicine: '#10b981',        // Green
+    health: '#22c55e',          // Light Green
+    fitness: '#16a34a',         // Forest Green
+    psychology: '#a855f7',      // Bright Purple
+    education: '#f59e0b',       // Amber
+    reference: '#6b7280',       // Gray (keep for actual reference books)
+    textbook: '#64748b',        // Blue Gray
+    
+    // Lifestyle and practical
+    cooking: '#f97316',         // Orange
+    food: '#ea580c',            // Deep Orange
+    travel: '#06b6d4',          // Cyan
+    sports: '#22c55e',          // Green
+    business: '#059669',        // Dark Green
+    economics: '#047857',       // Forest Green
+    selfhelp: '#ec4899',        // Pink
+    parenting: '#f472b6',       // Light Pink
+    relationships: '#fb7185',   // Rose
+    
+    // Arts and creativity
+    art: '#f43f5e',             // Rose
+    photography: '#e11d48',     // Dark Rose
+    music: '#be185d',           // Deep Pink
+    poetry: '#a21caf',          // Purple Pink
+    literature: '#7c2d12',      // Brown
+    writing: '#92400e',         // Dark Orange
+    crafts: '#dc2626',          // Red
+    design: '#b91c1c',          // Dark Red
+    
+    // Special categories
+    children: '#22c55e',        // Green
+    youngadult: '#06b6d4',      // Cyan
+    comic: '#f59e0b',           // Amber
+    graphic: '#d97706',         // Dark Amber
+    manga: '#dc2626',           // Red
+    humor: '#fbbf24',           // Yellow
+    satire: '#f59e0b',          // Amber
+    
+    // Additional common genres
+    true: '#10b981',            // Emerald (true crime, true story)
+    crime: '#dc2626',           // Red
+    legal: '#374151',           // Dark Gray
+    war: '#7f1d1d',            // Dark Red
+    military: '#6b7280',        // Gray
+    nature: '#16a34a',          // Forest Green
+    environment: '#059669',     // Dark Green
+    gardening: '#22c55e',       // Green
+    home: '#f97316',           // Orange
+    diy: '#ea580c',            // Deep Orange
   },
   
   // Enhanced neutrals with warmth
@@ -499,7 +875,7 @@ function createThemeOptions(isDark: boolean, variant: ThemeVariant): ThemeOption
         main: variantConfig.secondary[500],
         light: variantConfig.secondary[300],
         dark: variantConfig.secondary[700],
-        contrastText: '#000000',
+        contrastText: '#ffffff',
       },
     error: {
       main: '#ef4444',        // Modern red
@@ -560,23 +936,40 @@ function createThemeOptions(isDark: boolean, variant: ThemeVariant): ThemeOption
           borderBottomRightRadius: 0,
           margin: '0 4px',
           minHeight: '48px',
-          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          position: 'relative',
+          overflow: 'hidden',
           // Default inactive state - subtle outline to show tabs exist
           backgroundColor: 'transparent',
           border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
           borderBottom: 'none',
           color: theme.palette.text.secondary,
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: '2px',
+            background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.light} 100%)`,
+            opacity: 0,
+            transition: 'opacity 0.3s ease',
+          },
           
           '&.Mui-selected': {
             // Active tab matches content background exactly  
             backgroundColor: theme.palette.mode === 'dark'
               ? theme.palette.background.paper 
               : theme.palette.background.paper,
-            color: theme.palette.text.primary,
+            color: theme.palette.primary.main,
             border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
             borderBottom: 'none',
             position: 'relative',
             zIndex: 1,
+            transform: 'translateY(-1px)',
+            '&::before': {
+              opacity: 1,
+            },
           },
           '&:hover:not(.Mui-selected)': {
             // Hover state - lighter than active but darker than inactive
@@ -584,6 +977,10 @@ function createThemeOptions(isDark: boolean, variant: ThemeVariant): ThemeOption
               ? 'rgba(255,255,255,0.05)' 
               : 'rgba(0,0,0,0.02)',
             borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
+            transform: 'translateY(-0.5px)',
+            '&::before': {
+              opacity: 0.3,
+            },
           },
         }),
       },
@@ -620,7 +1017,7 @@ function createThemeOptions(isDark: boolean, variant: ThemeVariant): ThemeOption
         main: variantConfig.secondary[400],
         light: variantConfig.secondary[300],
         dark: variantConfig.secondary[500],
-        contrastText: '#000000',
+        contrastText: '#ffffff',
       },
     error: {
       main: '#f87171',        // Lighter red for dark mode
@@ -794,10 +1191,142 @@ export function createAppTheme(isDark: boolean, variant: ThemeVariant = 'indigo'
 // Export enhanced colors for use in components
 export { enhancedColors }
 
-// Utility function to get category color
+// Genre synonym mappings for better matching
+const genreSynonyms: Record<string, string> = {
+  // Science Fiction variations
+  'scifi': 'sciencefiction',
+  'sci-fi': 'sciencefiction',  
+  'sciencefiction': 'sciencefiction',
+  'sf': 'sciencefiction',
+  
+  // Self-help variations
+  'self-help': 'selfhelp',
+  'selfhelp': 'selfhelp',
+  'personal development': 'selfhelp',
+  'personaldevelopment': 'selfhelp',
+  'self improvement': 'selfhelp',
+  'selfimprovement': 'selfhelp',
+  
+  // Young adult variations
+  'young adult': 'youngadult',
+  'ya': 'youngadult',
+  'teen': 'youngadult',
+  'teenager': 'youngadult',
+  
+  // True crime/story variations
+  'true crime': 'true',
+  'truecrime': 'true',
+  'true story': 'true',
+  'truestory': 'true',
+  
+  // Art variations
+  'art & design': 'art',
+  'arts': 'art',
+  'fine art': 'art',
+  'fineart': 'art',
+  
+  // Health variations
+  'health & fitness': 'health',
+  'healthfitness': 'health',
+  'wellness': 'health',
+  'medical': 'medicine',
+  
+  // Biography variations
+  'bio': 'biography',
+  'biographies': 'biography',
+  
+  // Children's variations
+  'childrens': 'children',
+  'kids': 'children',
+  'juvenile': 'children',
+  
+  // Literature variations
+  'classic': 'literature',
+  'classics': 'literature',
+  'literary fiction': 'literature',
+  'literaryfiction': 'literature',
+  
+  // Business variations
+  'business & economics': 'business',
+  'businesseconomics': 'business',
+  'entrepreneurship': 'business',
+  'management': 'business',
+  
+  // DIY variations
+  'do it yourself': 'diy',
+  'howto': 'diy',
+  'how-to': 'diy',
+  
+  // Home variations
+  'home & garden': 'home',
+  'homegarden': 'home',
+  'house': 'home',
+  'interior design': 'design',
+  'interiordesign': 'design',
+}
+
+// Utility function to get category color with enhanced matching and fallback
 export function getCategoryColor(category: string): string {
-  const normalizedCategory = category.toLowerCase().replace(/[^a-z]/g, '')
-  return enhancedColors.categories[normalizedCategory as keyof typeof enhancedColors.categories] || enhancedColors.neutral[500]
+  // Normalize the category
+  const normalizedCategory = category.toLowerCase()
+    .replace(/[^a-z\s]/g, '') // Remove non-letters except spaces
+    .replace(/\s+/g, '') // Remove spaces
+  
+  // Check for direct match first
+  let colorKey = normalizedCategory as keyof typeof enhancedColors.categories
+  if (enhancedColors.categories[colorKey]) {
+    return enhancedColors.categories[colorKey]
+  }
+  
+  // Check synonyms
+  if (genreSynonyms[normalizedCategory]) {
+    colorKey = genreSynonyms[normalizedCategory] as keyof typeof enhancedColors.categories
+    if (enhancedColors.categories[colorKey]) {
+      return enhancedColors.categories[colorKey]
+    }
+  }
+  
+  // Smart fallback: generate consistent color based on genre name hash
+  return generateSmartFallbackColor(normalizedCategory)
+}
+
+// Generate consistent, accessible colors for unmapped genres
+function generateSmartFallbackColor(genre: string): string {
+  // Accessible color palette for fallback - ensuring good contrast
+  const fallbackColors = [
+    '#8b5cf6', // Purple
+    '#10b981', // Emerald  
+    '#f59e0b', // Amber
+    '#3b82f6', // Blue
+    '#ef4444', // Red
+    '#06b6d4', // Cyan
+    '#22c55e', // Green
+    '#f97316', // Orange
+    '#ec4899', // Pink
+    '#6366f1', // Indigo
+    '#a855f7', // Bright Purple
+    '#059669', // Dark Green
+    '#d97706', // Dark Amber
+    '#dc2626', // Dark Red
+    '#0891b2', // Dark Cyan
+    '#16a34a', // Forest Green
+    '#ea580c', // Deep Orange
+    '#e11d48', // Dark Rose
+    '#7c3aed', // Deep Purple
+    '#047857', // Very Dark Green
+  ]
+  
+  // Create a simple hash of the genre name
+  let hash = 0
+  for (let i = 0; i < genre.length; i++) {
+    const char = genre.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash // Convert to 32-bit integer
+  }
+  
+  // Use hash to select consistent color
+  const colorIndex = Math.abs(hash) % fallbackColors.length
+  return fallbackColors[colorIndex]
 }
 
 // Utility function to get gradient styles

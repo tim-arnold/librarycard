@@ -14,6 +14,7 @@ import type { EnhancedBook } from '@/lib/types'
 import BookActions from './BookActions'
 import { getDisplayGenres } from '@/lib/genreUtils'
 import StarRating from './StarRating'
+import AnimatedCheckoutStatus from './AnimatedCheckoutStatus'
 
 interface BookListProps {
   books: EnhancedBook[]
@@ -238,10 +239,14 @@ export default function BookList({
                       sx={{ 
                         textTransform: 'none',
                         fontSize: { xs: '0.7rem', sm: '0.75rem' },
-                        color: 'warning.main',
+                        color: (theme) => theme.palette.mode === 'dark' 
+                          ? theme.palette.primary.light 
+                          : theme.palette.primary.main,
                         minHeight: { xs: 20, sm: 24 },
                         '&:hover': {
-                          backgroundColor: 'warning.50'
+                          backgroundColor: (theme) => theme.palette.mode === 'dark' 
+                            ? `${theme.palette.primary.light}15` 
+                            : `${theme.palette.primary.main}15`
                         }
                       }}
                     >
@@ -359,34 +364,11 @@ export default function BookList({
               )}
 
               {/* Checkout status display */}
-              {book.status === 'checked_out' && (
-                <Box sx={{ 
-                  mt: 1.5, 
-                  p: { xs: 1, sm: 1.5 }, 
-                  borderRadius: 1,
-                  border: 1,
-                  borderColor: 'warning.main'
-                }}>
-                  <Typography 
-                    variant="body2" 
-                    color="text.primary"
-                    sx={{ fontWeight: 500, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
-                  >
-                    <MenuBook sx={{ mr: 1, verticalAlign: 'middle', fontSize: 'inherit' }} />
-                    {book.checked_out_date && (() => {
-                      const checkoutDate = new Date(book.checked_out_date)
-                      const today = new Date()
-                      const diffTime = Math.abs(today.getTime() - checkoutDate.getTime())
-                      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-                      if (book.checked_out_by === currentUserId) {
-                        return `You checked this book out ${diffDays} day${diffDays !== 1 ? 's' : ''} ago`
-                      } else {
-                        return `Checked out since ${checkoutDate.toLocaleDateString()} (${diffDays} day${diffDays !== 1 ? 's' : ''})`
-                      }
-                    })()}
-                  </Typography>
-                </Box>
-              )}
+              <AnimatedCheckoutStatus 
+                book={book} 
+                currentUserId={currentUserId} 
+                variant="compact" 
+              />
 
               
               {/* Show shelf info for all users */}
