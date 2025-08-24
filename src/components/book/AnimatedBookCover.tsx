@@ -77,6 +77,16 @@ export default function AnimatedBookCover({
     cursor,
     position: 'relative',
     overflow: 'hidden',
+    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+    transformStyle: 'preserve-3d',
+    '&:hover': {
+      transform: 'translateY(-4px) rotateY(-8deg) rotateX(2deg) scale(1.05)',
+      boxShadow: '0 12px 30px rgba(0, 0, 0, 0.2), 0 6px 15px rgba(0, 0, 0, 0.1)',
+      filter: 'brightness(1.1) contrast(1.05)',
+    },
+    '&:active': {
+      transform: 'translateY(-2px) rotateY(-4deg) rotateX(1deg) scale(1.02)',
+    },
     ...sx
   }
 
@@ -85,17 +95,39 @@ export default function AnimatedBookCover({
     return (
       <Box sx={baseStyle} onClick={onClick}>
         {src ? (
-          <Box
-            component="img"
-            src={src}
-            alt={alt}
-            sx={{
-              width: '100%',
-              height: '100%',
-              objectFit,
-              display: 'block'
-            }}
-          />
+          <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
+            <Box
+              component="img"
+              src={src}
+              alt={alt}
+              sx={{
+                width: '100%',
+                height: '100%',
+                objectFit,
+                display: 'block',
+                position: 'relative',
+                zIndex: 1,
+              }}
+            />
+            {/* Subtle 3D depth effect overlay */}
+            <Box
+              sx={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'linear-gradient(135deg, transparent 0%, rgba(0,0,0,0.05) 100%)',
+                pointerEvents: 'none',
+                zIndex: 2,
+                opacity: 0,
+                transition: 'opacity 0.3s ease',
+                '.MuiBox-root:hover &': {
+                  opacity: 1,
+                },
+              }}
+            />
+          </Box>
         ) : (
           <Box sx={{
             width: '100%',
