@@ -160,8 +160,13 @@ export default function RatingModal({
             disabled={isSubmitting || currentReviewStatus === 'pending'}
             inputProps={{ maxLength: 1000 }}
             helperText={`${reviewText.length}/1000 characters`}
-            sx={{ mb: 2 }}
+            sx={{ mb: 1 }}
           />
+          
+          {/* Moderation Notice */}
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2, fontStyle: 'italic' }}>
+            Reviews will be submitted for moderation, while star ratings will be registered immediately.
+          </Typography>
           
           {/* Review Status Messages */}
           {currentReviewStatus === 'pending' && (
