@@ -119,12 +119,22 @@ export default function StarRating({
         key={index}
         sx={{
           fontSize: config.starSize,
-          color: rating >= starValue - 0.4 ? 'warning.main' : 'action.disabled',
+          color: rating >= starValue - 0.4 
+            ? (theme) => theme.palette.mode === 'dark' 
+              ? theme.palette.primary.light 
+              : theme.palette.primary.main
+            : 'action.disabled',
           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          filter: rating >= starValue - 0.4 ? 'drop-shadow(0 1px 2px rgba(245, 158, 11, 0.3))' : 'none',
+          filter: rating >= starValue - 0.4 
+            ? (theme) => theme.palette.mode === 'dark' 
+              ? `drop-shadow(0 1px 2px ${theme.palette.primary.light}30)`
+              : `drop-shadow(0 1px 2px ${theme.palette.primary.main}30)`
+            : 'none',
           '&:hover': onClick ? {
             transform: 'scale(1.1) rotate(5deg)',
-            filter: 'drop-shadow(0 2px 4px rgba(245, 158, 11, 0.4))',
+            filter: (theme) => theme.palette.mode === 'dark' 
+              ? `drop-shadow(0 2px 4px ${theme.palette.primary.light}40)`
+              : `drop-shadow(0 2px 4px ${theme.palette.primary.main}40)`,
           } : {},
         }}
         aria-label={`${starValue} out of 5 stars`}
@@ -256,7 +266,12 @@ export default function StarRating({
         onClick={onClick}
         className={className}
       >
-        <Star sx={{ fontSize: config.starSize, color: 'warning.main' }} aria-label={`${displayRating.toFixed(1)} out of 5 stars`} />
+        <Star sx={{ 
+          fontSize: config.starSize, 
+          color: (theme) => theme.palette.mode === 'dark' 
+            ? theme.palette.primary.light 
+            : theme.palette.primary.main
+        }} aria-label={`${displayRating.toFixed(1)} out of 5 stars`} />
         <Typography 
           variant="caption" 
           sx={{ 

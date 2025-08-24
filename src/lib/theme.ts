@@ -256,64 +256,64 @@ const commonComponents = {
         '&:active': {
           transform: 'translateY(-1px) scale(1.01)',
         },
-        // Enhanced error button styling for better dark theme contrast
+        // Enhanced error button styling for better visual harmony
         '&.MuiButton-colorError': {
-          borderColor: theme.palette.mode === 'dark' ? '#f87171' : theme.palette.error.main,
-          color: theme.palette.mode === 'dark' ? '#ffffff' : theme.palette.error.main,
-          backgroundColor: theme.palette.mode === 'dark' ? `${theme.palette.error.main}20` : 'transparent',
+          borderColor: theme.palette.mode === 'dark' ? '#6b7280' : '#9ca3af',
+          color: theme.palette.mode === 'dark' ? '#f87171' : '#dc2626',
+          backgroundColor: theme.palette.mode === 'dark' ? 'rgba(248, 113, 113, 0.1)' : 'rgba(220, 38, 38, 0.05)',
           '&::before': {
             background: theme.palette.mode === 'dark' 
-              ? `linear-gradient(135deg, ${theme.palette.error.main}15 0%, ${theme.palette.error.dark}15 100%)`
-              : `linear-gradient(135deg, ${theme.palette.error.main}08 0%, ${theme.palette.error.dark}08 100%)`,
+              ? 'linear-gradient(135deg, rgba(248, 113, 113, 0.08) 0%, rgba(220, 38, 38, 0.08) 100%)'
+              : 'linear-gradient(135deg, rgba(220, 38, 38, 0.03) 0%, rgba(185, 28, 28, 0.03) 100%)',
           },
           '&:hover': {
-            borderColor: theme.palette.mode === 'dark' ? '#ef4444' : theme.palette.error.dark,
-            backgroundColor: theme.palette.mode === 'dark' ? `${theme.palette.error.main}30` : `${theme.palette.error.main}12`,
-            color: theme.palette.mode === 'dark' ? '#ffffff' : theme.palette.error.dark,
-            transform: 'translateY(-2px) scale(1.02)',
+            borderColor: theme.palette.mode === 'dark' ? '#9ca3af' : '#6b7280',
+            backgroundColor: theme.palette.mode === 'dark' ? 'rgba(248, 113, 113, 0.15)' : 'rgba(220, 38, 38, 0.08)',
+            color: theme.palette.mode === 'dark' ? '#fca5a5' : '#b91c1c',
+            transform: 'translateY(-1px) scale(1.01)',
             boxShadow: theme.palette.mode === 'dark' 
-              ? `0 4px 8px ${theme.palette.error.main}40`
-              : `0 4px 8px ${theme.palette.error.main}20`,
+              ? '0 2px 8px rgba(248, 113, 113, 0.2)'
+              : '0 2px 8px rgba(220, 38, 38, 0.15)',
           },
         },
-        // Enhanced warning button styling
+        // Enhanced warning button styling for better visual harmony
         '&.MuiButton-colorWarning': {
-          borderColor: theme.palette.mode === 'dark' ? '#fbbf24' : theme.palette.warning.main,
-          color: theme.palette.mode === 'dark' ? '#ffffff' : theme.palette.warning.main,
-          backgroundColor: theme.palette.mode === 'dark' ? `${theme.palette.warning.main}20` : 'transparent',
+          borderColor: theme.palette.mode === 'dark' ? '#6b7280' : '#9ca3af',
+          color: theme.palette.mode === 'dark' ? '#fbbf24' : '#d97706',
+          backgroundColor: theme.palette.mode === 'dark' ? 'rgba(251, 191, 36, 0.1)' : 'rgba(217, 119, 6, 0.05)',
           '&::before': {
             background: theme.palette.mode === 'dark' 
-              ? `linear-gradient(135deg, ${theme.palette.warning.main}15 0%, ${theme.palette.warning.dark}15 100%)`
-              : `linear-gradient(135deg, ${theme.palette.warning.main}08 0%, ${theme.palette.warning.dark}08 100%)`,
+              ? 'linear-gradient(135deg, rgba(251, 191, 36, 0.08) 0%, rgba(217, 119, 6, 0.08) 100%)'
+              : 'linear-gradient(135deg, rgba(217, 119, 6, 0.03) 0%, rgba(180, 83, 9, 0.03) 100%)',
           },
           '&:hover': {
-            borderColor: theme.palette.mode === 'dark' ? '#f59e0b' : theme.palette.warning.dark,
-            backgroundColor: theme.palette.mode === 'dark' ? `${theme.palette.warning.main}30` : `${theme.palette.warning.main}12`,
-            color: theme.palette.mode === 'dark' ? '#ffffff' : theme.palette.warning.dark,
-            transform: 'translateY(-2px) scale(1.02)',
+            borderColor: theme.palette.mode === 'dark' ? '#9ca3af' : '#6b7280',
+            backgroundColor: theme.palette.mode === 'dark' ? 'rgba(251, 191, 36, 0.15)' : 'rgba(217, 119, 6, 0.08)',
+            color: theme.palette.mode === 'dark' ? '#fde047' : '#b45309',
+            transform: 'translateY(-1px) scale(1.01)',
             boxShadow: theme.palette.mode === 'dark' 
-              ? `0 4px 8px ${theme.palette.warning.main}40`
-              : `0 4px 8px ${theme.palette.warning.main}20`,
+              ? '0 2px 8px rgba(251, 191, 36, 0.2)'
+              : '0 2px 8px rgba(217, 119, 6, 0.15)',
           },
         },
-        // Enhanced info button styling
+        // Enhanced info button styling for better visual harmony
         '&.MuiButton-colorInfo': {
-          borderColor: theme.palette.mode === 'dark' ? '#60a5fa' : theme.palette.info.main,
-          color: theme.palette.mode === 'dark' ? '#ffffff' : theme.palette.info.main,
-          backgroundColor: theme.palette.mode === 'dark' ? `${theme.palette.info.main}20` : 'transparent',
+          borderColor: theme.palette.mode === 'dark' ? '#6b7280' : '#9ca3af',
+          color: theme.palette.mode === 'dark' ? '#60a5fa' : '#2563eb',
+          backgroundColor: theme.palette.mode === 'dark' ? 'rgba(96, 165, 250, 0.1)' : 'rgba(37, 99, 235, 0.05)',
           '&::before': {
             background: theme.palette.mode === 'dark' 
-              ? `linear-gradient(135deg, ${theme.palette.info.main}15 0%, ${theme.palette.info.dark}15 100%)`
-              : `linear-gradient(135deg, ${theme.palette.info.main}08 0%, ${theme.palette.info.dark}08 100%)`,
+              ? 'linear-gradient(135deg, rgba(96, 165, 250, 0.08) 0%, rgba(37, 99, 235, 0.08) 100%)'
+              : 'linear-gradient(135deg, rgba(37, 99, 235, 0.03) 0%, rgba(30, 64, 175, 0.03) 100%)',
           },
           '&:hover': {
-            borderColor: theme.palette.mode === 'dark' ? '#3b82f6' : theme.palette.info.dark,
-            backgroundColor: theme.palette.mode === 'dark' ? `${theme.palette.info.main}30` : `${theme.palette.info.main}12`,
-            color: theme.palette.mode === 'dark' ? '#ffffff' : theme.palette.info.dark,
-            transform: 'translateY(-2px) scale(1.02)',
+            borderColor: theme.palette.mode === 'dark' ? '#9ca3af' : '#6b7280',
+            backgroundColor: theme.palette.mode === 'dark' ? 'rgba(96, 165, 250, 0.15)' : 'rgba(37, 99, 235, 0.08)',
+            color: theme.palette.mode === 'dark' ? '#93c5fd' : '#1d4ed8',
+            transform: 'translateY(-1px) scale(1.01)',
             boxShadow: theme.palette.mode === 'dark' 
-              ? `0 4px 8px ${theme.palette.info.main}40`
-              : `0 4px 8px ${theme.palette.info.main}20`,
+              ? '0 2px 8px rgba(96, 165, 250, 0.2)'
+              : '0 2px 8px rgba(37, 99, 235, 0.15)',
           },
         },
       }),
@@ -570,29 +570,29 @@ const enhancedColors = {
     900: '#78350f',
   },
   
-  // Comprehensive category colors for books - accessible and distinct
+  // Theme-integrated category colors for books - harmonized with design system
   categories: {
-    // Core fiction genres
-    fiction: '#8b5cf6',         // Purple
-    fantasy: '#a855f7',         // Bright Purple
-    sciencefiction: '#3b82f6',  // Blue (sci-fi, scifi variations)
-    mystery: '#6366f1',         // Indigo
-    thriller: '#4f46e5',        // Deep Indigo
-    horror: '#dc2626',          // Dark Red
-    romance: '#ec4899',         // Pink
-    drama: '#f97316',           // Orange
-    adventure: '#059669',       // Emerald Green
+    // Core fiction genres - using primary palette variations
+    fiction: '#8b5cf6',         // Purple (primary variant)
+    fantasy: '#a855f7',         // Bright Purple (primary light)
+    sciencefiction: '#6366f1',  // Indigo (theme secondary)
+    mystery: '#4f46e5',         // Deep Indigo (secondary dark)
+    thriller: '#3730a3',        // Very Deep Indigo
+    horror: '#7f1d1d',          // Dark Red (muted)
+    romance: '#be185d',         // Pink (muted)
+    drama: '#c2410c',           // Orange (muted)
+    adventure: '#047857',       // Emerald Green (muted)
     
-    // Non-fiction categories
-    nonfiction: '#10b981',      // Emerald
-    biography: '#f59e0b',       // Amber
-    autobiography: '#d97706',   // Dark Amber
-    memoir: '#ea580c',          // Deep Orange
-    history: '#ef4444',         // Red
-    politics: '#dc2626',        // Dark Red
-    philosophy: '#7c3aed',      // Purple
-    religion: '#6d28d9',        // Deep Purple
-    spirituality: '#8b5cf6',    // Light Purple
+    // Non-fiction categories - muted earth tones
+    nonfiction: '#047857',      // Forest Green (muted)
+    biography: '#c2410c',       // Orange (muted)
+    autobiography: '#b45309',   // Dark Amber (muted)
+    memoir: '#c2410c',          // Orange (muted)
+    history: '#b91c1c',         // Red (muted)
+    politics: '#991b1b',        // Dark Red (muted)
+    philosophy: '#6d28d9',      // Purple (keeping for distinction)
+    religion: '#5b21b6',        // Deep Purple (muted)
+    spirituality: '#7c3aed',    // Light Purple (muted)
     
     // Educational and reference
     science: '#3b82f6',         // Blue
