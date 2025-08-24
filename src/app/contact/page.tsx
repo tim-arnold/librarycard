@@ -67,24 +67,27 @@ function ContactInfo() {
   const contactMethods = [
     {
       icon: <Email />,
-      title: 'Email Support',
+      title: 'Technical Support',
       description: 'Get help with technical questions, account issues, or general inquiries.',
-      info: 'contact@tim52.io',
-      action: 'mailto:contact@tim52.io'
+      info: 'Submit a support request with detailed information',
+      action: '/contact/support',
+      ctaText: 'Get Technical Help'
     },
     {
       icon: <Support />,
       title: 'Customer Success',
       description: 'Need help setting up your community library or onboarding users?',
-      info: 'We typically respond within 4-6 hours',
-      action: null
+      info: 'Connect with our onboarding specialists',
+      action: '/contact/success',
+      ctaText: 'Schedule Setup Help'
     },
     {
       icon: <Business />,
       title: 'Enterprise Sales',
       description: 'Interested in custom solutions or enterprise features?',
-      info: 'Schedule a call to discuss your needs',
-      action: null
+      info: 'Discuss pricing and custom requirements',
+      action: '/contact/enterprise',
+      ctaText: 'Request Enterprise Info'
     }
   ]
 
@@ -122,22 +125,23 @@ function ContactInfo() {
                 {method.icon}
               </div>
               
-              <div>
+              <div style={{ flex: 1 }}>
                 <Heading level="5" style={{ marginBottom: 'var(--marketing-spacing-2)' }}>
                   {method.title}
                 </Heading>
                 <Text variant="body" style={{ marginBottom: 'var(--marketing-spacing-3)' }}>
                   {method.description}
                 </Text>
-                <Text variant="small" color="primary" style={{ fontWeight: 'var(--marketing-font-medium)' }}>
-                  {method.action ? (
-                    <a href={method.action} style={{ color: 'inherit', textDecoration: 'none' }}>
-                      {method.info}
-                    </a>
-                  ) : (
-                    method.info
-                  )}
+                <Text variant="small" color="muted" style={{ marginBottom: 'var(--marketing-spacing-4)' }}>
+                  {method.info}
                 </Text>
+                <Button 
+                  href={method.action}
+                  variant="outline" 
+                  size="sm"
+                >
+                  {method.ctaText}
+                </Button>
               </div>
             </div>
           </div>
