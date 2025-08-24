@@ -288,39 +288,56 @@ const BookCard = React.memo<BookCardProps>(({
                       onClick={onGenreEdit ? handleGenreEditClick : undefined}
                       deleteIcon={onGenreEdit ? <EditOutlined sx={{ fontSize: '14px !important' }} /> : undefined}
                       onDelete={onGenreEdit ? handleGenreEditClick : undefined}
-                      sx={{ 
+                      sx={({ theme }) => ({ 
                         fontSize: '0.7rem', 
                         height: 20,
                         maxWidth: onGenreEdit ? '140px' : '120px', // Slightly wider when edit icon present
-                        backgroundColor: `${genreColor}20`,
-                        color: genreColor,
-                        border: `1px solid ${genreColor}40`,
+                        // Dark mode: stronger background opacity and lighter text for better contrast
+                        backgroundColor: theme.palette.mode === 'dark' 
+                          ? `${genreColor}40` // Stronger background in dark mode
+                          : `${genreColor}20`, // Lighter background in light mode
+                        color: theme.palette.mode === 'dark' 
+                          ? '#ffffff' // White text in dark mode for maximum contrast
+                          : genreColor, // Colored text in light mode
+                        border: theme.palette.mode === 'dark' 
+                          ? `1px solid ${genreColor}60` // Stronger border in dark mode
+                          : `1px solid ${genreColor}40`, // Lighter border in light mode
                         fontWeight: 500,
                         cursor: onGenreEdit ? 'pointer' : 'default',
                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                         animation: isAssigned ? 'genrePulse 2s ease-in-out' : undefined,
                         '&:hover': onGenreEdit ? {
-                          backgroundColor: `${genreColor}30`,
-                          border: `1px solid ${genreColor}60`,
+                          backgroundColor: theme.palette.mode === 'dark' 
+                            ? `${genreColor}50` 
+                            : `${genreColor}30`,
+                          border: theme.palette.mode === 'dark' 
+                            ? `1px solid ${genreColor}80` 
+                            : `1px solid ${genreColor}60`,
                           transform: 'scale(1.05)',
                           '& .MuiChip-deleteIcon': {
-                            color: genreColor,
+                            color: theme.palette.mode === 'dark' ? '#ffffff' : genreColor,
                             transform: 'scale(1.1)',
                           },
                         } : {
-                          backgroundColor: `${genreColor}30`,
-                          border: `1px solid ${genreColor}60`,
+                          backgroundColor: theme.palette.mode === 'dark' 
+                            ? `${genreColor}50` 
+                            : `${genreColor}30`,
+                          border: theme.palette.mode === 'dark' 
+                            ? `1px solid ${genreColor}80` 
+                            : `1px solid ${genreColor}60`,
                           transform: 'scale(1.05)',
                         },
                         '&:active': onGenreEdit ? {
                           transform: 'scale(1.02)',
                         } : {},
                         '& .MuiChip-deleteIcon': {
-                          color: `${genreColor}80`,
+                          color: theme.palette.mode === 'dark' 
+                            ? '#ffffff90' // Semi-transparent white in dark mode
+                            : `${genreColor}80`, // Semi-transparent color in light mode
                           margin: '0 2px 0 4px',
                           transition: 'all 0.2s ease',
                           '&:hover': {
-                            color: genreColor,
+                            color: theme.palette.mode === 'dark' ? '#ffffff' : genreColor,
                           },
                         },
                         '@keyframes genrePulse': {
@@ -339,7 +356,7 @@ const BookCard = React.memo<BookCardProps>(({
                           overflow: 'hidden',
                           whiteSpace: 'nowrap'
                         }
-                      }} 
+                      })} 
                     />
                   </Grow>
                 )

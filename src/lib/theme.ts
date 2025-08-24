@@ -162,7 +162,7 @@ const commonComponents = {
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         boxShadow: '0 2px 4px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04)',
         border: '1px solid rgba(0, 0, 0, 0.08)',
-        position: 'relative',
+        position: 'relative' as const,
         overflow: 'hidden',
         '&::before': {
           content: '""',
@@ -202,7 +202,7 @@ const commonComponents = {
         background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
         boxShadow: `0 2px 4px ${theme.palette.primary.main}30, 0 1px 2px ${theme.palette.primary.main}20`,
         borderRadius: '10px',
-        position: 'relative',
+        position: 'relative' as const,
         overflow: 'hidden',
         '&::before': {
           content: '""',
@@ -231,7 +231,7 @@ const commonComponents = {
         borderColor: theme.palette.primary.main,
         borderRadius: '10px',
         borderWidth: '2px',
-        position: 'relative',
+        position: 'relative' as const,
         overflow: 'hidden',
         '&::before': {
           content: '""',
@@ -259,7 +259,7 @@ const commonComponents = {
       }),
       text: ({ theme }: { theme: Theme }) => ({
         borderRadius: '8px',
-        position: 'relative',
+        position: 'relative' as const,
         overflow: 'hidden',
         '&::before': {
           content: '""',
@@ -435,7 +435,7 @@ const commonComponents = {
         borderRadius: '6px',
         margin: '2px 8px',
         transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-        position: 'relative',
+        position: 'relative' as const,
         overflow: 'hidden',
         '&::before': {
           content: '""',
@@ -510,18 +510,82 @@ const enhancedColors = {
     900: '#78350f',
   },
   
-  // Category colors for books
+  // Comprehensive category colors for books - accessible and distinct
   categories: {
-    fiction: '#8b5cf6',      // Purple
-    nonfiction: '#10b981',   // Emerald
-    biography: '#f59e0b',    // Amber
-    science: '#3b82f6',     // Blue
-    history: '#ef4444',     // Red
-    mystery: '#6366f1',     // Indigo
-    romance: '#ec4899',     // Pink
-    fantasy: '#8b5cf6',     // Purple
-    children: '#10b981',    // Green
-    reference: '#6b7280',   // Gray
+    // Core fiction genres
+    fiction: '#8b5cf6',         // Purple
+    fantasy: '#a855f7',         // Bright Purple
+    sciencefiction: '#3b82f6',  // Blue (sci-fi, scifi variations)
+    mystery: '#6366f1',         // Indigo
+    thriller: '#4f46e5',        // Deep Indigo
+    horror: '#dc2626',          // Dark Red
+    romance: '#ec4899',         // Pink
+    drama: '#f97316',           // Orange
+    adventure: '#059669',       // Emerald Green
+    
+    // Non-fiction categories
+    nonfiction: '#10b981',      // Emerald
+    biography: '#f59e0b',       // Amber
+    autobiography: '#d97706',   // Dark Amber
+    memoir: '#ea580c',          // Deep Orange
+    history: '#ef4444',         // Red
+    politics: '#dc2626',        // Dark Red
+    philosophy: '#7c3aed',      // Purple
+    religion: '#6d28d9',        // Deep Purple
+    spirituality: '#8b5cf6',    // Light Purple
+    
+    // Educational and reference
+    science: '#3b82f6',         // Blue
+    technology: '#06b6d4',      // Cyan
+    medicine: '#10b981',        // Green
+    health: '#22c55e',          // Light Green
+    fitness: '#16a34a',         // Forest Green
+    psychology: '#a855f7',      // Bright Purple
+    education: '#f59e0b',       // Amber
+    reference: '#6b7280',       // Gray (keep for actual reference books)
+    textbook: '#64748b',        // Blue Gray
+    
+    // Lifestyle and practical
+    cooking: '#f97316',         // Orange
+    food: '#ea580c',            // Deep Orange
+    travel: '#06b6d4',          // Cyan
+    sports: '#22c55e',          // Green
+    business: '#059669',        // Dark Green
+    economics: '#047857',       // Forest Green
+    selfhelp: '#ec4899',        // Pink
+    parenting: '#f472b6',       // Light Pink
+    relationships: '#fb7185',   // Rose
+    
+    // Arts and creativity
+    art: '#f43f5e',             // Rose
+    photography: '#e11d48',     // Dark Rose
+    music: '#be185d',           // Deep Pink
+    poetry: '#a21caf',          // Purple Pink
+    literature: '#7c2d12',      // Brown
+    writing: '#92400e',         // Dark Orange
+    crafts: '#dc2626',          // Red
+    design: '#b91c1c',          // Dark Red
+    
+    // Special categories
+    children: '#22c55e',        // Green
+    youngadult: '#06b6d4',      // Cyan
+    comic: '#f59e0b',           // Amber
+    graphic: '#d97706',         // Dark Amber
+    manga: '#dc2626',           // Red
+    humor: '#fbbf24',           // Yellow
+    satire: '#f59e0b',          // Amber
+    
+    // Additional common genres
+    true: '#10b981',            // Emerald (true crime, true story)
+    crime: '#dc2626',           // Red
+    legal: '#374151',           // Dark Gray
+    war: '#7f1d1d',            // Dark Red
+    military: '#6b7280',        // Gray
+    nature: '#16a34a',          // Forest Green
+    environment: '#059669',     // Dark Green
+    gardening: '#22c55e',       // Green
+    home: '#f97316',           // Orange
+    diy: '#ea580c',            // Deep Orange
   },
   
   // Enhanced neutrals with warmth
@@ -1067,10 +1131,142 @@ export function createAppTheme(isDark: boolean, variant: ThemeVariant = 'indigo'
 // Export enhanced colors for use in components
 export { enhancedColors }
 
-// Utility function to get category color
+// Genre synonym mappings for better matching
+const genreSynonyms: Record<string, string> = {
+  // Science Fiction variations
+  'scifi': 'sciencefiction',
+  'sci-fi': 'sciencefiction',  
+  'sciencefiction': 'sciencefiction',
+  'sf': 'sciencefiction',
+  
+  // Self-help variations
+  'self-help': 'selfhelp',
+  'selfhelp': 'selfhelp',
+  'personal development': 'selfhelp',
+  'personaldevelopment': 'selfhelp',
+  'self improvement': 'selfhelp',
+  'selfimprovement': 'selfhelp',
+  
+  // Young adult variations
+  'young adult': 'youngadult',
+  'ya': 'youngadult',
+  'teen': 'youngadult',
+  'teenager': 'youngadult',
+  
+  // True crime/story variations
+  'true crime': 'true',
+  'truecrime': 'true',
+  'true story': 'true',
+  'truestory': 'true',
+  
+  // Art variations
+  'art & design': 'art',
+  'arts': 'art',
+  'fine art': 'art',
+  'fineart': 'art',
+  
+  // Health variations
+  'health & fitness': 'health',
+  'healthfitness': 'health',
+  'wellness': 'health',
+  'medical': 'medicine',
+  
+  // Biography variations
+  'bio': 'biography',
+  'biographies': 'biography',
+  
+  // Children's variations
+  'childrens': 'children',
+  'kids': 'children',
+  'juvenile': 'children',
+  
+  // Literature variations
+  'classic': 'literature',
+  'classics': 'literature',
+  'literary fiction': 'literature',
+  'literaryfiction': 'literature',
+  
+  // Business variations
+  'business & economics': 'business',
+  'businesseconomics': 'business',
+  'entrepreneurship': 'business',
+  'management': 'business',
+  
+  // DIY variations
+  'do it yourself': 'diy',
+  'howto': 'diy',
+  'how-to': 'diy',
+  
+  // Home variations
+  'home & garden': 'home',
+  'homegarden': 'home',
+  'house': 'home',
+  'interior design': 'design',
+  'interiordesign': 'design',
+}
+
+// Utility function to get category color with enhanced matching and fallback
 export function getCategoryColor(category: string): string {
-  const normalizedCategory = category.toLowerCase().replace(/[^a-z]/g, '')
-  return enhancedColors.categories[normalizedCategory as keyof typeof enhancedColors.categories] || enhancedColors.neutral[500]
+  // Normalize the category
+  const normalizedCategory = category.toLowerCase()
+    .replace(/[^a-z\s]/g, '') // Remove non-letters except spaces
+    .replace(/\s+/g, '') // Remove spaces
+  
+  // Check for direct match first
+  let colorKey = normalizedCategory as keyof typeof enhancedColors.categories
+  if (enhancedColors.categories[colorKey]) {
+    return enhancedColors.categories[colorKey]
+  }
+  
+  // Check synonyms
+  if (genreSynonyms[normalizedCategory]) {
+    colorKey = genreSynonyms[normalizedCategory] as keyof typeof enhancedColors.categories
+    if (enhancedColors.categories[colorKey]) {
+      return enhancedColors.categories[colorKey]
+    }
+  }
+  
+  // Smart fallback: generate consistent color based on genre name hash
+  return generateSmartFallbackColor(normalizedCategory)
+}
+
+// Generate consistent, accessible colors for unmapped genres
+function generateSmartFallbackColor(genre: string): string {
+  // Accessible color palette for fallback - ensuring good contrast
+  const fallbackColors = [
+    '#8b5cf6', // Purple
+    '#10b981', // Emerald  
+    '#f59e0b', // Amber
+    '#3b82f6', // Blue
+    '#ef4444', // Red
+    '#06b6d4', // Cyan
+    '#22c55e', // Green
+    '#f97316', // Orange
+    '#ec4899', // Pink
+    '#6366f1', // Indigo
+    '#a855f7', // Bright Purple
+    '#059669', // Dark Green
+    '#d97706', // Dark Amber
+    '#dc2626', // Dark Red
+    '#0891b2', // Dark Cyan
+    '#16a34a', // Forest Green
+    '#ea580c', // Deep Orange
+    '#e11d48', // Dark Rose
+    '#7c3aed', // Deep Purple
+    '#047857', // Very Dark Green
+  ]
+  
+  // Create a simple hash of the genre name
+  let hash = 0
+  for (let i = 0; i < genre.length; i++) {
+    const char = genre.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash // Convert to 32-bit integer
+  }
+  
+  // Use hash to select consistent color
+  const colorIndex = Math.abs(hash) % fallbackColors.length
+  return fallbackColors[colorIndex]
 }
 
 // Utility function to get gradient styles
