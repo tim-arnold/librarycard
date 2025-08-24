@@ -83,18 +83,19 @@
   box-shadow: var(--marketing-shadow-lg);
   transform: scale(1.05);
   z-index: 1;
+  padding-top: calc(var(--marketing-spacing-8) + var(--marketing-spacing-4));
 }
 
 .marketing-pricing-card-featured::before {
   content: 'Most Popular';
   position: absolute;
-  top: 0;
+  top: -12px;
   left: 50%;
   transform: translateX(-50%);
   background: linear-gradient(135deg, var(--marketing-primary) 0%, var(--marketing-secondary) 100%);
   color: var(--marketing-white);
   padding: var(--marketing-spacing-2) var(--marketing-spacing-6);
-  border-radius: 0 0 var(--marketing-radius-lg) var(--marketing-radius-lg);
+  border-radius: var(--marketing-radius-lg);
   font-size: var(--marketing-text-sm);
   font-weight: var(--marketing-font-semibold);
 }
@@ -150,6 +151,7 @@
   list-style: none;
   padding: 0;
   margin: 0 0 var(--marketing-spacing-8) 0;
+  text-align: left;
 }
 
 .marketing-pricing-feature {

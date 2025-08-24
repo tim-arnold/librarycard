@@ -185,16 +185,17 @@ function ComparisonSection() {
               background: 'var(--marketing-white)',
               padding: 'var(--marketing-spacing-6)',
               borderRadius: 'var(--marketing-radius-lg)',
-              border: '1px solid var(--marketing-gray-200)',
-              textAlign: 'center'
+              border: '1px solid var(--marketing-gray-200)'
             }}
           >
-            <Heading level="4" style={{ color: 'var(--marketing-success)' }}>
-              vs. Personal Tools
-            </Heading>
-            <Text variant="small" color="muted" style={{ marginBottom: 'var(--marketing-spacing-4)' }}>
-              BookBuddy, CLZ Books, etc.
-            </Text>
+            <div style={{ textAlign: 'center', marginBottom: 'var(--marketing-spacing-4)' }}>
+              <Heading level="4" style={{ color: 'var(--marketing-success)' }}>
+                vs. Personal Tools
+              </Heading>
+              <Text variant="small" color="muted">
+                BookBuddy, CLZ Books, etc.
+              </Text>
+            </div>
             <List variant="check">
               <ListItem>Community features included</ListItem>
               <ListItem>Multi-user access & permissions</ListItem>
@@ -209,16 +210,17 @@ function ComparisonSection() {
               background: 'var(--marketing-white)',
               padding: 'var(--marketing-spacing-6)',
               borderRadius: 'var(--marketing-radius-lg)',
-              border: '1px solid var(--marketing-gray-200)',
-              textAlign: 'center'
+              border: '1px solid var(--marketing-gray-200)'
             }}
           >
-            <Heading level="4" style={{ color: 'var(--marketing-success)' }}>
-              vs. Professional Tools
-            </Heading>
-            <Text variant="small" color="muted" style={{ marginBottom: 'var(--marketing-spacing-4)' }}>
-              WikiLibrary, Koha, etc.
-            </Text>
+            <div style={{ textAlign: 'center', marginBottom: 'var(--marketing-spacing-4)' }}>
+              <Heading level="4" style={{ color: 'var(--marketing-success)' }}>
+                vs. Professional Tools
+              </Heading>
+              <Text variant="small" color="muted">
+                WikiLibrary, Koha, etc.
+              </Text>
+            </div>
             <List variant="check">
               <ListItem>63-73% cost savings</ListItem>
               <ListItem>5-minute setup (no IT required)</ListItem>
@@ -233,16 +235,17 @@ function ComparisonSection() {
               background: 'var(--marketing-white)',
               padding: 'var(--marketing-spacing-6)',
               borderRadius: 'var(--marketing-radius-lg)',
-              border: '1px solid var(--marketing-gray-200)',
-              textAlign: 'center'
+              border: '1px solid var(--marketing-gray-200)'
             }}
           >
-            <Heading level="4" style={{ color: 'var(--marketing-success)' }}>
-              vs. Building Custom
-            </Heading>
-            <Text variant="small" color="muted" style={{ marginBottom: 'var(--marketing-spacing-4)' }}>
-              Internal development
-            </Text>
+            <div style={{ textAlign: 'center', marginBottom: 'var(--marketing-spacing-4)' }}>
+              <Heading level="4" style={{ color: 'var(--marketing-success)' }}>
+                vs. Building Custom
+              </Heading>
+              <Text variant="small" color="muted">
+                Internal development
+              </Text>
+            </div>
             <List variant="check">
               <ListItem>Ready to use immediately</ListItem>
               <ListItem>Proven reliability & security</ListItem>

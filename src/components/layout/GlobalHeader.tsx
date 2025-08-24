@@ -175,29 +175,50 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                       border: 'none',
                       cursor: 'pointer',
                       color: isActivePath(item.href, item.key) 
-                        ? 'var(--marketing-primary)' 
-                        : 'var(--marketing-gray-600)',
+                        ? muiTheme.palette.primary.main
+                        : muiTheme.palette.text.secondary,
                       textDecoration: 'none',
                       fontSize: 'var(--marketing-text-base)',
-                      fontWeight: isActivePath(item.href, item.key) 
-                        ? 'var(--marketing-font-semibold)' 
-                        : 'var(--marketing-font-medium)',
+                      fontWeight: 'var(--marketing-font-medium)', // Same weight for all
                       transition: 'color 0.2s ease',
                       padding: 'var(--marketing-spacing-2)',
-                      borderRadius: 'var(--marketing-radius-base)'
-                    }}
+                      borderRadius: 'var(--marketing-radius-base)',
+                      position: 'relative',
+                      // Custom CSS properties for the underline
+                      '--nav-underline-width': isActivePath(item.href, item.key) ? '100%' : '0%',
+                      '--nav-underline-opacity': isActivePath(item.href, item.key) ? '1' : '0',
+                    } as React.CSSProperties}
                     onMouseOver={(e) => {
                       if (!isActivePath(item.href, item.key)) {
-                        e.currentTarget.style.color = 'var(--marketing-primary)'
+                        e.currentTarget.style.color = muiTheme.palette.primary.main
+                        e.currentTarget.style.setProperty('--nav-underline-width', '100%')
+                        e.currentTarget.style.setProperty('--nav-underline-opacity', '0.6')
                       }
                     }}
                     onMouseOut={(e) => {
                       if (!isActivePath(item.href, item.key)) {
-                        e.currentTarget.style.color = 'var(--marketing-gray-600)'
+                        e.currentTarget.style.color = muiTheme.palette.text.secondary
+                        e.currentTarget.style.setProperty('--nav-underline-width', '0%')
+                        e.currentTarget.style.setProperty('--nav-underline-opacity', '0')
                       }
                     }}
                   >
                     {item.name}
+                    {/* Decorative underline */}
+                    <div
+                      style={{
+                        position: 'absolute',
+                        bottom: '4px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        width: 'var(--nav-underline-width)',
+                        height: '2px',
+                        background: `linear-gradient(90deg, ${muiTheme.palette.primary.main} 0%, ${muiTheme.palette.secondary.main} 100%)`,
+                        borderRadius: '1px',
+                        opacity: 'var(--nav-underline-opacity)',
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      }}
+                    />
                   </button>
                 </li>
               ))}
@@ -609,12 +630,10 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                         border: 'none',
                         cursor: 'pointer',
                         color: isActivePath(item.href, item.key) 
-                          ? 'var(--marketing-primary)' 
-                          : 'var(--marketing-gray-700)',
+                          ? muiTheme.palette.primary.main
+                          : muiTheme.palette.text.primary,
                         fontSize: 'var(--marketing-text-lg)',
-                        fontWeight: isActivePath(item.href, item.key) 
-                          ? 'var(--marketing-font-semibold)' 
-                          : 'var(--marketing-font-medium)',
+                        fontWeight: 'var(--marketing-font-medium)',
                         padding: 'var(--marketing-spacing-3) 0'
                       }}
                     >
