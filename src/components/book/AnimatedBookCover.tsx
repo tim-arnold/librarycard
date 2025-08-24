@@ -39,28 +39,44 @@ export default function AnimatedBookCover({
   const [previousSrc, setPreviousSrc] = useState(src)
 
   useEffect(() => {
-    if (isAnimating && src !== previousSrc) {
-      // Start the animation sequence
+    if (isAnimating) {
+      // Start animation immediately when isAnimating becomes true
+      // Don't wait for src to change - give immediate feedback
       setShowSparkles(true)
       
-      // Phase 1: Start fading out old cover
+      // Phase 1: Start fading out old cover immediately
       setTimeout(() => {
         setShowOldCover(false)
       }, 100)
       
-      // Phase 2: Start showing new cover
+      // Phase 2: Wait a bit, then show new cover if available, or keep waiting
       setTimeout(() => {
-        setShowNewCover(true)
-        setPreviousSrc(src)
+        if (src !== previousSrc) {
+          // New cover is ready, show it
+          setShowNewCover(true)
+          setPreviousSrc(src)
+        } else {
+          // New cover not ready yet, keep waiting and check again
+          const checkForNewCover = () => {
+            if (src !== previousSrc) {
+              setShowNewCover(true)
+              setPreviousSrc(src)
+            } else {
+              // Still waiting, check again in a bit
+              setTimeout(checkForNewCover, 100)
+            }
+          }
+          checkForNewCover()
+        }
       }, 300)
       
-      // Phase 3: Hide sparkles and complete
+      // Phase 3: Hide sparkles and complete (extend time to allow for loading)
       setTimeout(() => {
         setShowSparkles(false)
         if (onAnimationComplete) {
           onAnimationComplete()
         }
-      }, 800)
+      }, 1200) // Extended from 800ms to 1200ms to allow for network delays
     } else if (!isAnimating) {
       // Reset states when not animating
       setShowOldCover(true)
