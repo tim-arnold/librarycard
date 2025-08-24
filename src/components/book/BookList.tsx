@@ -14,6 +14,7 @@ import { Info, Star, Edit } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
 import BookActions from './BookActions'
 import StarRating from './StarRating'
+import AnimatedCheckoutStatus from './AnimatedCheckoutStatus'
 import { getDisplayGenres } from '@/lib/genreUtils'
 
 interface BookTextProps {
@@ -176,14 +177,7 @@ export default function BookText({
               )}
               
               {/* Checkout status */}
-              {book.status === 'checked_out' && (
-                <Chip 
-                  label={book.checked_out_by === currentUserId ? 'Checked out by you' : 'Checked out'}
-                  size="small"
-                  color="warning"
-                  sx={{ fontSize: '0.7rem', height: 20 }}
-                />
-              )}
+              <AnimatedCheckoutStatus book={book} currentUserId={currentUserId} variant="chip" />
               
               {/* Genre */}
               {(() => {

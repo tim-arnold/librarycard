@@ -62,65 +62,27 @@ export default function BookActions({
   const canCheckout = !isCheckedOut
   const canReturn = isCheckedOut && (isCheckedOutByCurrentUser || allowCheckoutOverride)
   
-  // Show relocate button if:
-  // 1. Book is not checked out
-  // 2. User has intra-location move permission (canMove) OR cross-location move permission with multiple locations
+  // Show relocate button if user has permissions, but disable it if book is checked out
   const hasMultipleLocations = userLocations.length > 1
   const hasCrossLocationPermission = userGlobalPermissions.includes('can_move_books_between_locations')
   const canCrossLocationMove = hasCrossLocationPermission && hasMultipleLocations
   
-  const canRelocate = !isCheckedOut && (
+  // Show relocate button if user has any relocate permissions
+  const showRelocate = (
     // Can move within location (needs multiple shelves or ability to create shelves)
     (canMove && (hasMultipleShelves || canCreateShelves)) ||
     // Can move between locations (doesn't need multiple shelves in current location)
     canCrossLocationMove
   )
+  
+  // Enable relocate only if book is not checked out
+  const canRelocate = !isCheckedOut && showRelocate
 
   if (viewMode === 'list') {
     // List view - responsive sizing for better mobile usability
     return (
       <Box sx={{ display: 'flex', gap: { xs: 1, sm: 0.5 } }}>
-        {/* Always show available action buttons */}
-        {canDelete && (
-          <Tooltip title="Delete book" arrow>
-            <Button
-              size="small"
-              variant="outlined"
-              color="error"
-              onClick={() => onDelete(book.id, book.title)}
-              aria-label="Delete book from library"
-              sx={{ 
-                minWidth: 'auto',
-                p: { xs: 1, sm: 0.5 },
-                minHeight: { xs: 40, sm: 32 },
-                width: { xs: 40, sm: 32 }
-              }}
-            >
-              <Delete sx={{ fontSize: { xs: '1.25rem', sm: '1rem' } }} />
-            </Button>
-          </Tooltip>
-        )}
-        
-        {canRelocate && (
-          <Tooltip title="Move book to different shelf" arrow>
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={() => onRelocate(book)}
-              aria-label="Move book to a different shelf or location"
-              sx={{ 
-                minWidth: 'auto',
-                p: { xs: 1, sm: 0.5 },
-                minHeight: { xs: 40, sm: 32 },
-                width: { xs: 40, sm: 32 }
-              }}
-            >
-              <SwapHoriz sx={{ fontSize: { xs: '1.25rem', sm: '1rem' } }} />
-            </Button>
-          </Tooltip>
-        )}
-        
-        {/* Enhanced checkout/checkin buttons based on permissions */}
+        {/* Primary checkout/checkin actions first for better visual hierarchy */}
         {canCheckout ? (
           <Tooltip title="Check out book" arrow>
             <Button
@@ -140,13 +102,13 @@ export default function BookActions({
             </Button>
           </Tooltip>
         ) : canReturn ? (
-          <Tooltip title={isCheckedOutByCurrentUser ? "Return your book" : "Return to shelf"} arrow>
+          <Tooltip title={isCheckedOutByCurrentUser ? "Return your book" : "Check in book"} arrow>
             <Button
               size="small"
               variant="contained"
               color="secondary"
               onClick={() => onCheckin(book.id, book.title)}
-              aria-label={isCheckedOutByCurrentUser ? "Return your checked out book" : "Return book to shelf"}
+              aria-label={isCheckedOutByCurrentUser ? "Return your checked out book" : "Check in book"}
               sx={{ 
                 minWidth: 'auto',
                 p: { xs: 1, sm: 0.5 },
@@ -158,6 +120,47 @@ export default function BookActions({
             </Button>
           </Tooltip>
         ) : null}
+
+        {/* Secondary administrative actions */}
+        {showRelocate && (
+          <Tooltip title={isCheckedOut ? "Cannot move checked out book" : "Move book to different shelf"} arrow>
+            <Button
+              size="small"
+              variant="outlined"
+              disabled={!canRelocate}
+              onClick={() => onRelocate(book)}
+              aria-label="Move book to a different shelf or location"
+              sx={{ 
+                minWidth: 'auto',
+                p: { xs: 1, sm: 0.5 },
+                minHeight: { xs: 40, sm: 32 },
+                width: { xs: 40, sm: 32 }
+              }}
+            >
+              <SwapHoriz sx={{ fontSize: { xs: '1.25rem', sm: '1rem' } }} />
+            </Button>
+          </Tooltip>
+        )}
+        
+        {canDelete && (
+          <Tooltip title="Delete book" arrow>
+            <Button
+              size="small"
+              variant="outlined"
+              color="error"
+              onClick={() => onDelete(book.id, book.title)}
+              aria-label="Delete book from library"
+              sx={{ 
+                minWidth: 'auto',
+                p: { xs: 1, sm: 0.5 },
+                minHeight: { xs: 40, sm: 32 },
+                width: { xs: 40, sm: 32 }
+              }}
+            >
+              <Delete sx={{ fontSize: { xs: '1.25rem', sm: '1rem' } }} />
+            </Button>
+          </Tooltip>
+        )}
         
         {/* Show notify librarian button for all users */}
         {!hasPendingRemovalRequest ? (
@@ -224,9 +227,9 @@ export default function BookActions({
               color="secondary"
               startIcon={<Undo />}
               onClick={() => onCheckin(book.id, book.title)}
-              title={isCheckedOutByCurrentUser ? "Return your book" : "Return to shelf"}
+              title={isCheckedOutByCurrentUser ? "Return your book" : "Check in book"}
             >
-              {isCheckedOutByCurrentUser ? "Return" : "Return to Shelf"}
+              {isCheckedOutByCurrentUser ? "Return" : "Check In"}
             </Button>
           ) : null}
         </Box>
@@ -245,15 +248,18 @@ export default function BookActions({
             </Button>
           )}
           
-          {canRelocate && (
-            <Button
-              size="small"
-              variant="outlined"
-              startIcon={<SwapHoriz />}
-              onClick={() => onRelocate(book)}
-            >
-              Relocate
-            </Button>
+          {showRelocate && (
+            <Tooltip title={isCheckedOut ? "Cannot move checked out book" : "Move book to different shelf"} arrow>
+              <Button
+                size="small"
+                variant="outlined"
+                disabled={!canRelocate}
+                startIcon={<SwapHoriz />}
+                onClick={() => onRelocate(book)}
+              >
+                Relocate
+              </Button>
+            </Tooltip>
           )}
           
           {/* Show notify librarian button for all users */}
@@ -291,31 +297,7 @@ export default function BookActions({
   return (
     <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
       <Box sx={{ display: 'flex', gap: 1 }}>
-        {/* Always show available action buttons */}
-        {canDelete && (
-          <Button
-            size="small"
-            variant="outlined"
-            color="error"
-            startIcon={<Delete />}
-            onClick={() => onDelete(book.id, book.title)}
-          >
-            Remove
-          </Button>
-        )}
-        
-        {canRelocate && (
-          <Button
-            size="small"
-            variant="outlined"
-            startIcon={<SwapHoriz />}
-            onClick={() => onRelocate(book)}
-          >
-            Relocate
-          </Button>
-        )}
-        
-        {/* Enhanced checkout/checkin buttons based on permissions */}
+        {/* Primary checkout/checkin actions first for better visual hierarchy */}
         {canCheckout ? (
           <Button
             size="small"
@@ -334,11 +316,38 @@ export default function BookActions({
             color="secondary"
             startIcon={<Undo />}
             onClick={() => onCheckin(book.id, book.title)}
-            title={isCheckedOutByCurrentUser ? "Return your book" : "Return to shelf"}
+            title={isCheckedOutByCurrentUser ? "Return your book" : "Check in book"}
           >
-            {isCheckedOutByCurrentUser ? "Return" : "Return to Shelf"}
+            {isCheckedOutByCurrentUser ? "Return" : "Check In"}
           </Button>
         ) : null}
+        
+        {/* Secondary administrative actions */}
+        {showRelocate && (
+          <Tooltip title={isCheckedOut ? "Cannot move checked out book" : "Move book to different shelf"} arrow>
+            <Button
+              size="small"
+              variant="outlined"
+              disabled={!canRelocate}
+              startIcon={<SwapHoriz />}
+              onClick={() => onRelocate(book)}
+            >
+              Relocate
+            </Button>
+          </Tooltip>
+        )}
+        
+        {canDelete && (
+          <Button
+            size="small"
+            variant="outlined"
+            color="error"
+            startIcon={<Delete />}
+            onClick={() => onDelete(book.id, book.title)}
+          >
+            Remove
+          </Button>
+        )}
       </Box>
 
       {/* Show notify librarian button for all users */}
