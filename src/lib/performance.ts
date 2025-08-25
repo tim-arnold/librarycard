@@ -137,7 +137,7 @@ class PerformanceTracker {
   private getConnectionType(): string {
     if (typeof navigator === 'undefined') return 'unknown'
     
-    // @ts-ignore - connection is not in TypeScript types yet
+    // @ts-expect-error - connection is not in TypeScript types yet
     const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection
     
     if (connection) {
