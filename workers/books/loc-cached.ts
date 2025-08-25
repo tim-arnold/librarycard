@@ -1,5 +1,6 @@
 import { Env } from '../types';
 import { CacheManager, CacheKeys, CacheTTL } from '../cache/kv';
+import { trackApiCall, trackOptimizedSkip } from '../analytics/openLibraryAnalytics';
 
 /**
  * Library of Congress SRU API integration with caching
@@ -506,11 +507,13 @@ function createDeduplicationKey(edition: any): string {
  * Sort editions by relevance to the search query
  */
 function sortByRelevance(editions: any[], searchTitle: string, searchAuthor: string): any[] {
-  return editions.sort((a, b) => {
-    const scoreA = calculateRelevanceScore(a, searchTitle, searchAuthor);
-    const scoreB = calculateRelevanceScore(b, searchTitle, searchAuthor);
-    return scoreB - scoreA; // Higher scores first
-  });
+  return editions
+    .map(edition => ({
+      ...edition,
+      relevanceScore: calculateRelevanceScore(edition, searchTitle, searchAuthor)
+    }))
+    .filter(edition => edition.relevanceScore > 0) // Remove irrelevant books (score 0)
+    .sort((a, b) => b.relevanceScore - a.relevanceScore); // Higher scores first
 }
 
 /**
@@ -524,21 +527,29 @@ function calculateRelevanceScore(edition: any, searchTitle: string, searchAuthor
   const queryTitle = searchTitle.toLowerCase();
   const queryAuthor = searchAuthor.toLowerCase();
   
-  // Title matching (highest weight)
+  // Title matching (highest weight) - STRICT matching only
+  let titleScore = 0;
   if (editionTitle === queryTitle) {
-    score += 100; // Exact title match
+    titleScore = 100; // Exact title match
   } else if (editionTitle.includes(queryTitle)) {
-    score += 80; // Title contains search term
+    titleScore = 80; // Title contains search term
   } else if (queryTitle.includes(editionTitle)) {
-    score += 60; // Search term contains title
+    titleScore = 60; // Search term contains title
   } else {
-    // Calculate fuzzy title match
+    // STRICT fuzzy title match - require significant overlap
     const titleWords = queryTitle.split(' ').filter(w => w.length > 2);
     const matchingWords = titleWords.filter(word => editionTitle.includes(word));
-    score += (matchingWords.length / titleWords.length) * 40;
+    const matchRatio = matchingWords.length / titleWords.length;
+    
+    // Only accept if at least 70% of significant words match
+    if (matchRatio >= 0.7 && matchingWords.length >= 1) {
+      titleScore = matchRatio * 40;
+    }
+    // Otherwise titleScore remains 0 (no match)
   }
   
   // Author matching (high weight)
+  let authorScore = 0;
   const authorMatch = editionAuthors.some((editionAuthor: string) => {
     if (editionAuthor === queryAuthor) return true;
     if (editionAuthor.includes(queryAuthor) || queryAuthor.includes(editionAuthor)) return true;
@@ -546,8 +557,21 @@ function calculateRelevanceScore(edition: any, searchTitle: string, searchAuthor
   });
   
   if (authorMatch) {
-    score += 80;
+    authorScore = 80;
   }
+  
+  // CRITICAL FIX: Require BOTH title and author matches
+  // If either title or author score is 0, the book is irrelevant
+  if (titleScore === 0 || authorScore === 0) {
+    // Debug logging for filtered results
+    console.log(`❌ FILTERED OUT: "${editionTitle}" by [${editionAuthors.join(', ')}] - titleScore:${titleScore} authorScore:${authorScore} (searching for "${queryTitle}" by "${queryAuthor}")`);
+    return 0; // Exclude books that don't match both title AND author
+  }
+  
+  score = titleScore + authorScore;
+  
+  // Debug logging for accepted results
+  console.log(`✅ ACCEPTED: "${editionTitle}" by [${editionAuthors.join(', ')}] - titleScore:${titleScore} authorScore:${authorScore} total:${score} (searching for "${queryTitle}" by "${queryAuthor}")`);
   
   // Publication date (prefer more recent, but not too heavily weighted)
   if (edition.publishedDate) {
@@ -608,7 +632,7 @@ export async function invalidateLocSearchCache(query: string, env: Env): Promise
  */
 export async function getEnhancedBookEditions(title: string, author: string, env: Env): Promise<any[]> {
   const cache = new CacheManager(env);
-  const cacheKey = `enhanced:editions:${title}:${author}`;
+  const cacheKey = `enhanced:editions:${title}:${author}:v2`; // v2 to bypass old cache
   
   console.log(`🔍 Enhanced editions cache key: ${cacheKey}`);
   
@@ -620,50 +644,90 @@ export async function getEnhancedBookEditions(title: string, author: string, env
   }
   
   try {
-    // Fetch from Google Books and OpenLibrary concurrently
-    const [googleResults, openLibraryResults] = await Promise.allSettled([
-      fetchGoogleBooksEditions(title, author),
-      fetchOpenLibraryEditions(title, author)
-    ]);
+    // First, fetch Google Books results
+    console.log(`📚 Fetching Google Books editions for "${title}" by "${author}"`);
+    const googleResults = await fetchGoogleBooksEditions(title, author);
+    
+    // Check if we need OpenLibrary results (only if Google Books has < 3 covers)
+    const googleCount = googleResults?.length || 0;
+    let openLibraryResults: any[] = [];
+    
+    if (googleCount < 3) {
+      console.log(`📖 Google Books returned ${googleCount} covers, fetching OpenLibrary to supplement`);
+      try {
+        const startTime = performance.now();
+        openLibraryResults = await fetchOpenLibraryEditions(title, author);
+        const responseTime = performance.now() - startTime;
+        
+        // Track the OpenLibrary API call
+        trackApiCall(
+          'covers.openlibrary.org',
+          'cover-selection',
+          responseTime,
+          true
+        );
+      } catch (error) {
+        console.warn('OpenLibrary fetch failed:', error);
+        
+        // Track the failed API call
+        trackApiCall(
+          'covers.openlibrary.org',
+          'cover-selection',
+          0,
+          false,
+          error instanceof Error ? error.message : 'Unknown error'
+        );
+        
+        openLibraryResults = [];
+      }
+    } else {
+      console.log(`✅ Google Books returned ${googleCount} covers, skipping OpenLibrary (sufficient covers available)`);
+      
+      // Track the optimized skip
+      trackOptimizedSkip(
+        'cover-selection',
+        `Google Books sufficient: ${googleCount} covers found (>= 3 threshold)`
+      );
+    }
     
     // Combine and deduplicate results with smart relevance sorting
     const allEditions: any[] = [];
     
     // Debug logging
     console.log(`Enhanced search results for "${title}" by "${author}":`);
-    console.log('Google Books results:', googleResults.status === 'fulfilled' ? googleResults.value?.length : 'failed');
-    console.log('OpenLibrary results:', openLibraryResults.status === 'fulfilled' ? openLibraryResults.value?.length : 'failed');
+    console.log('Google Books results:', googleCount);
+    console.log('OpenLibrary results:', openLibraryResults?.length || 0);
     
     // Collect all results with source attribution
     const googleEditions: any[] = [];
     const openLibraryEditions: any[] = [];
     
     // Process Google Books results
-    if (googleResults.status === 'fulfilled' && googleResults.value) {
-      console.log('Processing Google Books results:', googleResults.value.length);
-      googleResults.value.forEach((edition: any) => {
+    if (googleResults && googleResults.length > 0) {
+      console.log('Processing Google Books results:', googleResults.length);
+      googleResults.forEach((edition: any) => {
         googleEditions.push({
           ...edition,
           source: 'google',
           sourceDisplayName: 'Google Books'
         });
       });
-    } else if (googleResults.status === 'rejected') {
-      console.log('Google Books failed:', googleResults.reason);
+    } else {
+      console.log('No Google Books results returned');
     }
     
     // Process OpenLibrary results
-    if (openLibraryResults.status === 'fulfilled' && openLibraryResults.value) {
-      console.log('Processing OpenLibrary results:', openLibraryResults.value.length);
-      openLibraryResults.value.forEach((edition: any) => {
+    if (openLibraryResults && openLibraryResults.length > 0) {
+      console.log('Processing OpenLibrary results:', openLibraryResults.length);
+      openLibraryResults.forEach((edition: any) => {
         openLibraryEditions.push({
           ...edition,
           source: 'openlibrary',
           sourceDisplayName: 'Open Library'
         });
       });
-    } else if (openLibraryResults.status === 'rejected') {
-      console.log('OpenLibrary failed:', openLibraryResults.reason);
+    } else if (googleCount < 3) {
+      console.log('No OpenLibrary results returned (but was attempted)');
     }
     
     // Combine and sort by relevance

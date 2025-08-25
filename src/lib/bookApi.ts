@@ -1,5 +1,6 @@
 import type { Book, EnhancedBook, DataSource, SourceAttribution, EnhancedCoverOption, GoogleBookItem } from '@/lib/types'
 import { classifyGenres } from '@/lib/genreClassifier'
+import { trackOpenLibraryCall, trackOptimizedSkip } from '@/lib/apiAnalytics'
 
 const GOOGLE_BOOKS_API = 'https://www.googleapis.com/books/v1/volumes'
 
@@ -10,6 +11,56 @@ function ensureHttps(url: string | undefined): string | undefined {
     return url.replace('http://books.google.com/', 'https://books.google.com/')
   }
   return url
+}
+
+/**
+ * Smart gap detection: Determine if OpenLibrary enhancement is needed
+ */
+function detectMetadataGaps(book: EnhancedBook): {
+  needed: boolean;
+  reasons: string[];
+  needsSubjects: boolean;
+  needsSeries: boolean;
+  needsDescription: boolean;
+} {
+  const reasons: string[] = [];
+  let needsSubjects = false;
+  let needsSeries = false;
+  let needsDescription = false;
+
+  // Check for missing or insufficient categories (subjects)
+  if (!book.categories || book.categories.length === 0) {
+    reasons.push('no categories');
+    needsSubjects = true;
+  } else if (book.categories.length < 2) {
+    reasons.push('insufficient categories');
+    needsSubjects = true;
+  }
+
+  // Check for series information (Google Books rarely has this)
+  if (!book.series) {
+    reasons.push('no series info');
+    needsSeries = true;
+  }
+
+  // Check for description quality
+  if (!book.description) {
+    reasons.push('no description');
+    needsDescription = true;
+  } else if (book.description.length < 100) {
+    reasons.push('short description');
+    needsDescription = true;
+  }
+
+  const needed = needsSubjects || needsSeries || needsDescription;
+
+  return {
+    needed,
+    reasons,
+    needsSubjects,
+    needsSeries,
+    needsDescription
+  };
 }
 
 export async function fetchBookData(isbn: string): Promise<Book | null> {
@@ -95,63 +146,106 @@ export async function fetchEnhancedBookData(isbn: string): Promise<EnhancedBook 
       ratingCount: bookInfo.ratingsCount
     }
 
-    // Try to enhance with OpenLibrary data
-    try {
-      // Search OpenLibrary for the book
-      const searchResponse = await fetch(`https://openlibrary.org/search.json?isbn=${isbn}&limit=1`)
-      const searchData = await searchResponse.json()
-      
-      if (searchData.docs && searchData.docs.length > 0) {
-        const olDoc = searchData.docs[0]
-        const workKey = olDoc.key
+    // Smart gap detection: Only enhance with OpenLibrary if Google Books data is incomplete
+    const needsOpenLibraryEnhancement = detectMetadataGaps(enhancedBook);
+    
+    if (needsOpenLibraryEnhancement.needed) {
+      try {
+        // Track actual API call with timing
+        const searchStartTime = performance.now();
+        const searchResponse = await fetch(`https://openlibrary.org/search.json?isbn=${isbn}&limit=1`)
+        const searchResponseTime = performance.now() - searchStartTime;
+        const searchData = await searchResponse.json()
         
-        if (workKey) {
-          enhancedBook.openLibraryKey = workKey
+        // Track the search API call
+        trackOpenLibraryCall(
+          'search.json',
+          'metadata-enhancement',
+          searchResponseTime,
+          searchResponse.ok,
+          searchResponse.ok ? undefined : `HTTP ${searchResponse.status}`
+        );
+        
+        if (searchData.docs && searchData.docs.length > 0) {
+          const olDoc = searchData.docs[0]
+          const workKey = olDoc.key
           
-          // Get detailed work information
-          const workResponse = await fetch(`https://openlibrary.org${workKey}.json`)
-          const workData = await workResponse.json()
-          
-          if (workData.subjects) {
-            // Store raw subjects for reference
-            enhancedBook.subjects = workData.subjects
+          if (workKey) {
+            enhancedBook.openLibraryKey = workKey
             
-            // Use our curated genre classification system
-            const classifiedGenres = classifyGenres(
-              enhancedBook.categories, // Google Books categories
-              workData.subjects,       // OpenLibrary subjects
-              process.env.NODE_ENV === 'development' // Enable debug in development
-            )
-            
-            if (classifiedGenres.length > 0) {
-              enhancedBook.enhancedGenres = classifiedGenres
-            }
-            
-            // Extract series information
-            const seriesSubjects = workData.subjects.filter((subject: string) => 
-              subject.toLowerCase().startsWith('series:')
-            )
-            
-            if (seriesSubjects.length > 0) {
-              const seriesInfo = seriesSubjects[0].replace(/^series:\s*/i, '')
-              enhancedBook.series = seriesInfo
-            }
-          }
-          
-          // Use OpenLibrary description if it's more detailed
-          if (workData.description) {
-            const olDescription = typeof workData.description === 'string' 
-              ? workData.description 
-              : workData.description.value
-            
-            if (olDescription && olDescription.length > (enhancedBook.description?.length || 0)) {
-              enhancedBook.extendedDescription = olDescription
+            // Only fetch detailed work data if we need subjects/series (avoid extra API call for descriptions only)
+            if (needsOpenLibraryEnhancement.needsSubjects || needsOpenLibraryEnhancement.needsSeries) {
+              const workStartTime = performance.now();
+              const workResponse = await fetch(`https://openlibrary.org${workKey}.json`)
+              const workResponseTime = performance.now() - workStartTime;
+              const workData = await workResponse.json()
+              
+              // Track the work detail API call
+              trackOpenLibraryCall(
+                'work.json',
+                'metadata-enhancement',
+                workResponseTime,
+                workResponse.ok,
+                workResponse.ok ? undefined : `HTTP ${workResponse.status}`
+              );
+              
+              if (workData.subjects && needsOpenLibraryEnhancement.needsSubjects) {
+                // Store raw subjects for reference
+                enhancedBook.subjects = workData.subjects
+                
+                // Use our curated genre classification system
+                const classifiedGenres = classifyGenres(
+                  enhancedBook.categories, // Google Books categories
+                  workData.subjects,       // OpenLibrary subjects
+                  process.env.NODE_ENV === 'development' // Enable debug in development
+                )
+                
+                if (classifiedGenres.length > 0) {
+                  enhancedBook.enhancedGenres = classifiedGenres
+                }
+              }
+              
+              if (workData.subjects && needsOpenLibraryEnhancement.needsSeries) {
+                // Extract series information
+                const seriesSubjects = workData.subjects.filter((subject: string) => 
+                  subject.toLowerCase().startsWith('series:')
+                )
+                
+                if (seriesSubjects.length > 0) {
+                  const seriesInfo = seriesSubjects[0].replace(/^series:\s*/i, '')
+                  enhancedBook.series = seriesInfo
+                }
+              }
+              
+              // Use OpenLibrary description if it's more detailed and we need it
+              if (workData.description && needsOpenLibraryEnhancement.needsDescription) {
+                const olDescription = typeof workData.description === 'string' 
+                  ? workData.description 
+                  : workData.description.value
+                
+                if (olDescription && olDescription.length > (enhancedBook.description?.length || 0)) {
+                  enhancedBook.extendedDescription = olDescription
+                }
+              }
             }
           }
         }
+      } catch (olError) {
+        // Track failed API call
+        trackOpenLibraryCall(
+          'search.json',
+          'metadata-enhancement',
+          0,
+          false,
+          olError instanceof Error ? olError.message : 'Unknown error'
+        );
       }
-    } catch (olError) {
-      console.log('OpenLibrary enhancement failed, using Google Books data only:', olError)
+    } else {
+      // Track optimized skip
+      trackOptimizedSkip(
+        'metadata-enhancement',
+        `Google Books complete: ${needsOpenLibraryEnhancement.reasons.join(', ')}`
+      );
     }
 
     // If we don't have enhanced genres yet, try to classify from Google Books categories alone

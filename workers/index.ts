@@ -152,6 +152,7 @@ import { RateLimiter } from './auth/rate-limiter';
 import { TwoFactorAuth } from './auth/two-factor';
 import { requireCSRFToken, getCSRFTokenEndpoint, shouldProtectWithCSRF } from './csrf';
 import { CommonErrors, withGlobalErrorHandling, ErrorCategory, createSecureErrorResponse } from './errors';
+import { getSessionAnalytics, logSessionAnalytics } from './analytics/openLibraryAnalytics';
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -812,24 +813,25 @@ export default {
       // Enhanced book editions endpoint for cover selection (multi-source)
       if (path === '/api/books/editions' && request.method === 'GET') {
         console.log('🔍 Enhanced book editions request received');
-        const query = url.searchParams.get('q'); // General search query
+        const title = url.searchParams.get('title');
+        const author = url.searchParams.get('author');
+        const query = url.searchParams.get('q'); // Fallback for general search
         const enhanced = url.searchParams.get('enhanced') === 'true';
         
-        console.log('📝 Request params:', { query, enhanced });
+        console.log('📝 Request params:', { title, author, query, enhanced });
         
-        // Require query parameter
-        if (!query) {
-          return new Response(JSON.stringify({ error: 'Query parameter (q) is required' }), {
+        // Require either title+author or general query
+        if (!title && !author && !query) {
+          return new Response(JSON.stringify({ error: 'Title and author parameters, or general query (q) parameter is required' }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
         
         if (enhanced) {
-          // Use the same search query for both title and author searches
-          // This allows each API to handle the query in its own way
-          const searchTitle = query;
-          const searchAuthor = query;
+          // Use specific title and author if provided, otherwise use general query
+          const searchTitle = title || query || '';
+          const searchAuthor = author || query || '';
           
           console.log('🚀 Calling getEnhancedBookEditions with:', { searchTitle, searchAuthor });
           console.log('ℹ️  Enhanced search always filters for books with cover art');
@@ -1796,6 +1798,43 @@ To review this request, log in as a super administrator and go to Admin Dashboar
           });
         } catch (error) {
           return new Response(JSON.stringify({ error: 'Failed to get cache metrics' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      // OpenLibrary Analytics endpoint (development only)
+      if (path === '/api/admin/openlibrary-analytics' && request.method === 'GET') {
+        // Check admin permission
+        const user = await env.DB.prepare(`
+          SELECT user_role FROM users WHERE id = ?
+        `).bind(userId).first() as any;
+        
+        if (!user || user.user_role !== 'admin') {
+          return new Response(JSON.stringify({ error: 'Admin access required' }), {
+            status: 403,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        try {
+          const analytics = getSessionAnalytics();
+          // Also log to worker console for debugging
+          logSessionAnalytics();
+          
+          return new Response(JSON.stringify({
+            ...analytics,
+            recommendation: analytics.savingsPercentage > 70 
+              ? 'Excellent optimization performance'
+              : analytics.savingsPercentage > 50
+              ? 'Good optimization performance' 
+              : 'Consider reviewing optimization strategies'
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error) {
+          return new Response(JSON.stringify({ error: 'Failed to get OpenLibrary analytics' }), {
             status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });

@@ -87,21 +87,21 @@ export async function getDashboardData(userId: string, env: Env, corsHeaders: Re
 
     // Call the existing working API functions that are already being used
     const profileResponse = await getUserProfile(userId, env, corsHeaders);
-    const profileData = await profileResponse.json();
+    const profileData = await profileResponse.json() as any;
     
     const locationsResponse = await getUserLocations(userId, env, corsHeaders);
-    const locations = await locationsResponse.json();
+    const locations = await locationsResponse.json() as any;
     
     const booksResponse = await getCachedUserBooks(userId, env, corsHeaders);
-    const books = await booksResponse.json();
+    const books = await booksResponse.json() as any;
     
     const removalRequestsResponse = await getBookRemovalRequests(userId, env, corsHeaders);
-    const removalRequests = await removalRequestsResponse.json();
+    const removalRequests = await removalRequestsResponse.json() as any;
     
     // Mock request for global permissions (since it expects a Request object)
     const mockRequest = new Request('http://localhost/api/permissions/global', { method: 'GET' });
     const globalPermissionsResponse = await getUserGlobalPermissions(mockRequest, userId, env, corsHeaders);
-    const globalPermissions = await globalPermissionsResponse.json();
+    const globalPermissions = await globalPermissionsResponse.json() as any;
 
     // Get location-specific permissions for first location (as done in useBookLibrary)
     let userPermissions = [];
@@ -109,7 +109,7 @@ export async function getDashboardData(userId: string, env: Env, corsHeaders: Re
       const permissionUrl = `http://localhost/api/permissions/user?locationId=${locations[0].id}`;
       const mockPermissionRequest = new Request(permissionUrl, { method: 'GET' });
       const userPermissionsResponse = await getUserPermissions(mockPermissionRequest, userId, env, corsHeaders);
-      const userPermissionsData = await userPermissionsResponse.json();
+      const userPermissionsData = await userPermissionsResponse.json() as any;
       userPermissions = userPermissionsData.permissions || [];
     }
 
@@ -119,7 +119,7 @@ export async function getDashboardData(userId: string, env: Env, corsHeaders: Re
     if (locations && locations.length > 0) {
       for (const location of locations) {
         const shelvesResponse = await getLocationShelves(location.id, userId, env, corsHeaders);
-        const shelves = await shelvesResponse.json();
+        const shelves = await shelvesResponse.json() as any;
         allShelves.push(...shelves);
       }
     }
@@ -217,16 +217,13 @@ export async function getUserRejectedReviews(userId: string, env: Env, corsHeade
       ORDER BY created_at DESC
     `).bind(userId).all();
 
-    console.log(`🔍 Debug getUserRejectedReviews for user ${userId}:`);
-    console.log(`📊 Rejected reviews found: ${rejectedReviews.results.length}`);
-    console.log(`📬 All book_review_rejected notifications:`, allRejectedNotifications.results);
-    console.log(`🔢 Unread count from query: ${unreadNotificationsCount?.count || 0}`);
+    // Debug logging removed to reduce noise
 
     let unreadCount = unreadNotificationsCount?.count || 0;
 
     // ENHANCED BACKFILL FIX: Create missing notifications for rejected reviews without notifications
     if (rejectedReviews.results.length > 0) {
-      console.log('🔧 Checking for rejected reviews without notifications...');
+      // Checking for rejected reviews without notifications...
       
       const { createInAppNotification } = await import('../notifications/index');
       let createdCount = 0;
@@ -252,13 +249,13 @@ export async function getUserRejectedReviews(userId: string, env: Env, corsHeade
               undefined,
               { bookTitle: review.book_title, bookAuthors: review.book_authors, comment: review.review_rejection_reason }
             );
-            console.log(`✅ Created missing notification for: ${review.book_title}`);
+            // Created missing notification for: ${review.book_title}
             createdCount++;
           } catch (error) {
             console.error(`❌ Failed to create notification for ${review.book_title}:`, error);
           }
         } else {
-          console.log(`📋 Notification already exists for: ${review.book_title}`);
+          // Notification already exists for: ${review.book_title}
         }
       }
       
@@ -273,9 +270,9 @@ export async function getUserRejectedReviews(userId: string, env: Env, corsHeade
         `).bind(userId).first() as any;
         
         unreadCount = newUnreadCount?.count || 0;
-        console.log(`🔢 New unread count after creating ${createdCount} notifications: ${unreadCount}`);
+        // New unread count after creating ${createdCount} notifications: ${unreadCount}
       } else {
-        console.log('📋 No missing notifications found to create');
+        // No missing notifications found to create
       }
     }
 
