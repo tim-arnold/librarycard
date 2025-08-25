@@ -807,7 +807,7 @@ export default function SuccessPageClient() {
       <SuccessHeader />
       <Section background="white">
         <Container>
-          <Grid cols={1} lgCols={2} gap={12}>
+          <Grid cols={1} lgCols={2} gap={8}>
             <SuccessForm />
             <SuccessInfo />
           </Grid>
