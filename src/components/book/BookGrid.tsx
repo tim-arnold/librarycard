@@ -11,12 +11,14 @@ import {
   Button,
   Grow,
 } from '@mui/material'
-import { Info, Star, Edit, Image, MenuBook } from '@mui/icons-material'
+import { Info, Star, Edit, Image, MenuBook, EditOutlined } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
 import { getDisplayGenres } from '@/lib/genreUtils'
 import BookActions from './BookActions'
 import StarRating from './StarRating'
 import AnimatedBookCover from './AnimatedBookCover'
+import AnimatedCheckoutStatus from './AnimatedCheckoutStatus'
+import { getCategoryColor } from '@/lib/theme'
 
 interface BookCardProps {
   book: EnhancedBook
@@ -125,7 +127,20 @@ const BookCard = React.memo<BookCardProps>(({
   }, [onCoverAnimationComplete, book.id])
 
   return (
-    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <Card sx={{ 
+      height: '100%', 
+      display: 'flex', 
+      flexDirection: 'column',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      position: 'relative',
+      overflow: 'hidden',
+      '&:hover': {
+        transform: 'translateY(-3px)',
+        '& .book-cover': {
+          transform: 'scale(1.05)',
+        },
+      },
+    }}>
       <CardContent sx={{ flex: 1 }}>
         <Box sx={{ display: 'flex', gap: 2 }}>
           <Box sx={{ position: 'relative' }}>
@@ -141,7 +156,11 @@ const BookCard = React.memo<BookCardProps>(({
               bookId={book.id}
               isAnimating={isAnimating}
               onAnimationComplete={handleCoverAnimationComplete}
-              sx={{ flexShrink: 0 }}
+              sx={{ 
+                flexShrink: 0,
+                transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              }}
+              className="book-cover"
             />
             {onCoverEdit && userPermissions.includes('can_add_books') && (
               <Box
@@ -243,10 +262,14 @@ const BookCard = React.memo<BookCardProps>(({
                   sx={{ 
                     textTransform: 'none',
                     fontSize: '0.75rem',
-                    color: 'warning.main',
+                    color: (theme) => theme.palette.mode === 'dark' 
+                      ? theme.palette.primary.light 
+                      : theme.palette.primary.main,
                     minHeight: 20,
                     '&:hover': {
-                      backgroundColor: 'warning.50'
+                      backgroundColor: (theme) => theme.palette.mode === 'dark' 
+                        ? `${theme.palette.primary.light}15` 
+                        : `${theme.palette.primary.main}15`
                     }
                   }}
                 >
@@ -257,27 +280,80 @@ const BookCard = React.memo<BookCardProps>(({
               {/* Genre chip */}
               {(() => {
                 const { genres, source } = getDisplayGenres(book)
-                return genres.length > 0 && (
-                  <Grow in={true} timeout={source === 'assigned' ? 800 : 0}>
+                if (genres.length === 0) return null
+                
+                const genreColor = getCategoryColor(genres[0])
+                const isAssigned = source === 'assigned'
+                
+                return (
+                  <Grow in={true} timeout={isAssigned ? 800 : 0}>
                     <Chip 
                       label={genres[0]} 
                       size="small" 
-                      color={source === 'assigned' ? 'secondary' : source === 'enhanced' ? 'primary' : 'default'}
-                      onClick={undefined}
-                      sx={{ 
+                      onClick={onGenreEdit ? handleGenreEditClick : undefined}
+                      deleteIcon={onGenreEdit ? <EditOutlined sx={{ fontSize: '14px !important' }} /> : undefined}
+                      onDelete={onGenreEdit ? handleGenreEditClick : undefined}
+                      sx={(theme) => ({ 
                         fontSize: '0.7rem', 
                         height: 20,
-                        maxWidth: '120px',
-                        animation: source === 'assigned' ? 'pulse 2s ease-in-out' : undefined,
-                        '@keyframes pulse': {
+                        maxWidth: onGenreEdit ? '140px' : '120px', // Slightly wider when edit icon present
+                        // Dark mode: stronger background opacity and lighter text for better contrast
+                        backgroundColor: theme.palette.mode === 'dark' 
+                          ? `${genreColor}40` // Stronger background in dark mode
+                          : `${genreColor}20`, // Lighter background in light mode
+                        color: theme.palette.mode === 'dark' 
+                          ? '#ffffff' // White text in dark mode for maximum contrast
+                          : genreColor, // Colored text in light mode
+                        border: theme.palette.mode === 'dark' 
+                          ? `1px solid ${genreColor}60` // Stronger border in dark mode
+                          : `1px solid ${genreColor}40`, // Lighter border in light mode
+                        fontWeight: 500,
+                        cursor: onGenreEdit ? 'pointer' : 'default',
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        animation: isAssigned ? 'genrePulse 2s ease-in-out' : undefined,
+                        '&:hover': onGenreEdit ? {
+                          backgroundColor: theme.palette.mode === 'dark' 
+                            ? `${genreColor}50` 
+                            : `${genreColor}30`,
+                          border: theme.palette.mode === 'dark' 
+                            ? `1px solid ${genreColor}80` 
+                            : `1px solid ${genreColor}60`,
+                          transform: 'scale(1.05)',
+                          '& .MuiChip-deleteIcon': {
+                            color: theme.palette.mode === 'dark' ? '#ffffff' : genreColor,
+                            transform: 'scale(1.1)',
+                          },
+                        } : {
+                          backgroundColor: theme.palette.mode === 'dark' 
+                            ? `${genreColor}50` 
+                            : `${genreColor}30`,
+                          border: theme.palette.mode === 'dark' 
+                            ? `1px solid ${genreColor}80` 
+                            : `1px solid ${genreColor}60`,
+                          transform: 'scale(1.05)',
+                        },
+                        '&:active': onGenreEdit ? {
+                          transform: 'scale(1.02)',
+                        } : {},
+                        '& .MuiChip-deleteIcon': {
+                          color: theme.palette.mode === 'dark' 
+                            ? '#ffffff90' // Semi-transparent white in dark mode
+                            : `${genreColor}80`, // Semi-transparent color in light mode
+                          margin: '0 2px 0 4px',
+                          transition: 'all 0.2s ease',
+                          '&:hover': {
+                            color: theme.palette.mode === 'dark' ? '#ffffff' : genreColor,
+                          },
+                        },
+                        '@keyframes genrePulse': {
                           '0%': {
-                            boxShadow: '0 0 0 0 rgba(156, 39, 176, 0.4)'
+                            boxShadow: `0 0 0 0 ${genreColor}60`
                           },
                           '70%': {
-                            boxShadow: '0 0 0 10px rgba(156, 39, 176, 0)'
+                            boxShadow: `0 0 0 6px ${genreColor}00`
                           },
                           '100%': {
-                            boxShadow: '0 0 0 0 rgba(156, 39, 176, 0)'
+                            boxShadow: `0 0 0 0 ${genreColor}00`
                           }
                         },
                         '& .MuiChip-label': {
@@ -285,7 +361,7 @@ const BookCard = React.memo<BookCardProps>(({
                           overflow: 'hidden',
                           whiteSpace: 'nowrap'
                         }
-                      }} 
+                      })} 
                     />
                   </Grow>
                 )
@@ -305,16 +381,6 @@ const BookCard = React.memo<BookCardProps>(({
                   sx={{ textTransform: 'none' }}
                 >
                   More Details
-                </Button>
-              )}
-              {onGenreEdit && (
-                <Button
-                  size="small"
-                  startIcon={<Edit />}
-                  onClick={handleGenreEditClick}
-                  sx={{ textTransform: 'none' }}
-                >
-                  Edit Genres
                 </Button>
               )}
             </Box>
@@ -337,24 +403,7 @@ const BookCard = React.memo<BookCardProps>(({
         )}
         
         {/* Checkout status display */}
-        {book.status === 'checked_out' && (
-          <Box sx={{ mt: 2, p: 1, border: 1, borderColor: 'warning.main', borderRadius: 1 }}>
-            <Typography variant="body2" color="text.primary" sx={{ fontWeight: 500 }}>
-              <MenuBook sx={{ mr: 1, verticalAlign: 'middle', fontSize: 'inherit' }} />
-              {book.checked_out_date && (() => {
-                const checkoutDate = new Date(book.checked_out_date)
-                const today = new Date()
-                const diffTime = Math.abs(today.getTime() - checkoutDate.getTime())
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-                if (book.checked_out_by === currentUserId) {
-                  return `You checked this book out ${diffDays} day${diffDays !== 1 ? 's' : ''} ago`
-                } else {
-                  return `Checked out since ${checkoutDate.toLocaleDateString()} (${diffDays} day${diffDays !== 1 ? 's' : ''})`
-                }
-              })()}
-            </Typography>
-          </Box>
-        )}
+        <AnimatedCheckoutStatus book={book} currentUserId={currentUserId} />
       </CardContent>
 
       <CardActions>
@@ -416,7 +465,22 @@ const BookGrid = React.memo<BookGridProps>(({
         sm: 'repeat(2, 1fr)', // Tablet: exactly 2 columns
         lg: 'repeat(3, 1fr)' // Large Desktop: exactly 3 columns (1200px+)
       }, 
-      gap: 2 
+      gap: { xs: 2, sm: 2.5, lg: 3 },
+      padding: { xs: 1, sm: 1.5, lg: 2 },
+      '& > *': {
+        animation: 'fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+        animationFillMode: 'both',
+      },
+      '@keyframes fadeInUp': {
+        '0%': {
+          opacity: 0,
+          transform: 'translateY(20px)',
+        },
+        '100%': {
+          opacity: 1,
+          transform: 'translateY(0)',
+        },
+      },
     }}>
       {books.map(book => (
         <BookCard

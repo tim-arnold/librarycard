@@ -14,16 +14,15 @@ import {
 } from '@mui/material'
 import { 
   GridView,
-  ViewList,
   FormatListBulleted,
 } from '@mui/icons-material'
 
 interface ViewModeControlsProps {
-  viewMode: 'card' | 'compact' | 'list'
+  viewMode: 'card' | 'list'
   booksPerPage: number
   filteredBooksCount: number
   totalBooksCount?: number
-  onViewModeChange: (newViewMode: 'card' | 'compact' | 'list') => void
+  onViewModeChange: (newViewMode: 'card' | 'list') => void
   onBooksPerPageChange: (newBooksPerPage: number) => void
 }
 
@@ -99,11 +98,7 @@ export default function ViewModeControls({
       >
         <ToggleButton value="card" aria-label="card view">
           <GridView sx={{ mr: isMobile ? 0 : 1 }} />
-          {!isMobile && 'Cards'}
-        </ToggleButton>
-        <ToggleButton value="compact" aria-label="compact view">
-          <ViewList sx={{ mr: isMobile ? 0 : 1 }} />
-          {!isMobile && 'Compact'}
+          {!isMobile && 'Grid'}
         </ToggleButton>
         <ToggleButton value="list" aria-label="list view">
           <FormatListBulleted sx={{ mr: isMobile ? 0 : 1 }} />
