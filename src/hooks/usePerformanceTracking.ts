@@ -74,7 +74,7 @@ const sendToAnalytics = async (data: WebVitalsData) => {
   try {
     // Example: Send to Google Analytics 4
     if (typeof window !== 'undefined' && 'gtag' in window) {
-      // @ts-expect-error gtag is dynamically loaded by Google Analytics
+      // @ts-expect-error gtag is not defined in window types
       window.gtag('event', 'web_vitals', {
         custom_map: {
           metric_name: 'name',
@@ -85,7 +85,7 @@ const sendToAnalytics = async (data: WebVitalsData) => {
 
       // Send individual metrics
       if (data.lcp) {
-        // @ts-expect-error gtag is dynamically loaded by Google Analytics
+        // @ts-expect-error gtag is not defined in window types
         window.gtag('event', 'LCP', {
           value: data.lcp,
           metric_value: data.lcp
@@ -93,7 +93,7 @@ const sendToAnalytics = async (data: WebVitalsData) => {
       }
 
       if (data.fid) {
-        // @ts-expect-error gtag is dynamically loaded by Google Analytics
+        // @ts-expect-error gtag is not defined in window types
         window.gtag('event', 'FID', {
           value: data.fid,
           metric_value: data.fid
@@ -101,7 +101,7 @@ const sendToAnalytics = async (data: WebVitalsData) => {
       }
 
       if (data.cls) {
-        // @ts-expect-error gtag is dynamically loaded by Google Analytics
+        // @ts-expect-error gtag is not defined in window types
         window.gtag('event', 'CLS', {
           value: data.cls,
           metric_value: data.cls

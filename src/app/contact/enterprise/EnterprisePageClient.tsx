@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import { 
   Business, 
   Security, 
-  Integration,
+  Hub as Integration,
   Assessment,
   AccountBalance,
   Schedule,

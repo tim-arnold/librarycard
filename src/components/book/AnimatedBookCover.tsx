@@ -17,6 +17,7 @@ interface AnimatedBookCoverProps {
   isAnimating?: boolean
   onAnimationComplete?: () => void
   sx?: any
+  className?: string
 }
 
 export default function AnimatedBookCover({
@@ -31,7 +32,8 @@ export default function AnimatedBookCover({
   bookId,
   isAnimating = false,
   onAnimationComplete,
-  sx = {}
+  sx = {},
+  className
 }: AnimatedBookCoverProps) {
   const [showOldCover, setShowOldCover] = useState(true)
   const [showNewCover, setShowNewCover] = useState(false)
@@ -39,28 +41,44 @@ export default function AnimatedBookCover({
   const [previousSrc, setPreviousSrc] = useState(src)
 
   useEffect(() => {
-    if (isAnimating && src !== previousSrc) {
-      // Start the animation sequence
+    if (isAnimating) {
+      // Start animation immediately when isAnimating becomes true
+      // Don't wait for src to change - give immediate feedback
       setShowSparkles(true)
       
-      // Phase 1: Start fading out old cover
+      // Phase 1: Start fading out old cover immediately
       setTimeout(() => {
         setShowOldCover(false)
       }, 100)
       
-      // Phase 2: Start showing new cover
+      // Phase 2: Wait a bit, then show new cover if available, or keep waiting
       setTimeout(() => {
-        setShowNewCover(true)
-        setPreviousSrc(src)
+        if (src !== previousSrc) {
+          // New cover is ready, show it
+          setShowNewCover(true)
+          setPreviousSrc(src)
+        } else {
+          // New cover not ready yet, keep waiting and check again
+          const checkForNewCover = () => {
+            if (src !== previousSrc) {
+              setShowNewCover(true)
+              setPreviousSrc(src)
+            } else {
+              // Still waiting, check again in a bit
+              setTimeout(checkForNewCover, 100)
+            }
+          }
+          checkForNewCover()
+        }
       }, 300)
       
-      // Phase 3: Hide sparkles and complete
+      // Phase 3: Hide sparkles and complete (extend time to allow for loading)
       setTimeout(() => {
         setShowSparkles(false)
         if (onAnimationComplete) {
           onAnimationComplete()
         }
-      }, 800)
+      }, 1200) // Extended from 800ms to 1200ms to allow for network delays
     } else if (!isAnimating) {
       // Reset states when not animating
       setShowOldCover(true)
@@ -77,25 +95,57 @@ export default function AnimatedBookCover({
     cursor,
     position: 'relative',
     overflow: 'hidden',
+    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+    transformStyle: 'preserve-3d',
+    '&:hover': {
+      transform: 'translateY(-4px) rotateY(-8deg) rotateX(2deg) scale(1.05)',
+      boxShadow: '0 12px 30px rgba(0, 0, 0, 0.2), 0 6px 15px rgba(0, 0, 0, 0.1)',
+      filter: 'brightness(1.1) contrast(1.05)',
+    },
+    '&:active': {
+      transform: 'translateY(-2px) rotateY(-4deg) rotateX(1deg) scale(1.02)',
+    },
     ...sx
   }
 
   if (!isAnimating) {
     // Normal state - just show the image
     return (
-      <Box sx={baseStyle} onClick={onClick}>
+      <Box sx={baseStyle} onClick={onClick} className={className}>
         {src ? (
-          <Box
-            component="img"
-            src={src}
-            alt={alt}
-            sx={{
-              width: '100%',
-              height: '100%',
-              objectFit,
-              display: 'block'
-            }}
-          />
+          <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
+            <Box
+              component="img"
+              src={src}
+              alt={alt}
+              sx={{
+                width: '100%',
+                height: '100%',
+                objectFit,
+                display: 'block',
+                position: 'relative',
+                zIndex: 1,
+              }}
+            />
+            {/* Subtle 3D depth effect overlay */}
+            <Box
+              sx={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'linear-gradient(135deg, transparent 0%, rgba(0,0,0,0.05) 100%)',
+                pointerEvents: 'none',
+                zIndex: 2,
+                opacity: 0,
+                transition: 'opacity 0.3s ease',
+                '.MuiBox-root:hover &': {
+                  opacity: 1,
+                },
+              }}
+            />
+          </Box>
         ) : (
           <Box sx={{
             width: '100%',
@@ -115,7 +165,7 @@ export default function AnimatedBookCover({
 
   // Animation state
   return (
-    <Box sx={baseStyle} onClick={onClick}>
+    <Box sx={baseStyle} onClick={onClick} className={className}>
       {/* Old Cover - fades out */}
       <Fade in={showOldCover} timeout={300}>
         <Box sx={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}>
@@ -190,7 +240,9 @@ export default function AnimatedBookCover({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'radial-gradient(circle, rgba(255,215,0,0.3) 0%, transparent 70%)',
+          background: (theme) => theme.palette.mode === 'dark'
+            ? `radial-gradient(circle, ${theme.palette.primary.light}40 0%, transparent 70%)`
+            : `radial-gradient(circle, ${theme.palette.primary.main}30 0%, transparent 70%)`,
           '&::before': {
             content: '""',
             position: 'absolute',
@@ -198,7 +250,9 @@ export default function AnimatedBookCover({
             left: '20%',
             width: '8px',
             height: '8px',
-            background: 'gold',
+            background: (theme) => theme.palette.mode === 'dark' 
+              ? theme.palette.primary.light 
+              : theme.palette.primary.main,
             borderRadius: '50%',
             animation: 'sparkle 0.8s ease-in-out infinite alternate'
           },
@@ -209,7 +263,9 @@ export default function AnimatedBookCover({
             right: '15%',
             width: '6px',
             height: '6px',
-            background: 'gold',
+            background: (theme) => theme.palette.mode === 'dark' 
+              ? theme.palette.primary.light 
+              : theme.palette.primary.main,
             borderRadius: '50%',
             animation: 'sparkle 0.8s ease-in-out infinite alternate 0.3s'
           },
