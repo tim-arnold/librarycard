@@ -18,7 +18,7 @@ export interface BookActionsProps {
   shelves: Array<{ id: number; name: string; location_id: number; created_at: string }>
   pendingRemovalRequests: Record<string, number>
   currentUserId: string | null
-  viewMode: 'card' | 'compact' | 'list'
+  viewMode: 'card' | 'list'
   onCheckout: (bookId: string, bookTitle: string) => Promise<void>
   onCheckin: (bookId: string, bookTitle: string) => Promise<void>
   onDelete: (bookId: string, bookTitle: string) => Promise<void>
@@ -99,56 +99,7 @@ export default function BookActions({
     )
   }
 
-  if (viewMode === 'compact') {
-    return (
-      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-        {/* Primary checkout/checkin button */}
-        {canCheckout ? (
-          <Button
-            size="small"
-            variant="contained"
-            color="primary"
-            startIcon={<CheckCircle />}
-            onClick={() => onCheckout(book.id, book.title)}
-            title="Check out book"
-          >
-            Check Out
-          </Button>
-        ) : canReturn ? (
-          <Button
-            size="small"
-            variant="contained"
-            color="secondary"
-            startIcon={<Undo />}
-            onClick={() => onCheckin(book.id, book.title)}
-            title={isCheckedOutByCurrentUser ? "Return your book" : "Check in book"}
-          >
-            {isCheckedOutByCurrentUser ? "Return" : "Check In"}
-          </Button>
-        ) : null}
-        
-        {/* Three-dot menu for secondary actions */}
-        <SecondaryActionsMenu
-          book={book}
-          viewMode="compact"
-          currentUserId={currentUserId}
-          canDelete={canDelete}
-          canRelocate={canRelocate}
-          showRelocate={showRelocate}
-          allowCheckoutOverride={allowCheckoutOverride}
-          isCheckedOut={isCheckedOut}
-          isCheckedOutByCurrentUser={isCheckedOutByCurrentUser}
-          hasPendingRemovalRequest={hasPendingRemovalRequest}
-          onRelocate={onRelocate}
-          onDelete={onDelete}
-          onRequestRemoval={onRequestRemoval}
-          onCancelRemovalRequest={onCancelRemovalRequest}
-        />
-      </Box>
-    )
-  }
-
-  // Card view
+  // Card view - primary button + three-dot menu for secondary actions
   return (
     <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mt: 1 }}>
       {/* Primary checkout/checkin button */}

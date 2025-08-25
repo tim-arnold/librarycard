@@ -23,7 +23,7 @@ import type { EnhancedBook } from '@/lib/types'
 
 interface SecondaryActionsMenuProps {
   book: EnhancedBook
-  viewMode: 'card' | 'compact' | 'list'
+  viewMode: 'card' | 'list'
   currentUserId: string | null
   
   // Permission flags
