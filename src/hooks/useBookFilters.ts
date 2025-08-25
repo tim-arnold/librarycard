@@ -66,7 +66,7 @@ export function useBookFilters({
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
   
   // View preferences
-  const [viewMode, setViewMode] = useState<'card' | 'compact' | 'list'>('card')
+  const [viewMode, setViewMode] = useState<'card' | 'list'>('card')
   const [currentPage, setCurrentPage] = useState(1)
   const [booksPerPage, setBooksPerPage] = useState(25)
   
@@ -86,11 +86,17 @@ export function useBookFilters({
     }
   }, [initialFilters])
 
-  // Load saved view preferences from localStorage
+  // Load saved view preferences from localStorage with compact migration
   useEffect(() => {
-    const savedViewMode = getStorageItem('library-view-mode', 'functional') as 'card' | 'compact' | 'list'
-    if (savedViewMode && (savedViewMode === 'card' || savedViewMode === 'compact' || savedViewMode === 'list')) {
-      setViewMode(savedViewMode)
+    const savedViewMode = getStorageItem('library-view-mode', 'functional')
+    if (savedViewMode) {
+      if (savedViewMode === 'compact') {
+        // Migrate compact users to list view
+        setViewMode('list')
+        setStorageItem('library-view-mode', 'list', 'functional')
+      } else if (savedViewMode === 'card' || savedViewMode === 'list') {
+        setViewMode(savedViewMode)
+      }
     }
     
     const savedBooksPerPage = getStorageItem('library-books-per-page', 'functional')
@@ -542,7 +548,7 @@ export function useBookFilters({
   }, [filteredBooks, currentPage, booksPerPage])
 
   // View mode handlers
-  const handleViewModeChange = (newViewMode: 'card' | 'compact' | 'list') => {
+  const handleViewModeChange = (newViewMode: 'card' | 'list') => {
     setViewMode(newViewMode)
     setStorageItem('library-view-mode', newViewMode, 'functional')
   }
