@@ -1,4 +1,5 @@
 import type { EnhancedBook } from '@/lib/types'
+import type { FieldSet } from '@/lib/fieldSelection'
 import { getSession } from 'next-auth/react'
 
 async function getCSRFToken(): Promise<string | null> {
@@ -87,7 +88,7 @@ export async function saveBook(book: Omit<EnhancedBook, 'id'>): Promise<boolean>
 }
 
 // Batched dashboard API call - replaces multiple sequential calls with field selection optimization
-export async function getDashboardData(fieldSet: 'grid' | 'detail' | 'full' = 'grid'): Promise<{
+export async function getDashboardData(fieldSet: FieldSet = 'grid'): Promise<{
   profile: any,
   locations: any[],
   books: EnhancedBook[],

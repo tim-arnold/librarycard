@@ -862,7 +862,7 @@ export default function EnterprisePageClient() {
       <EnterpriseHeader />
       <Section background="white">
         <Container>
-          <Grid cols={1} lgCols={2} gap={12}>
+          <Grid cols={1} lgCols={2} gap={8}>
             <EnterpriseForm />
             <EnterpriseInfo />
           </Grid>
