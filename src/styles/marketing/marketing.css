@@ -1,0 +1,311 @@
+/* LibraryCard Marketing Base Styles */
+
+@import './variables.css';
+@import './components/buttons.css';
+@import './components/cards.css';
+@import './components/typography.css';
+
+/* Marketing-specific base styles */
+.marketing-page {
+  font-family: var(--marketing-font-primary);
+  font-size: var(--marketing-text-base);
+  line-height: var(--marketing-leading-normal);
+  color: var(--marketing-gray-900);
+  background-color: var(--marketing-white);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.marketing-page * {
+  box-sizing: border-box;
+}
+
+/* Reset margins and padding for marketing content */
+.marketing-content {
+  margin: 0;
+  padding: 0;
+}
+
+.marketing-content h1,
+.marketing-content h2,
+.marketing-content h3,
+.marketing-content h4,
+.marketing-content h5,
+.marketing-content h6 {
+  margin: 0 0 var(--marketing-spacing-4) 0;
+  font-weight: var(--marketing-font-semibold);
+  line-height: var(--marketing-leading-tight);
+  color: var(--marketing-gray-900);
+}
+
+.marketing-content p {
+  margin: 0 0 var(--marketing-spacing-4) 0;
+  color: var(--marketing-gray-600);
+}
+
+.marketing-content ul,
+.marketing-content ol {
+  margin: 0 0 var(--marketing-spacing-4) var(--marketing-spacing-6);
+  padding: 0;
+}
+
+.marketing-content li {
+  margin-bottom: var(--marketing-spacing-2);
+  color: var(--marketing-gray-600);
+}
+
+/* Container utilities */
+.marketing-container {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--marketing-spacing-4);
+  padding-right: var(--marketing-spacing-4);
+}
+
+.marketing-container-sm {
+  max-width: var(--marketing-container-sm);
+}
+
+.marketing-container-md {
+  max-width: var(--marketing-container-md);
+}
+
+.marketing-container-lg {
+  max-width: var(--marketing-container-lg);
+}
+
+.marketing-container-xl {
+  max-width: var(--marketing-container-xl);
+}
+
+.marketing-container-2xl {
+  max-width: var(--marketing-container-2xl);
+}
+
+@media (min-width: 640px) {
+  .marketing-container {
+    padding-left: var(--marketing-spacing-6);
+    padding-right: var(--marketing-spacing-6);
+  }
+}
+
+@media (min-width: 1024px) {
+  .marketing-container {
+    padding-left: var(--marketing-spacing-8);
+    padding-right: var(--marketing-spacing-8);
+  }
+}
+
+/* Section utilities */
+.marketing-section {
+  padding-top: var(--marketing-spacing-16);
+  padding-bottom: var(--marketing-spacing-16);
+}
+
+@media (min-width: 768px) {
+  .marketing-section {
+    padding-top: var(--marketing-spacing-24);
+    padding-bottom: var(--marketing-spacing-24);
+  }
+}
+
+.marketing-section-sm {
+  padding-top: var(--marketing-spacing-12);
+  padding-bottom: var(--marketing-spacing-12);
+}
+
+.marketing-section-lg {
+  padding-top: var(--marketing-spacing-32);
+  padding-bottom: var(--marketing-spacing-32);
+}
+
+/* Grid utilities */
+.marketing-grid {
+  display: grid;
+  gap: var(--marketing-spacing-6);
+}
+
+.marketing-grid-cols-1 {
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.marketing-grid-cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.marketing-grid-cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.marketing-grid-cols-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (min-width: 768px) {
+  .marketing-grid-md-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  
+  .marketing-grid-md-cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .marketing-grid-lg-cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  
+  .marketing-grid-lg-cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Flexbox utilities */
+.marketing-flex {
+  display: flex;
+}
+
+.marketing-flex-col {
+  flex-direction: column;
+}
+
+.marketing-flex-wrap {
+  flex-wrap: wrap;
+}
+
+.marketing-items-start {
+  align-items: flex-start;
+}
+
+.marketing-items-center {
+  align-items: center;
+}
+
+.marketing-items-end {
+  align-items: flex-end;
+}
+
+.marketing-justify-start {
+  justify-content: flex-start;
+}
+
+.marketing-justify-center {
+  justify-content: center;
+}
+
+.marketing-justify-end {
+  justify-content: flex-end;
+}
+
+.marketing-justify-between {
+  justify-content: space-between;
+}
+
+/* Spacing utilities */
+.marketing-gap-2 {
+  gap: var(--marketing-spacing-2);
+}
+
+.marketing-gap-4 {
+  gap: var(--marketing-spacing-4);
+}
+
+.marketing-gap-6 {
+  gap: var(--marketing-spacing-6);
+}
+
+.marketing-gap-8 {
+  gap: var(--marketing-spacing-8);
+}
+
+/* Background utilities */
+.marketing-bg-white {
+  background-color: var(--marketing-white);
+}
+
+.marketing-bg-gray-50 {
+  background-color: var(--marketing-gray-50);
+}
+
+.marketing-bg-gray-100 {
+  background-color: var(--marketing-gray-100);
+}
+
+.marketing-bg-primary {
+  background-color: var(--marketing-primary);
+}
+
+.marketing-bg-secondary {
+  background-color: var(--marketing-secondary);
+}
+
+/* Text color utilities */
+.marketing-text-white {
+  color: var(--marketing-white);
+}
+
+.marketing-text-gray-600 {
+  color: var(--marketing-gray-600);
+}
+
+.marketing-text-gray-700 {
+  color: var(--marketing-gray-700);
+}
+
+.marketing-text-gray-900 {
+  color: var(--marketing-gray-900);
+}
+
+.marketing-text-primary {
+  color: var(--marketing-primary);
+}
+
+.marketing-text-secondary {
+  color: var(--marketing-secondary);
+}
+
+/* Text alignment utilities */
+.marketing-text-left {
+  text-align: left;
+}
+
+.marketing-text-center {
+  text-align: center;
+}
+
+.marketing-text-right {
+  text-align: right;
+}
+
+/* Focus styles for accessibility */
+.marketing-focus-outline {
+  outline: 2px solid var(--marketing-primary);
+  outline-offset: 2px;
+}
+
+/* Responsive utilities */
+@media (max-width: 767px) {
+  .marketing-hidden-mobile {
+    display: none;
+  }
+}
+
+@media (min-width: 768px) {
+  .marketing-hidden-desktop {
+    display: none;
+  }
+}
+
+/* Print styles */
+@media print {
+  .marketing-page {
+    font-size: 12pt;
+    line-height: 1.4;
+  }
+  
+  .marketing-no-print {
+    display: none;
+  }
+}

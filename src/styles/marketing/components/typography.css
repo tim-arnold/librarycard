@@ -1,0 +1,289 @@
+/* Marketing Typography Components */
+
+/* Headings */
+.marketing-heading-display {
+  font-size: var(--marketing-text-5xl);
+  font-weight: var(--marketing-font-extrabold);
+  line-height: var(--marketing-leading-tight);
+  color: var(--marketing-gray-900);
+  letter-spacing: -0.025em;
+}
+
+@media (min-width: 640px) {
+  .marketing-heading-display {
+    font-size: var(--marketing-text-6xl);
+  }
+}
+
+@media (min-width: 1024px) {
+  .marketing-heading-display {
+    font-size: var(--marketing-text-7xl);
+  }
+}
+
+.marketing-heading-1 {
+  font-size: var(--marketing-text-3xl);
+  font-weight: var(--marketing-font-bold);
+  line-height: var(--marketing-leading-tight);
+  color: var(--marketing-gray-900);
+  letter-spacing: -0.025em;
+}
+
+@media (min-width: 640px) {
+  .marketing-heading-1 {
+    font-size: var(--marketing-text-4xl);
+  }
+}
+
+@media (min-width: 1024px) {
+  .marketing-heading-1 {
+    font-size: var(--marketing-text-5xl);
+  }
+}
+
+.marketing-heading-2 {
+  font-size: var(--marketing-text-2xl);
+  font-weight: var(--marketing-font-bold);
+  line-height: var(--marketing-leading-tight);
+  color: var(--marketing-gray-900);
+}
+
+@media (min-width: 640px) {
+  .marketing-heading-2 {
+    font-size: var(--marketing-text-3xl);
+  }
+}
+
+.marketing-heading-3 {
+  font-size: var(--marketing-text-xl);
+  font-weight: var(--marketing-font-semibold);
+  line-height: var(--marketing-leading-tight);
+  color: var(--marketing-gray-900);
+}
+
+@media (min-width: 640px) {
+  .marketing-heading-3 {
+    font-size: var(--marketing-text-2xl);
+  }
+}
+
+.marketing-heading-4 {
+  font-size: var(--marketing-text-lg);
+  font-weight: var(--marketing-font-semibold);
+  line-height: var(--marketing-leading-snug);
+  color: var(--marketing-gray-900);
+}
+
+@media (min-width: 640px) {
+  .marketing-heading-4 {
+    font-size: var(--marketing-text-xl);
+  }
+}
+
+.marketing-heading-5 {
+  font-size: var(--marketing-text-base);
+  font-weight: var(--marketing-font-semibold);
+  line-height: var(--marketing-leading-snug);
+  color: var(--marketing-gray-900);
+}
+
+@media (min-width: 640px) {
+  .marketing-heading-5 {
+    font-size: var(--marketing-text-lg);
+  }
+}
+
+.marketing-heading-6 {
+  font-size: var(--marketing-text-sm);
+  font-weight: var(--marketing-font-semibold);
+  line-height: var(--marketing-leading-snug);
+  color: var(--marketing-gray-900);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Body text */
+.marketing-text-lead {
+  font-size: var(--marketing-text-lg);
+  line-height: var(--marketing-leading-relaxed);
+  color: var(--marketing-gray-600);
+}
+
+@media (min-width: 640px) {
+  .marketing-text-lead {
+    font-size: var(--marketing-text-xl);
+  }
+}
+
+.marketing-text-body {
+  font-size: var(--marketing-text-base);
+  line-height: var(--marketing-leading-relaxed);
+  color: var(--marketing-gray-600);
+}
+
+.marketing-text-body-large {
+  font-size: var(--marketing-text-lg);
+  line-height: var(--marketing-leading-relaxed);
+  color: var(--marketing-gray-600);
+}
+
+.marketing-text-small {
+  font-size: var(--marketing-text-sm);
+  line-height: var(--marketing-leading-normal);
+  color: var(--marketing-gray-500);
+}
+
+.marketing-text-xs {
+  font-size: var(--marketing-text-xs);
+  line-height: var(--marketing-leading-normal);
+  color: var(--marketing-gray-500);
+}
+
+/* Special text styles */
+.marketing-text-gradient {
+  background: linear-gradient(135deg, var(--marketing-primary) 0%, var(--marketing-secondary) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.marketing-text-highlight {
+  background: linear-gradient(135deg, var(--marketing-primary) 0%, var(--marketing-secondary) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: var(--marketing-font-semibold);
+}
+
+.marketing-text-emphasis {
+  position: relative;
+  font-weight: var(--marketing-font-medium);
+}
+
+.marketing-text-emphasis::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background: linear-gradient(135deg, var(--marketing-primary) 0%, var(--marketing-secondary) 100%);
+  opacity: 0.2;
+  z-index: -1;
+}
+
+/* Link styles */
+.marketing-link {
+  color: var(--marketing-primary);
+  text-decoration: none;
+  font-weight: var(--marketing-font-medium);
+  transition: color 0.2s ease-in-out;
+}
+
+.marketing-link:hover {
+  color: var(--marketing-primary-hover);
+  text-decoration: underline;
+}
+
+.marketing-link:focus {
+  outline: 2px solid var(--marketing-primary);
+  outline-offset: 2px;
+}
+
+/* List styles */
+.marketing-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.marketing-list-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--marketing-spacing-3);
+  margin-bottom: var(--marketing-spacing-4);
+}
+
+.marketing-list-item:last-child {
+  margin-bottom: 0;
+}
+
+.marketing-list-bullet {
+  width: 6px;
+  height: 6px;
+  background: var(--marketing-primary);
+  border-radius: 50%;
+  margin-top: 9px;
+  flex-shrink: 0;
+}
+
+.marketing-list-check {
+  width: 20px;
+  height: 20px;
+  background: var(--marketing-success);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.marketing-list-check::after {
+  content: '✓';
+  color: var(--marketing-white);
+  font-size: var(--marketing-text-sm);
+  font-weight: var(--marketing-font-bold);
+}
+
+/* Blockquote styles */
+.marketing-blockquote {
+  border-left: 4px solid var(--marketing-primary);
+  padding-left: var(--marketing-spacing-6);
+  margin: var(--marketing-spacing-8) 0;
+  font-size: var(--marketing-text-lg);
+  font-style: italic;
+  color: var(--marketing-gray-700);
+  line-height: var(--marketing-leading-relaxed);
+}
+
+/* Code styles */
+.marketing-code-inline {
+  background: var(--marketing-gray-100);
+  color: var(--marketing-gray-800);
+  padding: var(--marketing-spacing-1) var(--marketing-spacing-2);
+  border-radius: var(--marketing-radius-base);
+  font-family: var(--marketing-font-mono);
+  font-size: 0.875em;
+}
+
+.marketing-code-block {
+  background: var(--marketing-gray-900);
+  color: var(--marketing-gray-100);
+  padding: var(--marketing-spacing-6);
+  border-radius: var(--marketing-radius-lg);
+  font-family: var(--marketing-font-mono);
+  font-size: var(--marketing-text-sm);
+  line-height: var(--marketing-leading-relaxed);
+  overflow-x: auto;
+  margin: var(--marketing-spacing-6) 0;
+}
+
+/* Responsive text utilities */
+@media (max-width: 640px) {
+  .marketing-text-responsive {
+    font-size: var(--marketing-text-sm);
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .marketing-text-responsive {
+    font-size: var(--marketing-text-base);
+  }
+}
+
+@media (min-width: 1025px) {
+  .marketing-text-responsive {
+    font-size: var(--marketing-text-lg);
+  }
+}

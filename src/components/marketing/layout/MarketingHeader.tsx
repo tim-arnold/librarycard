@@ -1,0 +1,174 @@
+'use client'
+
+import React, { useState } from 'react'
+import Link from 'next/link'
+import { useSession } from 'next-auth/react'
+import { CreditCard, Menu, X } from '@mui/icons-material'
+import Button from '../ui/Button'
+import Container from '../ui/Container'
+
+export default function MarketingHeader() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const { data: session } = useSession()
+
+  const navigation = [
+    { name: 'Features', href: '/features' },
+    { name: 'Pricing', href: '/pricing' },
+    { name: 'About', href: '/about' },
+    { name: 'Contact', href: '/contact' },
+  ]
+
+  return (
+    <header className="marketing-bg-white" style={{ borderBottom: '1px solid var(--marketing-gray-200)' }}>
+      <Container>
+        <div 
+          className="marketing-flex marketing-items-center marketing-justify-between"
+          style={{ padding: 'var(--marketing-spacing-4) 0' }}
+        >
+          {/* Logo */}
+          <Link 
+            href="/" 
+            className="marketing-flex marketing-items-center marketing-gap-2"
+            style={{ textDecoration: 'none', color: 'var(--marketing-gray-900)' }}
+          >
+            <CreditCard 
+              style={{ 
+                color: 'var(--marketing-primary)',
+                fontSize: '2rem'
+              }} 
+            />
+            <span 
+              style={{ 
+                fontSize: 'var(--marketing-text-xl)',
+                fontWeight: 'var(--marketing-font-bold)',
+                color: 'var(--marketing-gray-900)'
+              }}
+            >
+              LibraryCard
+            </span>
+          </Link>
+
+          {/* Desktop Navigation */}
+          <nav className="marketing-hidden-mobile">
+            <ul 
+              className="marketing-flex marketing-items-center marketing-gap-8"
+              style={{ listStyle: 'none', margin: 0, padding: 0 }}
+            >
+              {navigation.map((item) => (
+                <li key={item.name}>
+                  <Link 
+                    href={item.href}
+                    style={{
+                      color: 'var(--marketing-gray-600)',
+                      textDecoration: 'none',
+                      fontSize: 'var(--marketing-text-base)',
+                      fontWeight: 'var(--marketing-font-medium)',
+                      transition: 'color 0.2s ease'
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.color = 'var(--marketing-primary)'
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.color = 'var(--marketing-gray-600)'
+                    }}
+                  >
+                    {item.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          {/* Desktop CTAs */}
+          <div className="marketing-hidden-mobile marketing-flex marketing-items-center marketing-gap-4">
+            {session ? (
+              <Button href="/library" variant="primary">
+                Go to Library
+              </Button>
+            ) : (
+              <>
+                <Button href="/auth/signin" variant="ghost">
+                  Sign In
+                </Button>
+                <Button href="/auth/signin" variant="primary">
+                  Get Started Free
+                </Button>
+              </>
+            )}
+          </div>
+
+          {/* Mobile menu button */}
+          <button
+            className="marketing-hidden-desktop"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              color: 'var(--marketing-gray-600)',
+              padding: 'var(--marketing-spacing-2)',
+              borderRadius: 'var(--marketing-radius-base)'
+            }}
+          >
+            {mobileMenuOpen ? <X /> : <Menu />}
+          </button>
+        </div>
+
+        {/* Mobile Navigation */}
+        {mobileMenuOpen && (
+          <div 
+            className="marketing-hidden-desktop"
+            style={{
+              borderTop: '1px solid var(--marketing-gray-200)',
+              paddingTop: 'var(--marketing-spacing-4)',
+              paddingBottom: 'var(--marketing-spacing-6)'
+            }}
+          >
+            <nav>
+              <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+                {navigation.map((item) => (
+                  <li key={item.name} style={{ marginBottom: 'var(--marketing-spacing-4)' }}>
+                    <Link 
+                      href={item.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      style={{
+                        color: 'var(--marketing-gray-700)',
+                        textDecoration: 'none',
+                        fontSize: 'var(--marketing-text-lg)',
+                        fontWeight: 'var(--marketing-font-medium)',
+                        display: 'block',
+                        padding: 'var(--marketing-spacing-2) 0'
+                      }}
+                    >
+                      {item.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+            
+            <div 
+              className="marketing-flex marketing-flex-col marketing-gap-4"
+              style={{ marginTop: 'var(--marketing-spacing-6)' }}
+            >
+              {session ? (
+                <Button href="/library" variant="primary" fullWidth>
+                  Go to Library
+                </Button>
+              ) : (
+                <>
+                  <Button href="/auth/signin" variant="ghost" fullWidth>
+                    Sign In
+                  </Button>
+                  <Button href="/auth/signin" variant="primary" fullWidth>
+                    Get Started Free
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+      </Container>
+    </header>
+  )
+}

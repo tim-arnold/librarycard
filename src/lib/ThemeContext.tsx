@@ -5,6 +5,7 @@ import { ThemeProvider } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
 import { createAppTheme, type ThemeVariant } from './theme'
 import { getStorageItem, setStorageItem } from './storage'
+import { generateMarketingVariables, injectMarketingVariables } from './generateMarketingVariables'
 
 export type ThemeMode = 'light' | 'dark'
 
@@ -76,12 +77,20 @@ export function ThemeContextProvider({ children }: ThemeContextProviderProps) {
     setThemeVariant(variant)
   }
 
+  const theme = createAppTheme(isDarkMode, themeVariant)
+  
+  // Inject marketing variables whenever theme changes
+  useEffect(() => {
+    if (typeof window !== 'undefined' && isLoaded) {
+      const marketingVariables = generateMarketingVariables(theme, themeVariant)
+      injectMarketingVariables(marketingVariables)
+    }
+  }, [theme, themeVariant, isLoaded])
+
   // Don't render until we've loaded the preferences to prevent flash
   if (!isLoaded) {
     return null
   }
-
-  const theme = createAppTheme(isDarkMode, themeVariant)
 
   return (
     <ThemeContext.Provider value={{ 

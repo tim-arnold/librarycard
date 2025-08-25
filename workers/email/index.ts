@@ -707,7 +707,7 @@ export async function sendContactEmail(request: Request, env: Env, corsHeaders: 
           },
           body: JSON.stringify({
             from: env.FROM_EMAIL || 'LibraryCard <noreply@tim52.io>',
-            to: ['librarian@tim52.io'],
+            to: ['contact@tim52.io'],
             reply_to: [email],
             subject: `LibraryCard Contact: Message from ${name}`,
             html: `

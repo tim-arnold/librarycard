@@ -6,6 +6,7 @@ import { getDashboardData } from '@/lib/api'
 import { isAdmin } from '@/lib/permissions'
 import type { EnhancedBook } from '@/lib/types'
 import type { FieldSet } from '@/lib/fieldSelection'
+import { getOptimalFieldSet } from '@/lib/fieldSelection'
 
 interface Shelf {
   id: number
@@ -60,7 +61,6 @@ export function useBookLibraryQuery(options?: {
   const { data: session } = useSession()
   
   // Determine optimal field set based on context
-  const { getOptimalFieldSet } = require('@/lib/fieldSelection')
   const fieldSet = options?.fieldSet || getOptimalFieldSet({
     viewMode: options?.viewMode || 'grid',
     userRole: (session?.user as any)?.role || 'user',
