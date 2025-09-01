@@ -1,4 +1,4 @@
-import type { EnhancedBook } from '@/lib/types'
+import type { EnhancedBook, Series, CreateSeriesRequest, UpdateSeriesRequest, AddBooksToSeriesRequest, SeriesResponse, SeriesBooksResponse } from '@/lib/types'
 import type { FieldSet } from '@/lib/fieldSelection'
 import { getSession } from 'next-auth/react'
 
@@ -250,6 +250,80 @@ export async function moderateReview(reviewId: number, action: 'approve' | 'reje
   })
   if (!response.ok) {
     throw new Error(`Failed to ${action} review`)
+  }
+  return response.json()
+}
+
+// Series Management API Functions
+
+export async function getUserSeries(): Promise<SeriesResponse> {
+  const response = await authenticatedApiCall('/api/series')
+  if (!response.ok) {
+    throw new Error('Failed to fetch user series')
+  }
+  return response.json()
+}
+
+export async function createSeries(seriesData: CreateSeriesRequest): Promise<Series> {
+  const response = await authenticatedApiCall('/api/series', {
+    method: 'POST',
+    body: JSON.stringify(seriesData)
+  })
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to create series' }))
+    throw new Error(error.error || 'Failed to create series')
+  }
+  return response.json()
+}
+
+export async function updateSeries(seriesId: string, updates: UpdateSeriesRequest): Promise<Series> {
+  const response = await authenticatedApiCall(`/api/series/${seriesId}`, {
+    method: 'PUT',
+    body: JSON.stringify(updates)
+  })
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to update series' }))
+    throw new Error(error.error || 'Failed to update series')
+  }
+  return response.json()
+}
+
+export async function deleteSeries(seriesId: string): Promise<void> {
+  const response = await authenticatedApiCall(`/api/series/${seriesId}`, {
+    method: 'DELETE'
+  })
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to delete series' }))
+    throw new Error(error.error || 'Failed to delete series')
+  }
+}
+
+export async function addBooksToSeries(seriesId: string, bookIds: string[]): Promise<{ message: string, added_books: string[], skipped: number }> {
+  const response = await authenticatedApiCall(`/api/series/${seriesId}/books`, {
+    method: 'POST',
+    body: JSON.stringify({ book_ids: bookIds })
+  })
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to add books to series' }))
+    throw new Error(error.error || 'Failed to add books to series')
+  }
+  return response.json()
+}
+
+export async function removeBookFromSeries(seriesId: string, bookId: string): Promise<void> {
+  const response = await authenticatedApiCall(`/api/series/${seriesId}/books/${bookId}`, {
+    method: 'DELETE'
+  })
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to remove book from series' }))
+    throw new Error(error.error || 'Failed to remove book from series')
+  }
+}
+
+export async function getSeriesBooks(seriesId: string, page: number = 1, limit: number = 50): Promise<SeriesBooksResponse> {
+  const response = await authenticatedApiCall(`/api/series/${seriesId}/books?page=${page}&limit=${limit}`)
+  if (!response.ok) {
+    throw new Error('Failed to fetch series books')
   }
   return response.json()
 }
