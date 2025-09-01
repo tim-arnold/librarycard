@@ -13,7 +13,7 @@ export default function MarketingHeader() {
 
   const navigation = [
     { name: 'Features', href: '/features' },
-    { name: 'Pricing', href: '/pricing' },
+    { name: 'Beta', href: '/pricing' },
     { name: 'About', href: '/about' },
     { name: 'Contact', href: '/contact' },
   ]
@@ -91,7 +91,7 @@ export default function MarketingHeader() {
                   Sign In
                 </Button>
                 <Button href="/auth/signin" variant="primary">
-                  Get Started Free
+                  Join Beta
                 </Button>
               </>
             )}
@@ -161,7 +161,7 @@ export default function MarketingHeader() {
                     Sign In
                   </Button>
                   <Button href="/auth/signin" variant="primary" fullWidth>
-                    Get Started Free
+                    Join Beta
                   </Button>
                 </>
               )}

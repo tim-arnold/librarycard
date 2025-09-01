@@ -21,8 +21,8 @@ import { Heading, Text, Highlight, List, ListItem } from '@/components/marketing
 import Button from '@/components/marketing/ui/Button'
 
 export const metadata: Metadata = {
-  title: 'Features - LibraryCard',
-  description: 'Community library management features built for shared spaces. ISBN scanning, multi-user access, location tracking, and more. Perfect for apartments, retirement communities, and book clubs.',
+  title: 'Beta Features - LibraryCard',
+  description: 'Explore LibraryCard beta features for community library management. ISBN scanning, multi-user access, location tracking, and more. Join our beta program today.',
 }
 
 function FeaturesHeader() {
@@ -37,7 +37,7 @@ function FeaturesHeader() {
           }}
         >
           <Heading level="display" className="marketing-text-center">
-            Built for <Highlight>Community Libraries</Highlight>
+            <Highlight>Beta Features</Highlight> for Community Libraries
           </Heading>
           
           <Text 
@@ -48,8 +48,8 @@ function FeaturesHeader() {
               marginBottom: 'var(--marketing-spacing-8)'
             }}
           >
-            Everything you need to manage shared book collections. 
-            From ISBN scanning to community management, we've got you covered.
+            Explore what's currently available in our beta program. 
+            Help us build the perfect community library management tool.
           </Text>
 
           <div className="marketing-flex marketing-justify-center marketing-gap-4 marketing-flex-col marketing-flex-md-row">
@@ -58,14 +58,14 @@ function FeaturesHeader() {
               variant="primary" 
               size="lg"
             >
-              Try All Features Free
+              Join Beta Program
             </Button>
             <Button 
               href="/pricing" 
               variant="secondary" 
               size="lg"
             >
-              View Pricing
+              Learn About Beta
             </Button>
           </div>
         </div>
@@ -88,8 +88,8 @@ function CoreFeatures() {
     },
     {
       icon: <QrCodeScanner />,
-      title: 'Smart ISBN Scanning',
-      description: 'Google Books API integration with 97%+ success rate. Automatically download book details, covers, and metadata. Fallback to OpenLibrary for comprehensive coverage.'
+      title: 'ISBN Scanning',
+      description: 'Google Books API integration for automatic book details. Scan ISBNs to quickly add books with covers and metadata. OpenLibrary fallback for additional coverage.'
     },
     {
       icon: <LocationOn />,
@@ -98,8 +98,8 @@ function CoreFeatures() {
     },
     {
       icon: <Security />,
-      title: 'Enterprise Security',
-      description: '2FA authentication, WebAuthn support, and enterprise-grade security. Your community data stays protected with encryption at rest and in transit.'
+      title: 'Secure & Private',
+      description: 'Your community data stays protected with secure authentication and privacy controls. Currently implementing advanced security features based on beta feedback.'
     },
     {
       icon: <Cloud />,
@@ -127,7 +127,7 @@ function CoreFeatures() {
             className="marketing-text-center"
             style={{ marginTop: 'var(--marketing-spacing-4)' }}
           >
-            Everything you need for community library management, included in every plan
+            Core features available now in our beta program
           </Text>
         </div>
 
@@ -146,31 +146,31 @@ function CoreFeatures() {
   )
 }
 
-function AdvancedFeatures() {
+function PlannedFeatures() {
   const features = [
     {
       icon: <Email />,
       title: 'Email Notifications',
-      description: 'Automated notifications for due dates, new books, and community updates. Customizable frequency and content.',
-      tier: 'Community+'
+      description: 'Automated notifications for due dates, new books, and community updates. Currently under development based on beta feedback.',
+      tier: 'Coming Soon'
     },
     {
       icon: <Analytics />,
       title: 'Usage Analytics',
-      description: 'Detailed insights into library usage, popular books, and member activity. Export reports for community meetings.',
-      tier: 'Community+'
+      description: 'Detailed insights into library usage, popular books, and member activity. Planning this feature with community input.',
+      tier: 'Planned'
     },
     {
       icon: <Palette />,
-      title: 'Custom Branding',
-      description: 'Add your community logo, customize colors, and white-label the platform. Perfect for HOAs and organizations.',
-      tier: 'Organization'
+      title: 'Customization Options',
+      description: 'Community branding and appearance customization. Developing this based on beta user requests and feedback.',
+      tier: 'Exploring'
     },
     {
       icon: <Api />,
-      title: 'API Access',
-      description: 'RESTful API for custom integrations. Connect to existing community management systems or build custom tools.',
-      tier: 'Organization'
+      title: 'Advanced Integrations',
+      description: 'API access and integration capabilities. Will be developed based on beta community needs and use cases.',
+      tier: 'Future'
     }
   ]
 
@@ -186,14 +186,14 @@ function AdvancedFeatures() {
           }}
         >
           <Heading level="2" className="marketing-text-center">
-            Advanced Features
+            Planned Features
           </Heading>
           <Text 
             variant="lead" 
             className="marketing-text-center"
             style={{ marginTop: 'var(--marketing-spacing-4)' }}
           >
-            Premium features for growing communities and organizations
+            Features we're developing with beta community input
           </Text>
         </div>
 
@@ -409,29 +409,29 @@ function UseCaseDetails() {
   )
 }
 
-function TestimonialsSection() {
-  const testimonials = [
+function BetaFeedbackSection() {
+  const feedbackItems = [
     {
-      content: "LibraryCard transformed our retirement community. Residents love how easy it is to find and check out books. The location tracking means no more lost books!",
+      content: "The beta is really promising! The ISBN scanning works great and the interface is intuitive. Looking forward to seeing email notifications added.",
       author: {
-        name: "Sarah Johnson",
-        title: "Activities Director, Sunrise Manor",
+        name: "Sarah J.",
+        title: "Beta Tester",
         initials: "SJ"
       }
     },
     {
-      content: "Perfect for our apartment building. The invitation system made it easy to onboard new residents, and the mobile app means people can browse books anytime.",
+      content: "Perfect for our small community. The invitation system makes it easy to add new members. Would love to see usage analytics in the future.",
       author: {
-        name: "Michael Chen",
-        title: "HOA Board Member, Harbor View Condos",
+        name: "Mike C.",
+        title: "Beta Community Admin",
         initials: "MC"
       }
     },
     {
-      content: "Our book club network spans 5 locations. LibraryCard's multi-location support and shared recommendations have brought our community closer together.",
+      content: "Great potential! The multi-location support works well for our book club. Excited to help shape what features come next.",
       author: {
-        name: "Lisa Rodriguez",
-        title: "Coordinator, Metro Book Club Network",
+        name: "Lisa R.",
+        title: "Beta Program Participant",
         initials: "LR"
       }
     }
@@ -449,16 +449,16 @@ function TestimonialsSection() {
           }}
         >
           <Heading level="2" className="marketing-text-center">
-            What Communities Are Saying
+            Beta Program Feedback
           </Heading>
         </div>
 
         <Grid cols={1} mdCols={3} gap={8}>
-          {testimonials.map((testimonial, index) => (
+          {feedbackItems.map((item, index) => (
             <TestimonialCard
               key={index}
-              content={testimonial.content}
-              author={testimonial.author}
+              content={item.content}
+              author={item.author}
             />
           ))}
         </Grid>
@@ -494,8 +494,8 @@ function CTASection() {
               opacity: 0.9
             }}
           >
-            Start your free community library today. No credit card required, 
-            full access to all features.
+            Join our beta program today. No credit card required, 
+            full access to help shape the future of community libraries.
           </Text>
           
           <div className="marketing-flex marketing-justify-center marketing-gap-4 marketing-flex-col marketing-flex-md-row">
@@ -504,7 +504,7 @@ function CTASection() {
               variant="secondary" 
               size="lg"
             >
-              Start Free Trial
+              Join Beta Program
             </Button>
             <Button 
               href="/pricing" 
@@ -515,7 +515,7 @@ function CTASection() {
                 color: 'var(--marketing-white)'
               }}
             >
-              View Pricing Plans
+              Learn More
             </Button>
           </div>
         </div>
@@ -529,9 +529,9 @@ export default function FeaturesPage() {
     <MarketingLayout>
       <FeaturesHeader />
       <CoreFeatures />
-      <AdvancedFeatures />
+      <PlannedFeatures />
       <UseCaseDetails />
-      <TestimonialsSection />
+      <BetaFeedbackSection />
       <CTASection />
     </MarketingLayout>
   )

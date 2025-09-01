@@ -7,70 +7,26 @@ import Button from '../ui/Button'
 export default function PricingSection() {
   const pricingTiers = [
     {
-      title: 'Personal',
-      subtitle: 'Perfect for families',
+      title: 'Beta Access',
+      subtitle: 'Free during development',
       price: {
         amount: 'Free',
-        period: '',
+        period: 'during beta',
         currency: ''
       },
       features: [
-        { text: '1-5 users', included: true },
-        { text: 'Up to 1,000 books', included: true },
-        { text: 'Basic library management', included: true },
-        { text: 'ISBN scanning', included: true },
-        { text: 'Mobile access', included: true },
-        { text: 'Single location', included: true },
-        { text: 'Multi-location support', included: false },
-        { text: 'Advanced user roles', included: false }
-      ],
-      ctaText: 'Start Free',
-      ctaHref: '/auth/signin',
-      featured: false
-    },
-    {
-      title: 'Community',
-      subtitle: 'Most popular for shared spaces',
-      price: {
-        amount: '29',
-        period: 'month',
-        currency: '$'
-      },
-      features: [
-        { text: '6-50 users', included: true },
-        { text: 'Unlimited books', included: true },
-        { text: 'All Personal features', included: true },
+        { text: 'Full access to all beta features', included: true },
+        { text: 'Unlimited books and users', included: true },
+        { text: 'ISBN scanning and book details', included: true },
         { text: 'Multi-location support', included: true },
         { text: 'User permission management', included: true },
         { text: 'Checkout/lending tracking', included: true },
-        { text: 'Email notifications', included: true },
-        { text: 'Export functionality', included: true }
+        { text: 'Direct feedback channel', included: true },
+        { text: 'Shape future development', included: true }
       ],
-      ctaText: 'Start 14-Day Trial',
-      ctaHref: '/auth/signin?plan=community',
+      ctaText: 'Join Beta',
+      ctaHref: '/auth/signin',
       featured: true
-    },
-    {
-      title: 'Organization',
-      subtitle: 'For larger communities',
-      price: {
-        amount: '79',
-        period: 'month',
-        currency: '$'
-      },
-      features: [
-        { text: '51-150 users', included: true },
-        { text: 'Unlimited books', included: true },
-        { text: 'All Community features', included: true },
-        { text: 'Advanced user roles', included: true },
-        { text: 'Analytics and reporting', included: true },
-        { text: 'API access', included: true },
-        { text: 'Priority support', included: true },
-        { text: 'Custom branding options', included: true }
-      ],
-      ctaText: 'Contact Sales',
-      ctaHref: '/contact',
-      featured: false
     }
   ]
 
@@ -94,28 +50,30 @@ export default function PricingSection() {
             className="marketing-text-center"
             style={{ marginTop: 'var(--marketing-spacing-4)' }}
           >
-            <Highlight>63-73% savings</Highlight> compared to professional library management tools. 
-            Start free and upgrade as your community grows.
+            <Highlight>Free beta access</Highlight> to help us build the perfect community library tool. 
+            No costs during our development phase.
           </Text>
         </div>
 
         {/* Pricing cards */}
-        <Grid cols={1} mdCols={3} gap={8}>
-          {pricingTiers.map((tier, index) => (
-            <PricingCard
-              key={index}
-              title={tier.title}
-              subtitle={tier.subtitle}
-              price={tier.price}
-              features={tier.features}
-              ctaText={tier.ctaText}
-              ctaHref={tier.ctaHref}
-              featured={tier.featured}
-            />
-          ))}
-        </Grid>
+        <div className="marketing-flex marketing-justify-center">
+          <div style={{ maxWidth: '400px', width: '100%' }}>
+            {pricingTiers.map((tier, index) => (
+              <PricingCard
+                key={index}
+                title={tier.title}
+                subtitle={tier.subtitle}
+                price={tier.price}
+                features={tier.features}
+                ctaText={tier.ctaText}
+                ctaHref={tier.ctaHref}
+                featured={tier.featured}
+              />
+            ))}
+          </div>
+        </div>
 
-        {/* Value proposition */}
+        {/* Beta program benefits */}
         <div 
           className="marketing-text-center"
           style={{ 
@@ -126,7 +84,7 @@ export default function PricingSection() {
           }}
         >
           <Heading level="3" className="marketing-text-center">
-            Why choose LibraryCard?
+            Why join our beta program?
           </Heading>
           <div 
             className="marketing-grid marketing-grid-cols-1 marketing-grid-md-cols-3 marketing-gap-8"
@@ -134,26 +92,26 @@ export default function PricingSection() {
           >
             <div>
               <Text variant="body" style={{ fontWeight: 'var(--marketing-font-semibold)' }}>
-                vs. Personal Tools
+                Shape the Product
               </Text>
               <Text variant="small" color="muted">
-                More features, community focus, shared access
+                Your feedback directly influences development
               </Text>
             </div>
             <div>
               <Text variant="body" style={{ fontWeight: 'var(--marketing-font-semibold)' }}>
-                vs. Professional Tools
+                Free Access
               </Text>
               <Text variant="small" color="muted">
-                63-73% cost savings, easier setup, community-specific
+                No costs during beta development phase
               </Text>
             </div>
             <div>
               <Text variant="body" style={{ fontWeight: 'var(--marketing-font-semibold)' }}>
-                vs. Building Custom
+                Community First
               </Text>
               <Text variant="small" color="muted">
-                Ready to use, proven reliability, ongoing updates
+                Built specifically for shared library needs
               </Text>
             </div>
           </div>
