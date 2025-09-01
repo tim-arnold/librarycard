@@ -7,7 +7,7 @@ import Container, { Section } from '../ui/Container'
 import { Heading, Text, Highlight } from '../ui/Typography'
 import Button from '../ui/Button'
 
-function ProblemSolutionSection() {
+function BetaProgramSection() {
   return (
     <Section background="white">
       <Container>
@@ -15,14 +15,14 @@ function ProblemSolutionSection() {
           className="marketing-grid marketing-grid-cols-1 marketing-grid-lg-cols-2 marketing-gap-16"
           style={{ alignItems: 'center' }}
         >
-          {/* Problem */}
+          {/* What we're building */}
           <div>
             <Heading level="2">
-              The Problem with Current Solutions
+              What We're Building Together
             </Heading>
             <div style={{ marginTop: 'var(--marketing-spacing-6)' }}>
               <Text variant="body-large">
-                Most library tools target <strong>individuals OR</strong> cost thousands for institutions.
+                LibraryCard is a community library management tool designed for shared spaces and small communities.
               </Text>
               <ul 
                 style={{ 
@@ -31,27 +31,27 @@ function ProblemSolutionSection() {
                 }}
               >
                 <li style={{ marginBottom: 'var(--marketing-spacing-2)' }}>
-                  <Text variant="body">Personal tools lack community features</Text>
+                  <Text variant="body">ISBN scanning and automatic book details</Text>
                 </li>
                 <li style={{ marginBottom: 'var(--marketing-spacing-2)' }}>
-                  <Text variant="body">Professional tools cost $360-720+ annually</Text>
+                  <Text variant="body">Multi-user access and permissions</Text>
                 </li>
                 <li style={{ marginBottom: 'var(--marketing-spacing-2)' }}>
-                  <Text variant="body">Complex setup requires IT expertise</Text>
+                  <Text variant="body">Location tracking and checkout system</Text>
                 </li>
               </ul>
             </div>
           </div>
 
-          {/* Solution */}
+          {/* Beta program */}
           <div>
             <Heading level="2">
-              Our <Highlight>Community-First</Highlight> Solution
+              Join Our <Highlight>Beta Program</Highlight>
             </Heading>
             <div style={{ marginTop: 'var(--marketing-spacing-6)' }}>
               <Text variant="body-large">
-                LibraryCard serves the gap: <strong>communities that need more than personal tools 
-                but can't afford institutional software.</strong>
+                We're actively developing LibraryCard with community input. 
+                <strong>Your feedback shapes what we build next.</strong>
               </Text>
               <ul 
                 style={{ 
@@ -60,13 +60,13 @@ function ProblemSolutionSection() {
                 }}
               >
                 <li style={{ marginBottom: 'var(--marketing-spacing-2)' }}>
-                  <Text variant="body">Perfect for 6-150 users</Text>
+                  <Text variant="body">Free beta access</Text>
                 </li>
                 <li style={{ marginBottom: 'var(--marketing-spacing-2)' }}>
-                  <Text variant="body">63-73% cost savings vs. alternatives</Text>
+                  <Text variant="body">Direct input on new features</Text>
                 </li>
                 <li style={{ marginBottom: 'var(--marketing-spacing-2)' }}>
-                  <Text variant="body">5-minute setup, no IT required</Text>
+                  <Text variant="body">Help shape the product roadmap</Text>
                 </li>
               </ul>
             </div>
@@ -81,18 +81,18 @@ function UseCasesSection() {
   const useCases = [
     {
       title: 'Apartment Buildings',
-      description: 'Residents share books across units. Easy invitation system, location tracking per floor.',
-      example: '200-unit building, 500+ books, 80+ active readers'
+      description: 'Perfect for residents who want to share books across units. Simple invitation system and floor-based location tracking.',
+      example: 'Great for residential communities'
     },
     {
       title: 'Retirement Communities',
-      description: 'Simple interface for less tech-savvy residents. Large print options, easy checkout process.',
-      example: '150 residents, 1,200+ books, multiple common areas'
+      description: 'Designed with accessibility in mind. Clean interface and easy checkout process for all users.',
+      example: 'Multiple common area support'
     },
     {
       title: 'Book Clubs & Networks',
-      description: 'Multiple locations, shared recommendations, discussion tracking.',
-      example: '5 locations, 250+ members, curated reading lists'
+      description: 'Ideal for book clubs that meet in multiple locations or have shared collections.',
+      example: 'Multi-location book sharing'
     }
   ]
 
@@ -108,15 +108,14 @@ function UseCasesSection() {
           }}
         >
           <Heading level="2" className="marketing-text-center">
-            Built for Real Communities
+            Built for Community Sharing
           </Heading>
           <Text 
             variant="lead" 
             className="marketing-text-center"
             style={{ marginTop: 'var(--marketing-spacing-4)' }}
           >
-            See how communities like yours are using LibraryCard to create 
-            thriving shared library spaces.
+            LibraryCard works well for different types of shared spaces and communities.
           </Text>
         </div>
 
@@ -177,7 +176,7 @@ function CTASection() {
           }}
         >
           <Heading level="2" style={{ color: 'var(--marketing-white)' }}>
-            Ready to Build Your Community Library?
+            Ready to Join the Beta?
           </Heading>
           <Text 
             variant="lead" 
@@ -188,8 +187,8 @@ function CTASection() {
               opacity: 0.9
             }}
           >
-            Join communities across the country who are making books more accessible. 
-            Start your free library today.
+            Help us build the best community library management tool. 
+            Join our beta program and get started today.
           </Text>
           
           <div className="marketing-flex marketing-justify-center marketing-gap-4 marketing-flex-col marketing-flex-md-row">
@@ -198,7 +197,7 @@ function CTASection() {
               variant="secondary" 
               size="lg"
             >
-              Start Free Now
+              Join Beta Now
             </Button>
             <Button 
               href="/contact" 
@@ -209,7 +208,7 @@ function CTASection() {
                 color: 'var(--marketing-white)'
               }}
             >
-              Contact Sales
+              Send Feedback
             </Button>
           </div>
         </div>
@@ -222,7 +221,7 @@ export default function HomePage() {
   return (
     <MarketingLayout>
       <HeroSection />
-      <ProblemSolutionSection />
+      <BetaProgramSection />
       <FeatureGrid />
       <UseCasesSection />
       <PricingSection />

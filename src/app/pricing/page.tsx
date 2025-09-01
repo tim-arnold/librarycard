@@ -7,11 +7,11 @@ import { Heading, Text, Highlight, List, ListItem } from '@/components/marketing
 import Button from '@/components/marketing/ui/Button'
 
 export const metadata: Metadata = {
-  title: 'Pricing - LibraryCard',
-  description: 'Simple, transparent pricing for community library management. 63-73% savings vs. professional alternatives. Start free and upgrade as your community grows.',
+  title: 'Join Beta - LibraryCard',
+  description: 'Join the LibraryCard beta program and help us build the perfect community library management tool. Free access during development.',
 }
 
-function PricingHeader() {
+function BetaHeader() {
   return (
     <Section background="white" size="lg">
       <Container>
@@ -23,7 +23,7 @@ function PricingHeader() {
           }}
         >
           <Heading level="display" className="marketing-text-center">
-            Simple, Transparent Pricing
+            Join the Beta Program
           </Heading>
           
           <Text 
@@ -34,8 +34,8 @@ function PricingHeader() {
               marginBottom: 'var(--marketing-spacing-4)'
             }}
           >
-            <Highlight>63-73% savings</Highlight> compared to professional library management tools. 
-            Start free and upgrade as your community grows.
+            <Highlight>Free beta access</Highlight> to LibraryCard while we build the perfect community library tool together. 
+            Your feedback shapes what we build next.
           </Text>
           
           <Text 
@@ -43,7 +43,7 @@ function PricingHeader() {
             color="muted"
             className="marketing-text-center"
           >
-            No hidden fees. No per-user charges. Cancel anytime.
+            No costs during development. No commitments. Just help us build something great.
           </Text>
         </div>
       </Container>
@@ -51,111 +51,46 @@ function PricingHeader() {
   )
 }
 
-function PricingTiers() {
-  const pricingTiers = [
-    {
-      title: 'Personal',
-      subtitle: 'Perfect for families',
-      price: {
-        amount: 'Free',
-        period: '',
-        currency: ''
-      },
-      features: [
-        { text: '1-5 users', included: true },
-        { text: 'Up to 1,000 books', included: true },
-        { text: 'Basic library management', included: true },
-        { text: 'ISBN scanning', included: true },
-        { text: 'Mobile access (iOS & Android)', included: true },
-        { text: 'Basic location tracking', included: true },
-        { text: 'Export functionality', included: true },
-        { text: 'Community email support', included: true },
-        { text: 'Multi-location support', included: false },
-        { text: 'User permission management', included: false },
-        { text: 'Advanced checkout tracking', included: false },
-        { text: 'Email notifications', included: false }
-      ],
-      ctaText: 'Start Free',
-      ctaHref: '/auth/signin',
-      featured: false
-    },
-    {
-      title: 'Community',
-      subtitle: 'Most popular for shared spaces',
-      price: {
-        amount: '29',
-        period: 'month',
-        currency: '$'
-      },
-      features: [
-        { text: '6-50 users', included: true },
-        { text: 'Unlimited books', included: true },
-        { text: 'All Personal features', included: true },
-        { text: 'Multi-location support', included: true },
-        { text: 'User permission management', included: true },
-        { text: 'Advanced checkout/lending tracking', included: true },
-        { text: 'Email notifications', included: true },
-        { text: 'Invitation system', included: true },
-        { text: 'Usage analytics', included: true },
-        { text: 'Priority email support', included: true },
-        { text: 'Custom branding options', included: false },
-        { text: 'API access', included: false }
-      ],
-      ctaText: 'Start 14-Day Free Trial',
-      ctaHref: '/auth/signin?plan=community',
-      featured: true
-    },
-    {
-      title: 'Organization',
-      subtitle: 'For larger communities',
-      price: {
-        amount: '79',
-        period: 'month',
-        currency: '$'
-      },
-      features: [
-        { text: '51-150 users', included: true },
-        { text: 'Unlimited books', included: true },
-        { text: 'All Community features', included: true },
-        { text: 'Advanced user roles & permissions', included: true },
-        { text: 'Detailed analytics & reporting', included: true },
-        { text: 'API access for integrations', included: true },
-        { text: 'Custom branding & white-labeling', included: true },
-        { text: 'SSO integration (SAML)', included: true },
-        { text: 'Dedicated account manager', included: true },
-        { text: 'Phone & priority support', included: true },
-        { text: '99.9% SLA guarantee', included: true },
-        { text: 'Custom training sessions', included: true }
-      ],
-      ctaText: 'Contact Sales',
-      ctaHref: '/contact',
-      featured: false
-    }
-  ]
-
+function BetaAccess() {
   return (
     <Section background="gray-50">
       <Container>
-        <Grid cols={1} mdCols={3} gap={8}>
-          {pricingTiers.map((tier, index) => (
+        <div className="marketing-flex marketing-justify-center">
+          <div style={{ maxWidth: '600px', width: '100%' }}>
             <PricingCard
-              key={index}
-              title={tier.title}
-              subtitle={tier.subtitle}
-              price={tier.price}
-              features={tier.features}
-              ctaText={tier.ctaText}
-              ctaHref={tier.ctaHref}
-              featured={tier.featured}
+              title="Beta Program"
+              subtitle="Free access during development"
+              price={{
+                amount: 'Free',
+                period: 'during beta',
+                currency: ''
+              }}
+              features={[
+                { text: 'Full access to all beta features', included: true },
+                { text: 'Unlimited books and users', included: true },
+                { text: 'ISBN scanning and automatic book details', included: true },
+                { text: 'Multi-location support', included: true },
+                { text: 'User permission management', included: true },
+                { text: 'Checkout and lending tracking', included: true },
+                { text: 'Mobile access (iOS & Android)', included: true },
+                { text: 'Export functionality', included: true },
+                { text: 'Direct feedback channel to developers', included: true },
+                { text: 'Help shape future features', included: true },
+                { text: 'Early access to new capabilities', included: true },
+                { text: 'Community support and discussions', included: true }
+              ]}
+              ctaText="Join Beta Program"
+              ctaHref="/auth/signin"
+              featured={true}
             />
-          ))}
-        </Grid>
+          </div>
+        </div>
       </Container>
     </Section>
   )
 }
 
-function ComparisonSection() {
+function BetaFeaturesSection() {
   return (
     <Section background="white">
       <Container>
@@ -168,14 +103,14 @@ function ComparisonSection() {
           }}
         >
           <Heading level="2" className="marketing-text-center">
-            How LibraryCard Compares
+            What's Included in Beta
           </Heading>
           <Text 
             variant="lead" 
             className="marketing-text-center"
             style={{ marginTop: 'var(--marketing-spacing-4)' }}
           >
-            See why communities choose LibraryCard over alternatives
+            Full access to all current features while we continue development
           </Text>
         </div>
 
@@ -189,19 +124,19 @@ function ComparisonSection() {
             }}
           >
             <div style={{ textAlign: 'center', marginBottom: 'var(--marketing-spacing-4)' }}>
-              <Heading level="4" style={{ color: 'var(--marketing-success)' }}>
-                vs. Personal Tools
+              <Heading level="4" style={{ color: 'var(--marketing-primary)' }}>
+                Core Features
               </Heading>
               <Text variant="small" color="muted">
-                BookBuddy, CLZ Books, etc.
+                Essential library management
               </Text>
             </div>
             <List variant="check">
-              <ListItem>Community features included</ListItem>
+              <ListItem>ISBN scanning & book details</ListItem>
               <ListItem>Multi-user access & permissions</ListItem>
-              <ListItem>Invitation system</ListItem>
-              <ListItem>Cross-platform compatibility</ListItem>
-              <ListItem>Professional support</ListItem>
+              <ListItem>Location & shelf tracking</ListItem>
+              <ListItem>Checkout & lending system</ListItem>
+              <ListItem>Mobile-responsive interface</ListItem>
             </List>
           </div>
 
@@ -214,19 +149,19 @@ function ComparisonSection() {
             }}
           >
             <div style={{ textAlign: 'center', marginBottom: 'var(--marketing-spacing-4)' }}>
-              <Heading level="4" style={{ color: 'var(--marketing-success)' }}>
-                vs. Professional Tools
+              <Heading level="4" style={{ color: 'var(--marketing-primary)' }}>
+                Community Features  
               </Heading>
               <Text variant="small" color="muted">
-                WikiLibrary, Koha, etc.
+                Built for sharing
               </Text>
             </div>
             <List variant="check">
-              <ListItem>63-73% cost savings</ListItem>
-              <ListItem>5-minute setup (no IT required)</ListItem>
-              <ListItem>Community-focused features</ListItem>
-              <ListItem>Modern, intuitive interface</ListItem>
-              <ListItem>Cloud-based reliability</ListItem>
+              <ListItem>Invitation system for members</ListItem>
+              <ListItem>Multiple locations support</ListItem>
+              <ListItem>User role management</ListItem>
+              <ListItem>Community book collections</ListItem>
+              <ListItem>Export & backup options</ListItem>
             </List>
           </div>
 
@@ -239,19 +174,19 @@ function ComparisonSection() {
             }}
           >
             <div style={{ textAlign: 'center', marginBottom: 'var(--marketing-spacing-4)' }}>
-              <Heading level="4" style={{ color: 'var(--marketing-success)' }}>
-                vs. Building Custom
+              <Heading level="4" style={{ color: 'var(--marketing-primary)' }}>
+                Beta Perks
               </Heading>
               <Text variant="small" color="muted">
-                Internal development
+                Shape the future
               </Text>
             </div>
             <List variant="check">
-              <ListItem>Ready to use immediately</ListItem>
-              <ListItem>Proven reliability & security</ListItem>
-              <ListItem>Ongoing updates & improvements</ListItem>
-              <ListItem>No development or maintenance costs</ListItem>
-              <ListItem>Professional support included</ListItem>
+              <ListItem>Direct feedback to developers</ListItem>
+              <ListItem>Influence feature development</ListItem>
+              <ListItem>Early access to new features</ListItem>
+              <ListItem>Beta community discussions</ListItem>
+              <ListItem>No cost during development</ListItem>
             </List>
           </div>
         </div>
@@ -263,28 +198,28 @@ function ComparisonSection() {
 function FAQSection() {
   const faqs = [
     {
-      question: "How does community access work?",
-      answer: "Admins can invite members via email. Each member gets their own account with appropriate permissions to browse, check out, and return books. Admins can manage locations, add books, and oversee the library."
+      question: "What does beta access include?",
+      answer: "Full access to all current LibraryCard features including ISBN scanning, multi-user access, location tracking, checkout system, and more. No limits during the beta period."
     },
     {
-      question: "Can we customize the platform for our brand?",
-      answer: "Yes! Organization tier includes custom branding and white-labeling options. You can add your logo, customize colors, and even use a custom domain name."
+      question: "How long will the beta program last?",
+      answer: "We're actively developing based on user feedback. Beta participants will get advance notice before any transition to paid plans, and existing beta users will receive special pricing."
     },
     {
-      question: "What happens if we need to upgrade or downgrade?",
-      answer: "You can change plans anytime. Upgrades take effect immediately. Downgrades take effect at your next billing cycle. Your data is always preserved."
+      question: "Will my beta data be preserved?",
+      answer: "Absolutely! All your books, locations, and user data will be preserved as we move from beta to full release. You own your data and can export it anytime."
     },
     {
-      question: "Do you offer discounts for nonprofits?",
-      answer: "Yes! We offer 20% discounts for registered nonprofits, educational institutions, and community organizations. Contact us for details."
+      question: "How can I provide feedback?",
+      answer: "We have built-in feedback tools and direct communication channels with our development team. Your input directly influences what features we build next."
     },
     {
-      question: "Is there a setup fee or contract required?",
-      answer: "No setup fees, no contracts. Pay monthly or save with annual billing. Cancel anytime with 30 days notice. Your data export is always available."
+      question: "Is there any cost during beta?",
+      answer: "No costs whatsoever during the beta program. We're focused on building the best product with community input, not generating revenue during development."
     },
     {
-      question: "How does the 14-day trial work?",
-      answer: "Full access to all Community features for 14 days. No credit card required to start. You can invite members and add books during the trial. Convert to paid plan anytime."
+      question: "Can I invite others to join my library?",
+      answer: "Yes! The invitation system is fully functional. Invite family members, neighbors, or community members to join your shared library space during beta."
     }
   ]
 
@@ -371,8 +306,8 @@ function CTASection() {
               opacity: 0.9
             }}
           >
-            Join hundreds of communities managing their libraries with LibraryCard. 
-            Start your free account today.
+            Join the beta program and help build the perfect community library tool. 
+            Start your free beta account today.
           </Text>
           
           <div className="marketing-flex marketing-justify-center marketing-gap-4 marketing-flex-col marketing-flex-md-row">
@@ -381,7 +316,7 @@ function CTASection() {
               variant="secondary" 
               size="lg"
             >
-              Start Free Now
+              Join Beta Now
             </Button>
             <Button 
               href="/features" 
@@ -392,7 +327,7 @@ function CTASection() {
                 color: 'var(--marketing-white)'
               }}
             >
-              See All Features
+              See Beta Features
             </Button>
           </div>
         </div>
@@ -404,9 +339,9 @@ function CTASection() {
 export default function PricingPage() {
   return (
     <MarketingLayout>
-      <PricingHeader />
-      <PricingTiers />
-      <ComparisonSection />
+      <BetaHeader />
+      <BetaAccess />
+      <BetaFeaturesSection />
       <FAQSection />
       <CTASection />
     </MarketingLayout>
