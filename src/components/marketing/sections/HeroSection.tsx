@@ -18,7 +18,7 @@ export default function HeroSection() {
         >
           {/* Main headline */}
           <Heading level="display" className="marketing-text-center">
-            <Highlight>Community-First</Highlight> Library Management
+            <Highlight>Community Library</Highlight> Management Beta
           </Heading>
           
           {/* Subheading */}
@@ -33,8 +33,8 @@ export default function HeroSection() {
               marginRight: 'auto'
             }}
           >
-            Bridge the gap between personal collection tools and expensive institutional software. 
-            Perfect for apartments, retirement communities, book clubs, and shared spaces.
+            Help us build the perfect community library management tool. 
+            Join our beta and shape the future of shared book collections.
           </Text>
 
           {/* CTA buttons */}
@@ -44,7 +44,7 @@ export default function HeroSection() {
               variant="primary" 
               size="lg"
             >
-              Start Free
+              Join Beta
             </Button>
             <Button 
               href="/features" 
@@ -69,59 +69,38 @@ export default function HeroSection() {
               className="marketing-text-center"
               style={{ marginBottom: 'var(--marketing-spacing-6)' }}
             >
-              Trusted by communities across the country
+              Join the beta program and help shape the future
             </Text>
             
-            {/* Placeholder for customer logos - will add real ones later */}
+            {/* Beta program indicators */}
             <div 
               className="marketing-flex marketing-items-center marketing-justify-center marketing-gap-8"
-              style={{ opacity: 0.6 }}
+              style={{ opacity: 0.8 }}
             >
               <div 
                 style={{
-                  width: '120px',
-                  height: '40px',
-                  background: 'var(--marketing-gray-200)',
-                  borderRadius: 'var(--marketing-radius-base)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  padding: 'var(--marketing-spacing-2) var(--marketing-spacing-4)',
+                  background: 'var(--marketing-primary)',
+                  color: 'var(--marketing-white)',
+                  borderRadius: 'var(--marketing-radius-full)',
                   fontSize: 'var(--marketing-text-sm)',
-                  color: 'var(--marketing-gray-500)'
+                  fontWeight: 'var(--marketing-font-medium)'
                 }}
               >
-                Customer Logo
+                Beta Program
               </div>
               <div 
                 style={{
-                  width: '120px',
-                  height: '40px',
-                  background: 'var(--marketing-gray-200)',
-                  borderRadius: 'var(--marketing-radius-base)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  padding: 'var(--marketing-spacing-2) var(--marketing-spacing-4)',
+                  background: 'var(--marketing-secondary)',
+                  color: 'var(--marketing-white)',
+                  borderRadius: 'var(--marketing-radius-full)',
                   fontSize: 'var(--marketing-text-sm)',
-                  color: 'var(--marketing-gray-500)'
-                }}
-              >
-                Customer Logo
-              </div>
-              <div 
-                style={{
-                  width: '120px',
-                  height: '40px',
-                  background: 'var(--marketing-gray-200)',
-                  borderRadius: 'var(--marketing-radius-base)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 'var(--marketing-text-sm)',
-                  color: 'var(--marketing-gray-500)'
+                  fontWeight: 'var(--marketing-font-medium)'
                 }}
                 className="marketing-hidden-mobile"
               >
-                Customer Logo
+                Free to Join
               </div>
             </div>
           </div>

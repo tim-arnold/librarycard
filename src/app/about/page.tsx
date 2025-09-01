@@ -12,7 +12,7 @@ import {
 import MarketingLayout from '@/components/marketing/layout/MarketingLayout'
 import Container, { Section, Grid } from '@/components/marketing/ui/Container'
 import { Heading, Text, Highlight } from '@/components/marketing/ui/Typography'
-import { FeatureCard, StatsCard } from '@/components/marketing/ui/Card'
+import { FeatureCard } from '@/components/marketing/ui/Card'
 import Button from '@/components/marketing/ui/Button'
 
 export const metadata: Metadata = {
@@ -43,16 +43,16 @@ function AboutHeader() {
               marginBottom: 'var(--marketing-spacing-8)'
             }}
           >
-            LibraryCard was founded on a simple belief: every community deserves access 
+            We're building LibraryCard on a simple belief: every community deserves access 
             to modern library management tools, regardless of size or budget.
           </Text>
 
           <Button 
-            href="/contact" 
+            href="/pricing" 
             variant="primary" 
             size="lg"
           >
-            Get In Touch
+            Join Our Beta
           </Button>
         </div>
       </Container>
@@ -229,7 +229,8 @@ function StorySection() {
             <Text variant="body">
               That's when we decided to build LibraryCard: a modern, community-focused 
               library management platform that combines the simplicity of personal tools 
-              with the collaborative features communities need, all at an affordable price.
+              with the collaborative features communities need. We're currently in beta, 
+              working with communities to perfect the experience.
             </Text>
           </div>
         </div>
@@ -238,14 +239,7 @@ function StorySection() {
   )
 }
 
-function CommunityImpactSection() {
-  const stats = [
-    { number: '50+', label: 'Communities Served' },
-    { number: '10,000+', label: 'Books Managed' },
-    { number: '2,500+', label: 'Active Members' },
-    { number: '95%', label: 'Customer Satisfaction' }
-  ]
-
+function CommunityTypesSection() {
   const communityTypes = [
     {
       icon: <Home />,
@@ -276,29 +270,16 @@ function CommunityImpactSection() {
           }}
         >
           <Heading level="2" className="marketing-text-center">
-            Making an Impact
+            Built for Communities
           </Heading>
           <Text 
             variant="lead" 
             className="marketing-text-center"
             style={{ marginTop: 'var(--marketing-spacing-4)' }}
           >
-            Communities across the country are using LibraryCard to build 
-            stronger connections through shared reading
+            We're designing LibraryCard for different types of shared spaces, 
+            with features that work for each community's unique needs
           </Text>
-        </div>
-
-        {/* Stats */}
-        <div style={{ marginBottom: 'var(--marketing-spacing-16)' }}>
-          <Grid cols={2} mdCols={4} gap={6}>
-          {stats.map((stat, index) => (
-            <StatsCard
-              key={index}
-              number={stat.number}
-              label={stat.label}
-            />
-          ))}
-          </Grid>
         </div>
 
         {/* Community Types */}
@@ -344,8 +325,8 @@ function CTASection() {
               opacity: 0.9
             }}
           >
-            Whether you're managing books for 10 people or 1,000, we're here to help 
-            your community thrive. Start building your shared library today.
+            Join our beta program and help us build the perfect community library tool. 
+            Your feedback shapes what we build next.
           </Text>
           
           <div className="marketing-flex marketing-justify-center marketing-gap-4 marketing-flex-col marketing-flex-md-row">
@@ -354,7 +335,7 @@ function CTASection() {
               variant="secondary" 
               size="lg"
             >
-              Start Your Library
+              Join Beta Program
             </Button>
             <Button 
               href="/contact" 
@@ -365,7 +346,7 @@ function CTASection() {
                 color: 'var(--marketing-white)'
               }}
             >
-              Contact Us
+              Send Feedback
             </Button>
           </div>
         </div>
@@ -381,7 +362,7 @@ export default function AboutPage() {
       <MissionSection />
       <ValuesSection />
       <StorySection />
-      <CommunityImpactSection />
+      <CommunityTypesSection />
       <CTASection />
     </MarketingLayout>
   )

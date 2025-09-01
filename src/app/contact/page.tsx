@@ -18,7 +18,7 @@ import ContactForm from '@/components/marketing/forms/ContactForm'
 
 export const metadata: Metadata = {
   title: 'Contact - LibraryCard',
-  description: 'Get in touch with the LibraryCard team. We\'re here to help with questions about community library management, pricing, and getting started.',
+  description: 'Get in touch with the LibraryCard beta team. We\'re here to help with questions about the beta program and community library management.',
 }
 
 function ContactHeader() {
@@ -44,8 +44,8 @@ function ContactHeader() {
               marginBottom: 'var(--marketing-spacing-4)'
             }}
           >
-            Have questions about LibraryCard? We'd love to hear from you. 
-            Reach out to discuss how we can help your community.
+            Questions about our beta program? We'd love to hear from you. 
+            Reach out with feedback, questions, or feature requests.
           </Text>
           
           <Text 
@@ -53,8 +53,8 @@ function ContactHeader() {
             color="muted"
             className="marketing-text-center"
           >
-            Whether you're interested in our community features, need help getting started, 
-            or want to discuss custom solutions, we're here to help.
+            Whether you're interested in joining the beta, need help getting started, 
+            or want to share feedback, we're here to help.
           </Text>
         </div>
       </Container>
@@ -67,34 +67,34 @@ function ContactInfo() {
   const contactMethods = [
     {
       icon: <Email />,
-      title: 'Technical Support',
-      description: 'Get help with technical questions, account issues, or general inquiries.',
+      title: 'Beta Support',
+      description: 'Get help with technical questions, account issues, or beta-related inquiries.',
       info: 'Submit a support request with detailed information',
       action: '/contact/support',
-      ctaText: 'Get Technical Help'
+      ctaText: 'Get Beta Help'
     },
     {
       icon: <Support />,
-      title: 'Customer Success',
-      description: 'Need help setting up your community library or onboarding users?',
-      info: 'Connect with our onboarding specialists',
+      title: 'Getting Started',
+      description: 'Need help setting up your community library or onboarding users during beta?',
+      info: 'Connect with our beta support team',
       action: '/contact/success',
-      ctaText: 'Schedule Setup Help'
+      ctaText: 'Get Setup Help'
     },
     {
-      icon: <Business />,
-      title: 'Enterprise Sales',
-      description: 'Interested in custom solutions or enterprise features?',
-      info: 'Discuss pricing and custom requirements',
-      action: '/contact/enterprise',
-      ctaText: 'Request Enterprise Info'
+      icon: <QuestionAnswer />,
+      title: 'Beta Feedback',
+      description: 'Share your thoughts, feature requests, or suggestions for improvement.',
+      info: 'Help us build the perfect community library tool',
+      action: 'mailto:beta@librarycard.com',
+      ctaText: 'Send Feedback'
     }
   ]
 
   return (
     <div>
       <Heading level="3" style={{ marginBottom: 'var(--marketing-spacing-6)' }}>
-        Other Ways to Reach Us
+        Beta Program Support
       </Heading>
 
       <div className="marketing-grid marketing-grid-cols-1 marketing-gap-6">
@@ -154,20 +154,20 @@ function ContactInfo() {
 function FAQSection() {
   const faqs = [
     {
-      question: "How quickly do you respond to support requests?",
-      answer: "We typically respond to all inquiries within 24 hours. For urgent technical issues, we aim for a 4-6 hour response time during business hours."
+      question: "How quickly do you respond to beta support requests?",
+      answer: "We typically respond to all beta program inquiries within 24-48 hours. We prioritize feedback and feature requests from beta participants."
     },
     {
-      question: "Do you offer phone support?",
-      answer: "Currently, we provide support primarily through email and our contact form. For Organization tier customers, we can schedule calls for complex setup or training needs."
+      question: "How can I provide feedback during the beta?",
+      answer: "You can use the contact form, email us directly, or use any feedback features built into the application. We read and consider all beta feedback."
     },
     {
-      question: "Can you help us migrate from our existing system?",
-      answer: "Yes! We can provide guidance and tools to help you import existing book data. Contact us to discuss your specific migration needs."
+      question: "Can you help us migrate existing book data into the beta?",
+      answer: "Yes! We can help with basic data imports during the beta. Contact us with details about your current system and we'll work with you."
     },
     {
-      question: "Do you offer training for administrators?",
-      answer: "We provide comprehensive documentation and can schedule training sessions for Organization tier customers. Community tier customers have access to detailed guides and email support."
+      question: "Is there training available for beta users?",
+      answer: "We provide documentation and can offer guided setup sessions for beta communities. Your feedback helps us improve our onboarding process."
     }
   ]
 
@@ -255,8 +255,8 @@ function CTASection() {
               opacity: 0.9
             }}
           >
-            Don't wait - start building your community library today. 
-            It only takes a few minutes to get up and running.
+            Ready to join the beta program? 
+            Help us build the perfect community library tool.
           </Text>
           
           <div className="marketing-flex marketing-justify-center marketing-gap-4 marketing-flex-col marketing-flex-md-row">
@@ -265,7 +265,7 @@ function CTASection() {
               variant="secondary" 
               size="lg"
             >
-              Start Free Now
+              Join Beta Program
             </Button>
             <Button 
               href="/features" 
@@ -276,7 +276,7 @@ function CTASection() {
                 color: 'var(--marketing-white)'
               }}
             >
-              See All Features
+              See Beta Features
             </Button>
           </div>
         </div>
