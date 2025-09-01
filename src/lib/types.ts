@@ -284,3 +284,59 @@ export interface TOTPVerifyRequest {
 export interface BackupCodeVerifyRequest {
   backupCode: string
 }
+
+// Series system interfaces
+
+export interface Series {
+  id: string
+  user_id: string
+  name: string
+  description?: string
+  color?: string // hex color for visual distinction
+  created_at: string
+  updated_at: string
+  sort_order: number
+  book_count?: number // populated when fetching series with counts
+}
+
+export interface BookSeries {
+  book_id: string
+  series_id: string
+  added_at: string
+}
+
+// API Request/Response interfaces for series
+
+export interface CreateSeriesRequest {
+  name: string
+  description?: string
+  color?: string
+  sort_order?: number
+}
+
+export interface UpdateSeriesRequest {
+  name?: string
+  description?: string
+  color?: string
+  sort_order?: number
+}
+
+export interface AddBooksToSeriesRequest {
+  book_ids: string[]
+}
+
+export interface SeriesWithBooks extends Series {
+  books: EnhancedBook[]
+}
+
+export interface SeriesResponse {
+  series: Series[]
+}
+
+export interface SeriesBooksResponse {
+  series: Series
+  books: EnhancedBook[]
+  total: number
+  page: number
+  limit: number
+}
