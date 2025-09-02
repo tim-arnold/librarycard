@@ -160,7 +160,9 @@ import {
   deleteSeries,
   addBooksToSeries,
   removeBookFromSeries,
-  getSeriesBooks
+  getSeriesBooks,
+  approveRejectSeries,
+  getPendingSeries
 } from './series';
 
 export default {
@@ -1848,6 +1850,16 @@ To review this request, log in as a super administrator and go to Admin Dashboar
         // Pass the URL for pagination parameters
         const modifiedCorsHeaders = { ...corsHeaders, 'request-url': request.url };
         return await getSeriesBooks(seriesId, userId, env, modifiedCorsHeaders);
+      }
+
+      // Admin series approval endpoints
+      if (path === '/api/admin/series/pending' && request.method === 'GET') {
+        return await getPendingSeries(userId, env, corsHeaders);
+      }
+      if (path.match(/^\/api\/admin\/series\/[^\/]+\/approve$/) && request.method === 'POST') {
+        const seriesId = path.split('/')[4];
+        const body = await request.json() as any;
+        return await approveRejectSeries(seriesId, userId, body, env, corsHeaders);
       }
 
       // OpenLibrary Analytics endpoint (development only)

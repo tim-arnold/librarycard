@@ -35,6 +35,7 @@ interface BookTextProps {
   onCancelRemovalRequest: (bookId: string, bookTitle: string) => Promise<void>
   onMoreDetailsClick: (book: EnhancedBook) => void
   onAuthorClick: (authorName: string) => void
+  onSeriesClick: (seriesName: string) => void
   onRateBook?: (book: EnhancedBook) => void
   onGenreEdit?: (book: EnhancedBook) => void
 }
@@ -56,6 +57,7 @@ export default function BookText({
   onCancelRemovalRequest,
   onMoreDetailsClick,
   onAuthorClick,
+  onSeriesClick,
   onRateBook,
   onGenreEdit,
 }: BookTextProps) {
@@ -138,6 +140,57 @@ export default function BookText({
                   </Typography>
                 )}
               </Typography>
+              
+              {/* Series information */}
+              {book.series && (
+                <Typography 
+                  variant="body2" 
+                  color="text.secondary" 
+                  sx={{ display: 'inline', mt: 0.5 }}
+                >
+                  <Typography 
+                    component="span" 
+                    sx={{ 
+                      color: 'primary.main', 
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                      '&:hover': { textDecoration: 'none', color: 'primary.dark' },
+                      fontWeight: 500
+                    }}
+                    onClick={() => onSeriesClick(book.series!)}
+                  >
+                    {book.series}
+                  </Typography>
+                  {book.seriesNumber && ` (#${book.seriesNumber})`}
+                </Typography>
+              )}
+              
+              {book.current_series && book.current_series.length > 0 && (
+                <Typography 
+                  variant="body2" 
+                  color="text.secondary" 
+                  sx={{ display: 'inline', mt: 0.5 }}
+                >
+                  {book.current_series.map((series, index) => (
+                    <span key={series.id}>
+                      <Typography 
+                        component="span" 
+                        sx={{ 
+                          color: series.color || 'primary.main', 
+                          cursor: 'pointer',
+                          textDecoration: 'underline',
+                          '&:hover': { textDecoration: 'none', color: 'primary.dark' },
+                          fontWeight: 500
+                        }}
+                        onClick={() => onSeriesClick(series.name)}
+                      >
+                        {series.name}
+                      </Typography>
+                      {index < book.current_series!.length - 1 && ', '}
+                    </span>
+                  ))}
+                </Typography>
+              )}
             </Box>
 
             {/* Compact info chips */}

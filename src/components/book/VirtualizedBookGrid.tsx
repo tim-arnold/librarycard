@@ -60,8 +60,8 @@ const calculateBookCardHeight = (book: EnhancedBook): number => {
   // Author line height
   height += BODY_LINE_HEIGHT
 
-  // Series line (if present)
-  if (book.series) {
+  // Series line (if present - legacy or new system)
+  if (book.series || (book.current_series && book.current_series.length > 0)) {
     height += BODY_LINE_HEIGHT
   }
 
@@ -260,6 +260,27 @@ r            <Typography variant="body2" color="text.secondary" gutterBottom>
                   {book.series}
                 </Typography>
                 {book.seriesNumber && ` (#${book.seriesNumber})`}
+              </Typography>
+            )}
+            {book.current_series && book.current_series.length > 0 && (
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                {book.current_series.map((series, index) => (
+                  <span key={series.id}>
+                    <Typography 
+                      component="span" 
+                      sx={{ 
+                        color: series.color || 'primary.main', 
+                        cursor: 'pointer',
+                        textDecoration: 'underline',
+                        '&:hover': { textDecoration: 'none' }
+                      }}
+                      onClick={() => handleSeriesClick(series.name)}
+                    >
+                      {series.name}
+                    </Typography>
+                    {index < book.current_series!.length - 1 && ', '}
+                  </span>
+                ))}
               </Typography>
             )}
             
