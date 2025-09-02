@@ -179,10 +179,15 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole, onBo
   const handleRemoveFromSeries = async (seriesId: string) => {
     if (!book?.id) return
     
+    console.log('🔄 Removing book', book.id, 'from series', seriesId)
     const success = await removeBookFromSeries(seriesId, book.id)
+    console.log('✅ Remove result:', success)
     if (success) {
+      console.log('📞 Calling onBookUpdate...')
       // Refresh book data to update current_series
       onBookUpdate?.()
+    } else {
+      console.error('❌ Failed to remove book from series')
     }
   }
 
