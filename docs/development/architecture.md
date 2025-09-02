@@ -93,6 +93,7 @@ The frontend follows a **modular component architecture** designed for:
   - `auth-utils/` - 35 lines (additional auth helper functions)
   - `books/` - 742 lines (book CRUD, checkout, removal requests)
   - `locations/` - 467 lines (location & shelf management)
+  - `series/` - 663 lines (series CRUD, approval workflow, book assignments)
   - `types/` - 77 lines (shared interfaces)
 
 ## Design Principles
@@ -552,6 +553,91 @@ Hybrid Architecture
 - **Caching**: Phase 3 KV caching implemented - comprehensive caching system complete
 - **CDN**: Already leveraging global edge network
 
+## Series System Architecture
+
+### Overview
+The Series system allows users to organize books into custom groupings (e.g., "Science Fiction", "Book Club Picks", "To Read"). The implementation includes an approval workflow for content moderation and admin oversight.
+
+### Database Schema
+```sql
+-- Series table
+CREATE TABLE series (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    color TEXT,                      -- Hex color for visual distinction
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    sort_order INTEGER DEFAULT 0,
+    approval_status TEXT DEFAULT 'pending',  -- pending/approved/rejected
+    approved_by TEXT,                -- Admin user ID who approved/rejected
+    approved_at DATETIME,            -- Timestamp of approval/rejection
+    rejection_reason TEXT,           -- Optional reason for rejection
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
+-- Many-to-many relationship between books and series
+CREATE TABLE book_series (
+    book_id TEXT NOT NULL,          -- String to match CAST(books.id AS TEXT)
+    series_id TEXT NOT NULL,
+    added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (book_id, series_id),
+    FOREIGN KEY (book_id) REFERENCES books (id) ON DELETE CASCADE,
+    FOREIGN KEY (series_id) REFERENCES series (id) ON DELETE CASCADE
+);
+```
+
+### API Endpoints
+- `GET /api/series` - List approved series for user
+- `POST /api/series` - Create new series (pending approval)
+- `PUT /api/series/:id` - Update series details
+- `DELETE /api/series/:id` - Delete series
+- `POST /api/series/:id/books` - Add books to series
+- `DELETE /api/series/:id/books/:bookId` - Remove book from series
+- `GET /api/series/:id/books` - Get paginated books in series
+- `GET /api/admin/series/pending` - Admin: list pending series
+- `POST /api/admin/series/:id/approve` - Admin: approve/reject series
+
+### Approval Workflow
+1. **User creates series** → Status: `pending`
+2. **Series invisible** to regular users until approved
+3. **Admin reviews** via `/api/admin/series/pending`
+4. **Admin approves/rejects** with optional reason
+5. **Approved series** become visible to all users
+6. **Rejected series** remain hidden with logged reason
+
+### Frontend Integration
+- **BookGrid/BookList/VirtualizedBookGrid**: Series names display under book titles
+- **MoreDetailsModal**: Series creation and management interface
+- **Clickable series names**: Filter library by series
+- **Color coding**: Visual distinction with custom hex colors
+- **Admin interface**: Pending series review (future enhancement)
+
+### Data Flow: Series Creation
+```
+User creates series
+       ↓
+POST /api/series (status: pending)
+       ↓  
+Series stored in database
+       ↓
+Admin reviews via /api/admin/series/pending
+       ↓
+Admin approves via /api/admin/series/:id/approve
+       ↓
+Series becomes visible to all users
+       ↓
+Books can be added to approved series
+```
+
+### Technical Considerations
+- **Data Type Casting**: Critical `CAST(b.id AS TEXT)` for book_series joins
+- **Permission Filtering**: Super admins see all series, users see only approved
+- **Cache Invalidation**: Series operations clear book cache for fresh data
+- **Performance**: Indexed queries for approval_status and user_id
+- **Security**: Only super admins can approve/reject series
+
 ## Future Architecture Enhancements
 
 ### Potential Improvements
@@ -562,3 +648,4 @@ Hybrid Architecture
 5. **Mobile app**: React Native version using same API
 6. **Backup integration**: Automated backups to external storage
 7. **Advanced permissions**: Location-scoped user access and granular roles
+8. **Smart series**: Auto-populate series based on rules (author, genre, etc.)
