@@ -17,7 +17,7 @@ import {
   FormControl,
   FormLabel,
 } from '@mui/material'
-import { Close, Add, Edit, Palette } from '@mui/icons-material'
+import { Close, Add, Edit } from '@mui/icons-material'
 import type { Series, CreateSeriesRequest, UpdateSeriesRequest } from '@/lib/types'
 
 interface SeriesModalProps {
@@ -28,12 +28,6 @@ interface SeriesModalProps {
   title?: string
 }
 
-const COLOR_OPTIONS = [
-  '#f44336', '#e91e63', '#9c27b0', '#673ab7',
-  '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4',
-  '#009688', '#4caf50', '#8bc34a', '#cddc39',
-  '#ffeb3b', '#ffc107', '#ff9800', '#ff5722'
-]
 
 export default function SeriesModal({
   isOpen,
@@ -45,7 +39,6 @@ export default function SeriesModal({
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    color: '#2196f3',
     sort_order: 0
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -61,14 +54,12 @@ export default function SeriesModal({
         setFormData({
           name: existingSeries.name,
           description: existingSeries.description || '',
-          color: existingSeries.color || '#2196f3',
           sort_order: existingSeries.sort_order
         })
       } else {
         setFormData({
           name: '',
           description: '',
-          color: '#2196f3',
           sort_order: 0
         })
       }
@@ -89,7 +80,6 @@ export default function SeriesModal({
       const submitData = {
         name: formData.name.trim(),
         description: formData.description.trim() || undefined,
-        color: formData.color || undefined,
         sort_order: formData.sort_order
       }
 
@@ -158,40 +148,6 @@ export default function SeriesModal({
             placeholder="Brief description of this series..."
           />
 
-          <Box>
-            <FormControl fullWidth>
-              <FormLabel sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <Palette fontSize="small" />
-                Series Color
-              </FormLabel>
-              <Box sx={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(8, 1fr)', 
-                gap: 1,
-                maxWidth: 400
-              }}>
-                {COLOR_OPTIONS.map((color) => (
-                  <Box
-                    key={color}
-                    onClick={() => handleFieldChange('color', color)}
-                    sx={{
-                      width: 32,
-                      height: 32,
-                      backgroundColor: color,
-                      borderRadius: 1,
-                      cursor: 'pointer',
-                      border: formData.color === color ? '3px solid #000' : '1px solid #ddd',
-                      transition: 'all 0.2s',
-                      '&:hover': {
-                        transform: 'scale(1.1)',
-                        boxShadow: 2
-                      }
-                    }}
-                  />
-                ))}
-              </Box>
-            </FormControl>
-          </Box>
 
           <Box>
             <FormLabel>Sort Order</FormLabel>

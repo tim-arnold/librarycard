@@ -49,7 +49,7 @@ interface MoreDetailsModalProps {
   isOpen: boolean
   onClose: () => void
   userRole: string | null
-  onBookUpdate?: () => void
+  onBookUpdate?: (bookId: string, updatedBookData: Partial<EnhancedBook>) => void
 }
 
 export default function MoreDetailsModal({ book, isOpen, onClose, userRole, onBookUpdate }: MoreDetailsModalProps) {
@@ -67,6 +67,10 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole, onBo
   const [showSeries, setShowSeries] = useState(false)
   const [isSeriesModalOpen, setIsSeriesModalOpen] = useState(false)
   const [selectedSeriesForAdd, setSelectedSeriesForAdd] = useState<string>('')
+  // Local state for current series memberships for immediate UI updates
+  const [currentSeries, setCurrentSeries] = useState<Series[]>(book?.current_series || [])
+  // Track if series have been modified for parent update on close
+  const [seriesModified, setSeriesModified] = useState(false)
 
   // Clear state when book changes to prevent cross-contamination of reviews
   useEffect(() => {
@@ -76,8 +80,15 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole, onBo
       setCheckoutHistory([])
       setShowCheckoutHistory(false)
       setLocationName('')
+      // Sync local series state with book prop
+      setCurrentSeries(book?.current_series || [])
     }
   }, [book?.id])
+  
+  // Sync currentSeries with book.current_series when it changes
+  useEffect(() => {
+    setCurrentSeries(book?.current_series || [])
+  }, [book?.current_series])
 
   if (!book) return null
   
@@ -166,27 +177,48 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole, onBo
   const handleAddToSeries = async () => {
     if (!selectedSeriesForAdd || !book?.id) return
     
+    // Find the series being added for optimistic update
+    const seriesBeingAdded = series.find(s => s.id === selectedSeriesForAdd)
+    if (!seriesBeingAdded) return
+    
+    // Optimistically update the local state immediately
+    setCurrentSeries(prev => [...prev, seriesBeingAdded])
+    
     const result = await addBooksToSeries(selectedSeriesForAdd, [book.id])
     if (result) {
-      console.log('Book added to series successfully, calling onBookUpdate...')
+      console.log('Book added to series successfully')
       // Reset selection
       setSelectedSeriesForAdd('')
-      // Refresh book data to update current_series
-      onBookUpdate?.()
+      // Mark that series have been modified
+      setSeriesModified(true)
+    } else {
+      // Revert optimistic update on failure
+      setCurrentSeries(prev => prev.filter(s => s.id !== selectedSeriesForAdd))
+      console.error('Failed to add book to series')
     }
   }
 
   const handleRemoveFromSeries = async (seriesId: string) => {
     if (!book?.id) return
     
+    // Store the original series for potential revert
+    const seriesBeingRemoved = currentSeries.find(s => s.id === seriesId)
+    
+    // Optimistically update the local state immediately
+    setCurrentSeries(prev => prev.filter(s => s.id !== seriesId))
+    
     console.log('🔄 Removing book', book.id, 'from series', seriesId)
     const success = await removeBookFromSeries(seriesId, book.id)
     console.log('✅ Remove result:', success)
     if (success) {
-      console.log('📞 Calling onBookUpdate...')
-      // Refresh book data to update current_series
-      onBookUpdate?.()
+      console.log('✅ Book removed from series successfully')
+      // Mark that series have been modified
+      setSeriesModified(true)
     } else {
+      // Revert optimistic update on failure
+      if (seriesBeingRemoved) {
+        setCurrentSeries(prev => [...prev, seriesBeingRemoved])
+      }
       console.error('❌ Failed to remove book from series')
     }
   }
@@ -206,8 +238,18 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole, onBo
     }
   }
 
+  // Enhanced close handler that updates parent if series were modified
+  const handleClose = () => {
+    if (seriesModified && onBookUpdate && book?.id) {
+      // Update parent with new series data
+      onBookUpdate(book.id, { current_series: currentSeries })
+      setSeriesModified(false)
+    }
+    onClose()
+  }
+
   return (
-    <Dialog open={isOpen} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog open={isOpen} onClose={handleClose} maxWidth="md" fullWidth>
       <DialogTitle>
         <MenuBook sx={{ mr: 1, verticalAlign: 'middle' }} /> More Details: {book.title}
       </DialogTitle>
@@ -290,18 +332,14 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole, onBo
                     <Typography variant="subtitle2" color="primary" gutterBottom>
                       Current Series Memberships
                     </Typography>
-                    {book?.current_series && book.current_series.length > 0 ? (
+                    {currentSeries && currentSeries.length > 0 ? (
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                        {book.current_series.map((bookSeries) => (
+                        {currentSeries.map((bookSeries) => (
                           <Chip
                             key={bookSeries.id}
                             label={bookSeries.name}
                             color="primary"
                             variant="outlined"
-                            sx={{ 
-                              borderColor: bookSeries.color || 'primary.main',
-                              color: bookSeries.color || 'primary.main'
-                            }}
                             deleteIcon={<Close />}
                             onDelete={() => handleRemoveFromSeries(bookSeries.id)}
                           />
@@ -344,22 +382,10 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole, onBo
                           label="Select Series"
                         >
                           {series
-                            .filter(s => !book?.current_series?.some(cs => cs.id === s.id))
+                            .filter(s => !currentSeries?.some(cs => cs.id === s.id))
                             .map((seriesItem) => (
                               <MenuItem key={seriesItem.id} value={seriesItem.id}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                  {seriesItem.color && (
-                                    <Box
-                                      sx={{
-                                        width: 12,
-                                        height: 12,
-                                        backgroundColor: seriesItem.color,
-                                        borderRadius: '50%'
-                                      }}
-                                    />
-                                  )}
-                                  {seriesItem.name} ({seriesItem.book_count || 0} books)
-                                </Box>
+                                {seriesItem.name} ({seriesItem.book_count || 0} books)
                               </MenuItem>
                             ))
                           }
@@ -875,7 +901,7 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole, onBo
         </Box>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} variant="outlined">
+        <Button onClick={handleClose} variant="outlined">
           Close
         </Button>
       </DialogActions>

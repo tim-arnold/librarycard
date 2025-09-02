@@ -167,20 +167,24 @@ export default function BookText({
               
               {book.current_series && book.current_series.length > 0 && (
                 <Typography 
-                  variant="body2" 
+                  variant="caption" 
                   color="text.secondary" 
-                  sx={{ display: 'inline', mt: 0.5 }}
+                  sx={{ display: 'inline', mt: 0.5, fontWeight: 600 }}
                 >
+                  <Typography component="span" variant="caption" color="text.secondary">
+                    Part of series:{' '}
+                  </Typography>
                   {book.current_series.map((series, index) => (
                     <span key={series.id}>
                       <Typography 
                         component="span" 
+                        variant="caption"
                         sx={{ 
-                          color: series.color || 'primary.main', 
+                          color: 'primary.main', 
                           cursor: 'pointer',
                           textDecoration: 'underline',
                           '&:hover': { textDecoration: 'none', color: 'primary.dark' },
-                          fontWeight: 500
+                          fontWeight: 600
                         }}
                         onClick={() => onSeriesClick(series.name)}
                       >
