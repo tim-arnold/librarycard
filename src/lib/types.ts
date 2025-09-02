@@ -71,6 +71,7 @@ export interface EnhancedBook extends Book {
   suggestedGenres?: CuratedGenre[] // New: Auto-suggested genres
   series?: string
   seriesNumber?: string
+  current_series?: Series[] // New series system: which series this book belongs to
   openLibraryKey?: string
   extendedDescription?: string
   subjects?: string[]

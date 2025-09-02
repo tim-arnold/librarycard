@@ -498,6 +498,30 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
           isOpen={!!selectedBookForDetails}
           onClose={() => setSelectedBookForDetails(null)}
           userRole={userRole}
+          onBookUpdate={async () => {
+            console.log('onBookUpdate called, refreshing book data...')
+            await handleManualRefresh()
+            console.log('handleManualRefresh completed, book data should be updated')
+            console.log('Updated books array sample:', books.slice(0, 2).map(b => ({id: b.id, title: b.title, current_series: b.current_series})))
+            
+            // IMPORTANT: Update the selected book with fresh data from the refreshed books array
+            if (selectedBookForDetails) {
+              // Use a setTimeout to ensure the books state has been updated
+              setTimeout(() => {
+                const updatedBook = books.find(b => b.id === selectedBookForDetails.id)
+                if (updatedBook) {
+                  console.log('Found updated book with series data:', {
+                    id: updatedBook.id,
+                    title: updatedBook.title,
+                    current_series: updatedBook.current_series
+                  })
+                  setSelectedBookForDetails(updatedBook)
+                } else {
+                  console.log('Could not find updated book in books array')
+                }
+              }, 200)
+            }
+          }}
         />
 
         <BookRelocateModal

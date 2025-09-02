@@ -237,6 +237,27 @@ const BookCard = React.memo<BookCardProps>(({
                 {book.seriesNumber && ` (#${book.seriesNumber})`}
               </Typography>
             )}
+            {book.current_series && book.current_series.length > 0 && (
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                {book.current_series.map((series, index) => (
+                  <span key={series.id}>
+                    <Typography 
+                      component="span" 
+                      sx={{ 
+                        color: series.color || 'primary.main', 
+                        cursor: 'pointer',
+                        textDecoration: 'underline',
+                        '&:hover': { textDecoration: 'none' }
+                      }}
+                      onClick={() => handleSeriesClick(series.name)}
+                    >
+                      {series.name}
+                    </Typography>
+                    {index < book.current_series!.length - 1 && ', '}
+                  </span>
+                ))}
+              </Typography>
+            )}
             {/* Rating and Genre area - space-efficient layout */}
             <Box sx={{ mt: 1, mb: 1, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
               {/* Star rating - displays user rating or average rating */}
