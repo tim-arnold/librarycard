@@ -263,15 +263,20 @@ r            <Typography variant="body2" color="text.secondary" gutterBottom>
               </Typography>
             )}
             {book.current_series && book.current_series.length > 0 && (
-              <Typography variant="body2" color="text.secondary" gutterBottom>
+              <Typography variant="caption" color="text.secondary" gutterBottom sx={{ fontWeight: 600 }}>
+                <Typography component="span" variant="caption" color="text.secondary">
+                  Part of series:{' '}
+                </Typography>
                 {book.current_series.map((series, index) => (
                   <span key={series.id}>
                     <Typography 
                       component="span" 
+                      variant="caption"
                       sx={{ 
-                        color: series.color || 'primary.main', 
+                        color: 'primary.main', 
                         cursor: 'pointer',
                         textDecoration: 'underline',
+                        fontWeight: 600,
                         '&:hover': { textDecoration: 'none' }
                       }}
                       onClick={() => handleSeriesClick(series.name)}
