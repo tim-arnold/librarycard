@@ -23,6 +23,7 @@ const GRID_FIELDS = [
   'assignedGenres',
   'series',
   'seriesNumber',
+  'current_series',
   'publishedDate',
   'checked_out_by_name',
   'checked_out_date',
