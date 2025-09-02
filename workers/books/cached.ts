@@ -23,6 +23,7 @@ export async function getCachedUserBooks(userId: string, env: Env, corsHeaders: 
   if (cachedBooks) {
     if (env.ENVIRONMENT === 'local') {
       console.log('🔍 CachedBooks Debug: Found cached books', cachedBooks.length);
+      console.log('🔍 CachedBooks Debug: Sample book current_series:', cachedBooks[0]?.current_series);
     }
     return new Response(JSON.stringify(cachedBooks), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -47,6 +48,7 @@ export async function getCachedUserBooks(userId: string, env: Env, corsHeaders: 
       
       if (env.ENVIRONMENT === 'local') {
         console.log('🔍 CachedBooks Debug: Got books from database', books.length);
+        console.log('🔍 CachedBooks Debug: Sample book from DB current_series:', books[0]?.current_series);
       }
       
       await cache.set(cacheKey, books, CacheTTL.USER_BOOKS);
