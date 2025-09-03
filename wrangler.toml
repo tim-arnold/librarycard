@@ -45,17 +45,18 @@ id = "9f569f411f764d83a6c87e1bda2494ae"
 # Use: npx wrangler deploy --env=staging
 [env.staging]
 name = "librarycard-api-staging"
+account_id = "18394f148930f0f3933fee06ecef99d0"
 
 [env.staging.vars]
 ENVIRONMENT = "staging"
 APP_URL = "https://staging--libarycard.netlify.app"
 FROM_EMAIL = "LibraryCard <librarian@tim52.io>"
-JWT_SECRET = "staging-jwt-secret-2025"
+JWT_SECRET = "dev-jwt-secret-change-in-production-environments"
 
 [[env.staging.d1_databases]]
 binding = "DB"
-database_name = "librarycard-db-staging"
-database_id = "eb3d7f44-754e-4354-a3ce-8077c2572946"
+database_name = "librarycard-db-staging-new"
+database_id = "4283d8af-c667-4673-8505-108f02b4609c"
 
 [[env.staging.kv_namespaces]]
 binding = "CACHE"
