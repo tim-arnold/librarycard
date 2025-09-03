@@ -472,6 +472,15 @@ jobs:
             
             console.log('\n📥 Syncing ALL production data to staging...');
             
+            // DISABLE foreign key constraints during sync
+            console.log('🔧 Disabling foreign key constraints for bulk sync...');
+            try {
+              executeStagingD1Command('PRAGMA foreign_keys = OFF;');
+              console.log('✅ Foreign key constraints disabled');
+            } catch (error) {
+              console.log('⚠️  Could not disable foreign key constraints:', error.message);
+            }
+            
             // Sync in correct order: parents first, then children  
             // tableOrder is now defined with parents first, so use as-is
             const syncOrder = [...tableOrder];
@@ -831,8 +840,14 @@ jobs:
               }
             }
             
-            // Foreign key constraints are automatically handled by fresh schema
-            console.log('\n✅ Foreign key constraints automatically configured by fresh schema');
+            // RE-ENABLE foreign key constraints after sync
+            console.log('\n🔧 Re-enabling foreign key constraints after sync...');
+            try {
+              executeStagingD1Command('PRAGMA foreign_keys = ON;');
+              console.log('✅ Foreign key constraints re-enabled');
+            } catch (error) {
+              console.log('⚠️  Could not re-enable foreign key constraints:', error.message);
+            }
             
             console.log('\n🎉 PRODUCTION DATA COMPLETELY SYNCED TO STAGING!');
             console.log('=====================================================');
