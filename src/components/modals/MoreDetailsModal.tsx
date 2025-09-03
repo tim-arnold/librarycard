@@ -243,7 +243,7 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole, user
   return (
     <Dialog open={isOpen} onClose={handleClose} maxWidth="md" fullWidth>
       <DialogTitle>
-        <MenuBook sx={{ mr: 1, verticalAlign: 'middle' }} /> More Details: {book.title}
+        <MenuBook sx={{ mr: 1, verticalAlign: 'middle' }} /> View/edit details: {book.title}
       </DialogTitle>
       <DialogContent>
         <Box sx={{ py: 1 }}>

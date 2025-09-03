@@ -59,7 +59,7 @@ function MoreDetailsModal({ book, isOpen, onClose }: MoreDetailsModalProps) {
   return (
     <Dialog open={isOpen} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>
-        <MenuBook sx={{ mr: 1 }} /> More Details: {book.title}
+        <MenuBook sx={{ mr: 1 }} /> View details: {book.title}
       </DialogTitle>
       <DialogContent>
         <Box sx={{ py: 1 }}>

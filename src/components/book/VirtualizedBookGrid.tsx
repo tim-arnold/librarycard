@@ -366,7 +366,7 @@ r            <Typography variant="body2" color="text.secondary" gutterBottom>
                   onClick={handleMoreDetailsClick}
                   sx={{ textTransform: 'none' }}
                 >
-                  More Details
+                  View/edit details
                 </Button>
               )}
               {onGenreEdit && (

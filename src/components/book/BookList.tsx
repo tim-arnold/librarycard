@@ -334,11 +334,11 @@ export default function BookText({
 
               {/* More Details button */}
               {(book.extendedDescription || book.subjects || book.pageCount || book.averageRating || book.publisherInfo || book.openLibraryKey) && (
-                <Tooltip title="View additional book details" arrow>
+                <Tooltip title="View/edit book details" arrow>
                   <IconButton
                     size="small"
                     onClick={() => onMoreDetailsClick(book)}
-                    aria-label="View additional book details and information"
+                    aria-label="View/edit book details and information"
                     sx={{ 
                       p: 0.5,
                       color: 'primary.main',

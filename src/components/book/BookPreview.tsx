@@ -250,7 +250,7 @@ export default function BookPreview({
                     sx={{ textTransform: 'none' }}
                     disabled={isLoading}
                   >
-                    More Details
+                    View details
                   </Button>
                 </Box>
               )}
