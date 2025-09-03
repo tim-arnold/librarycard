@@ -326,6 +326,12 @@ jobs:
               'curated_genres', 'locations', 'users'
             ];
             
+            // Define tables to skip (legacy/orphaned/problematic tables)
+            const skipTables = [
+              'sqlite_sequence',
+              'sqlite_master'
+            ];
+            
             console.log('🗑️💥 DROPPING AND RECREATING STAGING DATABASE...');
             console.log('    This is faster and more reliable than clearing individual tables');
             
