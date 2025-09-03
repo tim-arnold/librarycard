@@ -421,32 +421,66 @@ jobs:
               }
             }
             
-            // Recreate database structure using local schema
-            console.log('    🏗️  Recreating database structure from schema.sql...');
+            // Recreate database structure using individual table creation
+            console.log('    🏗️  Creating tables individually from schema.sql...');
             try {
               const fs = require('fs');
               const path = require('path');
               const schemaPath = path.join('.', 'schema.sql');
               
               if (fs.existsSync(schemaPath)) {
-                console.log('    📋 Using local schema.sql file');
+                console.log('    📋 Reading schema.sql file...');
+                const schemaContent = fs.readFileSync(schemaPath, 'utf8');
                 
-                // Execute the schema file
-                const result = execSync(`npx wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote --file="${schemaPath}"`, {
-                  encoding: 'utf8',
-                  env: { ...process.env, CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN_STAGING_NEW }
-                });
+                // Extract individual CREATE TABLE statements
+                const createStatements = schemaContent.match(/CREATE TABLE[^;]+;/gi) || [];
+                console.log(`    🎯 Found ${createStatements.length} CREATE TABLE statements`);
                 
-                console.log('    ✅ Database structure recreated from schema.sql');
+                let createdTables = 0;
+                let failedTables = 0;
+                
+                for (const createStatement of createStatements) {
+                  const tableName = createStatement.match(/CREATE TABLE (?:IF NOT EXISTS )?(\w+)/i)?.[1];
+                  if (tableName) {
+                    try {
+                      console.log(`    🏗️  Creating table: ${tableName}...`);
+                      
+                      // Create temporary SQL file for individual table
+                      const tempFile = `./create_${tableName}_${Date.now()}.sql`;
+                      fs.writeFileSync(tempFile, createStatement);
+                      
+                      const result = execSync(`npx wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote --file="${tempFile}"`, {
+                        encoding: 'utf8',
+                        env: { ...process.env, CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN_STAGING_NEW }
+                      });
+                      
+                      fs.unlinkSync(tempFile);
+                      console.log(`    ✅ Successfully created table: ${tableName}`);
+                      createdTables++;
+                      
+                    } catch (error) {
+                      console.log(`    ❌ FAILED to create table: ${tableName}`);
+                      console.log(`       Error: ${error.message}`);
+                      console.log(`       SQL preview: ${createStatement.substring(0, 150)}...`);
+                      failedTables++;
+                    }
+                  }
+                }
+                
+                console.log(`    📊 Table creation summary: ${createdTables} created, ${failedTables} failed`);
+                
+                if (failedTables > 0) {
+                  console.log(`    ⚠️  ${failedTables} tables failed to create - will attempt dynamic creation during sync`);
+                } else {
+                  console.log(`    🎉 All tables created successfully!`);
+                }
+                
               } else {
                 console.log('    ⚠️  schema.sql not found, tables will be created as data is synced');
               }
             } catch (error) {
-              console.log(`    ⚠️  Schema recreation had issues: ${error.message}`);
-              if (error.message.includes('SQLITE_AUTH')) {
-                console.log('    🔄 Schema recreation failed due to permissions, tables may already exist');
-                console.log('    ✅ Will proceed with data sync - missing tables will be auto-created');
-              }
+              console.log(`    ❌ Schema recreation had critical issues: ${error.message}`);
+              console.log(`    🔄 Will attempt dynamic table creation during sync`);
             }
             
             // Create system user for curated_genres foreign key constraint
