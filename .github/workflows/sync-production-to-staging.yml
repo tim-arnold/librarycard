@@ -449,8 +449,14 @@ jobs:
               console.log('  🚨 Production users may not sync properly - will attempt replacement');
             }
             
-            // Skip system user creation - it doesn't exist in production and causes issues
-            console.log('  ⏭️  Skipping system user creation (not in production, may cause issues)');
+            // Remove system user if it exists (doesn't exist in production, causes auth issues)
+            console.log('  🗑️  Removing system user (not in production, causes auth issues)...');
+            try {
+              executeStagingD1Command("DELETE FROM users WHERE id = 'system' OR email = 'system@library.local';");
+              console.log('  ✅ System user removed');
+            } catch (error) {
+              console.log(`  ⚠️  Could not remove system user: ${error.message}`);
+            }
             
             console.log('\n📥 Syncing ALL production data to staging...');
             
