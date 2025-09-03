@@ -9,6 +9,7 @@ export interface Book {
   categories?: string[]
   shelf_id?: number
   tags?: string[]
+  added_by?: string
   location_name?: string
   shelf_name?: string
   status?: string // 'available', 'checked_out'
@@ -71,6 +72,7 @@ export interface EnhancedBook extends Book {
   suggestedGenres?: CuratedGenre[] // New: Auto-suggested genres
   series?: string
   seriesNumber?: string
+  current_series?: Series[] // New series system: which series this book belongs to
   openLibraryKey?: string
   extendedDescription?: string
   subjects?: string[]
@@ -283,4 +285,79 @@ export interface TOTPVerifyRequest {
 
 export interface BackupCodeVerifyRequest {
   backupCode: string
+}
+
+// Series system interfaces
+
+export interface Series {
+  id: string
+  user_id: string
+  name: string
+  description?: string
+  created_at: string
+  updated_at: string
+  sort_order: number
+  book_count?: number // populated when fetching series with counts
+  approval_status: 'pending' | 'approved' | 'rejected'
+  approved_by?: string
+  approved_at?: string
+  rejection_reason?: string
+}
+
+export interface BookSeries {
+  book_id: string
+  series_id: string
+  added_at: string
+}
+
+// API Request/Response interfaces for series
+
+export interface CreateSeriesRequest {
+  name: string
+  description?: string
+  color?: string
+  sort_order?: number
+}
+
+export interface UpdateSeriesRequest {
+  name?: string
+  description?: string
+  color?: string
+  sort_order?: number
+}
+
+export interface AddBooksToSeriesRequest {
+  book_ids: string[]
+}
+
+export interface SeriesWithBooks extends Series {
+  books: EnhancedBook[]
+}
+
+export interface SeriesResponse {
+  series: Series[]
+}
+
+export interface SeriesBooksResponse {
+  series: Series
+  books: EnhancedBook[]
+  total: number
+  page: number
+  limit: number
+}
+
+// Series approval system interfaces
+
+export interface ApproveSeriesRequest {
+  approval_status: 'approved' | 'rejected'
+  rejection_reason?: string
+}
+
+export interface PendingSeriesWithCreator extends Series {
+  creator_name?: string
+  creator_email?: string
+}
+
+export interface PendingSeriesResponse {
+  series: PendingSeriesWithCreator[]
 }

@@ -9,12 +9,14 @@ interface ActiveFiltersProps {
   categoryFilter: string[]
   locationFilter: string
   checkoutFilter: string
+  seriesFilter: string
   allLocationsCount: number
   onAuthorRemove: () => void
   onShelfRemove: () => void
   onGenreRemove: (genre: string) => void
   onLocationRemove: () => void
   onCheckoutRemove: () => void
+  onSeriesRemove: () => void
   onClearAll?: () => void
 }
 
@@ -24,15 +26,17 @@ export default function ActiveFilters({
   categoryFilter,
   locationFilter,
   checkoutFilter,
+  seriesFilter,
   allLocationsCount,
   onAuthorRemove,
   onShelfRemove,
   onGenreRemove,
   onLocationRemove,
   onCheckoutRemove,
+  onSeriesRemove,
   onClearAll
 }: ActiveFiltersProps) {
-  const hasActiveFilters = authorFilter || shelfFilter || categoryFilter.length > 0 || locationFilter || checkoutFilter
+  const hasActiveFilters = authorFilter || shelfFilter || categoryFilter.length > 0 || locationFilter || checkoutFilter || seriesFilter
 
   return (
     <Box sx={{ 
@@ -55,6 +59,21 @@ export default function ActiveFilters({
             height: 32,
             '& .MuiChip-deleteIcon': {
               color: 'primary.contrastText'
+            }
+          }}
+        />
+      )}
+      {seriesFilter && (
+        <Chip
+          label={`Series: ${seriesFilter}`}
+          onDelete={onSeriesRemove}
+          color="success"
+          variant="filled"
+          sx={{ 
+            fontSize: '0.9rem',
+            height: 32,
+            '& .MuiChip-deleteIcon': {
+              color: 'success.contrastText'
             }
           }}
         />

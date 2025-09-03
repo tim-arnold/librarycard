@@ -60,8 +60,8 @@ const calculateBookCardHeight = (book: EnhancedBook): number => {
   // Author line height
   height += BODY_LINE_HEIGHT
 
-  // Series line (if present)
-  if (book.series) {
+  // Series line (if present - legacy or new system)
+  if (book.series || (book.current_series && book.current_series.length > 0)) {
     height += BODY_LINE_HEIGHT
   }
 
@@ -262,6 +262,35 @@ r            <Typography variant="body2" color="text.secondary" gutterBottom>
                 {book.seriesNumber && ` (#${book.seriesNumber})`}
               </Typography>
             )}
+            {book.current_series && book.current_series.length > 0 && (
+              <Typography 
+                component="p" 
+                variant="caption" 
+                color="text.secondary" 
+                gutterBottom 
+                sx={{ fontWeight: 600, lineHeight: 1.2, margin: 0 }}
+              >
+                Part of series:{' '}
+                {book.current_series.map((series, index) => (
+                  <Typography 
+                    key={series.id}
+                    component="span"
+                    variant="caption"
+                    sx={{ 
+                      color: 'primary.main', 
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                      fontWeight: 600,
+                      '&:hover': { textDecoration: 'none' }
+                    }}
+                    onClick={() => handleSeriesClick(series.name)}
+                  >
+                    {series.name}
+                    {index < book.current_series!.length - 1 && ', '}
+                  </Typography>
+                ))}
+              </Typography>
+            )}
             
             {/* Rating and Genre area */}
             <Box sx={{ mt: 1, mb: 1, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
@@ -337,7 +366,7 @@ r            <Typography variant="body2" color="text.secondary" gutterBottom>
                   onClick={handleMoreDetailsClick}
                   sx={{ textTransform: 'none' }}
                 >
-                  More Details
+                  View/edit details
                 </Button>
               )}
               {onGenreEdit && (

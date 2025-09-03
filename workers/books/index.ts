@@ -34,6 +34,12 @@ export async function getUserBooks(userId: string, env: Env, corsHeaders: Record
           JOIN curated_genres cg ON bg.genre_id = cg.id 
           WHERE bg.book_id = b.id AND cg.is_active = 1
         ), '[]') as assigned_genres,
+        COALESCE((
+          SELECT json_group_array(json_object('id', s.id, 'name', s.name, 'description', s.description, 'color', s.color))
+          FROM book_series bs
+          JOIN series s ON bs.series_id = s.id
+          WHERE bs.book_id = CAST(b.id AS TEXT) AND s.approval_status = 'approved'
+        ), '[]') as current_series,
         COALESCE(lra.library_average_rating, 0) as library_average_rating,
         COALESCE(lra.library_rating_count, 0) as library_rating_count,
         u_checkout.first_name as checked_out_by_name
@@ -69,6 +75,12 @@ export async function getUserBooks(userId: string, env: Env, corsHeaders: Record
           JOIN curated_genres cg ON bg.genre_id = cg.id 
           WHERE bg.book_id = b.id AND cg.is_active = 1
         ), '[]') as assigned_genres,
+        COALESCE((
+          SELECT json_group_array(json_object('id', s.id, 'name', s.name, 'description', s.description, 'color', s.color))
+          FROM book_series bs
+          JOIN series s ON bs.series_id = s.id
+          WHERE bs.book_id = CAST(b.id AS TEXT) AND s.approval_status = 'approved'
+        ), '[]') as current_series,
         COALESCE(lra.library_average_rating, 0) as library_average_rating,
         COALESCE(lra.library_rating_count, 0) as library_rating_count,
         u_checkout.first_name as checked_out_by_name
@@ -94,6 +106,7 @@ export async function getUserBooks(userId: string, env: Env, corsHeaders: Record
     subjects: book.subjects ? JSON.parse(book.subjects) : [],
     enhancedGenres: book.enhanced_genres ? JSON.parse(book.enhanced_genres) : [],
     assignedGenres: book.assigned_genres ? JSON.parse(book.assigned_genres).filter((g: any) => g.id !== null) : [],
+    current_series: book.current_series ? JSON.parse(book.current_series).filter((s: any) => s.id !== null) : [],
     // Map database field names to frontend field names
     publishedDate: book.published_date,
     extendedDescription: book.extended_description,

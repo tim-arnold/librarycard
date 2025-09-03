@@ -153,6 +153,17 @@ import { TwoFactorAuth } from './auth/two-factor';
 import { requireCSRFToken, getCSRFTokenEndpoint, shouldProtectWithCSRF } from './csrf';
 import { CommonErrors, withGlobalErrorHandling, ErrorCategory, createSecureErrorResponse } from './errors';
 import { getSessionAnalytics, logSessionAnalytics } from './analytics/openLibraryAnalytics';
+import {
+  getUserSeries,
+  createSeries,
+  updateSeries,
+  deleteSeries,
+  addBooksToSeries,
+  removeBookFromSeries,
+  getSeriesBooks,
+  approveRejectSeries,
+  getPendingSeries
+} from './series';
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -1802,6 +1813,53 @@ To review this request, log in as a super administrator and go to Admin Dashboar
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
+      }
+
+      // Series endpoints
+      if (path === '/api/series' && request.method === 'GET') {
+        return await getUserSeries(userId, env, corsHeaders);
+      }
+
+      if (path === '/api/series' && request.method === 'POST') {
+        return await createSeries(request, userId, env, corsHeaders);
+      }
+
+      if (path.match(/^\/api\/series\/[^\/]+$/) && request.method === 'PUT') {
+        const seriesId = path.split('/')[3];
+        return await updateSeries(request, seriesId, userId, env, corsHeaders);
+      }
+
+      if (path.match(/^\/api\/series\/[^\/]+$/) && request.method === 'DELETE') {
+        const seriesId = path.split('/')[3];
+        return await deleteSeries(seriesId, userId, env, corsHeaders);
+      }
+
+      if (path.match(/^\/api\/series\/[^\/]+\/books$/) && request.method === 'POST') {
+        const seriesId = path.split('/')[3];
+        return await addBooksToSeries(request, seriesId, userId, env, corsHeaders);
+      }
+
+      if (path.match(/^\/api\/series\/[^\/]+\/books\/[^\/]+$/) && request.method === 'DELETE') {
+        const seriesId = path.split('/')[3];
+        const bookId = path.split('/')[5];
+        return await removeBookFromSeries(seriesId, bookId, userId, env, corsHeaders);
+      }
+
+      if (path.match(/^\/api\/series\/[^\/]+\/books$/) && request.method === 'GET') {
+        const seriesId = path.split('/')[3];
+        // Pass the URL for pagination parameters
+        const modifiedCorsHeaders = { ...corsHeaders, 'request-url': request.url };
+        return await getSeriesBooks(seriesId, userId, env, modifiedCorsHeaders);
+      }
+
+      // Admin series approval endpoints
+      if (path === '/api/admin/series/pending' && request.method === 'GET') {
+        return await getPendingSeries(userId, env, corsHeaders);
+      }
+      if (path.match(/^\/api\/admin\/series\/[^\/]+\/approve$/) && request.method === 'POST') {
+        const seriesId = path.split('/')[4];
+        const body = await request.json() as any;
+        return await approveRejectSeries(seriesId, userId, body, env, corsHeaders);
       }
 
       // OpenLibrary Analytics endpoint (development only)

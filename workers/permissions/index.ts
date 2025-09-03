@@ -396,7 +396,7 @@ export async function grantUserPermission(request: Request, userId: string, env:
     }
 
     // Validate permission type
-    const validPermissions = ['can_add_books', 'can_delete_books', 'can_move_books', 'can_create_shelves', 'can_edit_genres', 'allow_checkout_override'];
+    const validPermissions = ['can_add_books', 'can_delete_books', 'can_move_books', 'can_create_shelves', 'can_edit_genres', 'can_create_series', 'allow_checkout_override'];
     if (!validPermissions.includes(permission)) {
       return new Response(JSON.stringify({ error: 'Invalid permission type' }), {
         status: 400,
@@ -738,7 +738,7 @@ export async function getUserPermissions(request: Request, userId: string, env: 
 
     // Super admins have all permissions
     if (await isUserSuperAdmin(userId, env)) {
-      permissions.push('can_add_books', 'can_delete_books', 'can_move_books', 'can_create_shelves', 'can_edit_genres', 'allow_checkout_override');
+      permissions.push('can_add_books', 'can_delete_books', 'can_move_books', 'can_create_shelves', 'can_edit_genres', 'can_create_series', 'allow_checkout_override');
     } else {
       // Check if user is location admin (inherits all user permissions)
       const isLocationAdmin = await env.DB.prepare(`
@@ -752,7 +752,7 @@ export async function getUserPermissions(request: Request, userId: string, env: 
       `).bind(locationId, userId, locationId, userId).first();
 
       if (isLocationAdmin) {
-        permissions.push('can_add_books', 'can_delete_books', 'can_move_books', 'can_create_shelves', 'can_edit_genres', 'allow_checkout_override');
+        permissions.push('can_add_books', 'can_delete_books', 'can_move_books', 'can_create_shelves', 'can_edit_genres', 'can_create_series', 'allow_checkout_override');
       } else {
         // Get specific user permissions
         const userPermissions = await env.DB.prepare(`
