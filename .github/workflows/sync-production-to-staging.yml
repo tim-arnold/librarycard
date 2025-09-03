@@ -119,97 +119,36 @@ jobs:
           TOTAL_ROWS=$(cat "$BACKUP_FILE" | jq '[.tables[] | select(.row_count) | .row_count] | add')
           echo "📊 Total rows in backup: $TOTAL_ROWS"
 
-      - name: Extract current production database schema
+      - name: Use local schema.sql (production schema extraction has issues)
         run: |
-          echo "📋 Extracting live production database schema..."
-          echo "This ensures staging sync uses exact current production schema"
+          echo "📋 Using local schema.sql file instead of extracting from production..."
+          echo "⚠️  Production schema extraction missing critical tables (books, etc.)"
+          echo "✅ Local schema.sql contains complete table definitions"
           
-          # Extract production schema using wrangler
-          SCHEMA_OUTPUT=$(npx wrangler d1 execute librarycard-db --env=production --remote --command="SELECT sql FROM sqlite_master WHERE type='table' AND sql IS NOT NULL ORDER BY name;")
-          
-          # Parse the JSON response and extract CREATE TABLE statements
-          cat > extract_schema.js << 'EOF'
-          const fs = require('fs');
-          
-          // Read the wrangler output from stdin
-          let input = '';
-          process.stdin.on('data', chunk => input += chunk);
-          process.stdin.on('end', () => {
-            try {
-              console.log('📋 Processing production schema output...');
-              
-              // Parse wrangler JSON output
-              const lines = input.split('\n');
-              const jsonStart = lines.findIndex(line => line.trim().startsWith('['));
-              
-              if (jsonStart === -1) {
-                console.error('❌ Could not find JSON output in wrangler response');
-                process.exit(1);
-              }
-              
-              const jsonText = lines.slice(jsonStart).join('\n');
-              const data = JSON.parse(jsonText);
-              
-              let schemaStatements = [];
-              
-              if (Array.isArray(data) && data[0] && data[0].results) {
-                data[0].results.forEach(row => {
-                  if (row.sql) {
-                    // Clean up and format the SQL
-                    let sql = row.sql.trim();
-                    if (!sql.endsWith(';')) {
-                      sql += ';';
-                    }
-                    schemaStatements.push(sql);
-                  }
-                });
-              }
-              
-              if (schemaStatements.length === 0) {
-                console.error('❌ No schema statements found in production database');
-                process.exit(1);
-              }
-              
-              // Generate schema.sql file
-              const header = '-- Auto-generated production database schema\n' +
-                           '-- Extracted: ' + new Date().toISOString() + '\n' +
-                           '-- Source: Production database (librarycard-db)\n' +
-                           '-- \n' +
-                           '-- This file is automatically updated during staging sync to ensure\n' +
-                           '-- staging database structure matches production exactly.\n' +
-                           '--\n\n';
-              
-              const schemaContent = header + schemaStatements.join('\n\n') + '\n';
-              
-              fs.writeFileSync('schema.sql', schemaContent);
-              
-              console.log('✅ Generated schema.sql with ' + schemaStatements.length + ' table definitions');
-              console.log('📊 Schema file size: ' + schemaContent.length + ' characters');
-              
-              // Show which tables were captured
-              console.log('📋 Tables extracted from production:');
-              schemaStatements.forEach((stmt, idx) => {
-                const match = stmt.match(/CREATE TABLE (\w+)/i);
-                if (match) {
-                  console.log(`  ${idx + 1}. ${match[1]}`);
-                }
-              });
-              
-            } catch (error) {
-              console.error('❌ Error processing schema output:', error.message);
-              process.exit(1);
-            }
-          });
-          EOF
-          
-          # Process the schema output
-          echo "$SCHEMA_OUTPUT" | node extract_schema.js
-          
-          echo "✅ Production schema extracted to schema.sql"
-          echo "📋 Schema file preview:"
-          head -20 schema.sql
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          # Verify local schema.sql exists and contains books table
+          if [ -f "schema.sql" ]; then
+            echo "✅ Found local schema.sql file"
+            
+            # Check for books table
+            if grep -q "CREATE TABLE.*books" schema.sql; then
+              echo "✅ Books table found in local schema.sql"
+            else
+              echo "❌ Books table missing from local schema.sql - this is a problem!"
+              exit 1
+            fi
+            
+            # Count tables in local schema
+            TABLE_COUNT=$(grep -c "CREATE TABLE" schema.sql)
+            echo "📊 Local schema contains $TABLE_COUNT table definitions"
+            
+            echo "📋 Schema file preview:"
+            head -20 schema.sql
+            
+          else
+            echo "❌ Local schema.sql file not found!"
+            echo "❌ Cannot proceed with staging sync without proper schema"
+            exit 1
+          fi
 
       - name: Prepare backup files for sync script
         run: |
