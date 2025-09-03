@@ -353,62 +353,88 @@ jobs:
 
       - name: Trigger Netlify frontend build
         run: |
-          echo "🚀 Triggering Netlify production frontend build..."
-          
-          if [ -z "${{ secrets.NETLIFY_PROD_BUILD_HOOK }}" ]; then
-            echo "❌ NETLIFY_PROD_BUILD_HOOK secret not configured"
-            echo "Please add the Netlify build hook URL to GitHub Secrets"
-            exit 1
-          fi
-          
-          # Trigger the build
-          BUILD_RESPONSE=$(curl -X POST -s -w "HTTP_STATUS:%{http_code}" "${{ secrets.NETLIFY_PROD_BUILD_HOOK }}")
-          HTTP_STATUS=$(echo $BUILD_RESPONSE | grep -o "HTTP_STATUS:[0-9]*" | cut -d: -f2)
-          
-          if [ "$HTTP_STATUS" -eq 200 ]; then
-            echo "✅ Netlify build triggered successfully"
+          if [[ "${{ github.event.inputs.migration_dry_run }}" == "true" ]]; then
+            echo "🔍 DRY RUN MODE - Frontend deployment preview"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "In actual deployment, this would:"
+            echo "✅ Trigger Netlify production build hook"
+            echo "✅ Wait for build completion (~3 minutes)"
+            echo "✅ Verify frontend deployment"
+            echo "✅ Complete full deployment sequence"
+            echo ""
+            echo "Netlify build hook: ${{ secrets.NETLIFY_PROD_BUILD_HOOK != '' && '***configured***' || '❌ NOT CONFIGURED' }}"
+            echo "Production frontend: https://librarycard.tim52.io"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "🔍 DRY RUN COMPLETE - No actual deployment triggered"
           else
-            echo "❌ Failed to trigger Netlify build (HTTP $HTTP_STATUS)"
-            echo "Response: $BUILD_RESPONSE"
-            echo "⚠️  Backend deployment completed successfully but frontend deployment failed"
-            exit 1
+            echo "🚀 Triggering Netlify production frontend build..."
+            
+            if [ -z "${{ secrets.NETLIFY_PROD_BUILD_HOOK }}" ]; then
+              echo "❌ NETLIFY_PROD_BUILD_HOOK secret not configured"
+              echo "Please add the Netlify build hook URL to GitHub Secrets"
+              exit 1
+            fi
+            
+            # Trigger the build
+            BUILD_RESPONSE=$(curl -X POST -s -w "HTTP_STATUS:%{http_code}" "${{ secrets.NETLIFY_PROD_BUILD_HOOK }}")
+            HTTP_STATUS=$(echo $BUILD_RESPONSE | grep -o "HTTP_STATUS:[0-9]*" | cut -d: -f2)
+            
+            if [ "$HTTP_STATUS" -eq 200 ]; then
+              echo "✅ Netlify build triggered successfully"
+            else
+              echo "❌ Failed to trigger Netlify build (HTTP $HTTP_STATUS)"
+              echo "Response: $BUILD_RESPONSE"
+              echo "⚠️  Backend deployment completed successfully but frontend deployment failed"
+              exit 1
+            fi
           fi
 
       - name: Wait for build completion
         run: |
-          echo "⏳ Waiting for Netlify build to complete..."
-          echo "Build time estimate: 2-3 minutes"
-          
-          # Wait for build completion (initial implementation: fixed wait)
-          sleep 180  # 3 minutes
-          
-          echo "✅ Build wait period completed"
+          if [[ "${{ github.event.inputs.migration_dry_run }}" == "true" ]]; then
+            echo "🔍 DRY RUN MODE - Simulating build wait"
+            echo "In actual deployment, would wait ~3 minutes for Netlify build completion"
+          else
+            echo "⏳ Waiting for Netlify build to complete..."
+            echo "Build time estimate: 2-3 minutes"
+            
+            # Wait for build completion (initial implementation: fixed wait)
+            sleep 180  # 3 minutes
+            
+            echo "✅ Build wait period completed"
+          fi
 
       - name: Verify frontend deployment
         run: |
-          echo "🔍 Verifying production frontend deployment..."
-          
-          PROD_FRONTEND="https://librarycard.tim52.io"
-          MAX_RETRIES=5
-          RETRY_COUNT=0
-          
-          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-            if curl -f -s --max-time 15 "$PROD_FRONTEND" > /dev/null; then
-              echo "✅ Production frontend accessible and responding"
-              break
-            else
-              RETRY_COUNT=$((RETRY_COUNT + 1))
-              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
-                echo "⏳ Frontend not ready yet, retrying in 30 seconds... (attempt $RETRY_COUNT/$MAX_RETRIES)"
-                sleep 30
+          if [[ "${{ github.event.inputs.migration_dry_run }}" == "true" ]]; then
+            echo "🔍 DRY RUN MODE - Simulating frontend verification"
+            echo "In actual deployment, would verify https://librarycard.tim52.io is accessible"
+            echo "✅ DRY RUN: Frontend verification would succeed"
+          else
+            echo "🔍 Verifying production frontend deployment..."
+            
+            PROD_FRONTEND="https://librarycard.tim52.io"
+            MAX_RETRIES=5
+            RETRY_COUNT=0
+            
+            while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+              if curl -f -s --max-time 15 "$PROD_FRONTEND" > /dev/null; then
+                echo "✅ Production frontend accessible and responding"
+                break
               else
-                echo "❌ Frontend verification failed after $MAX_RETRIES attempts"
-                echo "⚠️  Backend deployment completed but frontend deployment failed"
-                echo "Check Netlify dashboard: https://app.netlify.com"
-                exit 1
+                RETRY_COUNT=$((RETRY_COUNT + 1))
+                if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                  echo "⏳ Frontend not ready yet, retrying in 30 seconds... (attempt $RETRY_COUNT/$MAX_RETRIES)"
+                  sleep 30
+                else
+                  echo "❌ Frontend verification failed after $MAX_RETRIES attempts"
+                  echo "⚠️  Backend deployment completed but frontend deployment failed"
+                  echo "Check Netlify dashboard: https://app.netlify.com"
+                  exit 1
+                fi
               fi
-            fi
-          done
+            done
+          fi
 
       - name: Full deployment frontend success
         run: |
@@ -442,62 +468,89 @@ jobs:
 
       - name: Trigger Netlify frontend build
         run: |
-          echo "🚀 Triggering Netlify production frontend build..."
-          
-          if [ -z "${{ secrets.NETLIFY_PROD_BUILD_HOOK }}" ]; then
-            echo "❌ NETLIFY_PROD_BUILD_HOOK secret not configured"
-            echo "Please add the Netlify build hook URL to GitHub Secrets"
-            exit 1
-          fi
-          
-          # Trigger the build
-          BUILD_RESPONSE=$(curl -X POST -s -w "HTTP_STATUS:%{http_code}" "${{ secrets.NETLIFY_PROD_BUILD_HOOK }}")
-          HTTP_STATUS=$(echo $BUILD_RESPONSE | grep -o "HTTP_STATUS:[0-9]*" | cut -d: -f2)
-          
-          if [ "$HTTP_STATUS" -eq 200 ]; then
-            echo "✅ Netlify build triggered successfully"
+          if [[ "${{ github.event.inputs.migration_dry_run }}" == "true" ]]; then
+            echo "🔍 DRY RUN MODE - Frontend-only deployment preview"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "In actual deployment, this would:"
+            echo "✅ Trigger Netlify production build hook"
+            echo "✅ Wait for build completion (~3 minutes)"
+            echo "✅ Verify frontend deployment"
+            echo "❌ NOT deploy worker changes"
+            echo "❌ NOT run database migrations"
+            echo ""
+            echo "Netlify build hook: ${{ secrets.NETLIFY_PROD_BUILD_HOOK != '' && '***configured***' || '❌ NOT CONFIGURED' }}"
+            echo "Production frontend: https://librarycard.tim52.io"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "🔍 DRY RUN COMPLETE - No actual deployment triggered"
           else
-            echo "❌ Failed to trigger Netlify build (HTTP $HTTP_STATUS)"
-            echo "Response: $BUILD_RESPONSE"
-            exit 1
+            echo "🚀 Triggering Netlify production frontend build..."
+            
+            if [ -z "${{ secrets.NETLIFY_PROD_BUILD_HOOK }}" ]; then
+              echo "❌ NETLIFY_PROD_BUILD_HOOK secret not configured"
+              echo "Please add the Netlify build hook URL to GitHub Secrets"
+              exit 1
+            fi
+            
+            # Trigger the build
+            BUILD_RESPONSE=$(curl -X POST -s -w "HTTP_STATUS:%{http_code}" "${{ secrets.NETLIFY_PROD_BUILD_HOOK }}")
+            HTTP_STATUS=$(echo $BUILD_RESPONSE | grep -o "HTTP_STATUS:[0-9]*" | cut -d: -f2)
+            
+            if [ "$HTTP_STATUS" -eq 200 ]; then
+              echo "✅ Netlify build triggered successfully"
+            else
+              echo "❌ Failed to trigger Netlify build (HTTP $HTTP_STATUS)"
+              echo "Response: $BUILD_RESPONSE"
+              exit 1
+            fi
           fi
 
       - name: Wait for build completion
         run: |
-          echo "⏳ Waiting for Netlify build to complete..."
-          echo "Build time estimate: 2-3 minutes"
-          
-          # Wait for build completion (initial implementation: fixed wait)
-          # TODO: Future enhancement - poll Netlify API for actual build status
-          sleep 180  # 3 minutes
-          
-          echo "✅ Build wait period completed"
+          if [[ "${{ github.event.inputs.migration_dry_run }}" == "true" ]]; then
+            echo "🔍 DRY RUN MODE - Simulating build wait"
+            echo "In actual deployment, would wait ~3 minutes for Netlify build completion"
+          else
+            echo "⏳ Waiting for Netlify build to complete..."
+            echo "Build time estimate: 2-3 minutes"
+            
+            # Wait for build completion (initial implementation: fixed wait)
+            # TODO: Future enhancement - poll Netlify API for actual build status
+            sleep 180  # 3 minutes
+            
+            echo "✅ Build wait period completed"
+          fi
 
       - name: Verify frontend deployment
         run: |
-          echo "🔍 Verifying production frontend deployment..."
-          
-          PROD_FRONTEND="https://librarycard.tim52.io"
-          MAX_RETRIES=5
-          RETRY_COUNT=0
-          
-          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-            if curl -f -s --max-time 15 "$PROD_FRONTEND" > /dev/null; then
-              echo "✅ Production frontend accessible and responding"
-              break
-            else
-              RETRY_COUNT=$((RETRY_COUNT + 1))
-              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
-                echo "⏳ Frontend not ready yet, retrying in 30 seconds... (attempt $RETRY_COUNT/$MAX_RETRIES)"
-                sleep 30
+          if [[ "${{ github.event.inputs.migration_dry_run }}" == "true" ]]; then
+            echo "🔍 DRY RUN MODE - Simulating frontend verification"
+            echo "In actual deployment, would verify https://librarycard.tim52.io is accessible"
+            echo "✅ DRY RUN: Frontend verification would succeed"
+          else
+            echo "🔍 Verifying production frontend deployment..."
+            
+            PROD_FRONTEND="https://librarycard.tim52.io"
+            MAX_RETRIES=5
+            RETRY_COUNT=0
+            
+            while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+              if curl -f -s --max-time 15 "$PROD_FRONTEND" > /dev/null; then
+                echo "✅ Production frontend accessible and responding"
+                break
               else
-                echo "❌ Frontend verification failed after $MAX_RETRIES attempts"
-                echo "The build may have failed or is taking longer than expected"
-                echo "Check Netlify dashboard: https://app.netlify.com"
-                exit 1
+                RETRY_COUNT=$((RETRY_COUNT + 1))
+                if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                  echo "⏳ Frontend not ready yet, retrying in 30 seconds... (attempt $RETRY_COUNT/$MAX_RETRIES)"
+                  sleep 30
+                else
+                  echo "❌ Frontend verification failed after $MAX_RETRIES attempts"
+                  echo "The build may have failed or is taking longer than expected"
+                  echo "Check Netlify dashboard: https://app.netlify.com"
+                  exit 1
+                fi
               fi
-            fi
-          done
+            done
+          fi
 
       - name: Frontend deployment success
         run: |
