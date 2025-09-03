@@ -571,10 +571,23 @@ jobs:
                         // For problematic tables, remove foreign key constraints temporarily
                         if (['book_ratings', 'book_checkout_history', 'book_removal_requests', 'book_genres'].includes(tableName)) {
                           console.log(`    🔧 Removing foreign key constraints from ${tableName} for sync`);
-                          // Remove REFERENCES clauses from the CREATE statement
-                          createTableSql = createTableSql.replace(/REFERENCES\s+\w+\s*\([^)]+\)(\s+[A-Z\s]+)?/gi, '');
-                          // Remove FOREIGN KEY constraints  
+                          console.log(`    🔍 Original SQL length: ${createTableSql.length}`);
+                          
+                          // More careful regex to remove REFERENCES without breaking syntax
+                          // Remove REFERENCES clauses (but preserve column definition)
+                          createTableSql = createTableSql.replace(/\s+REFERENCES\s+\w+\s*\([^)]+\)(\s+[A-Z\s]+)?/gi, '');
+                          
+                          // Remove standalone FOREIGN KEY constraints (full constraint lines)
+                          createTableSql = createTableSql.replace(/,\s*CONSTRAINT\s+\w+\s+FOREIGN\s+KEY\s*\([^)]+\)\s+REFERENCES\s+\w+\s*\([^)]+\)(\s+[A-Z\s]+)?/gi, '');
                           createTableSql = createTableSql.replace(/,\s*FOREIGN\s+KEY\s*\([^)]+\)\s+REFERENCES\s+\w+\s*\([^)]+\)(\s+[A-Z\s]+)?/gi, '');
+                          
+                          // Clean up any double commas
+                          createTableSql = createTableSql.replace(/,\s*,/g, ',');
+                          // Clean up trailing commas before closing parenthesis
+                          createTableSql = createTableSql.replace(/,\s*\)/g, ')');
+                          
+                          console.log(`    🔍 Modified SQL length: ${createTableSql.length}`);
+                          console.log(`    🔍 Modified SQL preview: ${createTableSql.substring(0, 200)}...`);
                         }
                         
                         // Create temporary SQL file and execute it
