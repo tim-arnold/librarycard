@@ -491,12 +491,17 @@ jobs:
                 // Check if table exists and create it if missing
                 let tableReady = false;
                 try {
-                  executeStagingD1Command(`SELECT 1 FROM ${tableName} LIMIT 1;`);
+                  const checkResult = executeStagingD1Command(`SELECT 1 FROM ${tableName} LIMIT 1;`);
                   tableReady = true;
                   console.log(`    ✅ Table ${tableName} exists and ready`);
                 } catch (tableCheckError) {
-                  console.log(`    🔍 Table check error: ${tableCheckError.message}`);
-                  if (tableCheckError.message.includes('no such table') || tableCheckError.message.includes('SQLITE_ERROR')) {
+                  console.log(`    🔍 Table check failed for ${tableName}: ${tableCheckError.message}`);
+                  
+                  // The wrangler error message might not contain SQLite details directly
+                  // If the command failed, assume the table doesn't exist and try to create it
+                  if (tableCheckError.message.includes('Command failed') || 
+                      tableCheckError.message.includes('no such table') || 
+                      tableCheckError.message.includes('SQLITE_ERROR')) {
                     console.log(`    🏗️  Table ${tableName} missing, attempting to create from schema...`);
                     
                     // Try to extract and execute just this table's CREATE statement from schema.sql
@@ -535,9 +540,45 @@ jobs:
                       continue;
                     }
                   } else {
-                    // Some other error checking the table, skip this table
-                    console.log(`    ⚠️  Table check had unexpected error, skipping ${tableName}: ${tableCheckError.message}`);
-                    continue;
+                    // Some other error checking the table, but try to create it anyway
+                    console.log(`    ⚠️  Table check had unexpected error, but will try to create ${tableName}`);
+                    console.log(`    🏗️  Attempting to create ${tableName} from schema...`);
+                    
+                    // Try to create the table anyway
+                    try {
+                      const fs = require('fs');
+                      const schemaContent = fs.readFileSync('schema.sql', 'utf8');
+                      
+                      // Find the CREATE TABLE statement for this specific table
+                      const tableRegex = new RegExp(`CREATE TABLE ${tableName}\\s*\\([^;]+\\);`, 'is');
+                      const tableMatch = schemaContent.match(tableRegex);
+                      
+                      if (tableMatch) {
+                        const createTableSql = tableMatch[0];
+                        console.log(`    📋 Found CREATE statement for ${tableName}`);
+                        
+                        // Create temporary SQL file and execute it
+                        const tempFile = `./create_${tableName}_${Date.now()}.sql`;
+                        fs.writeFileSync(tempFile, createTableSql);
+                        
+                        const result = execSync(`npx wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote --file="${tempFile}"`, {
+                          encoding: 'utf8',
+                          env: { ...process.env, CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN_STAGING_NEW }
+                        });
+                        fs.unlinkSync(tempFile);
+                        
+                        console.log(`    ✅ Created table: ${tableName}`);
+                        tableReady = true;
+                      } else {
+                        console.log(`    ⚠️  Could not find CREATE statement for ${tableName} in schema`);
+                        console.log(`    ⏭️  Skipping ${tableName} - cannot be created`);
+                        continue;
+                      }
+                    } catch (createError) {
+                      console.log(`    ❌ Failed to create table ${tableName}: ${createError.message}`);
+                      console.log(`    ⏭️  Skipping ${tableName} - table creation failed`);
+                      continue;
+                    }
                   }
                 }
                 
