@@ -282,6 +282,12 @@ export default function BookPreview({
             startIcon={isLoading ? <CircularProgress size={16} color="inherit" /> : <Save />}
             onClick={handleSave}
             disabled={isSaveDisabled || isLoading || !!tagsError}
+            sx={{
+              color: 'white',
+              '&:disabled': {
+                color: 'rgba(255, 255, 255, 0.8)'
+              }
+            }}
           >
             {isLoading ? 'Saving...' : saveButtonText}
           </Button>
