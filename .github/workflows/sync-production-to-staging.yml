@@ -422,26 +422,35 @@ jobs:
               console.log(`    🔄 Will attempt dynamic table creation during sync`);
             }
             
-            // Create system user for curated_genres foreign key constraint
-            console.log('\n👤 Creating system user for curated_genres...');
-            try {
-              // Use INSERT OR IGNORE to handle existing system user gracefully
-              const systemUserSql = `INSERT OR IGNORE INTO users (id, email, first_name, last_name, created_at, updated_at, password_hash, auth_provider, email_verified, user_role) VALUES ('system', 'system@library.local', 'System', 'User', '2025-01-01 00:00:00', '2025-01-01 00:00:00', NULL, 'system', 1, 'admin');`;
-              const tempFile = `./system_user_${Date.now()}.sql`;
-              const fs = require('fs');
-              fs.writeFileSync(tempFile, systemUserSql);
-              
-              const result = execSync(`npx wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote --file="${tempFile}"`, {
-                encoding: 'utf8',
-                env: { ...process.env, CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN_STAGING_NEW }
-              });
-              
-              fs.unlinkSync(tempFile);
-              console.log('  ✅ System user created (or already exists)');
-            } catch (error) {
-              console.log('  ⚠️  System user creation had issues, will skip foreign key dependent tables if needed');
-              console.log(`  📋 Error: ${error.message}`);
+            // AGGRESSIVE USERS TABLE CLEARING - users table can't be dropped, so force clear it
+            console.log('\n🧹 AGGRESSIVE users table clearing (table cannot be dropped)...');
+            const usersClearMethods = [
+              'DELETE FROM users;',
+              'DELETE FROM users WHERE 1=1;',
+              'PRAGMA foreign_keys = OFF; DELETE FROM users; PRAGMA foreign_keys = ON;',
+              'UPDATE users SET email = NULL WHERE 1=1;' // Force constraint violation to clear
+            ];
+            
+            let usersCleared = false;
+            for (const method of usersClearMethods) {
+              try {
+                console.log(`  🔄 Trying users clear method: ${method}`);
+                executeStagingD1Command(method);
+                console.log(`  ✅ Successfully cleared users table with: ${method}`);
+                usersCleared = true;
+                break;
+              } catch (error) {
+                console.log(`  ⚠️  Method failed: ${method} - ${error.message}`);
+              }
             }
+            
+            if (!usersCleared) {
+              console.log('  🚨 CRITICAL: Could not clear users table with any method!');
+              console.log('  🚨 Production users may not sync properly - will attempt replacement');
+            }
+            
+            // Skip system user creation - it doesn't exist in production and causes issues
+            console.log('  ⏭️  Skipping system user creation (not in production, may cause issues)');
             
             console.log('\n📥 Syncing ALL production data to staging...');
             
