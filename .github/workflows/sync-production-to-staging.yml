@@ -363,6 +363,7 @@ jobs:
             
             // Drop all tables (this is much faster than individual DELETEs)
             console.log('    💥 Dropping all existing tables...');
+            const tablesNotDropped = [];
             try {
               const tablesResult = executeStagingD1Command("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';");
               
@@ -377,20 +378,40 @@ jobs:
                   const tableNames = data[0].results.map(row => row.name);
                   console.log(`    🎯 Found ${tableNames.length} tables to drop`);
                   
-                  // Drop all tables in one command for speed
+                  // Drop all tables, tracking which ones fail
                   for (const tableName of tableNames) {
                     try {
                       executeStagingD1Command(`DROP TABLE IF EXISTS ${tableName};`);
                       console.log(`    💥 Dropped ${tableName}`);
                     } catch (error) {
                       console.log(`    ⚠️  Could not drop ${tableName}: ${error.message}`);
+                      tablesNotDropped.push(tableName);
                     }
                   }
                 }
               }
-              console.log('    ✅ All tables dropped successfully');
+              
+              if (tablesNotDropped.length > 0) {
+                console.log(`    ⚠️  ${tablesNotDropped.length} tables could not be dropped due to permissions`);
+                console.log(`    🧹 Will clear data from these tables instead: ${tablesNotDropped.join(', ')}`);
+              } else {
+                console.log('    ✅ All tables dropped successfully');
+              }
             } catch (error) {
               console.log(`    ⚠️  Table drop had issues: ${error.message}`);
+            }
+            
+            // Clear data from tables that couldn't be dropped
+            if (tablesNotDropped.length > 0) {
+              console.log('    🧹 Clearing data from tables that could not be dropped...');
+              for (const tableName of tablesNotDropped) {
+                try {
+                  executeStagingD1Command(`DELETE FROM ${tableName};`);
+                  console.log(`    🧹 Cleared data from ${tableName}`);
+                } catch (error) {
+                  console.log(`    ⚠️  Could not clear ${tableName}: ${error.message}`);
+                }
+              }
             }
             
             // Recreate database structure using local schema
@@ -415,12 +436,17 @@ jobs:
               }
             } catch (error) {
               console.log(`    ⚠️  Schema recreation had issues: ${error.message}`);
+              if (error.message.includes('SQLITE_AUTH')) {
+                console.log('    🔄 Schema recreation failed due to permissions, tables may already exist');
+                console.log('    ✅ Will proceed with data sync - missing tables will be auto-created');
+              }
             }
             
             // Create system user for curated_genres foreign key constraint
             console.log('\n👤 Creating system user for curated_genres...');
             try {
-              const systemUserSql = `INSERT INTO users (id, email, first_name, last_name, created_at, updated_at, password_hash, auth_provider, email_verified, user_role) VALUES ('system', 'system@library.local', 'System', 'User', '2025-01-01 00:00:00', '2025-01-01 00:00:00', NULL, 'system', 1, 'admin');`;
+              // Use INSERT OR IGNORE to handle existing system user gracefully
+              const systemUserSql = `INSERT OR IGNORE INTO users (id, email, first_name, last_name, created_at, updated_at, password_hash, auth_provider, email_verified, user_role) VALUES ('system', 'system@library.local', 'System', 'User', '2025-01-01 00:00:00', '2025-01-01 00:00:00', NULL, 'system', 1, 'admin');`;
               const tempFile = `./system_user_${Date.now()}.sql`;
               const fs = require('fs');
               fs.writeFileSync(tempFile, systemUserSql);
@@ -431,9 +457,10 @@ jobs:
               });
               
               fs.unlinkSync(tempFile);
-              console.log('  ✅ System user created');
+              console.log('  ✅ System user created (or already exists)');
             } catch (error) {
-              console.log('  ⚠️  Could not create system user, may already exist');
+              console.log('  ⚠️  System user creation had issues, will skip foreign key dependent tables if needed');
+              console.log(`  📋 Error: ${error.message}`);
             }
             
             console.log('\n📥 Syncing ALL production data to staging...');
@@ -520,7 +547,7 @@ jobs:
                     return `(${values.join(', ')})`;
                   });
                   
-                  const batchSql = `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES ${batchValues.join(', ')};`;
+                  const batchSql = `INSERT OR REPLACE INTO ${tableName} (${columns.join(', ')}) VALUES ${batchValues.join(', ')};`;
                   
                   console.log(`    📝 Batch SQL length: ${batchSql.length} characters`);
                   console.log(`    📄 Batch SQL preview: ${batchSql.substring(0, 500)}...`);
