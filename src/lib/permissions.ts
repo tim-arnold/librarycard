@@ -31,6 +31,27 @@ export function canAccessGlobalAdmin(userRole: string | null | undefined): boole
 }
 
 /**
+ * Check if user can add books to the system
+ */
+export function canAddBooks(userRole: string | null | undefined): boolean {
+  return isAdmin(userRole);
+}
+
+/**
+ * Check if user can create series (bypasses approval process)
+ */
+export function canCreateSeries(userRole: string | null | undefined): boolean {
+  return isAdmin(userRole);
+}
+
+/**
+ * Check if user can manage series books (add/remove books to/from any series)
+ */
+export function canManageSeriesBooks(userRole: string | null | undefined): boolean {
+  return isAdmin(userRole);
+}
+
+/**
  * Get display name for user role
  */
 export function getRoleDisplayName(userRole: string | null | undefined): string {

@@ -62,6 +62,7 @@ export function useBookFilters({
   const [locationFilter, setLocationFilter] = useState('')
   const [checkoutFilter, setCheckoutFilter] = useState('')
   const [authorFilter, setAuthorFilter] = useState('')
+  const [seriesFilter, setSeriesFilter] = useState('')
   const [sortField, setSortField] = useState<SortField>('title')
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
   
@@ -293,9 +294,19 @@ export function useBookFilters({
         const titleLower = book.title.toLowerCase()
         if (titleLower.includes(searchLower)) return true
         
-        return book.authors.some(author => 
+        // Check authors
+        if (book.authors.some(author => 
           author.toLowerCase().includes(searchLower)
-        )
+        )) return true
+        
+        // Check series names (both legacy and current_series)
+        if (book.series && book.series.toLowerCase().includes(searchLower)) return true
+        
+        if (book.current_series && book.current_series.some(series => 
+          series.name.toLowerCase().includes(searchLower)
+        )) return true
+        
+        return false
       }
     }
 
@@ -424,15 +435,34 @@ export function useBookFilters({
       }
     }
 
+    // Create optimized series filter predicate
+    const createSeriesPredicate = (seriesFilter: string) => {
+      if (!seriesFilter) return () => true
+      const seriesLower = seriesFilter.toLowerCase()
+      
+      return (book: EnhancedBook) => {
+        // Check legacy series field
+        if (book.series && book.series.toLowerCase() === seriesLower) return true
+        
+        // Check current_series array (exact match)
+        if (book.current_series && book.current_series.some(series => 
+          series.name.toLowerCase() === seriesLower
+        )) return true
+        
+        return false
+      }
+    }
+
     return {
       searchPredicate: createSearchPredicate(searchTerm),
       genrePredicate: createGenrePredicate(categoryFilter),
       shelfPredicate: shelfFilter ? (book: EnhancedBook) => book.shelf_name === shelfFilter : () => true,
       locationPredicate: createLocationPredicate(locationFilter),
       checkoutPredicate: createCheckoutPredicate(checkoutFilter),
-      authorPredicate: createAuthorPredicate(authorFilter)
+      authorPredicate: createAuthorPredicate(authorFilter),
+      seriesPredicate: createSeriesPredicate(seriesFilter)
     }
-  }, [searchTerm, categoryFilter, shelfFilter, locationFilter, checkoutFilter, authorFilter, 
+  }, [searchTerm, categoryFilter, shelfFilter, locationFilter, checkoutFilter, authorFilter, seriesFilter,
       shelves, allLocations, userLocations, currentLocation, userRole])
 
   // Optimized filtering and sorting with single pass and memoized predicates
@@ -445,7 +475,8 @@ export function useBookFilters({
              filterPredicates.shelfPredicate(book) &&
              filterPredicates.locationPredicate(book) &&
              filterPredicates.checkoutPredicate(book) &&
-             filterPredicates.authorPredicate(book)
+             filterPredicates.authorPredicate(book) &&
+             filterPredicates.seriesPredicate(book)
     })
 
     // Apply sorting with optimized comparison functions
@@ -511,7 +542,7 @@ export function useBookFilters({
   // Separate effect to reset pagination only when filter criteria change (not when book data changes)
   useEffect(() => {
     setCurrentPage(1)
-  }, [searchTerm, shelfFilter, categoryFilter, locationFilter, checkoutFilter, authorFilter, sortField, sortDirection])
+  }, [searchTerm, shelfFilter, categoryFilter, locationFilter, checkoutFilter, authorFilter, seriesFilter, sortField, sortDirection])
 
   // Ensure current page is valid when filtered books change (but don't reset unnecessarily)
   useEffect(() => {
@@ -598,6 +629,8 @@ export function useBookFilters({
     setCheckoutFilter,
     authorFilter,
     setAuthorFilter,
+    seriesFilter,
+    setSeriesFilter,
     sortField,
     setSortField,
     sortDirection,

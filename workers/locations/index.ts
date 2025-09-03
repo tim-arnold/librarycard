@@ -550,7 +550,7 @@ export async function setLocationDefaultPermission(request: Request, locationId:
   }
 
   // Validate permission type and values
-  const validUserPermissions = ['can_add_books', 'can_delete_books', 'can_move_books', 'can_create_shelves', 'can_edit_genres'];
+  const validUserPermissions = ['can_add_books', 'can_delete_books', 'can_move_books', 'can_create_shelves', 'can_edit_genres', 'can_create_series'];
   const validAdminCapabilities = ['can_control_user_capabilities', 'can_invite_users', 'can_manage_shelves', 'can_manage_location_settings'];
   
   if (permission_type === 'user' && !validUserPermissions.includes(permission)) {
@@ -674,7 +674,7 @@ export async function updateLocationDefaultPermissions(request: Request, locatio
   }
 
   // Validate permissions
-  const validUserPermissions = ['can_add_books', 'can_delete_books', 'can_move_books', 'can_create_shelves', 'can_edit_genres'];
+  const validUserPermissions = ['can_add_books', 'can_delete_books', 'can_move_books', 'can_create_shelves', 'can_edit_genres', 'can_create_series'];
   const validAdminCapabilities = ['can_control_user_capabilities', 'can_invite_users', 'can_manage_shelves', 'can_manage_location_settings'];
   
   for (const permission of userPermissions) {

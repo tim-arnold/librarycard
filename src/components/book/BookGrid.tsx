@@ -237,6 +237,35 @@ const BookCard = React.memo<BookCardProps>(({
                 {book.seriesNumber && ` (#${book.seriesNumber})`}
               </Typography>
             )}
+            {book.current_series && book.current_series.length > 0 && (
+              <Typography 
+                component="p" 
+                variant="caption" 
+                color="text.secondary" 
+                gutterBottom 
+                sx={{ fontWeight: 600, lineHeight: 1.2, margin: 0 }}
+              >
+                Part of series:{' '}
+                {book.current_series.map((series, index) => (
+                  <Typography 
+                    key={series.id}
+                    component="span"
+                    variant="caption"
+                    sx={{ 
+                      color: 'primary.main', 
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                      fontWeight: 600,
+                      '&:hover': { textDecoration: 'none' }
+                    }}
+                    onClick={() => handleSeriesClick(series.name)}
+                  >
+                    {series.name}
+                    {index < book.current_series!.length - 1 && ', '}
+                  </Typography>
+                ))}
+              </Typography>
+            )}
             {/* Rating and Genre area - space-efficient layout */}
             <Box sx={{ mt: 1, mb: 1, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
               {/* Star rating - displays user rating or average rating */}
@@ -380,7 +409,7 @@ const BookCard = React.memo<BookCardProps>(({
                   onClick={handleMoreDetailsClick}
                   sx={{ textTransform: 'none' }}
                 >
-                  More Details
+                  View/edit details
                 </Button>
               )}
             </Box>

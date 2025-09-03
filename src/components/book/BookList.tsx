@@ -35,6 +35,7 @@ interface BookTextProps {
   onCancelRemovalRequest: (bookId: string, bookTitle: string) => Promise<void>
   onMoreDetailsClick: (book: EnhancedBook) => void
   onAuthorClick: (authorName: string) => void
+  onSeriesClick: (seriesName: string) => void
   onRateBook?: (book: EnhancedBook) => void
   onGenreEdit?: (book: EnhancedBook) => void
 }
@@ -56,6 +57,7 @@ export default function BookText({
   onCancelRemovalRequest,
   onMoreDetailsClick,
   onAuthorClick,
+  onSeriesClick,
   onRateBook,
   onGenreEdit,
 }: BookTextProps) {
@@ -66,7 +68,7 @@ export default function BookText({
           key={book.id}
           sx={{
             display: 'flex',
-            flexDirection: { xs: 'column', sm: 'row' },
+            flexDirection: { xs: 'row', sm: 'row' },
             alignItems: { xs: 'stretch', sm: 'center' },
             border: 1,
             borderColor: 'divider',
@@ -85,7 +87,8 @@ export default function BookText({
           {/* Book Information - Single Line */}
           <Box sx={{ 
             display: 'flex',
-            alignItems: 'center',
+            flexDirection: { xs: 'column', sm: 'row' },
+            alignItems: { xs: 'flex-start', sm: 'center' },
             gap: 2,
             flex: 1,
             width: { xs: '100%', sm: 'auto' },
@@ -96,11 +99,9 @@ export default function BookText({
             <Box sx={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
               <Typography 
                 variant="body1" 
-                component="span"
+                component="div"
                 sx={{ 
                   fontWeight: 700,
-                  display: 'inline',
-                  mr: 1,
                   fontSize: { xs: '1rem', sm: '1.1rem' }
                 }}
                 noWrap
@@ -110,9 +111,7 @@ export default function BookText({
               <Typography 
                 variant="body2" 
                 color="text.secondary"
-                sx={{ 
-                  display: 'inline'
-                }}
+                component="div"
               >
                 {book.authors.map((author, index) => (
                   <span key={index}>
@@ -138,6 +137,59 @@ export default function BookText({
                   </Typography>
                 )}
               </Typography>
+              
+              {/* Series information */}
+              {book.series && (
+                <Typography 
+                  variant="body2" 
+                  color="text.secondary" 
+                  sx={{ mt: 0.5 }}
+                >
+                  <Typography 
+                    component="span" 
+                    sx={{ 
+                      color: 'primary.main', 
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                      '&:hover': { textDecoration: 'none', color: 'primary.dark' },
+                      fontWeight: 500
+                    }}
+                    onClick={() => onSeriesClick(book.series!)}
+                  >
+                    {book.series}
+                  </Typography>
+                  {book.seriesNumber && ` (#${book.seriesNumber})`}
+                </Typography>
+              )}
+              
+              {book.current_series && book.current_series.length > 0 && (
+                <Typography 
+                  component="p"
+                  variant="caption" 
+                  color="text.secondary" 
+                  sx={{ mt: 0.5, fontWeight: 600, lineHeight: 1.2, margin: 0 }}
+                >
+                  Part of series:{' '}
+                  {book.current_series.map((series, index) => (
+                    <Typography 
+                      key={series.id}
+                      component="span"
+                      variant="caption"
+                      sx={{ 
+                        color: 'primary.main', 
+                        cursor: 'pointer',
+                        textDecoration: 'underline',
+                        '&:hover': { textDecoration: 'none', color: 'primary.dark' },
+                        fontWeight: 600
+                      }}
+                      onClick={() => onSeriesClick(series.name)}
+                    >
+                      {series.name}
+                      {index < book.current_series!.length - 1 && ', '}
+                    </Typography>
+                  ))}
+                </Typography>
+              )}
             </Box>
 
             {/* Compact info chips */}
@@ -282,11 +334,11 @@ export default function BookText({
 
               {/* More Details button */}
               {(book.extendedDescription || book.subjects || book.pageCount || book.averageRating || book.publisherInfo || book.openLibraryKey) && (
-                <Tooltip title="View additional book details" arrow>
+                <Tooltip title="View/edit book details" arrow>
                   <IconButton
                     size="small"
                     onClick={() => onMoreDetailsClick(book)}
-                    aria-label="View additional book details and information"
+                    aria-label="View/edit book details and information"
                     sx={{ 
                       p: 0.5,
                       color: 'primary.main',

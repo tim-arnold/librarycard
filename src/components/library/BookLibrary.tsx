@@ -108,6 +108,8 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
     setCheckoutFilter,
     authorFilter,
     setAuthorFilter,
+    seriesFilter,
+    setSeriesFilter,
     sortField,
     sortDirection,
     viewMode,
@@ -184,11 +186,8 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
   }
 
   const handleSeriesClick = (seriesName: string) => {
-    alert({
-      title: 'Series Search', 
-      message: `This feature will search your library for other books in the ${seriesName} series. Feature coming soon!`,
-      variant: 'info'
-    })
+    // Use the dedicated series filter for precise filtering
+    setSeriesFilter(seriesName)
   }
 
   // Handle book relocation
@@ -404,18 +403,21 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
           categoryFilter={categoryFilter}
           locationFilter={locationFilter}
           checkoutFilter={checkoutFilter}
+          seriesFilter={seriesFilter}
           allLocationsCount={allLocations.length}
           onAuthorRemove={() => setAuthorFilter('')}
           onShelfRemove={() => setShelfFilter('')}
           onGenreRemove={handleGenreRemove}
           onLocationRemove={() => setLocationFilter('')}
           onCheckoutRemove={() => setCheckoutFilter('')}
+          onSeriesRemove={() => setSeriesFilter('')}
           onClearAll={() => {
             setAuthorFilter('')
             setShelfFilter('')
             setCategoryFilter([])
             setLocationFilter('')
             setCheckoutFilter('')
+            setSeriesFilter('')
           }}
         />
 
@@ -498,6 +500,27 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
           isOpen={!!selectedBookForDetails}
           onClose={() => setSelectedBookForDetails(null)}
           userRole={userRole}
+          userPermissions={userPermissions}
+          onBookUpdate={(bookId: string, updatedBookData: Partial<EnhancedBook>) => {
+            console.log('📞 onBookUpdate called with targeted update for book:', bookId, updatedBookData)
+            
+            // Update the main books array so the card in the library view gets updated
+            const updatedBooks = books.map(book => 
+              book.id === bookId 
+                ? { ...book, ...updatedBookData }
+                : book
+            )
+            setBooks(updatedBooks)
+            console.log('🔄 Updated main books array with fresh series data')
+            
+            // Also update the selectedBookForDetails if it matches
+            if (selectedBookForDetails?.id === bookId) {
+              console.log('🔄 Updating selectedBookForDetails with fresh data')
+              setSelectedBookForDetails({ ...selectedBookForDetails, ...updatedBookData })
+            }
+            
+            console.log('✅ Book updated successfully in both main library and modal')
+          }}
         />
 
         <BookRelocateModal

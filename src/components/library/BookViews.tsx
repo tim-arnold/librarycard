@@ -200,6 +200,7 @@ export default function BookViews({
                     onCancelRemovalRequest={onCancelRemovalRequest}
                     onMoreDetailsClick={onMoreDetailsClick}
                     onAuthorClick={onAuthorClick}
+                    onSeriesClick={onSeriesClick}
                     onRateBook={onRateBook}
                     onGenreEdit={onGenreEdit}
                   />
@@ -234,6 +235,7 @@ export default function BookViews({
                 onCancelRemovalRequest={onCancelRemovalRequest}
                 onMoreDetailsClick={onMoreDetailsClick}
                 onAuthorClick={onAuthorClick}
+                onSeriesClick={onSeriesClick}
                 onRateBook={onRateBook}
                 onGenreEdit={onGenreEdit}
               />
