@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Forward to Workers API
-    const response = await fetch(`${API_BASE_URL}/api/auth/verify-reset-token?token=${encodeURIComponent(token)}`, {
+    const response = await fetch(`${API_BASE_URL()}/api/auth/verify-reset-token?token=${encodeURIComponent(token)}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
