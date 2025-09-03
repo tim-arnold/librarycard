@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Forward to Workers API
-    const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
+    const response = await fetch(`${API_BASE_URL()}/api/auth/reset-password`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
