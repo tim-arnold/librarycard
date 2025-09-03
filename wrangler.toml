@@ -50,7 +50,7 @@ name = "librarycard-api-staging"
 ENVIRONMENT = "staging"
 APP_URL = "https://staging--libarycard.netlify.app"
 FROM_EMAIL = "LibraryCard <librarian@tim52.io>"
-# JWT_SECRET should be set as a secure environment variable for staging
+JWT_SECRET = "staging-jwt-secret-2025"
 
 [[env.staging.d1_databases]]
 binding = "DB"
