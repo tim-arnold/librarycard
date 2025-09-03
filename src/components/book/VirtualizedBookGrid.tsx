@@ -263,28 +263,31 @@ r            <Typography variant="body2" color="text.secondary" gutterBottom>
               </Typography>
             )}
             {book.current_series && book.current_series.length > 0 && (
-              <Typography variant="caption" color="text.secondary" gutterBottom sx={{ fontWeight: 600 }}>
-                <Typography component="span" variant="caption" color="text.secondary">
-                  Part of series:{' '}
-                </Typography>
+              <Typography 
+                component="p" 
+                variant="caption" 
+                color="text.secondary" 
+                gutterBottom 
+                sx={{ fontWeight: 600, lineHeight: 1.2, margin: 0 }}
+              >
+                Part of series:{' '}
                 {book.current_series.map((series, index) => (
-                  <span key={series.id}>
-                    <Typography 
-                      component="span" 
-                      variant="caption"
-                      sx={{ 
-                        color: 'primary.main', 
-                        cursor: 'pointer',
-                        textDecoration: 'underline',
-                        fontWeight: 600,
-                        '&:hover': { textDecoration: 'none' }
-                      }}
-                      onClick={() => handleSeriesClick(series.name)}
-                    >
-                      {series.name}
-                    </Typography>
+                  <Typography 
+                    key={series.id}
+                    component="span"
+                    variant="caption"
+                    sx={{ 
+                      color: 'primary.main', 
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                      fontWeight: 600,
+                      '&:hover': { textDecoration: 'none' }
+                    }}
+                    onClick={() => handleSeriesClick(series.name)}
+                  >
+                    {series.name}
                     {index < book.current_series!.length - 1 && ', '}
-                  </span>
+                  </Typography>
                 ))}
               </Typography>
             )}

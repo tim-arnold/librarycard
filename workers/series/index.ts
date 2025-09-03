@@ -1,6 +1,7 @@
 import { Env } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { isUserSuperAdmin } from '../auth';
+import { hasUserPermission, getLocationIdFromBookId } from '../permissions';
 
 export interface Series {
   id: string;
@@ -102,10 +103,22 @@ export async function createSeries(request: Request, userId: string, env: Env, c
     const seriesId = uuidv4();
     const currentTimestamp = new Date().toISOString();
     
+    // Check if user has can_create_series permission in any location to auto-approve series
+    const userLocationsStmt = env.DB.prepare(`
+      SELECT DISTINCT lup.location_id 
+      FROM location_user_permissions lup 
+      WHERE lup.user_id = ? AND lup.permission = 'can_create_series'
+    `);
+    const userLocations = await userLocationsStmt.bind(userId).all();
+    const canAutoApprove = userLocations.results && userLocations.results.length > 0;
+    
     const stmt = env.DB.prepare(`
       INSERT INTO series (id, user_id, name, description, color, created_at, updated_at, sort_order, approval_status)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
+    
+    const approvalStatus = canAutoApprove ? 'approved' : 'pending';
+    console.log(`📝 CreateSeries: User ${userId} has can_create_series permission: ${canAutoApprove}, setting approval_status to: ${approvalStatus}`);
     
     await stmt.bind(
       seriesId,
@@ -116,7 +129,7 @@ export async function createSeries(request: Request, userId: string, env: Env, c
       currentTimestamp,
       currentTimestamp,
       sort_order || 0,
-      'pending'
+      approvalStatus
     ).run();
     
     // Return the created series
@@ -130,7 +143,7 @@ export async function createSeries(request: Request, userId: string, env: Env, c
       updated_at: currentTimestamp,
       sort_order: sort_order || 0,
       book_count: 0,
-      approval_status: 'pending' as const
+      approval_status: approvalStatus as 'pending' | 'approved'
     };
     
     return new Response(JSON.stringify(newSeries), {
@@ -415,16 +428,49 @@ export async function addBooksToSeries(request: Request, seriesId: string, userI
 // Remove book from series
 export async function removeBookFromSeries(seriesId: string, bookId: string, userId: string, env: Env, corsHeaders: Record<string, string>): Promise<Response> {
   try {
-    // Check if series exists and belongs to user
-    const seriesStmt = env.DB.prepare('SELECT id FROM series WHERE id = ? AND user_id = ?');
-    const series = await seriesStmt.bind(seriesId, userId).first();
+    console.log(`🔍 RemoveBookFromSeries: Attempting to remove book ${bookId} from series ${seriesId} for user ${userId}`);
+    
+    // Check if series exists
+    const seriesStmt = env.DB.prepare('SELECT id, user_id, approval_status FROM series WHERE id = ?');
+    const series = await seriesStmt.bind(seriesId).first();
     
     if (!series) {
-      return new Response(JSON.stringify({ error: 'Series not found or access denied' }), {
+      console.log(`❌ RemoveBookFromSeries: Series ${seriesId} does not exist`);
+      return new Response(JSON.stringify({ error: 'Series not found' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    
+    // Check if user has permission to manage series books
+    const bookStmt = env.DB.prepare('SELECT id, added_by, shelf_id FROM books WHERE id = ?');
+    const book = await bookStmt.bind(bookId).first();
+    
+    if (!book) {
+      console.log(`❌ RemoveBookFromSeries: Book ${bookId} does not exist`);
+      return new Response(JSON.stringify({ error: 'Book not found' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    // Get the location ID for the book to check permissions
+    const locationId = await getLocationIdFromBookId(bookId, env);
+    
+    // User can remove if they have can_add_books permission, own the book, or own the series
+    const hasAddBooksPermission = locationId ? await hasUserPermission(userId, locationId, 'can_add_books', env) : false;
+    const userOwnsBook = book.added_by === userId;
+    const userOwnsSeries = series.user_id === userId;
+    
+    if (!hasAddBooksPermission && !userOwnsBook && !userOwnsSeries) {
+      console.log(`❌ RemoveBookFromSeries: User ${userId} lacks permission (can_add_books: ${hasAddBooksPermission}, owns book: ${userOwnsBook}, owns series: ${userOwnsSeries})`);
+      return new Response(JSON.stringify({ error: 'Access denied - you need can_add_books permission, or must own the book or series' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    console.log(`✅ RemoveBookFromSeries: Access granted (can_add_books: ${hasAddBooksPermission}, owns book: ${userOwnsBook}, owns series: ${userOwnsSeries}), proceeding with removal`);
     
     // Remove book from series
     const removeStmt = env.DB.prepare('DELETE FROM book_series WHERE series_id = ? AND book_id = ?');

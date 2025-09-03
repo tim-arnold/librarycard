@@ -26,7 +26,7 @@ import {
 } from '@mui/material'
 import { ExpandMore, History, Email, Star, MenuBook, CollectionsBookmark, Add, Close } from '@mui/icons-material'
 import type { EnhancedBook, BookRating, Series } from '@/lib/types'
-import { isAdmin } from '@/lib/permissions'
+import { isAdmin, canManageSeriesBooks } from '@/lib/permissions'
 import { useSession } from 'next-auth/react'
 import { authenticatedFetch } from '@/lib/auth-utils'
 import { useSeries } from '@/hooks/useSeries'
@@ -49,10 +49,11 @@ interface MoreDetailsModalProps {
   isOpen: boolean
   onClose: () => void
   userRole: string | null
+  userPermissions: string[]
   onBookUpdate?: (bookId: string, updatedBookData: Partial<EnhancedBook>) => void
 }
 
-export default function MoreDetailsModal({ book, isOpen, onClose, userRole, onBookUpdate }: MoreDetailsModalProps) {
+export default function MoreDetailsModal({ book, isOpen, onClose, userRole, userPermissions, onBookUpdate }: MoreDetailsModalProps) {
   const { data: session } = useSession()
   const [checkoutHistory, setCheckoutHistory] = useState<CheckoutHistoryItem[]>([])
   const [showCheckoutHistory, setShowCheckoutHistory] = useState(false)
@@ -71,6 +72,20 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole, onBo
   const [currentSeries, setCurrentSeries] = useState<Series[]>(book?.current_series || [])
   // Track if series have been modified for parent update on close
   const [seriesModified, setSeriesModified] = useState(false)
+  
+  // Check if user can remove a book from a series
+  const canRemoveFromSeries = (seriesItem: Series): boolean => {
+    if (!session?.user?.email || !book) return false
+    
+    // Users with can_add_books permission can manage any series, OR
+    // Series owners can manage their own series, OR  
+    // Book owners can remove their own books
+    const hasAddBooksPermission = userPermissions.includes('can_add_books')
+    const userOwnsBook = book.added_by === session.user.email
+    const userOwnsSeries = seriesItem.user_id === session.user.email
+    
+    return hasAddBooksPermission || userOwnsBook || userOwnsSeries
+  }
 
   // Clear state when book changes to prevent cross-contamination of reviews
   useEffect(() => {
@@ -174,29 +189,6 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole, onBo
     setShowSeries(!showSeries)
   }
 
-  const handleAddToSeries = async () => {
-    if (!selectedSeriesForAdd || !book?.id) return
-    
-    // Find the series being added for optimistic update
-    const seriesBeingAdded = series.find(s => s.id === selectedSeriesForAdd)
-    if (!seriesBeingAdded) return
-    
-    // Optimistically update the local state immediately
-    setCurrentSeries(prev => [...prev, seriesBeingAdded])
-    
-    const result = await addBooksToSeries(selectedSeriesForAdd, [book.id])
-    if (result) {
-      console.log('Book added to series successfully')
-      // Reset selection
-      setSelectedSeriesForAdd('')
-      // Mark that series have been modified
-      setSeriesModified(true)
-    } else {
-      // Revert optimistic update on failure
-      setCurrentSeries(prev => prev.filter(s => s.id !== selectedSeriesForAdd))
-      console.error('Failed to add book to series')
-    }
-  }
 
   const handleRemoveFromSeries = async (seriesId: string) => {
     if (!book?.id) return
@@ -334,16 +326,19 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole, onBo
                     </Typography>
                     {currentSeries && currentSeries.length > 0 ? (
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                        {currentSeries.map((bookSeries) => (
-                          <Chip
-                            key={bookSeries.id}
-                            label={bookSeries.name}
-                            color="primary"
-                            variant="outlined"
-                            deleteIcon={<Close />}
-                            onDelete={() => handleRemoveFromSeries(bookSeries.id)}
-                          />
-                        ))}
+                        {currentSeries.map((bookSeries) => {
+                          const canRemove = canRemoveFromSeries(bookSeries)
+                          return (
+                            <Chip
+                              key={bookSeries.id}
+                              label={bookSeries.name}
+                              color="primary"
+                              variant="outlined"
+                              deleteIcon={canRemove ? <Close /> : undefined}
+                              onDelete={canRemove ? () => handleRemoveFromSeries(bookSeries.id) : undefined}
+                            />
+                          )
+                        })}
                       </Box>
                     ) : (
                       <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
@@ -378,7 +373,33 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole, onBo
                         <InputLabel>Select Series</InputLabel>
                         <Select
                           value={selectedSeriesForAdd}
-                          onChange={(e) => setSelectedSeriesForAdd(e.target.value)}
+                          onChange={async (e) => {
+                            const seriesId = e.target.value
+                            setSelectedSeriesForAdd(seriesId)
+                            
+                            // Immediately add to series when selected
+                            if (seriesId && book?.id) {
+                              // Find the series being added for optimistic update
+                              const seriesBeingAdded = series.find(s => s.id === seriesId)
+                              if (seriesBeingAdded) {
+                                // Optimistically update the local state immediately
+                                setCurrentSeries(prev => [...prev, seriesBeingAdded])
+                                
+                                const result = await addBooksToSeries(seriesId, [book.id])
+                                if (result) {
+                                  console.log('Book added to series successfully')
+                                  // Reset selection
+                                  setSelectedSeriesForAdd('')
+                                  // Mark that series have been modified
+                                  setSeriesModified(true)
+                                } else {
+                                  // Revert optimistic update on failure
+                                  setCurrentSeries(prev => prev.filter(s => s.id !== seriesId))
+                                  console.error('Failed to add book to series')
+                                }
+                              }
+                            }
+                          }}
                           label="Select Series"
                         >
                           {series
@@ -391,14 +412,6 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole, onBo
                           }
                         </Select>
                       </FormControl>
-                      <Button
-                        size="small"
-                        onClick={handleAddToSeries}
-                        disabled={!selectedSeriesForAdd}
-                        startIcon={<Add />}
-                      >
-                        Add
-                      </Button>
                       <Button
                         size="small"
                         onClick={() => setIsSeriesModalOpen(true)}
@@ -911,6 +924,7 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole, onBo
         isOpen={isSeriesModalOpen}
         onClose={() => setIsSeriesModalOpen(false)}
         onSubmit={handleCreateSeries}
+        userPermissions={userPermissions}
       />
     </Dialog>
   )
