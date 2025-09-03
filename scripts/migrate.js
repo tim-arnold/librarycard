@@ -214,22 +214,50 @@ class MigrationRunner {
       // to make correct bootstrap decisions
       
       // Parse the output to extract migration data
-      // This is a simplified parser - may need adjustment based on wrangler output format
-      const lines = result.output.split('\n').filter(line => line.trim());
+      // Handle both JSON and pipe-delimited wrangler output formats
       const migrations = [];
       
-      for (const line of lines) {
-        if (line.includes('|') && !line.includes('filename')) {
-          const parts = line.split('|').map(part => part.trim());
-          if (parts.length >= 4) {
-            migrations.push({
-              filename: parts[1],
-              applied_at: parts[2],
-              checksum: parts[3],
-              batch_id: parts[4]
+      try {
+        // Try JSON parsing first (modern wrangler format)
+        const lines = result.output.split('\n');
+        const jsonStart = lines.findIndex(line => line.trim().startsWith('['));
+        
+        if (jsonStart !== -1) {
+          const jsonOutput = lines.slice(jsonStart).join('\n');
+          const parsed = JSON.parse(jsonOutput);
+          
+          if (parsed && parsed[0] && parsed[0].results) {
+            parsed[0].results.forEach(row => {
+              if (row.filename) {
+                migrations.push({
+                  filename: row.filename,
+                  applied_at: row.applied_at,
+                  checksum: row.checksum,
+                  batch_id: row.batch_id
+                });
+              }
             });
           }
+        } else {
+          // Fallback to pipe-delimited parsing (legacy format)
+          const lines = result.output.split('\n').filter(line => line.trim());
+          for (const line of lines) {
+            if (line.includes('|') && !line.includes('filename')) {
+              const parts = line.split('|').map(part => part.trim());
+              if (parts.length >= 4) {
+                migrations.push({
+                  filename: parts[1],
+                  applied_at: parts[2],
+                  checksum: parts[3],
+                  batch_id: parts[4]
+                });
+              }
+            }
+          }
         }
+      } catch (parseError) {
+        this.log(`⚠️  Warning: Could not parse migration data - ${parseError.message}`);
+        this.log(`Raw output: ${result.output.substring(0, 500)}...`);
       }
       
       return migrations;
