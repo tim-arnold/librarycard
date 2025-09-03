@@ -480,6 +480,24 @@ jobs:
             syncOrder.forEach((table, idx) => {
               console.log(`  ${idx + 1}. ${table}`);
             });
+            
+            // Debug: Check which tables have data in the backup
+            console.log('\n🔍 BACKUP DATA ANALYSIS:');
+            const tablesWithData = [];
+            const tablesWithoutData = [];
+            
+            for (const tableName of syncOrder) {
+              const tableData = backupData.tables[tableName];
+              if (tableData && !tableData.error && tableData.data && tableData.data.length > 0) {
+                tablesWithData.push(`${tableName}(${tableData.data.length})`);
+              } else {
+                tablesWithoutData.push(tableName);
+              }
+            }
+            
+            console.log(`✅ Tables WITH data: ${tablesWithData.join(', ')}`);
+            console.log(`❌ Tables WITHOUT data: ${tablesWithoutData.join(', ')}`);
+            
             let syncedTables = 0;
             let syncedRows = 0;
             
