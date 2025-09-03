@@ -491,9 +491,53 @@ jobs:
             });
             
             // Debug: Check which tables have data in the backup
-            console.log('\n🔍 BACKUP DATA ANALYSIS:');
+            console.log('\n🔍 COMPREHENSIVE BACKUP DATA ANALYSIS:');
             const tablesWithData = [];
             const tablesWithoutData = [];
+            const criticalMissingTables = [];
+            
+            // Critical tables that must be synced for app to work
+            const criticalTables = ['users', 'locations', 'books', 'curated_genres', 'author_mappings'];
+            
+            // First, show ALL tables in backup for debugging
+            console.log('📋 ALL TABLES IN BACKUP DATA:');
+            const allBackupTables = Object.keys(backupData.tables || {});
+            allBackupTables.forEach((tableName, idx) => {
+              const tableData = backupData.tables[tableName];
+              const hasData = tableData && !tableData.error && tableData.data && tableData.data.length > 0;
+              const rowCount = hasData ? tableData.data.length : 0;
+              const status = tableData?.error ? `ERROR: ${tableData.error}` : (hasData ? 'OK' : 'EMPTY');
+              console.log(`  ${idx + 1}. ${tableName}: ${rowCount} rows (${status})`);
+            });
+            
+            // Analyze critical tables specifically
+            console.log('\n🚨 CRITICAL TABLES ANALYSIS:');
+            criticalTables.forEach(tableName => {
+              const tableData = backupData.tables[tableName];
+              if (tableData) {
+                if (tableData.error) {
+                  console.log(`❌ ${tableName}: ERROR - ${tableData.error}`);
+                  criticalMissingTables.push(tableName);
+                } else if (!tableData.data || tableData.data.length === 0) {
+                  console.log(`📭 ${tableName}: 0 rows (EMPTY)`);
+                  criticalMissingTables.push(tableName);
+                } else {
+                  console.log(`✅ ${tableName}: ${tableData.data.length} rows (OK)`);
+                }
+              } else {
+                console.log(`❌ ${tableName}: TABLE NOT FOUND IN BACKUP`);
+                criticalMissingTables.push(tableName);
+              }
+            });
+            
+            if (criticalMissingTables.length > 0) {
+              console.log(`\n🚨 CRITICAL ISSUE: ${criticalMissingTables.length} essential tables missing!`);
+              console.log(`🚨 Missing critical tables: ${criticalMissingTables.join(', ')}`);
+              console.log(`🚨 App will NOT work without these tables!`);
+              console.log(`🚨 This suggests the backup process may be incomplete.`);
+            } else {
+              console.log(`\n✅ All critical tables present in backup data`);
+            }
             
             for (const tableName of syncOrder) {
               const tableData = backupData.tables[tableName];
@@ -501,11 +545,19 @@ jobs:
                 tablesWithData.push(`${tableName}(${tableData.data.length})`);
               } else {
                 tablesWithoutData.push(tableName);
+                if (criticalTables.includes(tableName)) {
+                  criticalMissingTables.push(tableName);
+                }
               }
             }
             
             console.log(`✅ Tables WITH data: ${tablesWithData.join(', ')}`);
             console.log(`❌ Tables WITHOUT data: ${tablesWithoutData.join(', ')}`);
+            
+            if (criticalMissingTables.length > 0) {
+              console.log(`🚨 CRITICAL MISSING TABLES: ${criticalMissingTables.join(', ')}`);
+              console.log(`🚨 These tables are essential for app functionality!`);
+            }
             
             let syncedTables = 0;
             let syncedRows = 0;
@@ -877,22 +929,55 @@ jobs:
             console.log(`📊 Total rows synced: ${syncedRows}`);
             console.log('=====================================================\n');
             
-            // Verification
-            console.log('🔍 Quick verification...');
-            try {
-              const userCount = executeStagingD1Command('SELECT COUNT(*) as count FROM users');
-              const bookCount = executeStagingD1Command('SELECT COUNT(*) as count FROM books');
-              const locationCount = executeStagingD1Command('SELECT COUNT(*) as count FROM locations');
+            // COMPREHENSIVE FINAL VERIFICATION
+            console.log('🔍 COMPREHENSIVE STAGING VERIFICATION...');
+            const verificationResults = {};
+            let criticalVerificationFailed = false;
+            
+            // Check each critical table
+            for (const tableName of criticalTables) {
+              try {
+                console.log(`🔍 Verifying ${tableName}...`);
+                const countResult = executeStagingD1Command(`SELECT COUNT(*) as count FROM ${tableName}`);
+                const count = parseCount(countResult);
+                verificationResults[tableName] = { status: 'OK', count: count };
+                console.log(`✅ ${tableName}: ${count} rows in staging`);
+                
+                // Critical failure if essential tables are empty
+                if (count === 0 && ['users', 'books', 'locations'].includes(tableName)) {
+                  console.log(`🚨 CRITICAL: ${tableName} table is empty! App will not work!`);
+                  criticalVerificationFailed = true;
+                }
+              } catch (error) {
+                console.log(`❌ ${tableName}: VERIFICATION FAILED - ${error.message}`);
+                verificationResults[tableName] = { status: 'ERROR', error: error.message };
+                criticalVerificationFailed = true;
+              }
+            }
+            
+            // Show verification summary
+            console.log('\n📊 VERIFICATION SUMMARY:');
+            Object.entries(verificationResults).forEach(([tableName, result]) => {
+              if (result.status === 'OK') {
+                console.log(`✅ ${tableName}: ${result.count} rows`);
+              } else {
+                console.log(`❌ ${tableName}: ${result.error}`);
+              }
+            });
+            
+            if (criticalVerificationFailed) {
+              console.log('\n🚨 CRITICAL VERIFICATION FAILURE!');
+              console.log('🚨 Essential tables are missing or empty in staging');
+              console.log('🚨 App functionality will be severely impacted');
+              console.log('🚨 This indicates backup data issues or sync failures');
               
-              console.log(`📊 Users in staging: ${parseCount(userCount)}`);
-              console.log(`📊 Books in staging: ${parseCount(bookCount)}`);
-              console.log(`📊 Locations in staging: ${parseCount(locationCount)}`);
-              
+              // Don't fail the workflow, but make the issue very clear
+              console.log('\n⚠️  SYNC COMPLETED BUT WITH CRITICAL DATA MISSING');
+              console.log('⚠️  Manual investigation required before using staging');
+            } else {
               console.log('\n✅ STAGING NOW COMPLETELY MATCHES PRODUCTION!');
               console.log('🎯 All production data successfully synced to staging');
-              
-            } catch (error) {
-              console.log('⚠️  Verification had issues, but sync likely succeeded');
+              console.log('🎉 Staging environment ready for testing');
             }
           }
           
