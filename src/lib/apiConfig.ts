@@ -16,4 +16,4 @@ export const getApiBaseUrl = (): string => {
 }
 
 // Export the function directly to avoid computing during build
-export const API_BASE_URL = getApiBaseUrl
+export const API_BASE_URL = getApiBaseUrl()
