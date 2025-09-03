@@ -489,10 +489,14 @@ jobs:
               
               try {
                 // Check if table exists and create it if missing
+                let tableReady = false;
                 try {
                   executeStagingD1Command(`SELECT 1 FROM ${tableName} LIMIT 1;`);
+                  tableReady = true;
+                  console.log(`    ✅ Table ${tableName} exists and ready`);
                 } catch (tableCheckError) {
-                  if (tableCheckError.message.includes('no such table')) {
+                  console.log(`    🔍 Table check error: ${tableCheckError.message}`);
+                  if (tableCheckError.message.includes('no such table') || tableCheckError.message.includes('SQLITE_ERROR')) {
                     console.log(`    🏗️  Table ${tableName} missing, attempting to create from schema...`);
                     
                     // Try to extract and execute just this table's CREATE statement from schema.sql
@@ -519,18 +523,28 @@ jobs:
                         fs.unlinkSync(tempFile);
                         
                         console.log(`    ✅ Created missing table: ${tableName}`);
+                        tableReady = true;
                       } else {
                         console.log(`    ⚠️  Could not find CREATE statement for ${tableName} in schema`);
-                        throw new Error(`Table ${tableName} missing and cannot be created`);
+                        console.log(`    ⏭️  Skipping ${tableName} - cannot be created`);
+                        continue;
                       }
                     } catch (createError) {
                       console.log(`    ❌ Failed to create table ${tableName}: ${createError.message}`);
-                      throw new Error(`Cannot sync ${tableName}: table missing and creation failed`);
+                      console.log(`    ⏭️  Skipping ${tableName} - table creation failed`);
+                      continue;
                     }
                   } else {
-                    // Some other error checking the table
-                    console.log(`    ⚠️  Table check had unexpected error: ${tableCheckError.message}`);
+                    // Some other error checking the table, skip this table
+                    console.log(`    ⚠️  Table check had unexpected error, skipping ${tableName}: ${tableCheckError.message}`);
+                    continue;
                   }
+                }
+                
+                // Only proceed if table is ready
+                if (!tableReady) {
+                  console.log(`    ⏭️  Skipping ${tableName} - table not ready`);
+                  continue;
                 }
                 
                 // Switch to BATCH processing to avoid problematic row-by-row loop
