@@ -553,6 +553,19 @@ jobs:
             for (const tableName of syncOrder) {
               const tableData = backupData.tables[tableName];
               
+              // Fix curated_genres system user references
+              if (tableName === 'curated_genres' && tableData && tableData.data) {
+                console.log('🔧 Fixing curated_genres system user references...');
+                let fixedCount = 0;
+                tableData.data.forEach(row => {
+                  if (row.created_by === 'system') {
+                    row.created_by = 'tim.arnold@gmail.com';
+                    fixedCount++;
+                  }
+                });
+                console.log(`✅ Fixed ${fixedCount} curated_genres references from 'system' to 'tim.arnold@gmail.com'`);
+              }
+              
               // Debug logging for critical tables
               if (tableName === 'books') {
                 console.log(`🚨 CRITICAL TABLE DEBUG - books:`);
