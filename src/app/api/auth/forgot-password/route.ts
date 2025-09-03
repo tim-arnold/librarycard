@@ -22,6 +22,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Forward to Workers API
+    console.log('🐛 DEBUG: API_BASE_URL() =', API_BASE_URL())
+    console.log('🐛 DEBUG: Full URL =', `${API_BASE_URL()}/api/auth/forgot-password`)
     const response = await fetch(`${API_BASE_URL()}/api/auth/forgot-password`, {
       method: 'POST',
       headers: {
