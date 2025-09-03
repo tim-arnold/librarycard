@@ -26,6 +26,7 @@ interface SeriesModalProps {
   onSubmit: (data: CreateSeriesRequest | UpdateSeriesRequest) => Promise<Series | null>
   existingSeries?: Series | null
   title?: string
+  userPermissions?: string[]
 }
 
 
@@ -34,7 +35,8 @@ export default function SeriesModal({
   onClose,
   onSubmit,
   existingSeries,
-  title
+  title,
+  userPermissions = []
 }: SeriesModalProps) {
   const [formData, setFormData] = useState({
     name: '',
@@ -46,6 +48,10 @@ export default function SeriesModal({
 
   const isEditing = Boolean(existingSeries)
   const modalTitle = title || (isEditing ? 'Edit Series' : 'Create New Series')
+  
+  // Check if user can create series without approval
+  const canCreateSeries = userPermissions.includes('can_create_series')
+  const needsApproval = !isEditing && !canCreateSeries
 
   // Initialize form data when modal opens
   useEffect(() => {
@@ -122,6 +128,14 @@ export default function SeriesModal({
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {error}
+          </Alert>
+        )}
+
+        {needsApproval && (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            <Typography variant="body2" component="div">
+              <strong>Admin Approval Required:</strong> Your series will be created with "pending" status and will need to be approved by a location admin or super admin before it becomes visible to other users.
+            </Typography>
           </Alert>
         )}
 

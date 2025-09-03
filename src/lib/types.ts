@@ -9,6 +9,7 @@ export interface Book {
   categories?: string[]
   shelf_id?: number
   tags?: string[]
+  added_by?: string
   location_name?: string
   shelf_name?: string
   status?: string // 'available', 'checked_out'
