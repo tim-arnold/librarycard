@@ -310,20 +310,27 @@ jobs:
             //   process.exit(1);
             // }
             
-            // Define table order for sync
+            // Define table order for sync - CORRECTED DEPENDENCY ORDER
+            // Parent tables FIRST (referenced by others), then children
             const tableOrder = [
-              // Child tables (no foreign key dependencies)
-              'notification_queue', 'notification_log', 'notification_read_status', 'notification_preferences',
-              'in_app_notifications', 'webauthn_challenges', 'webauthn_credentials', 'jwt_sessions', 
-              'auth_audit_log', 'user_recovery_codes', 'user_global_permissions',
-              'genre_suggestions', 'genre_requests', 'book_genres', 'book_ratings', 'book_removal_requests',
-              'book_checkout_history', 'migration_rollbacks', 'migrations_applied', 'migration_batches',
-              'signup_approval_requests',
-              // Tables with dependencies  
+              // Core parent tables (no dependencies)
+              'users', 'locations', 'curated_genres',
+              // Tables that depend on core parents
+              'shelves', 'books',
+              // Tables that depend on books/users (child tables)
+              'book_genres', 'book_ratings', 'book_removal_requests', 'book_checkout_history',
+              // Location-related tables
               'location_user_permissions', 'location_admin_capabilities', 'location_members', 'location_invitations',
-              'books', 'shelves',
-              // Parent tables (referenced by others)
-              'curated_genres', 'locations', 'users'
+              // User-related tables
+              'signup_approval_requests', 'webauthn_credentials', 'webauthn_challenges',
+              // Notification tables
+              'notification_queue', 'notification_log', 'notification_read_status', 'notification_preferences',
+              'in_app_notifications',
+              // System tables
+              'jwt_sessions', 'auth_audit_log', 'user_recovery_codes', 'user_global_permissions',
+              'genre_suggestions', 'genre_requests',
+              // Migration system tables (can be last)
+              'migration_batches', 'migrations_applied', 'migration_rollbacks'
             ];
             
             // Define tables to skip (legacy/orphaned/problematic tables)
@@ -465,10 +472,9 @@ jobs:
             
             console.log('\n📥 Syncing ALL production data to staging...');
             
-            // Sync in correct order: parents first, then children
-            // Note: tableOrder is defined for clearing (children first)
-            // For syncing, we need parents first, so reverse the order
-            const syncOrder = [...tableOrder].reverse();
+            // Sync in correct order: parents first, then children  
+            // tableOrder is now defined with parents first, so use as-is
+            const syncOrder = [...tableOrder];
             
             console.log('📋 Sync order (parents first):');
             syncOrder.forEach((table, idx) => {
