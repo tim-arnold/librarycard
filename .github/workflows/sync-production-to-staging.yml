@@ -488,6 +488,51 @@ jobs:
               console.log(`    📥 Syncing ${tableName} (${tableData.data.length} rows)...`);
               
               try {
+                // Check if table exists and create it if missing
+                try {
+                  executeStagingD1Command(`SELECT 1 FROM ${tableName} LIMIT 1;`);
+                } catch (tableCheckError) {
+                  if (tableCheckError.message.includes('no such table')) {
+                    console.log(`    🏗️  Table ${tableName} missing, attempting to create from schema...`);
+                    
+                    // Try to extract and execute just this table's CREATE statement from schema.sql
+                    try {
+                      const fs = require('fs');
+                      const schemaContent = fs.readFileSync('schema.sql', 'utf8');
+                      
+                      // Find the CREATE TABLE statement for this specific table
+                      const tableRegex = new RegExp(`CREATE TABLE ${tableName}\\s*\\([^;]+\\);`, 'is');
+                      const tableMatch = schemaContent.match(tableRegex);
+                      
+                      if (tableMatch) {
+                        const createTableSql = tableMatch[0];
+                        console.log(`    📋 Found CREATE statement for ${tableName}`);
+                        
+                        // Create temporary SQL file and execute it
+                        const tempFile = `./create_${tableName}_${Date.now()}.sql`;
+                        fs.writeFileSync(tempFile, createTableSql);
+                        
+                        const result = execSync(`npx wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote --file="${tempFile}"`, {
+                          encoding: 'utf8',
+                          env: { ...process.env, CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN_STAGING_NEW }
+                        });
+                        fs.unlinkSync(tempFile);
+                        
+                        console.log(`    ✅ Created missing table: ${tableName}`);
+                      } else {
+                        console.log(`    ⚠️  Could not find CREATE statement for ${tableName} in schema`);
+                        throw new Error(`Table ${tableName} missing and cannot be created`);
+                      }
+                    } catch (createError) {
+                      console.log(`    ❌ Failed to create table ${tableName}: ${createError.message}`);
+                      throw new Error(`Cannot sync ${tableName}: table missing and creation failed`);
+                    }
+                  } else {
+                    // Some other error checking the table
+                    console.log(`    ⚠️  Table check had unexpected error: ${tableCheckError.message}`);
+                  }
+                }
+                
                 // Switch to BATCH processing to avoid problematic row-by-row loop
                 console.log(`    🔄 Processing ${tableData.data.length} rows for ${tableName} in batches...`);
                 
