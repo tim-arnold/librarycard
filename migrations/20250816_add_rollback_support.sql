@@ -8,7 +8,6 @@ PRAGMA table_info(migration_batches);
 
 -- Use CREATE TABLE to recreate with the rollback_target column if needed
 -- This is safe because if the column already exists, the bootstrap system will handle gracefully
-BEGIN;
 
 -- Create new table with rollback_target column
 CREATE TABLE IF NOT EXISTS migration_batches_with_rollback (
@@ -40,8 +39,6 @@ ALTER TABLE migration_batches_with_rollback RENAME TO migration_batches;
 -- Recreate indexes
 CREATE INDEX IF NOT EXISTS idx_migration_batches_status ON migration_batches(status);
 CREATE INDEX IF NOT EXISTS idx_migration_batches_started_at ON migration_batches(started_at);
-
-COMMIT;
 
 -- Create rollback tracking table (optional, for detailed rollback history)
 CREATE TABLE IF NOT EXISTS migration_rollbacks (
