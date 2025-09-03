@@ -798,7 +798,7 @@ export default function HelpModal({ open, onClose }: HelpModalProps) {
                       <ListItemText primary="If you haven't rated it, shows the library average from all users" />
                     </ListItem>
                     <ListItem>
-                      <ListItemText primary="Google Books ratings appear only in the 'More Details' modal" />
+                      <ListItemText primary="Google Books ratings appear only in the 'View/edit details' modal" />
                     </ListItem>
                     <ListItem>
                       <ListItemText primary="Library ratings are specific to your location/library" />
@@ -813,7 +813,7 @@ export default function HelpModal({ open, onClose }: HelpModalProps) {
                       <ListItemText primary="Add personal notes about why you rated a book" />
                     </ListItem>
                     <ListItem>
-                      <ListItemText primary="Reviews are displayed in the 'More Details' modal" />
+                      <ListItemText primary="Reviews are displayed in the 'View/edit details' modal" />
                     </ListItem>
                     <ListItem>
                       <ListItemText primary="Reviews are visible to other users in your library" />
@@ -856,7 +856,7 @@ export default function HelpModal({ open, onClose }: HelpModalProps) {
                   </Typography>
                   <List dense>
                     <ListItem>
-                      <ListItemText primary="Use 'More Details' modal on any book card" />
+                      <ListItemText primary="Use 'View/edit details' modal on any book card" />
                     </ListItem>
                     <ListItem>
                       <ListItemText primary="Look for 'Choose Different Cover' option" />

@@ -23,6 +23,7 @@ import {
   LocationOn,
   Refresh,
   Category,
+  LibraryBooks,
 } from '@mui/icons-material'
 import { getApiBaseUrl } from '@/lib/apiConfig'
 
@@ -32,6 +33,7 @@ const AdminUserManager = lazy(() => import('./AdminUserManager'))
 const AdminNotificationCenter = lazy(() => import('./AdminNotificationCenter'))
 const LocationManager = lazy(() => import('./LocationManager'))
 const GenreManager = lazy(() => import('./GenreManager'))
+const AdminSeriesReview = lazy(() => import('./AdminSeriesReview'))
 
 // Loading component for lazy-loaded admin components
 const AdminComponentLoader = () => (
@@ -50,13 +52,14 @@ const AdminComponentLoader = () => (
   </Box>
 )
 
-const TAB_NAMES = ['analytics', 'users', 'locations', 'genres', 'notifications']
+const TAB_NAMES = ['analytics', 'users', 'locations', 'genres', 'series', 'notifications']
 const TAB_INDEX_MAP: { [key: string]: number } = {
   'analytics': 0,
   'users': 1,
   'locations': 2,
   'genres': 3,
-  'notifications': 4,
+  'series': 4,
+  'notifications': 5,
 }
 
 interface AdminOverview {
@@ -66,6 +69,7 @@ interface AdminOverview {
   pendingRequests: number
   pendingReviews: number
   pendingSignupRequests: number
+  pendingSeries: number
   unorganizedBooks: number
   recentBooks: number
   recentCheckouts: number
@@ -269,9 +273,14 @@ export default function AdminDashboard({ initialTab, onDataChange }: AdminDashbo
             iconPosition="start"
           />
           <Tab 
+            icon={<LibraryBooks />} 
+            label={`Series ${overview?.pendingSeries ? `(${overview.pendingSeries} pending)` : ''}`}
+            iconPosition="start"
+          />
+          <Tab 
             icon={
               <Badge 
-                badgeContent={(overview?.pendingRequests || 0) + (overview?.pendingReviews || 0) + (overview?.pendingSignupRequests || 0) > 0 ? (overview?.pendingRequests || 0) + (overview?.pendingReviews || 0) + (overview?.pendingSignupRequests || 0) : undefined} 
+                badgeContent={(overview?.pendingRequests || 0) + (overview?.pendingReviews || 0) + (overview?.pendingSignupRequests || 0) + (overview?.pendingSeries || 0) > 0 ? (overview?.pendingRequests || 0) + (overview?.pendingReviews || 0) + (overview?.pendingSignupRequests || 0) + (overview?.pendingSeries || 0) : undefined} 
                 color="primary"
                 max={99}
                 sx={{
@@ -336,6 +345,12 @@ export default function AdminDashboard({ initialTab, onDataChange }: AdminDashbo
             )}
 
             {activeTab === 4 && (
+              <Suspense fallback={<AdminComponentLoader />}>
+                <AdminSeriesReview />
+              </Suspense>
+            )}
+
+            {activeTab === 5 && (
               <Suspense fallback={<AdminComponentLoader />}>
                 <AdminNotificationCenter onDataChange={onDataChange} />
               </Suspense>

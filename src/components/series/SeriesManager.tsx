@@ -166,7 +166,8 @@ export default function SeriesManager({ availableBooks = [], onViewSeries }: Ser
                   flexDirection: 'column',
                   cursor: onViewSeries ? 'pointer' : 'default',
                   '&:hover': onViewSeries ? { boxShadow: 4 } : {},
-                  borderLeft: seriesItem.color ? `4px solid ${seriesItem.color}` : 'none'
+                  borderLeft: '4px solid',
+                  borderLeftColor: 'primary.main'
                 }}
                 onClick={() => onViewSeries && onViewSeries(seriesItem)}
               >
@@ -197,17 +198,6 @@ export default function SeriesManager({ availableBooks = [], onViewSeries }: Ser
                       size="small"
                       color={seriesItem.book_count && seriesItem.book_count > 0 ? 'primary' : 'default'}
                     />
-                    {seriesItem.color && (
-                      <Box
-                        sx={{
-                          width: 16,
-                          height: 16,
-                          backgroundColor: seriesItem.color,
-                          borderRadius: '50%',
-                          border: '1px solid #ddd'
-                        }}
-                      />
-                    )}
                   </Box>
                 </CardContent>
                 

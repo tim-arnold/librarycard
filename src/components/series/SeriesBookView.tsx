@@ -157,17 +157,6 @@ export default function SeriesBookView({
               <Typography variant="h4" component="h1">
                 {series.name}
               </Typography>
-              {series.color && (
-                <Box
-                  sx={{
-                    width: 20,
-                    height: 20,
-                    backgroundColor: series.color,
-                    borderRadius: '50%',
-                    border: '1px solid #ddd'
-                  }}
-                />
-              )}
             </Box>
             
             {series.description && (

@@ -433,6 +433,7 @@ export async function sendPermissionUpdate(
       'can_move_books': 'Move Books',
       'can_create_shelves': 'Create Shelves',
       'can_edit_genres': 'Edit Genres',
+      'can_create_series': 'Create Series',
       'can_control_user_capabilities': 'Control User Permissions',
       'can_invite_users': 'Invite Users',
       'can_manage_shelves': 'Manage Shelves',

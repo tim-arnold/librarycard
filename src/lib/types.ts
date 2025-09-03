@@ -9,6 +9,7 @@ export interface Book {
   categories?: string[]
   shelf_id?: number
   tags?: string[]
+  added_by?: string
   location_name?: string
   shelf_name?: string
   status?: string // 'available', 'checked_out'
@@ -293,11 +294,14 @@ export interface Series {
   user_id: string
   name: string
   description?: string
-  color?: string // hex color for visual distinction
   created_at: string
   updated_at: string
   sort_order: number
   book_count?: number // populated when fetching series with counts
+  approval_status: 'pending' | 'approved' | 'rejected'
+  approved_by?: string
+  approved_at?: string
+  rejection_reason?: string
 }
 
 export interface BookSeries {
@@ -340,4 +344,20 @@ export interface SeriesBooksResponse {
   total: number
   page: number
   limit: number
+}
+
+// Series approval system interfaces
+
+export interface ApproveSeriesRequest {
+  approval_status: 'approved' | 'rejected'
+  rejection_reason?: string
+}
+
+export interface PendingSeriesWithCreator extends Series {
+  creator_name?: string
+  creator_email?: string
+}
+
+export interface PendingSeriesResponse {
+  series: PendingSeriesWithCreator[]
 }
