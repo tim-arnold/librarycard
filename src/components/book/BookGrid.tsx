@@ -409,7 +409,7 @@ const BookCard = React.memo<BookCardProps>(({
                   onClick={handleMoreDetailsClick}
                   sx={{ textTransform: 'none' }}
                 >
-                  More Details
+                  View/edit details
                 </Button>
               )}
             </Box>
