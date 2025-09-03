@@ -466,9 +466,14 @@ jobs:
             console.log('\n📥 Syncing ALL production data to staging...');
             
             // Sync in correct order: parents first, then children
-            // Note: tableOrder is already defined for clearing (children first)
-            // For syncing, we need the opposite order (parents first)
+            // Note: tableOrder is defined for clearing (children first)
+            // For syncing, we need parents first, so reverse the order
             const syncOrder = [...tableOrder].reverse();
+            
+            console.log('📋 Sync order (parents first):');
+            syncOrder.forEach((table, idx) => {
+              console.log(`  ${idx + 1}. ${table}`);
+            });
             let syncedTables = 0;
             let syncedRows = 0;
             
