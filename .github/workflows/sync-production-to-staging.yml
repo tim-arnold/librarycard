@@ -486,6 +486,16 @@ jobs:
             for (const tableName of syncOrder) {
               const tableData = backupData.tables[tableName];
               
+              // Debug logging for critical tables
+              if (tableName === 'books') {
+                console.log(`🚨 CRITICAL TABLE DEBUG - books:`);
+                console.log(`  - skipTables includes books: ${skipTables.includes(tableName)}`);
+                console.log(`  - tableData exists: ${!!tableData}`);
+                console.log(`  - tableData.error: ${tableData?.error || 'none'}`);
+                console.log(`  - tableData.data exists: ${!!tableData?.data}`);
+                console.log(`  - tableData.data.length: ${tableData?.data?.length || 0}`);
+              }
+              
               // Skip tables that don't exist in staging or are legacy/orphaned
               if (skipTables.includes(tableName)) {
                 console.log(`    ⏭️  Skipping ${tableName} (legacy/orphaned table)`);
@@ -493,6 +503,9 @@ jobs:
               }
               
               if (!tableData || tableData.error || !tableData.data || tableData.data.length === 0) {
+                if (tableName === 'books') {
+                  console.log(`🚨 CRITICAL: books table being skipped due to missing data!`);
+                }
                 continue;
               }
               
@@ -772,6 +785,16 @@ jobs:
                 console.log(`    ✅ Synced ${tableName}: ${tableData.data.length} rows`);
                 syncedTables++;
                 syncedRows += tableData.data.length;
+                
+                // Verify critical tables actually exist after sync
+                if (tableName === 'books') {
+                  try {
+                    const verifyResult = executeStagingD1Command('SELECT COUNT(*) as count FROM books LIMIT 1;');
+                    console.log(`🔍 VERIFICATION: books table count check: ${verifyResult.substring(0, 200)}...`);
+                  } catch (verifyError) {
+                    console.log(`🚨 VERIFICATION FAILED: books table not accessible: ${verifyError.message}`);
+                  }
+                }
                 
               } catch (error) {
                 console.error(`    🚨 CRITICAL TABLE FAILURE - STOPPING ENTIRE SYNC`);
