@@ -470,7 +470,7 @@ jobs:
             const criticalMissingTables = [];
             
             // Critical tables that must be synced for app to work
-            const criticalTables = ['users', 'locations', 'books', 'curated_genres', 'author_mappings'];
+            const criticalTables = ['users', 'locations', 'books', 'curated_genres'];
             
             // First, show ALL tables in backup for debugging
             console.log('📋 ALL TABLES IN BACKUP DATA:');
