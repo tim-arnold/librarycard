@@ -171,22 +171,20 @@ jobs:
               }
               
               // Generate schema.sql file
-              const header = `-- Auto-generated production database schema
--- Extracted: ${new Date().toISOString()}
--- Source: Production database (librarycard-db)
--- 
--- This file is automatically updated during staging sync to ensure
--- staging database structure matches production exactly.
---
-
-`;
+              const header = '-- Auto-generated production database schema\n' +
+                           '-- Extracted: ' + new Date().toISOString() + '\n' +
+                           '-- Source: Production database (librarycard-db)\n' +
+                           '-- \n' +
+                           '-- This file is automatically updated during staging sync to ensure\n' +
+                           '-- staging database structure matches production exactly.\n' +
+                           '--\n\n';
               
               const schemaContent = header + schemaStatements.join('\n\n') + '\n';
               
               fs.writeFileSync('schema.sql', schemaContent);
               
-              console.log(`✅ Generated schema.sql with ${schemaStatements.length} table definitions`);
-              console.log(`📊 Schema file size: ${schemaContent.length} characters`);
+              console.log('✅ Generated schema.sql with ' + schemaStatements.length + ' table definitions');
+              console.log('📊 Schema file size: ' + schemaContent.length + ' characters');
               
               // Show which tables were captured
               console.log('📋 Tables extracted from production:');
