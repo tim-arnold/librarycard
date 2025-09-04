@@ -26,6 +26,7 @@ import { lazy, Suspense } from 'react'
 import { getApiBaseUrl } from '@/lib/apiConfig'
 
 const ReviewModeration = lazy(() => import('./ReviewModerationComponent'))
+const AdminSeriesReview = lazy(() => import('./AdminSeriesReview'))
 
 interface NotificationCounts {
   pendingRemovalRequests: number
@@ -35,6 +36,7 @@ interface NotificationCounts {
   monthlyReminders: number
   pendingInvitations: number
   pendingGenreRequests: number
+  pendingSeries: number
 }
 
 interface AdminNotificationCenterProps {
@@ -51,7 +53,8 @@ export default function AdminNotificationCenter({ onDataChange }: AdminNotificat
     overdueCheckouts: 0,
     monthlyReminders: 0,
     pendingInvitations: 0,
-    pendingGenreRequests: 0
+    pendingGenreRequests: 0,
+    pendingSeries: 0
   })
   const [dataLoaded, setDataLoaded] = useState(false)
 
@@ -101,6 +104,21 @@ export default function AdminNotificationCenter({ onDataChange }: AdminNotificat
         }))
       }
 
+      // Load pending series count
+      const seriesResponse = await fetch(`${getApiBaseUrl()}/api/admin/analytics`, {
+        headers: {
+          'Authorization': `Bearer ${session.user.email}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (seriesResponse.ok) {
+        const seriesData = await seriesResponse.json()
+        setCounts(prev => ({
+          ...prev,
+          pendingSeries: seriesData.overview.pendingSeries || 0
+        }))
+      }
 
       // TODO: Implement other notification counts when features are added
       // - Overdue checkouts (books checked out > 30 days)
@@ -177,6 +195,13 @@ export default function AdminNotificationCenter({ onDataChange }: AdminNotificat
             />
             <Tab 
               label={
+                <Badge badgeContent={counts.pendingSeries} color="secondary">
+                  Series Reviews
+                </Badge>
+              }
+            />
+            <Tab 
+              label={
                 <Badge badgeContent={counts.overdueCheckouts} color="error">
                   Overdue Checkouts
                 </Badge>
@@ -227,6 +252,14 @@ export default function AdminNotificationCenter({ onDataChange }: AdminNotificat
           )}
 
           {activeTab === 4 && (
+            <Box sx={{ p: 3 }}>
+              <Suspense fallback={<Box sx={{ p: 3, textAlign: 'center' }}>Loading series reviews...</Box>}>
+                <AdminSeriesReview />
+              </Suspense>
+            </Box>
+          )}
+
+          {activeTab === 5 && (
             <Box sx={{ p: 3, textAlign: 'center' }}>
               <Schedule sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
               <Typography variant="h6" color="text.secondary" gutterBottom>
@@ -241,7 +274,7 @@ export default function AdminNotificationCenter({ onDataChange }: AdminNotificat
             </Box>
           )}
 
-          {activeTab === 5 && (
+          {activeTab === 6 && (
             <Box sx={{ p: 3, textAlign: 'center' }}>
               <Notifications sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
               <Typography variant="h6" color="text.secondary" gutterBottom>
@@ -256,7 +289,7 @@ export default function AdminNotificationCenter({ onDataChange }: AdminNotificat
             </Box>
           )}
 
-          {activeTab === 6 && (
+          {activeTab === 7 && (
             <Box sx={{ p: 3, textAlign: 'center' }}>
               <CheckCircle sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
               <Typography variant="h6" color="text.secondary" gutterBottom>

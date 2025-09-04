@@ -24,6 +24,7 @@ import {
 import { isAdmin } from '@/lib/permissions'
 import { useUnreadNotificationCount } from '@/hooks/useNotifications'
 import { useRejectedReviewNotifications } from '@/hooks/useRejectedReviewNotifications'
+import { useAdminPendingCounts } from '@/hooks/useAdminPendingCounts'
 import { themeVariants, type ThemeVariant } from '@/lib/theme'
 
 interface GlobalHeaderProps {
@@ -42,8 +43,10 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
   const [themeMenuOpen, setThemeMenuOpen] = useState(false)
   const { unreadCount } = useUnreadNotificationCount()
   const { unreadRejectedCount } = useRejectedReviewNotifications()
+  const { counts: adminCounts } = useAdminPendingCounts()
 
   const totalNotifications = unreadCount + unreadRejectedCount
+  const totalAdminNotifications = adminCounts.total
 
   // Theme options
   const themeOptions: { value: ThemeVariant; label: string; color: string }[] = [
@@ -184,6 +187,9 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                       padding: 'var(--marketing-spacing-2)',
                       borderRadius: 'var(--marketing-radius-base)',
                       position: 'relative',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 'var(--marketing-spacing-1)',
                       // Custom CSS properties for the underline
                       '--nav-underline-width': isActivePath(item.href, item.key) ? '100%' : '0%',
                       '--nav-underline-opacity': isActivePath(item.href, item.key) ? '1' : '0',
@@ -204,6 +210,26 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                     }}
                   >
                     {item.name}
+                    {/* Admin notifications badge */}
+                    {item.key === 'admin' && totalAdminNotifications > 0 && (
+                      <span
+                        style={{
+                          backgroundColor: muiTheme.palette.error.main,
+                          color: muiTheme.palette.error.contrastText,
+                          borderRadius: '50%',
+                          width: '18px',
+                          height: '18px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '0.7rem',
+                          fontWeight: 'bold',
+                          marginLeft: '4px'
+                        }}
+                      >
+                        {totalAdminNotifications > 99 ? '99+' : totalAdminNotifications}
+                      </span>
+                    )}
                     {/* Decorative underline */}
                     <div
                       style={{
@@ -634,10 +660,32 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                           : muiTheme.palette.text.primary,
                         fontSize: 'var(--marketing-text-lg)',
                         fontWeight: 'var(--marketing-font-medium)',
-                        padding: 'var(--marketing-spacing-3) 0'
+                        padding: 'var(--marketing-spacing-3) 0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between'
                       }}
                     >
-                      {item.name}
+                      <span>{item.name}</span>
+                      {/* Admin notifications badge for mobile */}
+                      {item.key === 'admin' && totalAdminNotifications > 0 && (
+                        <span
+                          style={{
+                            backgroundColor: muiTheme.palette.error.main,
+                            color: muiTheme.palette.error.contrastText,
+                            borderRadius: '50%',
+                            width: '20px',
+                            height: '20px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '0.75rem',
+                            fontWeight: 'bold'
+                          }}
+                        >
+                          {totalAdminNotifications > 99 ? '99+' : totalAdminNotifications}
+                        </span>
+                      )}
                     </button>
                   </li>
                 ))}
