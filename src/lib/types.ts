@@ -292,6 +292,7 @@ export interface BackupCodeVerifyRequest {
 export interface Series {
   id: string
   user_id: string
+  location_id: number
   name: string
   description?: string
   created_at: string
@@ -317,6 +318,7 @@ export interface CreateSeriesRequest {
   description?: string
   color?: string
   sort_order?: number
+  location_id?: number // Optional - will use user's primary location if not provided
 }
 
 export interface UpdateSeriesRequest {
@@ -356,6 +358,7 @@ export interface ApproveSeriesRequest {
 export interface PendingSeriesWithCreator extends Series {
   creator_name?: string
   creator_email?: string
+  location_name?: string
 }
 
 export interface PendingSeriesResponse {
