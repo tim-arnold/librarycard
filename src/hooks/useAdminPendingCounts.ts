@@ -6,6 +6,7 @@ interface AdminPendingCounts {
   pendingRequests: number;
   pendingReviews: number;
   pendingSignupRequests: number;
+  pendingSeries: number;
   total: number;
 }
 
@@ -15,6 +16,7 @@ export function useAdminPendingCounts() {
     pendingRequests: 0,
     pendingReviews: 0,
     pendingSignupRequests: 0,
+    pendingSeries: 0,
     total: 0,
   });
   const [loading, setLoading] = useState(false);
@@ -38,7 +40,8 @@ export function useAdminPendingCounts() {
           pendingRequests: overview.pendingRequests || 0,
           pendingReviews: overview.pendingReviews || 0,
           pendingSignupRequests: overview.pendingSignupRequests || 0,
-          total: (overview.pendingRequests || 0) + (overview.pendingReviews || 0) + (overview.pendingSignupRequests || 0),
+          pendingSeries: overview.pendingSeries || 0,
+          total: (overview.pendingRequests || 0) + (overview.pendingReviews || 0) + (overview.pendingSignupRequests || 0) + (overview.pendingSeries || 0),
         };
         setCounts(newCounts);
       }
