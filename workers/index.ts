@@ -448,12 +448,19 @@ export default {
       
       // Debug logging for authentication in local environment
       if (env.ENVIRONMENT === 'local') {
-        console.log('🔍 Auth Debug: User authenticated for', path);
+        console.log('🔍 Auth Debug: UserId from request:', userId, 'for path:', path);
       }
       
       // All other endpoints require authentication
       if (!userId) {
+        if (env.ENVIRONMENT === 'local') {
+          console.log('🔍 Auth Debug: No userId found, returning UNAUTHORIZED');
+        }
         return CommonErrors.UNAUTHORIZED(env, corsHeaders);
+      }
+      
+      if (env.ENVIRONMENT === 'local') {
+        console.log('🔍 Auth Debug: User authenticated successfully for', path);
       }
 
       // CSRF token endpoint (for frontend to obtain tokens)
@@ -653,9 +660,17 @@ export default {
       // Delete WebAuthn credential (protected)
       if (path.match(/^\/api\/auth\/webauthn\/credentials\/(.+)$/) && request.method === 'DELETE') {
         try {
-          const rawCredentialId = path.split('/')[5];
-          // Convert base64url to standard base64 if needed
-          const credentialId = rawCredentialId.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - rawCredentialId.length % 4) % 4);
+          const rawId = path.split('/')[5];
+          const credentialDbId = parseInt(rawId);
+          
+          console.log(`🔍 WebAuthn Debug: DELETE request for credential ID ${credentialDbId} (raw: ${rawId})`);
+          
+          if (isNaN(credentialDbId)) {
+            return new Response(JSON.stringify({ error: 'Invalid credential ID' }), {
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
           
           const url = new URL(request.url);
           const rpName = 'LibraryCard';
@@ -664,7 +679,7 @@ export default {
           const origin = env.ENVIRONMENT === 'local' ? 'http://localhost:3000' : env.APP_URL;
           
           const webAuthnService = new WebAuthnService(env.DB, rpName, rpID, origin);
-          const success = await webAuthnService.deleteCredential(userId, credentialId);
+          const success = await webAuthnService.deleteCredentialById(userId, credentialDbId);
           
           if (success) {
             return new Response(JSON.stringify({ success: true }), {
