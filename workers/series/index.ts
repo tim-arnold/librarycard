@@ -132,6 +132,17 @@ export async function createSeries(request: Request, userId: string, env: Env, c
       approvalStatus
     ).run();
     
+    // Invalidate admin analytics cache if series is pending (affects pendingSeries count)
+    if (approvalStatus === 'pending') {
+      try {
+        const { invalidateAllAdminAnalytics } = await import('../admin/cached');
+        await invalidateAllAdminAnalytics(env);
+      } catch (cacheError) {
+        console.error('Failed to invalidate admin analytics cache:', cacheError);
+        // Don't fail the creation if cache invalidation fails
+      }
+    }
+
     // Return the created series
     const newSeries = {
       id: seriesId,
@@ -643,6 +654,15 @@ export async function approveRejectSeries(
     `);
     
     const updatedSeries = await updatedStmt.bind(seriesId).first();
+
+    // Invalidate admin analytics cache since pendingSeries count changed
+    try {
+      const { invalidateAllAdminAnalytics } = await import('../admin/cached');
+      await invalidateAllAdminAnalytics(env);
+    } catch (cacheError) {
+      console.error('Failed to invalidate admin analytics cache:', cacheError);
+      // Don't fail the approval if cache invalidation fails
+    }
 
     return new Response(JSON.stringify({
       success: true,
