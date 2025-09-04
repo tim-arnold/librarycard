@@ -83,6 +83,7 @@ import {
 } from './auth-core';
 import { WebAuthnService } from './auth/webauthn';
 import { generateJWT } from './auth/jwt';
+import { type AuthenticationResponseJSON } from '@simplewebauthn/browser';
 import {
   createLocationInvitation,
   acceptLocationInvitation,
@@ -376,7 +377,7 @@ export default {
           
           const webAuthnService = new WebAuthnService(env.DB, rpName, rpID, origin);
           
-          const response = await request.json();
+          const response = await request.json() as AuthenticationResponseJSON;
           const verification = await webAuthnService.verifyAuthenticationResponse(response);
           
           if (verification.success && verification.userId) {
@@ -458,6 +459,10 @@ export default {
         }
         return CommonErrors.UNAUTHORIZED(env, corsHeaders);
       }
+      
+      // TypeScript assertion: userId is guaranteed to be non-null after the check above
+      // Reassign to ensure type safety for the rest of the function
+      userId = userId as string;
       
       if (env.ENVIRONMENT === 'local') {
         console.log('🔍 Auth Debug: User authenticated successfully for', path);
@@ -872,7 +877,7 @@ export default {
           });
         } else {
           // Use legacy Google Books only approach
-          const editions = await getCachedBookEditions(query, '', env);
+          const editions = await getCachedBookEditions(query || '', '', env);
           return new Response(JSON.stringify({ editions }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
@@ -1289,7 +1294,7 @@ export default {
 
           const genreId = parseInt(path.split('/')[4]);
           const body = await request.json() as any;
-          const updatedGenre = await genreService.updateGenre(genreId, body, userId);
+          const updatedGenre = await genreService.updateGenre(genreId, body);
           
           if (!updatedGenre) {
             return new Response(JSON.stringify({ error: 'Genre not found' }), {

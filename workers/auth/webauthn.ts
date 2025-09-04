@@ -80,8 +80,8 @@ export class WebAuthnService {
         timeout: 60000,
         attestationType: 'none',
         excludeCredentials: existingCredentials.map(cred => ({
-          id: new TextEncoder().encode(cred.credential_id),
-          type: 'public-key',
+          id: cred.credential_id,
+          type: 'public-key' as const,
           transports: cred.transports ? JSON.parse(cred.transports) : undefined,
         })),
         authenticatorSelection: {
@@ -183,8 +183,8 @@ export class WebAuthnService {
       if (userId) {
         const userCredentials = await this.getUserCredentials(userId)
         allowCredentials = userCredentials.map(cred => ({
-          id: new TextEncoder().encode(cred.credential_id),
-          type: 'public-key',
+          id: cred.credential_id,
+          type: 'public-key' as const,
           transports: cred.transports ? JSON.parse(cred.transports) : undefined,
         }))
       }
