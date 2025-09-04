@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { API_BASE_URL } from '@/lib/apiConfig'
 
+// Force dynamic rendering since this route needs to read query parameters
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     const token = request.nextUrl.searchParams.get('token')
