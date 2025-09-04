@@ -17,6 +17,7 @@ import { Close, Star } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
 import StarRatingInput from '../book/StarRatingInput'
 import AccessibleIcon from '../ui/AccessibleIcon'
+import CoverAttribution from '../common/CoverAttribution'
 
 interface RatingModalProps {
   book: EnhancedBook
@@ -107,18 +108,21 @@ export default function RatingModal({
         {/* Book Info */}
         <Box sx={{ mb: 3, display: 'flex', gap: 2 }}>
           {book.thumbnail && (
-            <Box
-              component="img"
-              src={book.thumbnail}
-              alt={book.title}
-              sx={{ 
-                width: 60, 
-                height: 90, 
-                objectFit: 'cover',
-                borderRadius: 1,
-                flexShrink: 0
-              }}
-            />
+            <Box sx={{ flexShrink: 0 }}>
+              <Box
+                component="img"
+                src={book.thumbnail}
+                alt={book.title}
+                sx={{ 
+                  width: 60, 
+                  height: 90, 
+                  objectFit: 'cover',
+                  borderRadius: 1,
+                  display: 'block'
+                }}
+              />
+              <CoverAttribution coverUrl={book.thumbnail} variant="small" />
+            </Box>
           )}
           <Box sx={{ flex: 1 }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
