@@ -6,6 +6,7 @@ import { hasUserPermission, getLocationIdFromBookId } from '../permissions';
 export interface Series {
   id: string;
   user_id: string;
+  location_id: number;
   name: string;
   description?: string;
   color?: string;
@@ -24,6 +25,7 @@ export interface CreateSeriesRequest {
   description?: string;
   color?: string;
   sort_order?: number;
+  location_id?: number; // Optional - will use user's primary location if not provided
 }
 
 export interface UpdateSeriesRequest {
@@ -42,26 +44,51 @@ export interface AddBooksToSeriesRequest {
   book_ids: string[];
 }
 
-// Get all user series with book counts
+// Get all user series with book counts - now location-aware
 export async function getUserSeries(userId: string, env: Env, corsHeaders: Record<string, string>): Promise<Response> {
   try {
     // Check if user is super admin to determine what series to show
     const isSuperAdmin = await isUserSuperAdmin(userId, env);
     
-    const stmt = env.DB.prepare(`
-      SELECT 
-        s.id, s.user_id, s.name, s.description, s.color, 
-        s.created_at, s.updated_at, s.sort_order,
-        s.approval_status, s.approved_by, s.approved_at, s.rejection_reason,
-        COUNT(bs.book_id) as book_count
-      FROM series s
-      LEFT JOIN book_series bs ON s.id = bs.series_id
-      WHERE s.user_id = ? ${isSuperAdmin ? '' : 'AND s.approval_status = "approved"'}
-      GROUP BY s.id, s.user_id, s.name, s.description, s.color, s.created_at, s.updated_at, s.sort_order, s.approval_status, s.approved_by, s.approved_at, s.rejection_reason
-      ORDER BY s.sort_order ASC, s.created_at DESC
-    `);
+    let stmt;
+    let params: any[] = [];
     
-    const result = await stmt.bind(userId).all();
+    if (isSuperAdmin) {
+      // Super admins see all series globally
+      stmt = env.DB.prepare(`
+        SELECT 
+          s.id, s.user_id, s.location_id, s.name, s.description, s.color, 
+          s.created_at, s.updated_at, s.sort_order,
+          s.approval_status, s.approved_by, s.approved_at, s.rejection_reason,
+          COUNT(bs.book_id) as book_count,
+          l.name as location_name
+        FROM series s
+        LEFT JOIN book_series bs ON s.id = bs.series_id
+        LEFT JOIN locations l ON s.location_id = l.id
+        GROUP BY s.id, s.user_id, s.location_id, s.name, s.description, s.color, s.created_at, s.updated_at, s.sort_order, s.approval_status, s.approved_by, s.approved_at, s.rejection_reason, l.name
+        ORDER BY s.sort_order ASC, s.created_at DESC
+      `);
+    } else {
+      // Regular users see only approved series from locations they have access to
+      stmt = env.DB.prepare(`
+        SELECT 
+          s.id, s.user_id, s.location_id, s.name, s.description, s.color, 
+          s.created_at, s.updated_at, s.sort_order,
+          s.approval_status, s.approved_by, s.approved_at, s.rejection_reason,
+          COUNT(bs.book_id) as book_count,
+          l.name as location_name
+        FROM series s
+        LEFT JOIN book_series bs ON s.id = bs.series_id
+        LEFT JOIN locations l ON s.location_id = l.id
+        INNER JOIN location_members lm ON s.location_id = lm.location_id
+        WHERE lm.user_id = ? AND s.approval_status = "approved"
+        GROUP BY s.id, s.user_id, s.location_id, s.name, s.description, s.color, s.created_at, s.updated_at, s.sort_order, s.approval_status, s.approved_by, s.approved_at, s.rejection_reason, l.name
+        ORDER BY s.sort_order ASC, s.created_at DESC
+      `);
+      params = [userId];
+    }
+    
+    const result = await stmt.bind(...params).all();
     const series = result.results || [];
     
     return new Response(JSON.stringify({ series, isAdmin: isSuperAdmin }), {
@@ -80,7 +107,7 @@ export async function getUserSeries(userId: string, env: Env, corsHeaders: Recor
 export async function createSeries(request: Request, userId: string, env: Env, corsHeaders: Record<string, string>): Promise<Response> {
   try {
     const body = await request.json() as CreateSeriesRequest;
-    const { name, description, color, sort_order } = body;
+    const { name, description, color, sort_order, location_id } = body;
     
     if (!name || name.trim().length === 0) {
       return new Response(JSON.stringify({ error: 'Series name is required' }), {
@@ -89,12 +116,51 @@ export async function createSeries(request: Request, userId: string, env: Env, c
       });
     }
     
-    // Check if series name already exists for this user
-    const existingStmt = env.DB.prepare('SELECT id FROM series WHERE user_id = ? AND name = ?');
-    const existing = await existingStmt.bind(userId, name.trim()).first();
+    // Determine location for the series
+    let seriesLocationId = location_id;
+    
+    if (!seriesLocationId) {
+      // If no location provided, use user's primary location (first joined)
+      const userLocationStmt = env.DB.prepare(`
+        SELECT location_id 
+        FROM location_members 
+        WHERE user_id = ? 
+        ORDER BY joined_at ASC 
+        LIMIT 1
+      `);
+      const userLocation = await userLocationStmt.bind(userId).first();
+      
+      if (!userLocation) {
+        return new Response(JSON.stringify({ error: 'User must be a member of at least one location to create series' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
+      seriesLocationId = userLocation.location_id;
+    } else {
+      // Verify user has access to the specified location
+      const membershipStmt = env.DB.prepare(`
+        SELECT location_id 
+        FROM location_members 
+        WHERE user_id = ? AND location_id = ?
+      `);
+      const membership = await membershipStmt.bind(userId, seriesLocationId).first();
+      
+      if (!membership) {
+        return new Response(JSON.stringify({ error: 'You do not have access to the specified location' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+    
+    // Check if series name already exists in this location
+    const existingStmt = env.DB.prepare('SELECT id FROM series WHERE location_id = ? AND name = ?');
+    const existing = await existingStmt.bind(seriesLocationId, name.trim()).first();
     
     if (existing) {
-      return new Response(JSON.stringify({ error: 'A series with this name already exists' }), {
+      return new Response(JSON.stringify({ error: 'A series with this name already exists in this location' }), {
         status: 409,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -103,26 +169,27 @@ export async function createSeries(request: Request, userId: string, env: Env, c
     const seriesId = uuidv4();
     const currentTimestamp = new Date().toISOString();
     
-    // Check if user has can_create_series permission in any location to auto-approve series
-    const userLocationsStmt = env.DB.prepare(`
-      SELECT DISTINCT lup.location_id 
+    // Check if user has can_create_series permission in the target location to auto-approve series
+    const userPermissionStmt = env.DB.prepare(`
+      SELECT lup.location_id 
       FROM location_user_permissions lup 
-      WHERE lup.user_id = ? AND lup.permission = 'can_create_series'
+      WHERE lup.user_id = ? AND lup.location_id = ? AND lup.permission = 'can_create_series'
     `);
-    const userLocations = await userLocationsStmt.bind(userId).all();
-    const canAutoApprove = userLocations.results && userLocations.results.length > 0;
+    const hasPermission = await userPermissionStmt.bind(userId, seriesLocationId).first();
+    const canAutoApprove = !!hasPermission;
     
     const stmt = env.DB.prepare(`
-      INSERT INTO series (id, user_id, name, description, color, created_at, updated_at, sort_order, approval_status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO series (id, user_id, location_id, name, description, color, created_at, updated_at, sort_order, approval_status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     
     const approvalStatus = canAutoApprove ? 'approved' : 'pending';
-    console.log(`📝 CreateSeries: User ${userId} has can_create_series permission: ${canAutoApprove}, setting approval_status to: ${approvalStatus}`);
+    console.log(`📝 CreateSeries: User ${userId} has can_create_series permission in location ${seriesLocationId}: ${canAutoApprove}, setting approval_status to: ${approvalStatus}`);
     
     await stmt.bind(
       seriesId,
       userId,
+      seriesLocationId,
       name.trim(),
       description?.trim() || null,
       color || null,
@@ -147,6 +214,7 @@ export async function createSeries(request: Request, userId: string, env: Env, c
     const newSeries = {
       id: seriesId,
       user_id: userId,
+      location_id: seriesLocationId,
       name: name.trim(),
       description: description?.trim() || null,
       color: color || null,
@@ -685,37 +753,61 @@ export async function approveRejectSeries(
 // Get all pending series for admin review
 export async function getPendingSeries(adminUserId: string, env: Env, corsHeaders: Record<string, string>): Promise<Response> {
   try {
-    // Check if user is super admin
+    // Check if user is super admin or location admin
     const isSuperAdmin = await isUserSuperAdmin(adminUserId, env);
-    if (!isSuperAdmin) {
-      return new Response(JSON.stringify({ error: 'Access denied. Admin privileges required.' }), {
-        status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const stmt = env.DB.prepare(`
-      SELECT 
-        s.id, s.user_id, s.name, s.description, s.color,
-        s.created_at, s.updated_at, s.sort_order, s.approval_status,
-        s.approved_by, s.approved_at, s.rejection_reason,
-        COUNT(bs.book_id) as book_count,
-        u.first_name || ' ' || u.last_name as creator_name,
-        u.email as creator_email
-      FROM series s
-      LEFT JOIN book_series bs ON s.id = bs.series_id
-      LEFT JOIN users u ON s.user_id = u.id
-      WHERE s.approval_status = 'pending'
-      GROUP BY s.id, s.user_id, s.name, s.description, s.color, s.created_at, s.updated_at, s.sort_order, s.approval_status, s.approved_by, s.approved_at, s.rejection_reason, u.first_name, u.last_name, u.email
-      ORDER BY s.created_at ASC
-    `);
     
-    const result = await stmt.all();
+    let stmt;
+    let params: any[] = [];
+    
+    if (isSuperAdmin) {
+      // Super admins see all pending series globally
+      stmt = env.DB.prepare(`
+        SELECT 
+          s.id, s.user_id, s.location_id, s.name, s.description, s.color,
+          s.created_at, s.updated_at, s.sort_order, s.approval_status,
+          s.approved_by, s.approved_at, s.rejection_reason,
+          COUNT(bs.book_id) as book_count,
+          u.first_name || ' ' || u.last_name as creator_name,
+          u.email as creator_email,
+          l.name as location_name
+        FROM series s
+        LEFT JOIN book_series bs ON s.id = bs.series_id
+        LEFT JOIN users u ON s.user_id = u.id
+        LEFT JOIN locations l ON s.location_id = l.id
+        WHERE s.approval_status = 'pending'
+        GROUP BY s.id, s.user_id, s.location_id, s.name, s.description, s.color, s.created_at, s.updated_at, s.sort_order, s.approval_status, s.approved_by, s.approved_at, s.rejection_reason, u.first_name, u.last_name, u.email, l.name
+        ORDER BY s.created_at ASC
+      `);
+    } else {
+      // Location admins see only pending series from locations they manage
+      stmt = env.DB.prepare(`
+        SELECT 
+          s.id, s.user_id, s.location_id, s.name, s.description, s.color,
+          s.created_at, s.updated_at, s.sort_order, s.approval_status,
+          s.approved_by, s.approved_at, s.rejection_reason,
+          COUNT(bs.book_id) as book_count,
+          u.first_name || ' ' || u.last_name as creator_name,
+          u.email as creator_email,
+          l.name as location_name
+        FROM series s
+        LEFT JOIN book_series bs ON s.id = bs.series_id
+        LEFT JOIN users u ON s.user_id = u.id
+        LEFT JOIN locations l ON s.location_id = l.id
+        INNER JOIN location_members lm ON s.location_id = lm.location_id
+        WHERE s.approval_status = 'pending' AND lm.user_id = ? AND lm.role IN ('owner', 'admin')
+        GROUP BY s.id, s.user_id, s.location_id, s.name, s.description, s.color, s.created_at, s.updated_at, s.sort_order, s.approval_status, s.approved_by, s.approved_at, s.rejection_reason, u.first_name, u.last_name, u.email, l.name
+        ORDER BY s.created_at ASC
+      `);
+      params = [adminUserId];
+    }
+    
+    const result = await stmt.bind(...params).all();
     const pendingSeries = result.results || [];
 
     return new Response(JSON.stringify({ 
       series: pendingSeries,
-      count: pendingSeries.length 
+      count: pendingSeries.length,
+      isGlobalAdmin: isSuperAdmin 
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
