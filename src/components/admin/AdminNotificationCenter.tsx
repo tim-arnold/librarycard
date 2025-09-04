@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import {
   Typography,
@@ -24,6 +24,7 @@ import GenreRequestManager from './GenreRequestManager'
 import AdminSignupManager from './AdminSignupManager'
 import { lazy, Suspense } from 'react'
 import { getApiBaseUrl } from '@/lib/apiConfig'
+import { useAdminPendingCounts } from '@/hooks/useAdminPendingCounts'
 
 const ReviewModeration = lazy(() => import('./ReviewModerationComponent'))
 const AdminSeriesReview = lazy(() => import('./AdminSeriesReview'))
@@ -46,48 +47,18 @@ interface AdminNotificationCenterProps {
 export default function AdminNotificationCenter({ onDataChange }: AdminNotificationCenterProps = {}) {
   const { data: session } = useSession()
   const [activeTab, setActiveTab] = useState(0)
-  const [counts, setCounts] = useState<NotificationCounts>({
-    pendingRemovalRequests: 0,
-    pendingReviews: 0,
-    pendingSignupRequests: 0,
-    overdueCheckouts: 0,
-    monthlyReminders: 0,
-    pendingInvitations: 0,
-    pendingGenreRequests: 0,
-    pendingSeries: 0
-  })
+  const { counts: adminCounts, refreshCounts } = useAdminPendingCounts()
+  const [genreRequests, setGenreRequests] = useState(0)
   const [dataLoaded, setDataLoaded] = useState(false)
-
-  useEffect(() => {
-    if (session?.user?.email && !dataLoaded) {
-      loadNotificationCounts()
-      setDataLoaded(true)
-    }
-  }, [session?.user?.email, dataLoaded])
-
-  const loadNotificationCounts = async () => {
+  
+  const loadNotificationCounts = useCallback(async () => {
     if (!session?.user?.email) return
 
     try {
-      // Load analytics data to get pending requests count
-      const analyticsResponse = await fetch(`${getApiBaseUrl()}/api/admin/analytics`, {
-        headers: {
-          'Authorization': `Bearer ${session.user.email}`,
-          'Content-Type': 'application/json',
-        },
-      })
+      // Refresh the shared admin counts (handles pendingRequests, pendingReviews, pendingSignupRequests, pendingSeries)
+      await refreshCounts()
 
-      if (analyticsResponse.ok) {
-        const analyticsData = await analyticsResponse.json()
-        setCounts(prev => ({
-          ...prev,
-          pendingRemovalRequests: analyticsData.overview.pendingRequests || 0,
-          pendingReviews: analyticsData.overview.pendingReviews || 0,
-          pendingSignupRequests: analyticsData.overview.pendingSignupRequests || 0
-        }))
-      }
-
-      // Load genre requests count
+      // Load genre requests count separately (not included in shared hook yet)
       const genreRequestsResponse = await fetch(`${getApiBaseUrl()}/api/admin/genre-requests`, {
         headers: {
           'Authorization': `Bearer ${session.user.email}`,
@@ -96,28 +67,9 @@ export default function AdminNotificationCenter({ onDataChange }: AdminNotificat
       })
 
       if (genreRequestsResponse.ok) {
-        const genreRequests = await genreRequestsResponse.json()
-        const pendingCount = genreRequests.filter((req: any) => req.status === 'pending').length
-        setCounts(prev => ({
-          ...prev,
-          pendingGenreRequests: pendingCount
-        }))
-      }
-
-      // Load pending series count
-      const seriesResponse = await fetch(`${getApiBaseUrl()}/api/admin/analytics`, {
-        headers: {
-          'Authorization': `Bearer ${session.user.email}`,
-          'Content-Type': 'application/json',
-        },
-      })
-
-      if (seriesResponse.ok) {
-        const seriesData = await seriesResponse.json()
-        setCounts(prev => ({
-          ...prev,
-          pendingSeries: seriesData.overview.pendingSeries || 0
-        }))
+        const genreRequestsData = await genreRequestsResponse.json()
+        const pendingCount = genreRequestsData.filter((req: any) => req.status === 'pending').length
+        setGenreRequests(pendingCount)
       }
 
       // TODO: Implement other notification counts when features are added
@@ -131,7 +83,26 @@ export default function AdminNotificationCenter({ onDataChange }: AdminNotificat
     } catch (error) {
       console.error('Error loading notification counts:', error)
     }
+  }, [session?.user?.email, refreshCounts, onDataChange])
+
+  // Map shared counts to local counts interface for backwards compatibility
+  const counts = {
+    pendingRemovalRequests: adminCounts.pendingRequests,
+    pendingReviews: adminCounts.pendingReviews,
+    pendingSignupRequests: adminCounts.pendingSignupRequests,
+    pendingSeries: adminCounts.pendingSeries,
+    pendingGenreRequests: genreRequests,
+    overdueCheckouts: 0,
+    monthlyReminders: 0,
+    pendingInvitations: 0
   }
+
+  useEffect(() => {
+    if (session?.user?.email && !dataLoaded) {
+      loadNotificationCounts()
+      setDataLoaded(true)
+    }
+  }, [session?.user?.email, dataLoaded, loadNotificationCounts])
 
   // Set up automatic refresh every 30 seconds for dynamic updates
   useEffect(() => {
@@ -254,7 +225,7 @@ export default function AdminNotificationCenter({ onDataChange }: AdminNotificat
           {activeTab === 4 && (
             <Box sx={{ p: 3 }}>
               <Suspense fallback={<Box sx={{ p: 3, textAlign: 'center' }}>Loading series reviews...</Box>}>
-                <AdminSeriesReview />
+                <AdminSeriesReview onCountChange={loadNotificationCounts} />
               </Suspense>
             </Box>
           )}
