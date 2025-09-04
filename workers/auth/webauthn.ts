@@ -80,8 +80,8 @@ export class WebAuthnService {
         timeout: 60000,
         attestationType: 'none',
         excludeCredentials: existingCredentials.map(cred => ({
-          id: new TextEncoder().encode(cred.credential_id),
-          type: 'public-key',
+          id: cred.credential_id,
+          type: 'public-key' as const,
           transports: cred.transports ? JSON.parse(cred.transports) : undefined,
         })),
         authenticatorSelection: {
@@ -183,8 +183,8 @@ export class WebAuthnService {
       if (userId) {
         const userCredentials = await this.getUserCredentials(userId)
         allowCredentials = userCredentials.map(cred => ({
-          id: new TextEncoder().encode(cred.credential_id),
-          type: 'public-key',
+          id: cred.credential_id,
+          type: 'public-key' as const,
           transports: cred.transports ? JSON.parse(cred.transports) : undefined,
         }))
       }
@@ -282,15 +282,51 @@ export class WebAuthnService {
   }
 
   /**
-   * Delete a credential
+   * Delete a credential by database row ID
+   */
+  async deleteCredentialById(userId: string, id: number): Promise<boolean> {
+    try {
+      console.log(`🔍 WebAuthn Debug: Attempting to delete credential by ID ${id} for user ${userId}`)
+      
+      const stmt = this.db.prepare(
+        'DELETE FROM webauthn_credentials WHERE user_id = ? AND id = ?'
+      )
+      const result = await stmt.bind(userId, id).run()
+      
+      console.log(`🔍 WebAuthn Debug: Delete result:`, result)
+      
+      // Check if any rows were actually deleted - handle both result.changes and result.meta.changes
+      const changes = result.changes || result.meta?.changes || 0
+      const deleted = changes > 0
+      console.log(`🔍 WebAuthn Debug: Credential deletion ${deleted ? 'successful' : 'failed'} - ${changes} rows affected`)
+      
+      return deleted
+    } catch (error) {
+      console.error('Error deleting credential by ID:', error)
+      return false
+    }
+  }
+
+  /**
+   * Delete a credential by credential_id
    */
   async deleteCredential(userId: string, credentialId: string): Promise<boolean> {
     try {
+      console.log(`🔍 WebAuthn Debug: Attempting to delete credential ${credentialId} for user ${userId}`)
+      
       const stmt = this.db.prepare(
         'DELETE FROM webauthn_credentials WHERE user_id = ? AND credential_id = ?'
       )
-      await stmt.bind(userId, credentialId).run()
-      return true
+      const result = await stmt.bind(userId, credentialId).run()
+      
+      console.log(`🔍 WebAuthn Debug: Delete result:`, result)
+      
+      // Check if any rows were actually deleted - handle both result.changes and result.meta.changes
+      const changes = result.changes || result.meta?.changes || 0
+      const deleted = changes > 0
+      console.log(`🔍 WebAuthn Debug: Credential deletion ${deleted ? 'successful' : 'failed'} - ${changes} rows affected`)
+      
+      return deleted
     } catch (error) {
       console.error('Error deleting credential:', error)
       return false

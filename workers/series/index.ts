@@ -466,7 +466,7 @@ export async function removeBookFromSeries(seriesId: string, bookId: string, use
     }
     
     // Get the location ID for the book to check permissions
-    const locationId = await getLocationIdFromBookId(bookId, env);
+    const locationId = await getLocationIdFromBookId(parseInt(bookId), env);
     
     // User can remove if they have can_add_books permission, own the book, or own the series
     const hasAddBooksPermission = locationId ? await hasUserPermission(userId, locationId, 'can_add_books', env) : false;
