@@ -1,10 +1,12 @@
-// Cloudflare D1 Database type
+// Cloudflare Workers types
 type D1Database = any;
+type KVNamespace = any;
 
 export interface Env {
   DB: D1Database;
   DATABASE: D1Database; // Alias for DB
   NEXTAUTH_SECRET: string;
+  JWT_SECRET: string;
   SMTP_HOST: string;
   SMTP_PORT: string;
   SMTP_USER: string;
@@ -213,6 +215,13 @@ export interface GoogleBooksVolumeInfo {
   imageLinks?: Record<string, string>;
   averageRating?: number;
   ratingsCount?: number;
+  categories?: string[];
+  language?: string;
+  previewLink?: string;
+  infoLink?: string;
+  maturityRating?: string;
+  allowAnonLogging?: boolean;
+  contentVersion?: string;
 }
 
 export interface GoogleBooksItem {

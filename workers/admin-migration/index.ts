@@ -38,7 +38,7 @@ export default {
       console.error('Migration worker error:', error)
       return new Response(JSON.stringify({ 
         error: 'Internal server error',
-        message: error.message 
+        message: error instanceof Error ? error.message : 'Unknown error'
       }), { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -78,7 +78,7 @@ async function getBooksForMigration(db: any, corsHeaders: any): Promise<Response
 }
 
 async function updateBookGenres(request: Request, db: any, corsHeaders: any): Promise<Response> {
-  const { bookId, enhancedGenres } = await request.json()
+  const { bookId, enhancedGenres } = await request.json() as { bookId: number, enhancedGenres: string[] }
   
   if (!bookId || !Array.isArray(enhancedGenres)) {
     return new Response(JSON.stringify({ 
@@ -114,7 +114,7 @@ async function updateBookGenres(request: Request, db: any, corsHeaders: any): Pr
     console.error(`Error updating book ${bookId}:`, error)
     return new Response(JSON.stringify({ 
       error: 'Database update failed',
-      message: error.message 
+      message: error instanceof Error ? error.message : 'Unknown error'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
