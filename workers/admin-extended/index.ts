@@ -19,7 +19,7 @@ export async function getAdminAnalytics(userId: string, env: Env, corsHeaders: R
   const isSuperAdmin = await getCachedIsUserSuperAdmin(userId, env);
 
   try {
-    let totalBooks, totalUsers, totalLocations, pendingRequests, pendingReviews, pendingSignupRequests;
+    let totalBooks, totalUsers, totalLocations, pendingRequests, pendingReviews, pendingSignupRequests, pendingSeries;
     
     if (isSuperAdmin) {
       // Super admin gets global statistics
@@ -29,6 +29,7 @@ export async function getAdminAnalytics(userId: string, env: Env, corsHeaders: R
       pendingRequests = await env.DB.prepare('SELECT COUNT(*) as count FROM book_removal_requests WHERE status = "pending"').first();
       pendingReviews = await env.DB.prepare('SELECT COUNT(*) as count FROM book_ratings WHERE review_status = "pending"').first();
       pendingSignupRequests = await env.DB.prepare('SELECT COUNT(*) as count FROM signup_approval_requests WHERE status = "pending"').first();
+      pendingSeries = await env.DB.prepare('SELECT COUNT(*) as count FROM series WHERE approval_status = "pending"').first();
     } else {
       // Regular admin gets location-scoped statistics
       totalBooks = await env.DB.prepare(`
@@ -101,6 +102,9 @@ export async function getAdminAnalytics(userId: string, env: Env, corsHeaders: R
       
       // Signup requests are global for all admins (not location-scoped)
       pendingSignupRequests = await env.DB.prepare('SELECT COUNT(*) as count FROM signup_approval_requests WHERE status = "pending"').first();
+      
+      // Series requests are global for all admins (not location-scoped)
+      pendingSeries = await env.DB.prepare('SELECT COUNT(*) as count FROM series WHERE approval_status = "pending"').first();
     }
 
     // Books per location
@@ -325,6 +329,7 @@ export async function getAdminAnalytics(userId: string, env: Env, corsHeaders: R
         pendingRequests: (pendingRequests as any)?.count || 0,
         pendingReviews: (pendingReviews as any)?.count || 0,
         pendingSignupRequests: (pendingSignupRequests as any)?.count || 0,
+        pendingSeries: (pendingSeries as any)?.count || 0,
         unorganizedBooks: (unorganizedBooks as any)?.count || 0,
         recentBooks: (recentBooks as any)?.count || 0,
         recentCheckouts: (recentCheckouts as any)?.count || 0,
