@@ -30,6 +30,9 @@ export async function getAdminAnalytics(userId: string, env: Env, corsHeaders: R
       pendingReviews = await env.DB.prepare('SELECT COUNT(*) as count FROM book_ratings WHERE review_status = "pending"').first();
       pendingSignupRequests = await env.DB.prepare('SELECT COUNT(*) as count FROM signup_approval_requests WHERE status = "pending"').first();
       pendingSeries = await env.DB.prepare('SELECT COUNT(*) as count FROM series WHERE approval_status = "pending"').first();
+      
+      // DEBUG: Log the pendingSeries query result for super admin
+      console.log('DEBUG - Super admin pendingSeries result:', pendingSeries);
     } else {
       // Regular admin gets location-scoped statistics
       totalBooks = await env.DB.prepare(`
@@ -320,6 +323,9 @@ export async function getAdminAnalytics(userId: string, env: Env, corsHeaders: R
 
     // Disable duplicate detection for now - no actual duplicates exist
     const duplicates = { results: [] };
+
+    // DEBUG: Log final pendingSeries value before response
+    console.log('DEBUG - Final pendingSeries before response:', pendingSeries, 'count:', (pendingSeries as any)?.count);
 
     return new Response(JSON.stringify({
       overview: {

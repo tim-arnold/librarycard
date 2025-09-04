@@ -165,7 +165,11 @@ function ReviewDialog({ series, open, onClose, onSubmit }: ReviewDialogProps) {
   )
 }
 
-export default function AdminSeriesReview() {
+interface AdminSeriesReviewProps {
+  onCountChange?: () => void;
+}
+
+export default function AdminSeriesReview({ onCountChange }: AdminSeriesReviewProps = {}) {
   const { data: session } = useSession()
   const [pendingSeries, setPendingSeries] = useState<PendingSeries[]>([])
   const [loading, setLoading] = useState(true)
@@ -235,6 +239,12 @@ export default function AdminSeriesReview() {
         
         // Close the dialog
         setReviewDialog({ open: false, series: null })
+        
+        // Notify parent component to refresh counts with a small delay 
+        // to ensure database changes are reflected
+        setTimeout(() => {
+          onCountChange?.()
+        }, 100)
         
         setError('')
       } else {
