@@ -26,6 +26,7 @@ import {
   LibraryBooks,
 } from '@mui/icons-material'
 import { getApiBaseUrl } from '@/lib/apiConfig'
+import { useAdminPendingCounts } from '@/hooks/useAdminPendingCounts'
 
 // Lazy load admin components for better performance
 const AdminAnalytics = lazy(() => import('./AdminAnalytics'))
@@ -88,6 +89,7 @@ export default function AdminDashboard({ initialTab, onDataChange }: AdminDashbo
   const [dataLoaded, setDataLoaded] = useState(false)
   const [fadeIn, setFadeIn] = useState(true)
   const [isTransitioning, setIsTransitioning] = useState(false)
+  const { counts: adminCounts } = useAdminPendingCounts()
 
   useEffect(() => {
     // Only run on initial mount to set tab from URL/prop
@@ -272,7 +274,7 @@ export default function AdminDashboard({ initialTab, onDataChange }: AdminDashbo
           <Tab 
             icon={
               <Badge 
-                badgeContent={(overview?.pendingRequests || 0) + (overview?.pendingReviews || 0) + (overview?.pendingSignupRequests || 0) > 0 ? (overview?.pendingRequests || 0) + (overview?.pendingReviews || 0) + (overview?.pendingSignupRequests || 0) : undefined} 
+                badgeContent={adminCounts.total > 0 ? adminCounts.total : undefined} 
                 color="primary"
                 max={99}
                 sx={{
