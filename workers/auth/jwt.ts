@@ -1,7 +1,7 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { Env } from '../types';
 
-export interface JWTPayload {
+export interface CustomJWTPayload {
   userId: string;
   email: string;
   role: string;
@@ -16,7 +16,7 @@ async function getJWTSecret(env: Env): Promise<Uint8Array> {
   return new TextEncoder().encode(secret);
 }
 
-export async function generateJWT(payload: Omit<JWTPayload, 'iat' | 'exp'>, env: Env): Promise<string> {
+export async function generateJWT(payload: Omit<CustomJWTPayload, 'iat' | 'exp'>, env: Env): Promise<string> {
   const secret = await getJWTSecret(env);
   
   return await new SignJWT(payload)
@@ -26,13 +26,13 @@ export async function generateJWT(payload: Omit<JWTPayload, 'iat' | 'exp'>, env:
     .sign(secret);
 }
 
-export async function verifyJWT(token: string, env: Env): Promise<JWTPayload | null> {
+export async function verifyJWT(token: string, env: Env): Promise<CustomJWTPayload | null> {
   try {
     const secret = await getJWTSecret(env);
     
     const { payload } = await jwtVerify(token, secret);
     
-    return payload as JWTPayload;
+    return payload as unknown as CustomJWTPayload;
   } catch (error) {
     // JWT verification failed - silent failure for security
     return null;
