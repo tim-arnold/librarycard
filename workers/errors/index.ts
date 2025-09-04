@@ -176,7 +176,7 @@ export async function withDatabaseErrorHandling<T>(
     return await operation();
   } catch (error) {
     // Check if it's a database constraint violation or similar
-    const errorMessage = error?.message || String(error);
+    const errorMessage = (error as any)?.message || String(error);
     
     // Log the full error for debugging
     logErrorSecurely(env, {

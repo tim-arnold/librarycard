@@ -1,5 +1,9 @@
 import { Env } from '../types';
 
+// Cloudflare Workers KV types
+type KVNamespace = any;
+type KVNamespacePutOptions = any;
+
 /**
  * Cloudflare KV Cache Manager with automatic fallback
  */
@@ -86,7 +90,7 @@ export class CacheManager {
       const keys = await this.kv.list({ prefix });
       
       // Delete all matching keys
-      const deletePromises = keys.keys.map(key => this.kv!.delete(key.name));
+      const deletePromises = keys.keys.map((key: any) => this.kv!.delete(key.name));
       await Promise.all(deletePromises);
       
       return true;
