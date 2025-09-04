@@ -881,21 +881,25 @@ function createThemeOptions(isDark: boolean, variant: ThemeVariant): ThemeOption
       main: '#ef4444',        // Modern red
       light: '#f87171',
       dark: '#dc2626',
+      contrastText: '#ffffff',
     },
     warning: {
       main: '#f59e0b',        // Warm amber
       light: '#fbbf24', 
       dark: '#d97706',
+      contrastText: '#ffffff',
     },
     info: {
       main: '#3b82f6',        // Modern blue
       light: '#60a5fa',
       dark: '#2563eb',
+      contrastText: '#ffffff',
     },
     success: {
       main: '#10b981',        // Modern emerald
       light: '#34d399',
       dark: '#059669',
+      contrastText: '#ffffff',
     },
     background: {
       default: '#fafbfc',     // Warmer white
@@ -1023,21 +1027,25 @@ function createThemeOptions(isDark: boolean, variant: ThemeVariant): ThemeOption
       main: '#f87171',        // Lighter red for dark mode
       light: '#fca5a5',
       dark: '#ef4444',
+      contrastText: '#000000',
     },
     warning: {
       main: '#fbbf24',        // Lighter amber for dark mode
       light: '#fde047',
       dark: '#f59e0b',
+      contrastText: '#000000',
     },
     info: {
       main: '#60a5fa',        // Lighter blue for dark mode
       light: '#93c5fd',
       dark: '#3b82f6',
+      contrastText: '#000000',
     },
     success: {
       main: '#34d399',        // Lighter emerald for dark mode
       light: '#6ee7b7',
       dark: '#10b981',
+      contrastText: '#000000',
     },
     background: {
       default: variantConfig.darkBackground.default,
