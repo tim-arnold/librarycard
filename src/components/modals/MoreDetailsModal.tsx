@@ -31,6 +31,7 @@ import { useSession } from 'next-auth/react'
 import { authenticatedFetch } from '@/lib/auth-utils'
 import { useSeries } from '@/hooks/useSeries'
 import SeriesModal from './SeriesModal'
+import CoverAttribution from '@/components/common/CoverAttribution'
 
 interface CheckoutHistoryItem {
   id: number
@@ -273,6 +274,7 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole, user
                     boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
                   }}
                 />
+                <CoverAttribution coverUrl={book.thumbnail} variant="small" />
               </Box>
             )}
             
