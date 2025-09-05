@@ -256,8 +256,9 @@ export async function moderateReview(reviewId: number, action: 'approve' | 'reje
 
 // Series Management API Functions
 
-export async function getUserSeries(): Promise<SeriesResponse> {
-  const response = await authenticatedApiCall('/api/series')
+export async function getUserSeries(locationId?: number): Promise<SeriesResponse> {
+  const url = locationId ? `/api/series?locationId=${locationId}` : '/api/series'
+  const response = await authenticatedApiCall(url)
   if (!response.ok) {
     throw new Error('Failed to fetch user series')
   }

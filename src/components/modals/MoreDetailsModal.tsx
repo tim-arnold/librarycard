@@ -63,9 +63,10 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole, user
   const [showReviews, setShowReviews] = useState(false)
   const [loadingReviews, setLoadingReviews] = useState(false)
   const [locationName, setLocationName] = useState<string>('')
+  const [bookLocationId, setBookLocationId] = useState<number | undefined>(undefined)
   
   // Series management state
-  const { series, addBooksToSeries, removeBookFromSeries, createSeries, refreshSeries } = useSeries()
+  const { series, addBooksToSeries, removeBookFromSeries, createSeries, refreshSeries } = useSeries(bookLocationId)
   const [showSeries, setShowSeries] = useState(false)
   const [isSeriesModalOpen, setIsSeriesModalOpen] = useState(false)
   const [selectedSeriesForAdd, setSelectedSeriesForAdd] = useState<string>('')
@@ -74,6 +75,29 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole, user
   // Track if series have been modified for parent update on close
   const [seriesModified, setSeriesModified] = useState(false)
   
+  // Fetch book's location_id immediately when modal opens
+  useEffect(() => {
+    const fetchBookLocation = async () => {
+      if (!book?.id || !session) return
+      
+      try {
+        const result = await authenticatedFetch(session, `/api/books/${book.id}/ratings`)
+        if (result.success && result.data) {
+          const data = result.data as any
+          if (data.location_id) {
+            setBookLocationId(data.location_id)
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch book location:', error)
+      }
+    }
+
+    if (isOpen && book?.id) {
+      fetchBookLocation()
+    }
+  }, [isOpen, book?.id, session])
+
   // Check if user can remove a book from a series
   const canRemoveFromSeries = (seriesItem: Series): boolean => {
     if (!session?.user?.email || !book) return false
@@ -159,6 +183,7 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole, user
         
         // Get location name from the book's location_id in the API response
         if (data.location_id) {
+          setBookLocationId(data.location_id)
           const locationResult = await authenticatedFetch(session, '/api/locations')
           if (locationResult.success && locationResult.data) {
             const locations = locationResult.data as any[]
