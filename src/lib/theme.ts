@@ -1186,13 +1186,13 @@ function createThemeOptions(isDark: boolean, variant: ThemeVariant): ThemeOption
   return isDark ? darkThemeOptions : lightThemeOptions
 }
 
-export const lightTheme = createTheme(createThemeOptions(false, 'indigo'))
-export const darkTheme = createTheme(createThemeOptions(true, 'indigo'))
+export const lightTheme = createTheme(createThemeOptions(false, 'green'))
+export const darkTheme = createTheme(createThemeOptions(true, 'green'))
 
 // Export default theme for backwards compatibility
 export const theme = lightTheme
 
-export function createAppTheme(isDark: boolean, variant: ThemeVariant = 'indigo') {
+export function createAppTheme(isDark: boolean, variant: ThemeVariant = 'green') {
   return createTheme(createThemeOptions(isDark, variant))
 }
 
