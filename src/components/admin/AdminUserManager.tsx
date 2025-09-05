@@ -116,6 +116,7 @@ export default function AdminUserManager() {
   const [invitationSearchTerm, setInvitationSearchTerm] = useState('')
   const [invitationDialogOpen, setInvitationDialogOpen] = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteCustomMessage, setInviteCustomMessage] = useState('')
   const [selectedLocationId, setSelectedLocationId] = useState<number | null>(null)
   const [availableLocations, setAvailableLocations] = useState<Location[]>([])
   const [invitationsLoading, setInvitationsLoading] = useState(false)
@@ -831,11 +832,13 @@ export default function AdminUserManager() {
         method: 'POST',
         body: JSON.stringify({
           invited_email: inviteEmail.trim(),
+          custom_message: inviteCustomMessage.trim() || undefined,
         }),
       })
 
       if (response.ok) {
         setInviteEmail('')
+        setInviteCustomMessage('')
         setSelectedLocationId(null)
         setInvitationDialogOpen(false)
         await alert({
@@ -1640,6 +1643,18 @@ export default function AdminUserManager() {
               </Select>
             </FormControl>
 
+            <TextField
+              label="Personal Message (Optional)"
+              multiline
+              rows={3}
+              value={inviteCustomMessage}
+              onChange={(e) => setInviteCustomMessage(e.target.value)}
+              fullWidth
+              sx={{ mb: 2 }}
+              placeholder="Add a personal message to include with the invitation..."
+              helperText="This message will be included in the invitation email to make it more personal"
+            />
+
             {/* Bulk invitation results */}
             {bulkInviteResults.length > 0 && (
               <Box sx={{ mt: 2 }}>
@@ -1667,6 +1682,7 @@ export default function AdminUserManager() {
               onClick={() => {
                 setInvitationDialogOpen(false)
                 setInviteEmail('')
+                setInviteCustomMessage('')
                 setBulkEmails('')
                 setSelectedLocationId(null)
                 setBulkInviteMode(false)
