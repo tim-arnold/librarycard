@@ -23,7 +23,7 @@ interface UseSeriesReturn {
   refreshSeries: () => Promise<void>
 }
 
-export function useSeries(): UseSeriesReturn {
+export function useSeries(locationId?: number): UseSeriesReturn {
   const [series, setSeries] = useState<Series[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -32,7 +32,7 @@ export function useSeries(): UseSeriesReturn {
     try {
       setIsLoading(true)
       setError(null)
-      const response = await getUserSeries()
+      const response = await getUserSeries(locationId)
       setSeries(response.series)
     } catch (err) {
       console.error('Failed to fetch series:', err)
@@ -41,7 +41,7 @@ export function useSeries(): UseSeriesReturn {
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [locationId])
 
   const createSeries = useCallback(async (seriesData: CreateSeriesRequest): Promise<Series | null> => {
     try {
