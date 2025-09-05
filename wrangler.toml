@@ -37,6 +37,7 @@ binding = "DB"
 database_name = "librarycard-db-local"
 database_id = "7269bb90-837c-48f4-8787-73bf1b2c55b7"
 
+
 [[env.local.kv_namespaces]]
 binding = "CACHE"
 id = "9f569f411f764d83a6c87e1bda2494ae"
