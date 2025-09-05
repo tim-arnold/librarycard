@@ -15,7 +15,7 @@ export async function createLocationInvitation(request: Request, locationId: num
     });
   }
 
-  const { invited_email }: { invited_email: string } = await request.json();
+  const { invited_email, custom_message }: { invited_email: string; custom_message?: string } = await request.json();
 
   // Validate email format
   if (!invited_email || !invited_email.includes('@')) {
@@ -92,7 +92,7 @@ export async function createLocationInvitation(request: Request, locationId: num
   // Send invitation email
   try {
     console.log('DEBUG: About to call sendInvitationEmail for:', invited_email);
-    await sendInvitationEmail(env, invited_email, (location as any)?.name || 'a location', invitationToken, userId);
+    await sendInvitationEmail(env, invited_email, (location as any)?.name || 'a location', invitationToken, userId, custom_message);
     console.log('DEBUG: sendInvitationEmail completed for:', invited_email);
   } catch (emailError) {
     console.error('ERROR: Failed to send invitation email:', {
