@@ -47,14 +47,53 @@ export interface AddBooksToSeriesRequest {
 // Get all user series with book counts - now location-aware
 export async function getUserSeries(userId: string, env: Env, corsHeaders: Record<string, string>): Promise<Response> {
   try {
+    const url = new URL(corsHeaders['request-url'] || 'https://example.com');
+    const locationId = url.searchParams.get('locationId');
+    
     // Check if user is super admin to determine what series to show
     const isSuperAdmin = await isUserSuperAdmin(userId, env);
     
     let stmt;
     let params: any[] = [];
     
-    if (isSuperAdmin) {
-      // Super admins see all series globally
+    if (locationId) {
+      // When locationId is specified, return all approved series for that specific location
+      // (if user has access to that location)
+      
+      if (!isSuperAdmin) {
+        // First verify user has access to the specified location
+        const membershipStmt = env.DB.prepare(`
+          SELECT location_id FROM location_members WHERE user_id = ? AND location_id = ?
+        `);
+        const membership = await membershipStmt.bind(userId, locationId).first();
+        
+        if (!membership) {
+          return new Response(JSON.stringify({ error: 'Access denied to specified location' }), {
+            status: 403,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+      
+      // Return all approved series for the specific location
+      stmt = env.DB.prepare(`
+        SELECT 
+          s.id, s.user_id, s.location_id, s.name, s.description, s.color, 
+          s.created_at, s.updated_at, s.sort_order,
+          s.approval_status, s.approved_by, s.approved_at, s.rejection_reason,
+          COUNT(bs.book_id) as book_count,
+          l.name as location_name
+        FROM series s
+        LEFT JOIN book_series bs ON s.id = bs.series_id
+        LEFT JOIN locations l ON s.location_id = l.id
+        WHERE s.location_id = ? AND s.approval_status = "approved"
+        GROUP BY s.id, s.user_id, s.location_id, s.name, s.description, s.color, s.created_at, s.updated_at, s.sort_order, s.approval_status, s.approved_by, s.approved_at, s.rejection_reason, l.name
+        ORDER BY s.sort_order ASC, s.created_at DESC
+      `);
+      params = [locationId];
+      
+    } else if (isSuperAdmin) {
+      // Super admins see all series globally when no location specified
       stmt = env.DB.prepare(`
         SELECT 
           s.id, s.user_id, s.location_id, s.name, s.description, s.color, 
@@ -69,7 +108,7 @@ export async function getUserSeries(userId: string, env: Env, corsHeaders: Recor
         ORDER BY s.sort_order ASC, s.created_at DESC
       `);
     } else {
-      // Regular users see only approved series from locations they have access to
+      // Regular users see only approved series from locations they have access to (when no specific location requested)
       stmt = env.DB.prepare(`
         SELECT 
           s.id, s.user_id, s.location_id, s.name, s.description, s.color, 
@@ -169,14 +208,21 @@ export async function createSeries(request: Request, userId: string, env: Env, c
     const seriesId = uuidv4();
     const currentTimestamp = new Date().toISOString();
     
-    // Check if user has can_create_series permission in the target location to auto-approve series
-    const userPermissionStmt = env.DB.prepare(`
-      SELECT lup.location_id 
-      FROM location_user_permissions lup 
-      WHERE lup.user_id = ? AND lup.location_id = ? AND lup.permission = 'can_create_series'
-    `);
-    const hasPermission = await userPermissionStmt.bind(userId, seriesLocationId).first();
-    const canAutoApprove = !!hasPermission;
+    // Check if user can auto-approve series:
+    // 1. Super admins can always auto-approve
+    // 2. Users with can_create_series permission can auto-approve
+    const isSuperAdmin = await isUserSuperAdmin(userId, env);
+    let canAutoApprove = isSuperAdmin;
+    
+    if (!canAutoApprove) {
+      const userPermissionStmt = env.DB.prepare(`
+        SELECT lup.location_id 
+        FROM location_user_permissions lup 
+        WHERE lup.user_id = ? AND lup.location_id = ? AND lup.permission = 'can_create_series'
+      `);
+      const hasPermission = await userPermissionStmt.bind(userId, seriesLocationId).first();
+      canAutoApprove = !!hasPermission;
+    }
     
     const stmt = env.DB.prepare(`
       INSERT INTO series (id, user_id, location_id, name, description, color, created_at, updated_at, sort_order, approval_status)
@@ -460,32 +506,31 @@ export async function addBooksToSeries(request: Request, seriesId: string, userI
       }
     }
     
-    // CRITICAL: Invalidate ALL caches BEFORE returning response to ensure subsequent API calls get fresh data
-    if (addedBooks.length > 0) {
-      try {
-        const { invalidateBookCache, invalidateUserBookCache } = await import('../books/cached');
-        
-        console.log(`🔄 Invalidating caches for ${addedBooks.length} books and user ${userId}`);
-        
-        // Invalidate individual book caches
-        for (const bookId of addedBooks) {
-          await invalidateBookCache(bookId, userId, env);
-        }
-        
-        // Invalidate user book cache used by getCachedUserBooks
-        await invalidateUserBookCache(userId, env);
-        
-        // EXTRA: Clear all library cache with prefix to be absolutely sure
-        const { CacheManager } = await import('../cache/kv');
-        const cache = new CacheManager(env);
-        await cache.delPrefix('library:');
-        
-        console.log(`✅ All caches invalidated for user ${userId}`);
-        
-      } catch (cacheError) {
-        console.error('Failed to invalidate caches after adding to series:', cacheError);
-        // Don't fail the series operation if cache invalidation fails
+    // CRITICAL: Invalidate ALL caches AFTER series operation to ensure subsequent API calls get fresh data
+    // Always invalidate cache, even if no books were added (to handle duplicate requests)
+    try {
+      const { invalidateBookCache, invalidateUserBookCache } = await import('../books/cached');
+      
+      console.log(`🔄 Invalidating caches after series operation: ${book_ids.length} book IDs processed, ${addedBooks.length} actually added, user ${userId}`);
+      
+      // Invalidate individual book caches for all requested books (not just added ones)
+      for (const bookId of book_ids) {
+        await invalidateBookCache(bookId, userId, env);
       }
+      
+      // Invalidate user book cache used by getCachedUserBooks
+      await invalidateUserBookCache(userId, env);
+      
+      // EXTRA: Clear all library cache with prefix to be absolutely sure
+      const { CacheManager } = await import('../cache/kv');
+      const cache = new CacheManager(env);
+      await cache.delPrefix('library:');
+      
+      console.log(`✅ All caches invalidated for series operation, user ${userId}`);
+      
+    } catch (cacheError) {
+      console.error('Failed to invalidate caches after adding to series:', cacheError);
+      // Don't fail the series operation if cache invalidation fails
     }
     
     return new Response(JSON.stringify({ 
@@ -565,10 +610,20 @@ export async function removeBookFromSeries(seriesId: string, bookId: string, use
     // Invalidate book cache to ensure UI gets updated series data
     try {
       const { invalidateBookCache, invalidateUserBookCache } = await import('../books/cached');
+      
+      console.log(`🔄 Invalidating caches after removing book ${bookId} from series, user ${userId}`);
+      
       await invalidateBookCache(bookId, userId, env);
       
       // IMPORTANT: Also invalidate the user book cache used by getCachedUserBooks
       await invalidateUserBookCache(userId, env);
+      
+      // EXTRA: Clear all library cache with prefix to be absolutely sure
+      const { CacheManager } = await import('../cache/kv');
+      const cache = new CacheManager(env);
+      await cache.delPrefix('library:');
+      
+      console.log(`✅ All caches invalidated after removing book from series, user ${userId}`);
       
     } catch (cacheError) {
       console.error('Failed to invalidate book cache after removing from series:', cacheError);
