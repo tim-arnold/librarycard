@@ -223,7 +223,7 @@ This is an automated message from LibraryCard.
   }
 }
 
-export async function sendInvitationEmail(env: Env, email: string, locationName: string, token: string, invitedBy: string) {
+export async function sendInvitationEmail(env: Env, email: string, locationName: string, token: string, invitedBy: string, customMessage?: string) {
   // Removed sensitive debug logging
   if (!env.APP_URL) {
     throw new Error('APP_URL environment variable is required for invitation emails');
@@ -282,6 +282,12 @@ export async function sendInvitationEmail(env: Env, email: string, locationName:
                 <p style="font-size: 16px; margin-bottom: 20px;">
                   ${inviterName} has invited you to join the <strong>${locationName}</strong> library on LibraryCard.
                 </p>
+                ${customMessage ? `
+                <div style="background: #e9ecef; border-left: 4px solid #007bff; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                  <p style="font-size: 16px; margin: 0; font-style: italic; color: #495057;">
+                    "${customMessage}"
+                  </p>
+                </div>` : ''}
                 <p style="font-size: 16px; margin-bottom: 30px;">
                   LibraryCard helps you organize and share book collections. Join to browse books and add your own to the shared library.
                 </p>
