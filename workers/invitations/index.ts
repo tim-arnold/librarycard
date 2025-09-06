@@ -181,8 +181,26 @@ export async function acceptLocationInvitation(request: Request, userId: string,
   const existingMember = await memberStmt.bind((invitation as any).location_id, userId).first();
   
   if (existingMember) {
-    return new Response(JSON.stringify({ error: 'You are already a member of this location' }), {
-      status: 400,
+    // User is already a member - return success instead of error
+    // Also mark the invitation as used since it was effectively accepted
+    try {
+      const updateInvitationStmt = env.DB.prepare(`
+        UPDATE location_invitations 
+        SET used_at = datetime('now')
+        WHERE id = ?
+      `);
+      await updateInvitationStmt.bind((invitation as any).id).run();
+    } catch (updateError) {
+      console.warn('Failed to mark invitation as used for existing member:', updateError);
+      // Don't fail the response if update fails
+    }
+
+    return new Response(JSON.stringify({ 
+      message: `Welcome! You are already a member of ${(invitation as any).location_name}`,
+      location_id: (invitation as any).location_id,
+      location_name: (invitation as any).location_name,
+      already_member: true
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
