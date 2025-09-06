@@ -4,9 +4,22 @@ import { SessionProvider } from 'next-auth/react'
 import { ThemeContextProvider } from '@/lib/ThemeContext'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import PerformanceTracker from '@/components/performance/PerformanceTracker'
-import { useState } from 'react'
+import inputEventDebug from '@/lib/inputEventDebug'
+import { useState, useEffect } from 'react'
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  // Initialize input event debugging in development
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      // Auto-enable debugging to help identify input issues
+      inputEventDebug.enable()
+      
+      return () => {
+        inputEventDebug.disable()
+      }
+    }
+  }, [])
+
   // Create a stable query client instance with aligned TTLs to prevent corruption
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
