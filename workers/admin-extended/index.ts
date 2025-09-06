@@ -831,32 +831,37 @@ export async function unassignLocationFromUser(targetUserId: string, locationId:
       }
     }
 
-    // Check if there are other admins assigned to this location
-    // Note: Super admins are excluded since they have global access and don't need explicit assignments
-    const otherAdmins = await env.DB.prepare(`
-      SELECT COUNT(*) as admin_count FROM (
-        -- Count location owner if they are a regular admin (not super_admin)
-        SELECT 1 FROM locations l
-        INNER JOIN users u ON l.owner_id = u.id
-        WHERE l.id = ? AND u.user_role = 'admin' AND u.id != ?
-        
-        UNION ALL
-        
-        -- Count other regular admin members of this location (not super_admin)
-        SELECT 1 FROM location_members lm
-        INNER JOIN users u ON lm.user_id = u.id
-        WHERE lm.location_id = ? AND u.user_role = 'admin' AND u.id != ?
-      )
-    `).bind(locationId, targetUserId, locationId, targetUserId).first();
+    // Only check for admin protection if the target user is an admin
+    const targetUserRole = (targetUser as any).user_role;
+    if (targetUserRole === 'admin') {
+      // Check if there are other admins assigned to this location
+      // Note: Super admins are excluded since they have global access and don't need explicit assignments
+      const otherAdmins = await env.DB.prepare(`
+        SELECT COUNT(*) as admin_count FROM (
+          -- Count location owner if they are a regular admin (not super_admin)
+          SELECT 1 FROM locations l
+          INNER JOIN users u ON l.owner_id = u.id
+          WHERE l.id = ? AND u.user_role = 'admin' AND u.id != ?
+          
+          UNION ALL
+          
+          -- Count other regular admin members of this location (not super_admin)
+          SELECT 1 FROM location_members lm
+          INNER JOIN users u ON lm.user_id = u.id
+          WHERE lm.location_id = ? AND u.user_role = 'admin' AND u.id != ?
+        )
+      `).bind(locationId, targetUserId, locationId, targetUserId).first();
 
-    if ((otherAdmins as any)?.admin_count === 0) {
-      return new Response(JSON.stringify({ 
-        error: 'Cannot remove the last admin from this location. Please assign another admin to this location first.' 
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      if ((otherAdmins as any)?.admin_count === 0) {
+        return new Response(JSON.stringify({ 
+          error: 'Cannot remove the last admin from this location. Please assign another admin to this location first.' 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     }
+    // Regular users can be removed without admin protection checks
 
     // Check if user is the owner of this location
     const isOwner = await env.DB.prepare(`
