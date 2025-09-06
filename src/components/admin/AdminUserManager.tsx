@@ -35,6 +35,10 @@ import {
   ListItem,
   ListItemText,
   Switch,
+  TableSortLabel,
+  Pagination,
+  Collapse,
+  Divider,
 } from '@mui/material'
 import {
   MoreVert,
@@ -49,6 +53,11 @@ import {
   LocationOn,
   LibraryBooks,
   Warning,
+  FilterList,
+  Sort,
+  ExpandMore,
+  ExpandLess,
+  Clear,
 } from '@mui/icons-material'
 import ConfirmationModal from '../modals/ConfirmationModal'
 import AlertModal from '../modals/AlertModal'
@@ -120,6 +129,15 @@ export default function AdminUserManager() {
   const [selectedLocationId, setSelectedLocationId] = useState<number | null>(null)
   const [availableLocations, setAvailableLocations] = useState<Location[]>([])
   const [invitationsLoading, setInvitationsLoading] = useState(false)
+  
+  // Invitation filtering and sorting state
+  const [invitationStatusFilter, setInvitationStatusFilter] = useState<string>('all')
+  const [invitationLocationFilter, setInvitationLocationFilter] = useState<string>('all')
+  const [invitationSortBy, setInvitationSortBy] = useState<string>('created_at')
+  const [invitationSortOrder, setInvitationSortOrder] = useState<'asc' | 'desc'>('desc')
+  const [invitationsPage, setInvitationsPage] = useState(1)
+  const [invitationsPerPage] = useState(10)
+  const [showInvitationFilters, setShowInvitationFilters] = useState(false)
   
   // Super admin management state
   const [currentUserRole, setCurrentUserRole] = useState<string>('')
@@ -1014,15 +1032,104 @@ export default function AdminUserManager() {
     return { total, accepted, pending, expired }
   }
 
-  const filteredInvitations = invitations.filter(invitation => {
-    if (!invitationSearchTerm) return true
-    const searchLower = invitationSearchTerm.toLowerCase()
-    return (
-      invitation.invited_email.toLowerCase().includes(searchLower) ||
-      invitation.location_name?.toLowerCase().includes(searchLower) ||
-      invitation.invited_by_name?.toLowerCase().includes(searchLower)
-    )
-  })
+  // Enhanced filtering, sorting, and pagination logic
+  const getFilteredAndSortedInvitations = () => {
+    let filtered = invitations.filter(invitation => {
+      // Search filter
+      if (invitationSearchTerm) {
+        const searchLower = invitationSearchTerm.toLowerCase()
+        const matchesSearch = (
+          invitation.invited_email.toLowerCase().includes(searchLower) ||
+          invitation.location_name?.toLowerCase().includes(searchLower) ||
+          invitation.invited_by_name?.toLowerCase().includes(searchLower)
+        )
+        if (!matchesSearch) return false
+      }
+      
+      // Status filter
+      if (invitationStatusFilter !== 'all') {
+        const status = getInvitationStatus(invitation).status
+        if (status !== invitationStatusFilter) return false
+      }
+      
+      // Location filter
+      if (invitationLocationFilter !== 'all') {
+        if (invitation.location_id.toString() !== invitationLocationFilter) return false
+      }
+      
+      return true
+    })
+    
+    // Sorting
+    filtered.sort((a, b) => {
+      let aValue: any, bValue: any
+      
+      switch (invitationSortBy) {
+        case 'email':
+          aValue = a.invited_email.toLowerCase()
+          bValue = b.invited_email.toLowerCase()
+          break
+        case 'location':
+          aValue = (a.location_name || '').toLowerCase()
+          bValue = (b.location_name || '').toLowerCase()
+          break
+        case 'status':
+          aValue = getInvitationStatus(a).status
+          bValue = getInvitationStatus(b).status
+          break
+        case 'expires_at':
+          aValue = new Date(a.expires_at).getTime()
+          bValue = new Date(b.expires_at).getTime()
+          break
+        case 'invited_by':
+          aValue = (a.invited_by_name || '').toLowerCase()
+          bValue = (b.invited_by_name || '').toLowerCase()
+          break
+        case 'created_at':
+        default:
+          aValue = new Date(a.created_at).getTime()
+          bValue = new Date(b.created_at).getTime()
+          break
+      }
+      
+      if (aValue < bValue) return invitationSortOrder === 'asc' ? -1 : 1
+      if (aValue > bValue) return invitationSortOrder === 'asc' ? 1 : -1
+      return 0
+    })
+    
+    return filtered
+  }
+  
+  const filteredInvitations = getFilteredAndSortedInvitations()
+  
+  // Pagination
+  const totalPages = Math.ceil(filteredInvitations.length / invitationsPerPage)
+  const startIndex = (invitationsPage - 1) * invitationsPerPage
+  const paginatedInvitations = filteredInvitations.slice(startIndex, startIndex + invitationsPerPage)
+  
+  // Reset page when filters change
+  useEffect(() => {
+    setInvitationsPage(1)
+  }, [invitationSearchTerm, invitationStatusFilter, invitationLocationFilter, invitationSortBy, invitationSortOrder])
+
+  // Helper functions for sorting
+  const handleSortChange = (sortBy: string) => {
+    if (invitationSortBy === sortBy) {
+      setInvitationSortOrder(invitationSortOrder === 'asc' ? 'desc' : 'asc')
+    } else {
+      setInvitationSortBy(sortBy)
+      setInvitationSortOrder('desc')
+    }
+  }
+  
+  const clearAllFilters = () => {
+    setInvitationSearchTerm('')
+    setInvitationStatusFilter('all')
+    setInvitationLocationFilter('all')
+    setInvitationSortBy('created_at')
+    setInvitationSortOrder('desc')
+    setInvitationsPage(1)
+  }
 
   if (loading) {
     return (
@@ -1192,7 +1299,7 @@ export default function AdminUserManager() {
                     const analytics = getInvitationAnalytics()
                     return (
                       <>
-                        <Chip label={`Total: ${analytics.total}`} variant="outlined" />
+                        <Chip label={`Total: ${analytics.total} | Filtered: ${filteredInvitations.length}`} variant="outlined" />
                         <Chip label={`Accepted: ${analytics.accepted}`} color="success" variant="outlined" />
                         <Chip label={`Pending: ${analytics.pending}`} color="info" variant="outlined" />
                         {analytics.expired > 0 && (
@@ -1202,15 +1309,107 @@ export default function AdminUserManager() {
                     )
                   })()}
                 </Box>
+                {/* Search and Filter Controls */}
                 <Box sx={{ mb: 2 }}>
-                  <TextField
-                    size="small"
-                    placeholder="Search invitations by email, location, or sender..."
-                    value={invitationSearchTerm}
-                    onChange={(e) => setInvitationSearchTerm(e.target.value)}
-                    fullWidth
-                    sx={{ maxWidth: 400 }}
-                  />
+                  <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <Box sx={{ flex: 1, minWidth: 200 }}>
+                      <TextField
+                        size="small"
+                        placeholder="Search invitations..."
+                        value={invitationSearchTerm}
+                        onChange={(e) => setInvitationSearchTerm(e.target.value)}
+                        fullWidth
+                      />
+                    </Box>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={showInvitationFilters ? <ExpandLess /> : <ExpandMore />}
+                      onClick={() => setShowInvitationFilters(!showInvitationFilters)}
+                    >
+                      Filters & Sort
+                    </Button>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<Clear />}
+                      onClick={clearAllFilters}
+                      title="Clear all filters and sorting"
+                    >
+                      Clear
+                    </Button>
+                  </Box>
+                  
+                  {/* Collapsible Filters */}
+                  <Collapse in={showInvitationFilters}>
+                    <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+                      <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                        <Box sx={{ minWidth: 150, flex: 1 }}>
+                          <FormControl size="small" fullWidth>
+                            <InputLabel>Status Filter</InputLabel>
+                            <Select
+                              value={invitationStatusFilter}
+                              onChange={(e) => setInvitationStatusFilter(e.target.value)}
+                              label="Status Filter"
+                            >
+                              <MenuItem value="all">All Statuses</MenuItem>
+                              <MenuItem value="pending">Pending</MenuItem>
+                              <MenuItem value="expiring">Expiring Soon</MenuItem>
+                              <MenuItem value="accepted">Accepted</MenuItem>
+                              <MenuItem value="expired">Expired</MenuItem>
+                            </Select>
+                          </FormControl>
+                        </Box>
+                        <Box sx={{ minWidth: 150, flex: 1 }}>
+                          <FormControl size="small" fullWidth>
+                            <InputLabel>Location Filter</InputLabel>
+                            <Select
+                              value={invitationLocationFilter}
+                              onChange={(e) => setInvitationLocationFilter(e.target.value)}
+                              label="Location Filter"
+                            >
+                              <MenuItem value="all">All Locations</MenuItem>
+                              {availableLocations.map((location) => (
+                                <MenuItem key={location.id} value={location.id.toString()}>
+                                  {location.name}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                        </Box>
+                        <Box sx={{ minWidth: 150, flex: 1 }}>
+                          <FormControl size="small" fullWidth>
+                            <InputLabel>Sort By</InputLabel>
+                            <Select
+                              value={invitationSortBy}
+                              onChange={(e) => setInvitationSortBy(e.target.value)}
+                              label="Sort By"
+                            >
+                              <MenuItem value="created_at">Date Created</MenuItem>
+                              <MenuItem value="expires_at">Expiration Date</MenuItem>
+                              <MenuItem value="email">Email Address</MenuItem>
+                              <MenuItem value="location">Location</MenuItem>
+                              <MenuItem value="status">Status</MenuItem>
+                              <MenuItem value="invited_by">Sent By</MenuItem>
+                            </Select>
+                          </FormControl>
+                        </Box>
+                        <Box sx={{ minWidth: 150, flex: 1 }}>
+                          <FormControl size="small" fullWidth>
+                            <InputLabel>Sort Order</InputLabel>
+                            <Select
+                              value={invitationSortOrder}
+                              onChange={(e) => setInvitationSortOrder(e.target.value as 'asc' | 'desc')}
+                              label="Sort Order"
+                            >
+                              <MenuItem value="desc">Newest First</MenuItem>
+                              <MenuItem value="asc">Oldest First</MenuItem>
+                            </Select>
+                          </FormControl>
+                        </Box>
+                      </Box>
+                    </Box>
+                  </Collapse>
                 </Box>
               </>
             )}
@@ -1228,11 +1427,12 @@ export default function AdminUserManager() {
               </Alert>
             ) : filteredInvitations.length === 0 ? (
               <Alert severity="info">
-                No invitations match your search criteria. Try a different search term.
+                No invitations match your filters. {invitations.length > 0 ? 'Try adjusting your search criteria.' : ''}
               </Alert>
             ) : (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                {filteredInvitations.map((invitation) => {
+              <>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  {paginatedInvitations.map((invitation) => {
                   const statusInfo = getInvitationStatus(invitation)
                   const canRevoke = statusInfo.status === 'pending' || statusInfo.status === 'expiring'
                   
@@ -1290,8 +1490,34 @@ export default function AdminUserManager() {
                       </Box>
                     </Paper>
                   )
-                })}
-              </Box>
+                  })}
+                </Box>
+                
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+                    <Pagination
+                      count={totalPages}
+                      page={invitationsPage}
+                      onChange={(_, page) => setInvitationsPage(page)}
+                      color="primary"
+                      size="small"
+                      showFirstButton
+                      showLastButton
+                    />
+                  </Box>
+                )}
+                
+                {/* Results Summary */}
+                <Box sx={{ mt: 2, textAlign: 'center' }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Showing {startIndex + 1}-{Math.min(startIndex + invitationsPerPage, filteredInvitations.length)} of {filteredInvitations.length} invitation{filteredInvitations.length !== 1 ? 's' : ''}
+                    {filteredInvitations.length !== invitations.length && (
+                      <span> (filtered from {invitations.length} total)</span>
+                    )}
+                  </Typography>
+                </Box>
+              </>
             )}
           </CardContent>
         </Card>
