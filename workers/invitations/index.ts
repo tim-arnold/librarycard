@@ -107,6 +107,16 @@ export async function createLocationInvitation(request: Request, locationId: num
     // Don't fail the invitation creation if email fails, but log the specific error
   }
 
+  // Invalidate admin caches since invitation list changed
+  try {
+    const { CacheManager } = await import('../cache/kv');
+    const cache = new CacheManager(env);
+    await cache.delPrefix('analytics:');
+    console.log('Invalidated admin cache after invitation creation');
+  } catch (cacheError) {
+    console.warn('Failed to invalidate admin cache after invitation creation:', cacheError);
+  }
+
   return new Response(JSON.stringify({ 
     id: result.meta.last_row_id,
     invited_email,
@@ -171,8 +181,26 @@ export async function acceptLocationInvitation(request: Request, userId: string,
   const existingMember = await memberStmt.bind((invitation as any).location_id, userId).first();
   
   if (existingMember) {
-    return new Response(JSON.stringify({ error: 'You are already a member of this location' }), {
-      status: 400,
+    // User is already a member - return success instead of error
+    // Also mark the invitation as used since it was effectively accepted
+    try {
+      const updateInvitationStmt = env.DB.prepare(`
+        UPDATE location_invitations 
+        SET used_at = datetime('now')
+        WHERE id = ?
+      `);
+      await updateInvitationStmt.bind((invitation as any).id).run();
+    } catch (updateError) {
+      console.warn('Failed to mark invitation as used for existing member:', updateError);
+      // Don't fail the response if update fails
+    }
+
+    return new Response(JSON.stringify({ 
+      message: `Welcome! You are already a member of ${(invitation as any).location_name}`,
+      location_id: (invitation as any).location_id,
+      location_name: (invitation as any).location_name,
+      already_member: true
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
@@ -205,6 +233,16 @@ export async function acceptLocationInvitation(request: Request, userId: string,
   `);
   
   await updateInvitationStmt.bind((invitation as any).id).run();
+
+  // Invalidate admin caches since user joined location and invitation was accepted
+  try {
+    const { CacheManager } = await import('../cache/kv');
+    const cache = new CacheManager(env);
+    await cache.delPrefix('analytics:');
+    console.log('Invalidated admin cache after invitation acceptance');
+  } catch (cacheError) {
+    console.warn('Failed to invalidate admin cache after invitation acceptance:', cacheError);
+  }
 
   return new Response(JSON.stringify({ 
     message: `Successfully joined ${(invitation as any).location_name}`,
@@ -360,6 +398,16 @@ export async function revokeLocationInvitation(invitationId: number, userId: str
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
+  }
+
+  // Invalidate admin caches since invitation list changed
+  try {
+    const { CacheManager } = await import('../cache/kv');
+    const cache = new CacheManager(env);
+    await cache.delPrefix('analytics:');
+    console.log('Invalidated admin cache after invitation revocation');
+  } catch (cacheError) {
+    console.warn('Failed to invalidate admin cache after invitation revocation:', cacheError);
   }
 
   return new Response(JSON.stringify({ 
