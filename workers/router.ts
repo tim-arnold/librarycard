@@ -94,6 +94,17 @@ export class MainRouter {
         });
       }
 
+      // Public invitation details endpoint (no auth required to view invitation info)
+      if (path === '/api/invitations/details' && method === 'GET') {
+        const { LocationsRouter } = await import('./locations/router');
+        const response = await LocationsRouter.handleLocationsEndpoints(
+          request, env, corsHeaders, '' // Empty userId for public endpoint
+        );
+        if (response) {
+          return response;
+        }
+      }
+
       // Initialize rate limiter for auth endpoints
       const rateLimiter = new RateLimiter(env);
       const clientId = rateLimiter.getClientIdentifier(request);

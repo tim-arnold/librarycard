@@ -17,6 +17,7 @@ import {
   createLocationInvitation,
   acceptLocationInvitation,
   getLocationInvitations,
+  getInvitationDetails,
   revokeLocationInvitation
 } from '../invitations';
 
@@ -120,6 +121,10 @@ export class LocationsRouter {
 
     if (path === '/api/invitations/accept' && request.method === 'POST') {
       return await acceptLocationInvitation(request, userId, env, corsHeaders);
+    }
+
+    if (path === '/api/invitations/details' && request.method === 'GET') {
+      return await getInvitationDetails(request, env, corsHeaders);
     }
 
     if (path.match(/^\/api\/locations\/\d+\/invitations$/) && request.method === 'GET') {
