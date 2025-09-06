@@ -101,7 +101,36 @@
 - **shelfspace.me** - Physical + digital space concept, personal domain extension
 - **shelfkeeper.io** - Emphasizes organization and care, tech-friendly TLD
 
+## ✅ Additional Available Domains (Checked September 6, 2025)
+
+### Community-Focused "Our" Names
+- **ourcommunitybooks.com** - Emphasizes collective ownership and community identity
+- **oursharedbooks.com** - Simple, clear sharing concept with ownership feel
+- **ourcommunitybookshare.com** - Comprehensive community + sharing + books concept
+- **ourbookstogether.com** - Emphasizes togetherness and collective reading
+- **ourbookshare.com** - Clean, direct book sharing with ownership
+
+### Community Building Focus
+- **booksbuildcommunity.com** - Emphasizes how books create community connections
+
 ### Why These Work Well
+
+#### ourcommunitybooks.com
+- **Pros**: Strong community identity, "our" creates belonging, clear purpose
+- **Target**: Perfect for apartment buildings, retirement communities, shared spaces
+- **Brand**: Inclusive, welcoming, emphasizes collective ownership
+
+#### oursharedbooks.com
+- **Pros**: Simple concept, "our" + "shared" reinforces community aspect
+- **Target**: Great for any community library or book sharing group
+- **Brand**: Friendly, accessible, emphasizes both ownership and sharing
+
+#### booksbuildcommunity.com
+- **Pros**: Philosophical angle - books as community builders, inspirational
+- **Target**: Appeals to community organizers, social impact focus
+- **Brand**: Mission-driven, suggests books as tools for connection
+
+## Original Available Favorites Analysis
 
 #### sharedstacks.io
 - **Pros**: Professional library term ("stacks"), clearly community-focused, .io suggests tech platform
