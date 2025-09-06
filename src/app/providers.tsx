@@ -7,18 +7,20 @@ import PerformanceTracker from '@/components/performance/PerformanceTracker'
 import { useState } from 'react'
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  // Create a stable query client instance
+  // Create a stable query client instance with aligned TTLs to prevent corruption
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
       queries: {
-        // Data is fresh for 5 minutes
-        staleTime: 5 * 60 * 1000,
-        // Keep data in cache for 10 minutes
-        gcTime: 10 * 60 * 1000,
+        // Align with server-side cache TTLs (reduced to prevent stale data)
+        staleTime: 3 * 60 * 1000,      // 3 minutes (was 5)
+        // Keep data in cache for shorter time to align with server
+        gcTime: 5 * 60 * 1000,         // 5 minutes (was 10)
         // Retry failed requests 2 times
         retry: 2,
-        // Don't refetch on window focus by default (can be overridden per query)
-        refetchOnWindowFocus: false,
+        // Enable refetch on window focus for critical data consistency
+        refetchOnWindowFocus: true,    // changed from false
+        // More aggressive refetch on reconnect to handle stale states
+        refetchOnReconnect: true,
       },
       mutations: {
         // Retry failed mutations once

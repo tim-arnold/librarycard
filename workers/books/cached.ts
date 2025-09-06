@@ -1,5 +1,5 @@
 import { Env } from '../types';
-import { CacheManager, CacheKeys, CacheTTL } from '../cache/kv';
+import { CacheManager, CacheKeys, CacheTTL, CacheInvalidator } from '../cache/kv';
 import { getUserBooks } from './index';
 import { getCachedUserPermissions } from '../auth/cached';
 
@@ -313,33 +313,26 @@ export async function getCachedBookRatings(bookId: string, env: Env): Promise<an
 }
 
 /**
- * Invalidate book-related cache when books are modified
+ * Surgically invalidate book-related cache when books are modified
  */
 export async function invalidateBookCache(bookId: string, userId: string, env: Env): Promise<void> {
   const cache = new CacheManager(env);
+  const invalidator = new CacheInvalidator(cache);
   
-  // Clear book-specific cache
-  await cache.del(CacheKeys.bookMetadata(bookId));
-  await cache.del(CacheKeys.bookRatings(bookId));
+  // Get list of users who can see this book for surgical invalidation
+  const affectedUsers = await invalidator.getBookAffectedUsers(bookId, env);
   
-  // Clear user book caches (since they contain this book)
-  await cache.delPrefix('library:');
-  
-  // Clear user-specific cache
-  await cache.del(CacheKeys.userBooks(userId));
-  await cache.del(CacheKeys.userBooksCount(userId));
+  // Use surgical invalidation instead of broad prefix deletion
+  await invalidator.invalidateBook(bookId, affectedUsers.length > 0 ? affectedUsers : [userId]);
 }
 
 /**
- * Invalidate all book-related cache for a user
+ * Surgically invalidate all book-related cache for a user
  */
 export async function invalidateUserBookCache(userId: string, env: Env): Promise<void> {
   const cache = new CacheManager(env);
+  const invalidator = new CacheInvalidator(cache);
   
-  // Clear user-specific book caches
-  await cache.del(CacheKeys.userBooks(userId));
-  await cache.del(CacheKeys.userBooksCount(userId));
-  
-  // Clear location-specific book caches for this user
-  await cache.delPrefix(`library:${userId}:location:`);
+  // Use surgical user invalidation
+  await invalidator.invalidateUser(userId);
 }

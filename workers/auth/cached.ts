@@ -1,5 +1,5 @@
 import { Env } from '../types';
-import { CacheManager, CacheKeys, CacheTTL } from '../cache/kv';
+import { CacheManager, CacheKeys, CacheTTL, CacheInvalidator } from '../cache/kv';
 import { getUserRole, isUserAdmin, isUserSuperAdmin, canManageLocation } from './index';
 
 interface LocationRow {
@@ -239,33 +239,26 @@ export async function getCachedUserLocations(userId: string, env: Env): Promise<
 }
 
 /**
- * Invalidate user cache when permissions change
+ * Surgically invalidate user cache when permissions change
  */
 export async function invalidateUserCache(userId: string, env: Env): Promise<void> {
   const cache = new CacheManager(env);
+  const invalidator = new CacheInvalidator(cache);
   
-  // Clear all user-related cache entries
-  const userKeys = [
-    CacheKeys.userRole(userId),
-    CacheKeys.userIsAdmin(userId),
-    CacheKeys.userIsSuperAdmin(userId),
-    CacheKeys.userPermissions(userId),
-    CacheKeys.userLocationAccess(userId),
-  ];
-  
-  await Promise.all(userKeys.map(key => cache.del(key)));
+  // Use surgical invalidation
+  await invalidator.invalidateUser(userId);
 }
 
 /**
- * Invalidate location-related cache when location membership changes
+ * Surgically invalidate location-related cache when location membership changes
  */
 export async function invalidateLocationCache(locationId: number, env: Env): Promise<void> {
   const cache = new CacheManager(env);
+  const invalidator = new CacheInvalidator(cache);
   
-  // Clear location-specific cache
-  await cache.del(CacheKeys.locationMembers(locationId));
+  // Get list of users affected by this location change
+  const affectedUsers = await invalidator.getLocationAffectedUsers(locationId, env);
   
-  // Clear all user permission and location caches (since membership changed)
-  await cache.delPrefix('user:');
-  await cache.delPrefix('locations:');
+  // Use surgical invalidation instead of nuking all user and location caches
+  await invalidator.invalidateLocation(locationId, affectedUsers);
 }
