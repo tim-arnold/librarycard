@@ -183,66 +183,109 @@ export const CacheKeys = {
 } as const;
 
 /**
- * Cache TTL constants (in seconds)
+ * Cache TTL constants (in seconds) - Reduced for consistency and corruption prevention
  */
 export const CacheTTL = {
-  USER_PERMISSIONS: 30 * 60,     // 30 minutes
-  USER_ROLE: 30 * 60,           // 30 minutes
-  USER_IS_ADMIN: 30 * 60,       // 30 minutes
-  ACTIVE_GENRES: 60 * 60,       // 1 hour
-  USER_BOOKS: 10 * 60,          // 10 minutes
-  USER_LOCATIONS: 30 * 60,      // 30 minutes
-  ADMIN_ANALYTICS: 60 * 60,     // 1 hour
-  GOOGLE_BOOKS: 24 * 60 * 60,   // 24 hours
-  BOOK_RATINGS: 30 * 60,        // 30 minutes
-  BOOK_METADATA: 2 * 60 * 60,   // 2 hours
+  USER_PERMISSIONS: 15 * 60,     // 15 minutes (reduced from 30 for faster permission changes)
+  USER_ROLE: 15 * 60,           // 15 minutes (reduced from 30)
+  USER_IS_ADMIN: 15 * 60,       // 15 minutes (reduced from 30)
+  ACTIVE_GENRES: 30 * 60,       // 30 minutes (reduced from 60 for faster genre changes)
+  USER_BOOKS: 5 * 60,           // 5 minutes (reduced from 10 for faster book updates)
+  USER_LOCATIONS: 15 * 60,      // 15 minutes (reduced from 30 for location changes)
+  ADMIN_ANALYTICS: 30 * 60,     // 30 minutes (reduced from 60 for fresher analytics)
+  GOOGLE_BOOKS: 24 * 60 * 60,   // 24 hours (kept same - external API)
+  BOOK_RATINGS: 10 * 60,        // 10 minutes (reduced from 30 for rating updates)
+  BOOK_METADATA: 30 * 60,       // 30 minutes (reduced from 2 hours for faster metadata changes)
 } as const;
 
 /**
- * Cache invalidation helpers
+ * Cache invalidation helpers with surgical precision and corruption prevention
  */
 export class CacheInvalidator {
   private cache: CacheManager;
+  private pendingInvalidations: Set<string> = new Set();
 
   constructor(cache: CacheManager) {
     this.cache = cache;
   }
 
   /**
-   * Invalidate all user-related cache entries
+   * Prevent duplicate invalidations during concurrent operations
    */
-  async invalidateUser(userId: string): Promise<void> {
-    const userKeys = [
-      CacheKeys.userPermissions(userId),
-      CacheKeys.userRole(userId),
-      CacheKeys.userIsAdmin(userId),
-      CacheKeys.userIsSuperAdmin(userId),
-      CacheKeys.userBooks(userId),
-      CacheKeys.userBooksCount(userId),
-      CacheKeys.userLocations(userId),
-      CacheKeys.userLocationAccess(userId),
-      CacheKeys.userGenres(userId),
-    ];
+  private async executeOnce<T>(key: string, operation: () => Promise<T>): Promise<T> {
+    if (this.pendingInvalidations.has(key)) {
+      // Wait briefly and try again to avoid race conditions
+      await new Promise(resolve => setTimeout(resolve, 10));
+      if (this.pendingInvalidations.has(key)) {
+        return Promise.resolve() as T; // Skip duplicate invalidation
+      }
+    }
 
-    await Promise.all(userKeys.map(key => this.cache.del(key)));
-    
-    // Also clear location-specific book caches for this user
-    await this.cache.delPrefix(`library:${userId}:location:`);
+    this.pendingInvalidations.add(key);
+    try {
+      return await operation();
+    } finally {
+      this.pendingInvalidations.delete(key);
+    }
   }
 
   /**
-   * Invalidate book-related cache entries
+   * Surgically invalidate user-related cache entries without cascade corruption
    */
-  async invalidateBook(bookId: string): Promise<void> {
-    const bookKeys = [
-      CacheKeys.bookRatings(bookId),
-      CacheKeys.bookMetadata(bookId),
-    ];
+  async invalidateUser(userId: string): Promise<void> {
+    return this.executeOnce(`user:${userId}`, async () => {
+      const userKeys = [
+        CacheKeys.userPermissions(userId),
+        CacheKeys.userRole(userId),
+        CacheKeys.userIsAdmin(userId),
+        CacheKeys.userIsSuperAdmin(userId),
+        CacheKeys.userBooks(userId),
+        CacheKeys.userBooksCount(userId),
+        CacheKeys.userLocations(userId),
+        CacheKeys.userLocationAccess(userId),
+        CacheKeys.userGenres(userId),
+      ];
 
-    await Promise.all(bookKeys.map(key => this.cache.del(key)));
-    
-    // Invalidate all user book libraries (since they contain this book)
-    await this.cache.delPrefix('library:');
+      // Delete specific keys instead of broad prefix sweep
+      await Promise.all(userKeys.map(key => this.cache.del(key)));
+      
+      // Only clear location-specific book caches for THIS user
+      await this.cache.delPrefix(`library:${userId}:location:`);
+    });
+  }
+
+  /**
+   * Surgically invalidate book-related cache entries without nuking all libraries
+   */
+  async invalidateBook(bookId: string, affectedUserIds?: string[]): Promise<void> {
+    return this.executeOnce(`book:${bookId}`, async () => {
+      const bookKeys = [
+        CacheKeys.bookRatings(bookId),
+        CacheKeys.bookMetadata(bookId),
+      ];
+
+      await Promise.all(bookKeys.map(key => this.cache.del(key)));
+      
+      if (affectedUserIds && affectedUserIds.length > 0) {
+        // Only invalidate libraries for specific affected users
+        const libraryKeys = affectedUserIds.flatMap(userId => [
+          CacheKeys.userBooks(userId),
+          CacheKeys.userBooksCount(userId)
+        ]);
+        await Promise.all(libraryKeys.map(key => this.cache.del(key)));
+        
+        // Clear location-specific caches for affected users
+        await Promise.all(
+          affectedUserIds.map(userId => 
+            this.cache.delPrefix(`library:${userId}:location:`)
+          )
+        );
+      } else {
+        // Fallback to broad invalidation only when user list unknown
+        console.warn(`Book ${bookId} invalidation: No user list provided, using broad sweep`);
+        await this.cache.delPrefix('library:');
+      }
+    });
   }
 
   /**
@@ -259,31 +302,106 @@ export class CacheInvalidator {
   }
 
   /**
-   * Invalidate location-related cache entries
+   * Surgically invalidate location-related cache without cascade corruption
    */
-  async invalidateLocation(locationId: number): Promise<void> {
-    const locationKeys = [
-      CacheKeys.locationMembers(locationId),
-    ];
+  async invalidateLocation(locationId: number, affectedUserIds?: string[]): Promise<void> {
+    return this.executeOnce(`location:${locationId}`, async () => {
+      const locationKeys = [
+        CacheKeys.locationMembers(locationId),
+      ];
 
-    await Promise.all(locationKeys.map(key => this.cache.del(key)));
-    
-    // Invalidate user location hierarchies and book caches for this location
-    await this.cache.delPrefix('locations:');
-    await this.cache.delPrefix(`library:`); // All user libraries might be affected
+      await Promise.all(locationKeys.map(key => this.cache.del(key)));
+      
+      if (affectedUserIds && affectedUserIds.length > 0) {
+        // Only invalidate caches for users who had access to this location
+        const userKeys = affectedUserIds.flatMap(userId => [
+          CacheKeys.userLocations(userId),
+          CacheKeys.userLocationAccess(userId),
+          CacheKeys.userPermissions(userId), // Permissions may depend on location access
+          CacheKeys.userBooks(userId), // Books visibility may change
+          CacheKeys.userBooksCount(userId)
+        ]);
+        
+        await Promise.all(userKeys.map(key => this.cache.del(key)));
+        
+        // Clear location-specific book caches
+        await Promise.all(
+          affectedUserIds.map(userId => 
+            this.cache.delPrefix(`library:${userId}:location:${locationId}`)
+          )
+        );
+      } else {
+        // Fallback: broader invalidation when user list unknown
+        console.warn(`Location ${locationId} invalidation: No user list provided, using broader sweep`);
+        await this.cache.delPrefix('locations:');
+        await this.cache.delPrefix('user:'); // User permissions may have changed
+      }
+    });
   }
 
   /**
-   * Invalidate admin analytics
+   * Invalidate admin analytics with precision
    */
   async invalidateAdminAnalytics(adminId?: string): Promise<void> {
-    if (adminId) {
-      await this.cache.del(CacheKeys.adminAnalytics(adminId));
-      await this.cache.del(CacheKeys.adminUsers(adminId));
-      await this.cache.del(CacheKeys.adminStats(adminId));
-    } else {
-      // Invalidate all admin analytics
-      await this.cache.delPrefix('analytics:');
+    const key = adminId || 'all-analytics';
+    return this.executeOnce(`analytics:${key}`, async () => {
+      if (adminId) {
+        await this.cache.del(CacheKeys.adminAnalytics(adminId));
+        await this.cache.del(CacheKeys.adminUsers(adminId));
+        await this.cache.del(CacheKeys.adminStats(adminId));
+      } else {
+        // Invalidate all admin analytics
+        await this.cache.delPrefix('analytics:');
+      }
+    });
+  }
+
+  /**
+   * Get list of users affected by a location change for surgical cache invalidation
+   */
+  async getLocationAffectedUsers(locationId: number, env: any): Promise<string[]> {
+    try {
+      const result = await env.DB.prepare(`
+        SELECT DISTINCT u.id
+        FROM users u
+        LEFT JOIN location_members lm ON u.id = lm.user_id
+        LEFT JOIN locations l ON l.id = lm.location_id OR l.owner_id = u.id
+        WHERE l.id = ? OR u.user_role = 'super_admin'
+      `).bind(locationId).all();
+      
+      return (result.results as any[]).map(row => row.id);
+    } catch (error) {
+      console.warn(`Failed to get affected users for location ${locationId}:`, error);
+      return []; // Return empty array to trigger fallback broad invalidation
     }
+  }
+
+  /**
+   * Get list of users who can see a book for surgical cache invalidation
+   */
+  async getBookAffectedUsers(bookId: string, env: any): Promise<string[]> {
+    try {
+      const result = await env.DB.prepare(`
+        SELECT DISTINCT u.id
+        FROM users u
+        LEFT JOIN location_members lm ON u.id = lm.user_id
+        LEFT JOIN locations l ON l.id = lm.location_id OR l.owner_id = u.id
+        LEFT JOIN shelves s ON s.location_id = l.id
+        LEFT JOIN books b ON b.shelf_id = s.id
+        WHERE b.id = ? OR u.user_role = 'super_admin'
+      `).bind(bookId).all();
+      
+      return (result.results as any[]).map(row => row.id);
+    } catch (error) {
+      console.warn(`Failed to get affected users for book ${bookId}:`, error);
+      return []; // Return empty array to trigger fallback broad invalidation
+    }
+  }
+
+  /**
+   * Clear all pending invalidations (for emergency reset)
+   */
+  clearPendingInvalidations(): void {
+    this.pendingInvalidations.clear();
   }
 }
