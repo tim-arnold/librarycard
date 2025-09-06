@@ -107,6 +107,16 @@ export async function createLocationInvitation(request: Request, locationId: num
     // Don't fail the invitation creation if email fails, but log the specific error
   }
 
+  // Invalidate admin caches since invitation list changed
+  try {
+    const { CacheManager } = await import('../cache/kv');
+    const cache = new CacheManager(env);
+    await cache.delPrefix('analytics:');
+    console.log('Invalidated admin cache after invitation creation');
+  } catch (cacheError) {
+    console.warn('Failed to invalidate admin cache after invitation creation:', cacheError);
+  }
+
   return new Response(JSON.stringify({ 
     id: result.meta.last_row_id,
     invited_email,
@@ -205,6 +215,16 @@ export async function acceptLocationInvitation(request: Request, userId: string,
   `);
   
   await updateInvitationStmt.bind((invitation as any).id).run();
+
+  // Invalidate admin caches since user joined location and invitation was accepted
+  try {
+    const { CacheManager } = await import('../cache/kv');
+    const cache = new CacheManager(env);
+    await cache.delPrefix('analytics:');
+    console.log('Invalidated admin cache after invitation acceptance');
+  } catch (cacheError) {
+    console.warn('Failed to invalidate admin cache after invitation acceptance:', cacheError);
+  }
 
   return new Response(JSON.stringify({ 
     message: `Successfully joined ${(invitation as any).location_name}`,
@@ -360,6 +380,16 @@ export async function revokeLocationInvitation(invitationId: number, userId: str
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
+  }
+
+  // Invalidate admin caches since invitation list changed
+  try {
+    const { CacheManager } = await import('../cache/kv');
+    const cache = new CacheManager(env);
+    await cache.delPrefix('analytics:');
+    console.log('Invalidated admin cache after invitation revocation');
+  } catch (cacheError) {
+    console.warn('Failed to invalidate admin cache after invitation revocation:', cacheError);
   }
 
   return new Response(JSON.stringify({ 

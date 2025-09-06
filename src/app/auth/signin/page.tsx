@@ -370,7 +370,14 @@ function SignInForm() {
               })
 
               if (signInResult?.ok) {
-                // Accept the invitation after successful sign-in
+                // Check if invitation was already auto-accepted during registration
+                if (data.auto_accepted) {
+                  // Invitation already accepted, just redirect to home
+                  router.push('/')
+                  return
+                }
+                
+                // Accept the invitation after successful sign-in (for non-auto-accepted cases)
                 await handleInvitationAcceptance(invitationToken)
               } else {
                 // Show sign-in form with helpful message
