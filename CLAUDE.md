@@ -202,3 +202,4 @@ When adding new features:
 ---
 
 **Last updated**: June 2025
+- When completing work on Jira tasks, never move to "Done" status. All tickets should move to "Testing" unless otherwise specified.
