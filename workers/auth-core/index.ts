@@ -194,6 +194,19 @@ export async function registerUser(request: Request, env: Env, corsHeaders: Reco
       `);
       
       await updateInvitationStmt.bind((invitation as any).id).run();
+
+      // Invalidate admin caches since user list and analytics changed
+      try {
+        const { CacheManager, CacheKeys } = await import('../cache/kv');
+        const cache = new CacheManager(env);
+        
+        // Clear admin users cache for all admins (they all see the user list)
+        await cache.delPrefix('analytics:');
+        console.log('Invalidated admin cache after user registration');
+      } catch (cacheError) {
+        console.warn('Failed to invalidate admin cache after registration:', cacheError);
+        // Don't fail registration if cache invalidation fails
+      }
     } catch (error) {
       console.error('Failed to auto-accept invitation during registration:', error);
       // Don't fail registration if invitation acceptance fails - user can manually accept later
