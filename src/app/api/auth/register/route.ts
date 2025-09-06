@@ -97,6 +97,7 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest', // Bypass CSRF protection for server-to-server calls
       },
       body: JSON.stringify({ 
         email, 
