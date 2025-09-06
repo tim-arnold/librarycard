@@ -93,13 +93,17 @@ export function useBookLibraryQuery(options?: {
       return data as DashboardData
     },
     enabled: !!session?.user?.email && (options?.enabled ?? true),
-    staleTime: 3 * 60 * 1000, // 3 minutes for dashboard data
-    gcTime: 5 * 60 * 1000, // 5 minutes cache time
+    staleTime: 2 * 60 * 1000, // 2 minutes (reduced from 3 to prevent stale data)
+    gcTime: 3 * 60 * 1000, // 3 minutes cache time (reduced from 5)
     refetchInterval: options?.refetchInterval,
     // Enable background refetch on window focus for critical data
     refetchOnWindowFocus: true,
     // Retry important queries more aggressively
     retry: 3,
+    // Add error boundary handling
+    throwOnError: false,
+    // More conservative network mode
+    networkMode: 'online',
     select: (data: DashboardData) => {
       const currentUserRole = data.profile?.user_role || 'user'
       const currentUserId = data.profile?.id || null
@@ -228,10 +232,18 @@ export function useLibraryRefresh() {
   
   const refreshLibrary = useMutation({
     mutationFn: async () => {
-      // Force refetch of all dashboard data variations
+      // Clear all caches to prevent stale state propagation
+      queryClient.clear()
+      
+      // Force refetch of all dashboard data variations with retry
       await queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      await queryClient.invalidateQueries({ queryKey: ['books'] })
+      await queryClient.invalidateQueries({ queryKey: ['locations'] })
+      await queryClient.invalidateQueries({ queryKey: ['permissions'] })
+      
       return queryClient.refetchQueries({ queryKey: ['dashboard'] })
     },
+    retry: 1,
   })
   
   return {
