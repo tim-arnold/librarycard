@@ -116,7 +116,7 @@ export async function registerUser(request: Request, env: Env, corsHeaders: Reco
   if (invitation_token) {
     // If invitation token is provided, look up by token
     invitation = await env.DB.prepare(`
-      SELECT li.id, li.location_id, l.name as location_name
+      SELECT li.id, li.location_id, li.invited_by, l.name as location_name
       FROM location_invitations li
       LEFT JOIN locations l ON li.location_id = l.id
       WHERE li.invitation_token = ? AND li.used_at IS NULL AND li.expires_at > datetime('now')
@@ -124,7 +124,7 @@ export async function registerUser(request: Request, env: Env, corsHeaders: Reco
   } else {
     // Fall back to email lookup
     invitation = await env.DB.prepare(`
-      SELECT li.id, li.location_id, l.name as location_name
+      SELECT li.id, li.location_id, li.invited_by, l.name as location_name
       FROM location_invitations li
       LEFT JOIN locations l ON li.location_id = l.id
       WHERE li.invited_email = ? AND li.used_at IS NULL AND li.expires_at > datetime('now')
@@ -168,17 +168,62 @@ export async function registerUser(request: Request, env: Env, corsHeaders: Reco
       verificationExpires
     ).run();
 
+    // Automatically accept the invitation by adding user to location
+    try {
+      // Add user as location member
+      const addMemberStmt = env.DB.prepare(`
+        INSERT INTO location_members (location_id, user_id, role, invited_by, joined_at)
+        VALUES (?, ?, 'member', ?, datetime('now'))
+      `);
+      
+      await addMemberStmt.bind(
+        (invitation as any).location_id,
+        userId,
+        (invitation as any).invited_by
+      ).run();
+
+      // Apply default permissions to the new user
+      const { applyDefaultPermissionsToUser } = await import('../locations');
+      await applyDefaultPermissionsToUser((invitation as any).location_id, userId, (invitation as any).invited_by, env);
+
+      // Mark invitation as used
+      const updateInvitationStmt = env.DB.prepare(`
+        UPDATE location_invitations 
+        SET used_at = datetime('now')
+        WHERE id = ?
+      `);
+      
+      await updateInvitationStmt.bind((invitation as any).id).run();
+
+      // Invalidate admin caches since user list and analytics changed
+      try {
+        const { CacheManager, CacheKeys } = await import('../cache/kv');
+        const cache = new CacheManager(env);
+        
+        // Clear admin users cache for all admins (they all see the user list)
+        await cache.delPrefix('analytics:');
+        console.log('Invalidated admin cache after user registration');
+      } catch (cacheError) {
+        console.warn('Failed to invalidate admin cache after registration:', cacheError);
+        // Don't fail registration if cache invalidation fails
+      }
+    } catch (error) {
+      console.error('Failed to auto-accept invitation during registration:', error);
+      // Don't fail registration if invitation acceptance fails - user can manually accept later
+    }
+
     // No verification email needed for invited users since they're pre-verified
     // await sendVerificationEmail(env, email, first_name, verificationToken);
 
-    const message = `Registration successful! You have been invited to join "${(invitation as any).location_name}". You can now sign in with your new account.`;
+    const message = `Registration successful! You have been automatically added to "${(invitation as any).location_name}". You can now sign in with your new account.`;
 
     return new Response(JSON.stringify({ 
       message,
       userId,
       requires_verification: false,
       has_invitation: true,
-      location_name: (invitation as any).location_name
+      location_name: (invitation as any).location_name,
+      auto_accepted: true
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
