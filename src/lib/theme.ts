@@ -364,6 +364,7 @@ const commonComponents = {
             background: `linear-gradient(135deg, ${theme.palette.primary.main}08 0%, ${theme.palette.primary.light}08 100%)`,
             opacity: 0,
             transition: 'opacity 0.3s ease',
+            pointerEvents: 'none',
           },
           '& .MuiOutlinedInput-notchedOutline': {
             borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)',
