@@ -1,0 +1,1936 @@
+import {
+  Env,
+  User,
+} from './types';
+import {
+  getUserLocations,
+  createLocation,
+  updateLocation,
+  deleteLocation,
+  leaveLocation,
+  getLocationShelves,
+  createShelf,
+  updateShelf,
+  deleteShelf,
+  setLocationDefaultPermission,
+  getLocationDefaultPermissions,
+  getLocationDefaultPermissionsAPI,
+  updateLocationDefaultPermissions,
+  applyDefaultPermissionsToUser
+} from './locations';
+import {
+  getUserBooks,
+  createBook,
+  updateBook,
+  deleteBook,
+  checkoutBook,
+  checkinBook,
+  getCheckoutHistory,
+  getBookCheckoutHistory,
+  createBookRemovalRequest,
+  getBookRemovalRequests,
+  approveBookRemovalRequest,
+  denyBookRemovalRequest,
+  deleteBookRemovalRequest,
+  rateBook,
+  getBookRating,
+  getPendingReviews,
+  moderateReview,
+  emailOverdueUser,
+  getBookEditions
+} from './books';
+import {
+  getCachedUserBooks,
+  invalidateBookCache,
+  invalidateUserBookCache
+} from './books/cached';
+import {
+  CacheManager,
+  CacheInvalidator
+} from './cache/kv';
+import {
+  getCachedBookEditions
+} from './books/google-cached';
+import {
+  getEnhancedBookEditions
+} from './books/loc-cached';
+import {
+  sendInvitationEmail,
+  sendVerificationEmail,
+  notifyAdminsOfSignupRequest,
+  sendContactEmail
+} from './email';
+import {
+  getSignupRequests,
+  approveSignupRequest,
+  denySignupRequest,
+  cleanupUser,
+  debugListUsers
+} from './admin';
+import {
+  checkUserExists
+} from './auth-utils';
+import {
+  createOrUpdateUser,
+  registerUser,
+  verifyCredentials,
+  verifyEmail,
+  forgotPassword,
+  verifyResetToken,
+  resetPassword,
+  changePassword,
+  complete2FALogin
+} from './auth-core';
+import { WebAuthnService } from './auth/webauthn';
+import { generateJWT } from './auth/jwt';
+import { type AuthenticationResponseJSON } from '@simplewebauthn/browser';
+import {
+  createLocationInvitation,
+  acceptLocationInvitation,
+  getLocationInvitations,
+  getInvitationDetails,
+  revokeLocationInvitation
+} from './invitations';
+import {
+  getAdminAnalytics,
+  getAdminUsers,
+  updateUserRole,
+  getAvailableAdmins,
+  getUserLocationAssignments,
+  assignLocationToUser,
+  unassignLocationFromUser
+} from './admin-extended';
+import {
+  getCachedAdminAnalytics,
+  getCachedAdminUsers,
+  invalidateAdminAnalytics,
+  invalidateAllAdminAnalytics,
+  warmAdminCache,
+  getAdminCacheMetrics
+} from './admin/cached';
+import {
+  getUserProfile,
+  updateUserProfile,
+  getDashboardData,
+  getUserRejectedReviews
+} from './profile';
+import {
+  getUserFromRequest
+} from './auth';
+import {
+  getCachedIsUserAdmin,
+  invalidateUserCache
+} from './auth/cached';
+import { GenreService } from './genres';
+import {
+  getLocationAdminCapabilities,
+  grantAdminCapability,
+  revokeAdminCapability,
+  getLocationUserPermissions,
+  grantUserPermission,
+  revokeUserPermission,
+  checkUserPermission,
+  checkLocationPermissionManagement,
+  getUserPermissions,
+  getUserGlobalPermissions,
+  grantGlobalPermission,
+  revokeGlobalPermission
+} from './permissions';
+import {
+  getUserNotificationPreferences,
+  updateNotificationPreference,
+  getNotificationSettings,
+  resetNotificationPreferences
+} from './notification-preferences';
+import {
+  getInAppNotifications,
+  getUnreadCount,
+  markNotificationRead,
+  markAllNotificationsRead,
+  createTestNotification
+} from './in-app-notifications';
+import { RateLimiter } from './auth/rate-limiter';
+import { TwoFactorAuth } from './auth/two-factor';
+import { requireCSRFToken, getCSRFTokenEndpoint, shouldProtectWithCSRF } from './csrf';
+import { CommonErrors, withGlobalErrorHandling, ErrorCategory, createSecureErrorResponse } from './errors';
+import { getSessionAnalytics, logSessionAnalytics } from './analytics/openLibraryAnalytics';
+import {
+  getUserSeries,
+  createSeries,
+  updateSeries,
+  deleteSeries,
+  addBooksToSeries,
+  removeBookFromSeries,
+  getSeriesBooks,
+  approveRejectSeries,
+  getPendingSeries
+} from './series';
+
+export default {
+  async fetch(request: Request, env: Env): Promise<Response> {
+    const url = new URL(request.url);  
+    const path = url.pathname;
+    
+    // Only log requests in local development
+    if (env.ENVIRONMENT === 'local') {
+      console.log('🚀 Worker request:', request.method, path);
+// Removed debugging logs
+    }
+
+
+    // Secure CORS configuration - only allow trusted frontend domain
+    const getAllowedOrigin = (requestOrigin: string | null, frontendUrl: string): string => {
+      // If no origin header (server-to-server requests), allow
+      if (!requestOrigin) {
+        return frontendUrl;
+      }
+      
+      // Check if the request origin matches our frontend URL
+      if (requestOrigin === frontendUrl) {
+        return requestOrigin;
+      }
+      
+      // For local development, also allow localhost variations
+      if (env.ENVIRONMENT === 'local') {
+        const localOrigins = ['http://localhost:3000', 'http://127.0.0.1:3000'];
+        if (localOrigins.includes(requestOrigin)) {
+          return requestOrigin;
+        }
+      }
+      
+      // Default to frontend URL if origin doesn't match
+      return frontendUrl;
+    };
+
+    const frontendUrl = env.APP_URL;
+    const origin = request.headers.get('Origin');
+    const allowedOrigin = getAllowedOrigin(origin, frontendUrl);
+
+    const corsHeaders = {
+      'Access-Control-Allow-Origin': allowedOrigin,
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-CSRF-Token, X-Requested-With',
+      'Access-Control-Allow-Credentials': 'true',
+    };
+
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { headers: corsHeaders });
+    }
+
+    // Initialize rate limiter
+    const rateLimiter = new RateLimiter(env);
+    const clientId = rateLimiter.getClientIdentifier(request);
+
+    // Declare userId at function scope so it's accessible in catch block
+    let userId: string | null = null;
+
+    try {
+      // Health check endpoint (no authentication required)
+      if (path === '/health' && request.method === 'GET') {
+        return new Response(JSON.stringify({ 
+          status: 'healthy', 
+          timestamp: new Date().toISOString(),
+          environment: env.ENVIRONMENT 
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Public auth endpoints (no authentication required)
+      if (path === '/api/users' && request.method === 'POST') {
+        return await createOrUpdateUser(request, env, corsHeaders);
+      }
+
+      if (path === '/api/auth/register' && request.method === 'POST') {
+        // Rate limit registration attempts
+        const rateLimitResult = await rateLimiter.checkRateLimit(clientId, 'auth-register');
+        if (!rateLimitResult.allowed) {
+          const response = rateLimiter.createRateLimitResponse(rateLimitResult.resetTime!);
+          // Add CORS headers to rate limit response
+          Object.entries(corsHeaders).forEach(([key, value]) => {
+            response.headers.set(key, value);
+          });
+          return response;
+        }
+        
+        return await registerUser(request, env, corsHeaders);
+      }
+
+      if (path === '/api/auth/verify' && request.method === 'POST') {
+        // Rate limit login attempts
+        const rateLimitResult = await rateLimiter.checkRateLimit(clientId, 'auth-login');
+        if (!rateLimitResult.allowed) {
+          const response = rateLimiter.createRateLimitResponse(rateLimitResult.resetTime!);
+          // Add CORS headers to rate limit response
+          Object.entries(corsHeaders).forEach(([key, value]) => {
+            response.headers.set(key, value);
+          });
+          return response;
+        }
+        
+        return await verifyCredentials(request, env, corsHeaders);
+      }
+
+      if (path === '/api/auth/verify-email' && request.method === 'GET') {
+        return await verifyEmail(request, env, corsHeaders);
+      }
+
+      if (path === '/api/invitations/details' && request.method === 'GET') {
+        return await getInvitationDetails(request, env, corsHeaders);
+      }
+
+      if (path === '/api/users/check' && request.method === 'GET') {
+        return await checkUserExists(request, env, corsHeaders);
+      }
+
+      // Password reset endpoints (public)
+      if (path === '/api/auth/forgot-password' && request.method === 'POST') {
+        // Rate limit forgot password attempts
+        const rateLimitResult = await rateLimiter.checkRateLimit(clientId, 'auth-forgot-password');
+        if (!rateLimitResult.allowed) {
+          const response = rateLimiter.createRateLimitResponse(rateLimitResult.resetTime!);
+          // Add CORS headers to rate limit response
+          Object.entries(corsHeaders).forEach(([key, value]) => {
+            response.headers.set(key, value);
+          });
+          return response;
+        }
+        
+        return await forgotPassword(request, env, corsHeaders);
+      }
+
+      if (path === '/api/auth/verify-reset-token' && request.method === 'GET') {
+        return await verifyResetToken(request, env, corsHeaders);
+      }
+
+      if (path === '/api/auth/reset-password' && request.method === 'POST') {
+        // Rate limit password reset attempts
+        const rateLimitResult = await rateLimiter.checkRateLimit(clientId, 'auth-reset-password');
+        if (!rateLimitResult.allowed) {
+          const response = rateLimiter.createRateLimitResponse(rateLimitResult.resetTime!);
+          // Add CORS headers to rate limit response
+          Object.entries(corsHeaders).forEach(([key, value]) => {
+            response.headers.set(key, value);
+          });
+          return response;
+        }
+        
+        return await resetPassword(request, env, corsHeaders);
+      }
+
+      // Contact form endpoint (public)
+      if (path === '/api/contact' && request.method === 'POST') {
+        return await sendContactEmail(request, env, corsHeaders);
+      }
+
+      // 2FA login completion endpoint (public - for completing login)
+      if (path === '/api/auth/2fa/complete-login' && request.method === 'POST') {
+        // Rate limit 2FA completion attempts
+        const rateLimitResult = await rateLimiter.checkRateLimit(clientId, 'auth-2fa-verify');
+        if (!rateLimitResult.allowed) {
+          const response = rateLimiter.createRateLimitResponse(rateLimitResult.resetTime!);
+          Object.entries(corsHeaders).forEach(([key, value]) => {
+            response.headers.set(key, value);
+          });
+          return response;
+        }
+        
+        return await complete2FALogin(request, env, corsHeaders);
+      }
+
+      // WebAuthn endpoints (public for authentication, some require auth for registration)
+      
+      // WebAuthn authentication start (public - for login)
+      if (path === '/api/auth/webauthn/authenticate/begin' && request.method === 'POST') {
+        try {
+          const url = new URL(request.url);
+          const rpName = 'LibraryCard';
+          // Set rpID based on environment - use frontend hostname for WebAuthn
+          const rpID = env.ENVIRONMENT === 'local' ? 'localhost' : new URL(env.APP_URL).hostname;
+          const origin = env.ENVIRONMENT === 'local' ? 'http://localhost:3000' : env.APP_URL;
+          
+          const webAuthnService = new WebAuthnService(env.DB, rpName, rpID, origin);
+          
+          const body = await request.json() as { email?: string };
+          const options = await webAuthnService.generateAuthenticationOptions(undefined, body.email);
+          
+          return new Response(JSON.stringify(options), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error: any) {
+          console.error('WebAuthn authentication begin error:', error);
+          return new Response(JSON.stringify({ error: 'Failed to generate authentication options' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      // WebAuthn authentication complete (public - for login)  
+      if (path === '/api/auth/webauthn/authenticate/finish' && request.method === 'POST') {
+        try {
+          const url = new URL(request.url);
+          const rpName = 'LibraryCard';
+          // Set rpID based on environment - use frontend hostname for WebAuthn
+          const rpID = env.ENVIRONMENT === 'local' ? 'localhost' : new URL(env.APP_URL).hostname;
+          const origin = env.ENVIRONMENT === 'local' ? 'http://localhost:3000' : env.APP_URL;
+          
+          const webAuthnService = new WebAuthnService(env.DB, rpName, rpID, origin);
+          
+          const response = await request.json() as AuthenticationResponseJSON;
+          const verification = await webAuthnService.verifyAuthenticationResponse(response);
+          
+          if (verification.success && verification.userId) {
+            // Get user information for JWT payload
+            const userStmt = env.DB.prepare('SELECT email, user_role FROM users WHERE id = ?');
+            const user = await userStmt.bind(verification.userId).first() as { email: string; user_role: string } | null;
+            
+            if (!user) {
+              return new Response(JSON.stringify({ error: 'User not found' }), {
+                status: 404,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              });
+            }
+
+            // Generate JWT token for successful authentication
+            const token = await generateJWT({ 
+              userId: verification.userId, 
+              email: user.email, 
+              role: user.user_role 
+            }, env);
+            
+            return new Response(JSON.stringify({ 
+              success: true, 
+              token,
+              userId: verification.userId 
+            }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          } else {
+            return new Response(JSON.stringify({ success: false, error: 'Authentication failed' }), {
+              status: 401,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+        } catch (error: any) {
+          console.error('WebAuthn authentication finish error:', error);
+          return new Response(JSON.stringify({ error: 'Authentication failed' }), {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      // Public genre endpoints (read-only access)
+      if (path === '/api/genres' && request.method === 'GET') {
+        if (env.ENVIRONMENT === 'local') {
+          console.log('Worker: handling /genres request');
+        }
+        const genreService = new GenreService(env.DB);
+        try {
+          const genres = await genreService.getAllActiveGenres();
+          if (env.ENVIRONMENT === 'local') {
+            console.log('Worker: returning', genres.length, 'genres');
+          }
+          return new Response(JSON.stringify(genres), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error) {
+          console.error('Error fetching genres:', error);
+          return new Response(JSON.stringify({ error: 'Failed to fetch genres' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      // Get user from session/token for protected endpoints
+      userId = await getUserFromRequest(request, env);
+      
+      // Debug logging for authentication in local environment
+      if (env.ENVIRONMENT === 'local') {
+        console.log('🔍 Auth Debug: UserId from request:', userId, 'for path:', path);
+      }
+      
+      // All other endpoints require authentication
+      if (!userId) {
+        if (env.ENVIRONMENT === 'local') {
+          console.log('🔍 Auth Debug: No userId found, returning UNAUTHORIZED');
+        }
+        return CommonErrors.UNAUTHORIZED(env, corsHeaders);
+      }
+      
+      // TypeScript assertion: userId is guaranteed to be non-null after the check above
+      // Reassign to ensure type safety for the rest of the function
+      userId = userId as string;
+      
+      if (env.ENVIRONMENT === 'local') {
+        console.log('🔍 Auth Debug: User authenticated successfully for', path);
+      }
+
+      // CSRF token endpoint (for frontend to obtain tokens)
+      if (path === '/api/csrf-token' && request.method === 'GET') {
+        return await getCSRFTokenEndpoint(env, userId, corsHeaders);
+      }
+
+      // CSRF protection for state-changing operations
+      if (shouldProtectWithCSRF(path, request.method)) {
+        const csrfCheck = await requireCSRFToken(request, env, userId, corsHeaders);
+        if (csrfCheck) {
+          return csrfCheck; // CSRF check failed
+        }
+      }
+
+      // 2FA/Two-Factor Authentication endpoints
+      const twoFactorAuth = new TwoFactorAuth(env);
+
+      if (path === '/api/auth/2fa/status' && request.method === 'GET') {
+        return await twoFactorAuth.getStatus(userId, corsHeaders);
+      }
+
+      if (path === '/api/auth/2fa/setup' && request.method === 'GET') {
+        return await twoFactorAuth.initializeSetup(userId, corsHeaders);
+      }
+
+      if (path === '/api/auth/2fa/setup' && request.method === 'POST') {
+        // No rate limiting for 2FA setup since user is already authenticated
+        return await twoFactorAuth.completeSetup(request, userId, corsHeaders);
+      }
+
+      if (path === '/api/auth/2fa/verify' && request.method === 'POST') {
+        // Rate limit 2FA verification attempts
+        const rateLimitResult = await rateLimiter.checkRateLimit(clientId, 'auth-2fa-verify');
+        if (!rateLimitResult.allowed) {
+          const response = rateLimiter.createRateLimitResponse(rateLimitResult.resetTime!);
+          Object.entries(corsHeaders).forEach(([key, value]) => {
+            response.headers.set(key, value);
+          });
+          return response;
+        }
+        
+        return await twoFactorAuth.verifyTOTP(request, userId, corsHeaders);
+      }
+
+      if (path === '/api/auth/2fa/verify-backup' && request.method === 'POST') {
+        // Rate limit backup code verification attempts
+        const rateLimitResult = await rateLimiter.checkRateLimit(clientId, 'auth-2fa-verify');
+        if (!rateLimitResult.allowed) {
+          const response = rateLimiter.createRateLimitResponse(rateLimitResult.resetTime!);
+          Object.entries(corsHeaders).forEach(([key, value]) => {
+            response.headers.set(key, value);
+          });
+          return response;
+        }
+        
+        return await twoFactorAuth.verifyBackupCode(request, userId, corsHeaders);
+      }
+
+      if (path === '/api/auth/2fa/disable' && request.method === 'POST') {
+        // Rate limit 2FA disable attempts
+        const rateLimitResult = await rateLimiter.checkRateLimit(clientId, 'auth-2fa-disable');
+        if (!rateLimitResult.allowed) {
+          const response = rateLimiter.createRateLimitResponse(rateLimitResult.resetTime!);
+          Object.entries(corsHeaders).forEach(([key, value]) => {
+            response.headers.set(key, value);
+          });
+          return response;
+        }
+        
+        return await twoFactorAuth.disable2FA(request, userId, corsHeaders);
+      }
+
+      if (path === '/api/auth/2fa/backup-codes' && request.method === 'POST') {
+        return await twoFactorAuth.regenerateBackupCodes(userId, corsHeaders);
+      }
+
+      // WebAuthn/Passkey endpoints (protected - require authentication)
+      
+      // WebAuthn registration start (protected)
+      if (path === '/api/auth/webauthn/register/begin' && request.method === 'POST') {
+        try {
+          const url = new URL(request.url);
+          const rpName = 'LibraryCard';
+          // Set rpID based on environment - use frontend hostname for WebAuthn
+          const rpID = env.ENVIRONMENT === 'local' ? 'localhost' : new URL(env.APP_URL).hostname;
+          const origin = env.ENVIRONMENT === 'local' ? 'http://localhost:3000' : env.APP_URL;
+          
+          const webAuthnService = new WebAuthnService(env.DB, rpName, rpID, origin);
+          
+          // Get user details for registration
+          const userStmt = env.DB.prepare('SELECT email, first_name, last_name FROM users WHERE id = ?');
+          const user = await userStmt.bind(userId).first() as any;
+          
+          if (!user) {
+            return new Response(JSON.stringify({ error: 'User not found' }), {
+              status: 404,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+          
+          const displayName = user.first_name && user.last_name 
+            ? `${user.first_name} ${user.last_name}` 
+            : user.email;
+          
+          const options = await webAuthnService.generateRegistrationOptions(
+            userId, 
+            user.email, 
+            displayName
+          );
+          
+          return new Response(JSON.stringify(options), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error: any) {
+          console.error('WebAuthn registration begin error:', error);
+          return new Response(JSON.stringify({ error: 'Failed to generate registration options' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      // WebAuthn registration complete (protected)
+      if (path === '/api/auth/webauthn/register/finish' && request.method === 'POST') {
+        try {
+          const url = new URL(request.url);
+          const rpName = 'LibraryCard';
+          // Set rpID based on environment - use frontend hostname for WebAuthn
+          const rpID = env.ENVIRONMENT === 'local' ? 'localhost' : new URL(env.APP_URL).hostname;
+          const origin = env.ENVIRONMENT === 'local' ? 'http://localhost:3000' : env.APP_URL;
+          
+          const webAuthnService = new WebAuthnService(env.DB, rpName, rpID, origin);
+          
+          const body = await request.json() as { response: any; deviceName?: string };
+          const verification = await webAuthnService.verifyRegistrationResponse(
+            userId, 
+            body.response,
+            body.deviceName
+          );
+          
+          if (verification.success) {
+            return new Response(JSON.stringify({ 
+              success: true, 
+              credentialId: verification.credentialId 
+            }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          } else {
+            return new Response(JSON.stringify({ success: false, error: 'Registration failed' }), {
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+        } catch (error: any) {
+          console.error('WebAuthn registration finish error:', error);
+          return new Response(JSON.stringify({ error: 'Registration failed' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      // Get user's WebAuthn credentials (protected)
+      if (path === '/api/auth/webauthn/credentials' && request.method === 'GET') {
+        try {
+          const url = new URL(request.url);
+          const rpName = 'LibraryCard';
+          // Set rpID based on environment - use frontend hostname for WebAuthn
+          const rpID = env.ENVIRONMENT === 'local' ? 'localhost' : new URL(env.APP_URL).hostname;
+          const origin = env.ENVIRONMENT === 'local' ? 'http://localhost:3000' : env.APP_URL;
+          
+          const webAuthnService = new WebAuthnService(env.DB, rpName, rpID, origin);
+          const credentials = await webAuthnService.getUserCredentials(userId);
+          
+          // Return safe credential data (exclude sensitive information)
+          const safeCredentials = credentials.map(cred => ({
+            id: cred.id,
+            device_name: cred.device_name,
+            device_type: cred.device_type,
+            created_at: cred.created_at,
+            last_used_at: cred.last_used_at
+          }));
+          
+          return new Response(JSON.stringify(safeCredentials), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error: any) {
+          console.error('WebAuthn get credentials error:', error);
+          return new Response(JSON.stringify({ error: 'Failed to get credentials' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      // Delete WebAuthn credential (protected)
+      if (path.match(/^\/api\/auth\/webauthn\/credentials\/(.+)$/) && request.method === 'DELETE') {
+        try {
+          const rawId = path.split('/')[5];
+          const credentialDbId = parseInt(rawId);
+          
+          console.log(`🔍 WebAuthn Debug: DELETE request for credential ID ${credentialDbId} (raw: ${rawId})`);
+          
+          if (isNaN(credentialDbId)) {
+            return new Response(JSON.stringify({ error: 'Invalid credential ID' }), {
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+          
+          const url = new URL(request.url);
+          const rpName = 'LibraryCard';
+          // Set rpID based on environment - use frontend hostname for WebAuthn
+          const rpID = env.ENVIRONMENT === 'local' ? 'localhost' : new URL(env.APP_URL).hostname;
+          const origin = env.ENVIRONMENT === 'local' ? 'http://localhost:3000' : env.APP_URL;
+          
+          const webAuthnService = new WebAuthnService(env.DB, rpName, rpID, origin);
+          const success = await webAuthnService.deleteCredentialById(userId, credentialDbId);
+          
+          if (success) {
+            return new Response(JSON.stringify({ success: true }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          } else {
+            return new Response(JSON.stringify({ error: 'Credential not found' }), {
+              status: 404,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+        } catch (error: any) {
+          console.error('WebAuthn delete credential error:', error);
+          return new Response(JSON.stringify({ error: 'Failed to delete credential' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      // Location endpoints
+      if (path === '/api/locations' && request.method === 'GET') {
+        return await getUserLocations(userId, env, corsHeaders);
+      }
+
+      if (path === '/api/locations' && request.method === 'POST') {
+        return await createLocation(request, userId, env, corsHeaders);
+      }
+
+      // Location default permissions endpoints (must come before general location routes)
+      if (path.match(/^\/api\/locations\/\d+\/default-permissions$/) && request.method === 'POST') {
+        const locationId = parseInt(path.split('/')[3]);
+        return await setLocationDefaultPermission(request, locationId, userId, env, corsHeaders);
+      }
+
+      if (path.match(/^\/api\/locations\/\d+\/default-permissions$/) && request.method === 'GET') {
+        const locationId = parseInt(path.split('/')[3]);
+        return await getLocationDefaultPermissionsAPI(locationId, userId, env, corsHeaders);
+      }
+
+      if (path.match(/^\/api\/locations\/\d+\/default-permissions$/) && request.method === 'PUT') {
+        const locationId = parseInt(path.split('/')[3]);
+        return await updateLocationDefaultPermissions(request, locationId, userId, env, corsHeaders);
+      }
+
+      if (path.startsWith('/api/locations/') && path !== '/api/locations' && request.method === 'PUT') {
+        const id = parseInt(path.split('/')[3]);
+        return await updateLocation(request, userId, env, corsHeaders, id);
+      }
+
+      if (path === '/api/locations' && request.method === 'PUT') {
+        const id = url.searchParams.get('id');
+        if (!id) {
+          return new Response(JSON.stringify({ error: 'Location ID required' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        return await updateLocation(request, userId, env, corsHeaders, parseInt(id));
+      }
+
+      if (path.startsWith('/api/locations/') && path !== '/api/locations' && request.method === 'DELETE') {
+        const id = parseInt(path.split('/')[3]);
+        return await deleteLocation(userId, env, corsHeaders, id);
+      }
+
+      if (path === '/api/locations' && request.method === 'DELETE') {
+        const id = url.searchParams.get('id');
+        if (!id) {
+          return new Response(JSON.stringify({ error: 'Location ID required' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        return await deleteLocation(userId, env, corsHeaders, parseInt(id));
+      }
+
+      if (path.match(/^\/api\/locations\/\d+\/shelves$/) && request.method === 'GET') {
+        const locationId = parseInt(path.split('/')[3]);
+        return await getLocationShelves(locationId, userId, env, corsHeaders);
+      }
+
+      if (path.match(/^\/api\/locations\/\d+\/shelves$/) && request.method === 'POST') {
+        const locationId = parseInt(path.split('/')[3]);
+        return await createShelf(request, locationId, userId, env, corsHeaders);
+      }
+
+      if (path.startsWith('/api/shelves/') && request.method === 'PUT') {
+        const id = parseInt(path.split('/')[3]);
+        return await updateShelf(request, userId, env, corsHeaders, id);
+      }
+
+      if (path.startsWith('/api/shelves/') && request.method === 'DELETE') {
+        const id = parseInt(path.split('/')[3]);
+        return await deleteShelf(request, userId, env, corsHeaders, id);
+      }
+
+
+      // Signup approval endpoints (admin only)
+      if (path === '/api/signup-requests' && request.method === 'GET') {
+        return await getSignupRequests(userId, env, corsHeaders);
+      }
+
+      if (path.match(/^\/api\/signup-requests\/\d+\/approve$/) && request.method === 'POST') {
+        const requestId = parseInt(path.split('/')[3]);
+        return await approveSignupRequest(request, requestId, userId, env, corsHeaders);
+      }
+
+      if (path.match(/^\/api\/signup-requests\/\d+\/deny$/) && request.method === 'POST') {
+        const requestId = parseInt(path.split('/')[3]);
+        return await denySignupRequest(request, requestId, userId, env, corsHeaders);
+      }
+
+      // Book endpoints
+      if (path === '/api/books' && request.method === 'GET') {
+        if (env.ENVIRONMENT === 'local') {
+          if (env.ENVIRONMENT === 'local') {
+            console.log('🔍 Books Debug: Fetching books for user', userId);
+          }
+        }
+        
+        try {
+          const result = await getCachedUserBooks(userId, env, corsHeaders);
+          
+          if (env.ENVIRONMENT === 'local') {
+            if (env.ENVIRONMENT === 'local') {
+              console.log('🔍 Books Debug: Result status', result.status);
+              if (!result.ok) {
+                const errorText = await result.text();
+                console.log('🔍 Books Debug: Error response', errorText);
+              }
+            }
+          }
+          
+          return result;
+        } catch (error) {
+          if (env.ENVIRONMENT === 'local') {
+            if (env.ENVIRONMENT === 'local') {
+              console.error('🔍 Books Debug: Exception caught', error);
+            }
+          }
+          throw error;
+        }
+      }
+
+      if (path === '/api/books' && request.method === 'POST') {
+        const response = await createBook(request, userId, env, corsHeaders);
+        
+        // Invalidate user book cache after creating a book
+        if (response.ok) {
+          await invalidateUserBookCache(userId, env);
+        }
+        
+        return response;
+      }
+
+      // Enhanced book editions endpoint for cover selection (multi-source)
+      if (path === '/api/books/editions' && request.method === 'GET') {
+        console.log('🔍 Enhanced book editions request received');
+        const title = url.searchParams.get('title');
+        const author = url.searchParams.get('author');
+        const query = url.searchParams.get('q'); // Fallback for general search
+        const enhanced = url.searchParams.get('enhanced') === 'true';
+        
+        console.log('📝 Request params:', { title, author, query, enhanced });
+        
+        // Require either title+author or general query
+        if (!title && !author && !query) {
+          return new Response(JSON.stringify({ error: 'Title and author parameters, or general query (q) parameter is required' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        
+        if (enhanced) {
+          // Use specific title and author if provided, otherwise use general query
+          const searchTitle = title || query || '';
+          const searchAuthor = author || query || '';
+          
+          console.log('🚀 Calling getEnhancedBookEditions with:', { searchTitle, searchAuthor });
+          console.log('ℹ️  Enhanced search always filters for books with cover art');
+          
+          // Use enhanced multi-source approach (always filters for covers)
+          const editions = await getEnhancedBookEditions(searchTitle, searchAuthor, env);
+          
+          console.log('✅ Enhanced search complete, returning', editions.length, 'editions');
+          
+          return new Response(JSON.stringify({ editions }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } else {
+          // Use legacy Google Books only approach
+          const editions = await getCachedBookEditions(query || '', '', env);
+          return new Response(JSON.stringify({ editions }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      // Book checkout endpoints (must come before general /api/books/* routes)
+      if (path.match(/^\/api\/books\/\d+\/checkout$/) && request.method === 'POST') {
+        const bookId = parseInt(path.split('/')[3]);
+        const response = await checkoutBook(request, bookId, userId, env, corsHeaders);
+        
+        // Invalidate book cache after checkout
+        if (response.ok) {
+          await invalidateBookCache(bookId.toString(), userId, env);
+        }
+        
+        return response;
+      }
+
+      if (path.match(/^\/api\/books\/\d+\/checkin$/) && request.method === 'POST') {
+        const bookId = parseInt(path.split('/')[3]);
+        const response = await checkinBook(bookId, userId, env, corsHeaders);
+        
+        // Invalidate book cache after checkin
+        if (response.ok) {
+          await invalidateBookCache(bookId.toString(), userId, env);
+        }
+        
+        return response;
+      }
+
+      if (path === '/api/books/checkout-history' && request.method === 'GET') {
+        return await getCheckoutHistory(userId, env, corsHeaders);
+      }
+
+      // Get checkout history for a specific book
+      if (path.match(/^\/api\/books\/\d+\/checkout-history$/) && request.method === 'GET') {
+        const id = parseInt(path.split('/')[3]);
+        return await getBookCheckoutHistory(id, userId, env, corsHeaders);
+      }
+
+      // Email overdue user for a specific book
+      if (path.match(/^\/api\/books\/\d+\/email-overdue-user$/) && request.method === 'POST') {
+        const id = parseInt(path.split('/')[3]);
+        return await emailOverdueUser(id, userId, env, corsHeaders);
+      }
+
+      // Book-Genre Management endpoints (must come before general book PUT/DELETE routes)
+      if (path.match(/^\/api\/books\/\d+\/genres$/) && request.method === 'GET') {
+        const bookId = parseInt(path.split('/')[3]);
+        const genreService = new GenreService(env.DB);
+        try {
+          const bookGenres = await genreService.getBookGenres(bookId);
+          return new Response(JSON.stringify(bookGenres), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error) {
+          console.error('Error fetching book genres:', error);
+          return new Response(JSON.stringify({ error: 'Failed to fetch book genres' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      if (path.match(/^\/api\/books\/\d+\/genres$/) && request.method === 'POST') {
+        const bookId = parseInt(path.split('/')[3]);
+        const genreService = new GenreService(env.DB);
+        try {
+          const body = await request.json() as any;
+          const bookGenre = await genreService.assignGenreToBook(bookId, body, userId);
+          return new Response(JSON.stringify(bookGenre), {
+            status: 201,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error: any) {
+          console.error('Error assigning genre to book:', error);
+          const status = error.message.includes('already assigned') ? 409 : 500;
+          return new Response(JSON.stringify({ error: error.message || 'Failed to assign genre' }), {
+            status,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      if (path.match(/^\/api\/books\/\d+\/genres$/) && request.method === 'PUT') {
+        const bookId = parseInt(path.split('/')[3]);
+        const genreService = new GenreService(env.DB);
+        try {
+          const body = await request.json() as any;
+          const { genreIds } = body;
+          
+          if (!Array.isArray(genreIds)) {
+            return new Response(JSON.stringify({ error: 'genreIds must be an array' }), {
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          // Check if user has access to this book (super admins have access to all books)
+          const userRole = await env.DB.prepare('SELECT user_role FROM users WHERE id = ?').bind(userId).first() as any;
+          const isSuperAdmin = userRole?.user_role === 'super_admin';
+          
+          if (!isSuperAdmin) {
+            const bookAccessStmt = env.DB.prepare(`
+              SELECT b.id FROM books b
+              LEFT JOIN shelves s ON b.shelf_id = s.id
+              LEFT JOIN locations l ON s.location_id = l.id
+              LEFT JOIN location_members lm ON l.id = lm.location_id
+              WHERE b.id = ? AND (b.added_by = ? OR l.owner_id = ? OR lm.user_id = ?)
+            `);
+            
+            const bookAccess = await bookAccessStmt.bind(bookId, userId, userId, userId).first();
+            if (!bookAccess) {
+              return new Response(JSON.stringify({ error: 'Book not found or access denied' }), {
+                status: 403,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              });
+            }
+          }
+
+          // Get current genres for this book
+          const currentGenres = await genreService.getBookGenres(bookId);
+          const currentGenreIds = currentGenres.map(bg => bg.genreId);
+          
+          // Remove genres that are no longer in the list
+          const genresToRemove = currentGenreIds.filter(id => !genreIds.includes(id));
+          for (const genreId of genresToRemove) {
+            await genreService.removeGenreFromBook(bookId, genreId);
+          }
+          
+          // Add new genres that aren't already assigned
+          const genresToAdd = genreIds.filter((id: number) => !currentGenreIds.includes(id));
+          for (const genreId of genresToAdd) {
+            try {
+              await genreService.assignGenreToBook(bookId, { genreId }, userId);
+            } catch (error: any) {
+              // Skip if already assigned (shouldn't happen but handle gracefully)
+              if (!error.message.includes('already assigned')) {
+                throw error;
+              }
+            }
+          }
+          
+          // Invalidate caches after genre changes
+          await invalidateBookCache(bookId.toString(), userId, env);
+          await invalidateAllAdminAnalytics(env);
+          
+          // Return updated book genres
+          const updatedBookGenres = await genreService.getBookGenres(bookId);
+          return new Response(JSON.stringify(updatedBookGenres), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error: any) {
+          console.error('Error updating book genres:', error);
+          return new Response(JSON.stringify({ error: error.message || 'Failed to update book genres' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      if (path.match(/^\/api\/books\/\d+\/genres\/\d+$/) && request.method === 'DELETE') {
+        const bookId = parseInt(path.split('/')[3]);
+        const genreId = parseInt(path.split('/')[5]);
+        const genreService = new GenreService(env.DB);
+        try {
+          // Check if user has access to this book (super admins have access to all books)
+          const userRole = await env.DB.prepare('SELECT user_role FROM users WHERE id = ?').bind(userId).first() as any;
+          const isSuperAdmin = userRole?.user_role === 'super_admin';
+          
+          if (!isSuperAdmin) {
+            const bookAccessStmt = env.DB.prepare(`
+              SELECT b.id FROM books b
+              LEFT JOIN shelves s ON b.shelf_id = s.id
+              LEFT JOIN locations l ON s.location_id = l.id
+              LEFT JOIN location_members lm ON l.id = lm.location_id
+              WHERE b.id = ? AND (b.added_by = ? OR l.owner_id = ? OR lm.user_id = ?)
+            `);
+            
+            const bookAccess = await bookAccessStmt.bind(bookId, userId, userId, userId).first();
+            if (!bookAccess) {
+              return new Response(JSON.stringify({ error: 'Book not found or access denied' }), {
+                status: 403,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              });
+            }
+          }
+
+          const success = await genreService.removeGenreFromBook(bookId, genreId);
+          if (!success) {
+            return new Response(JSON.stringify({ error: 'Genre assignment not found' }), {
+              status: 404,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+          
+          // Invalidate caches after genre removal
+          await invalidateBookCache(bookId.toString(), userId, env);
+          await invalidateAllAdminAnalytics(env);
+          
+          return new Response(JSON.stringify({ message: 'Genre removed successfully' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error: any) {
+          console.error('Error removing genre from book:', error);
+          return new Response(JSON.stringify({ error: error.message || 'Failed to remove genre' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      if (path.startsWith('/api/books/') && request.method === 'PUT') {
+        const id = parseInt(path.split('/')[3]);
+        const response = await updateBook(request, userId, env, corsHeaders, id);
+        
+        // Invalidate book cache after updating
+        if (response.ok) {
+          await invalidateBookCache(id.toString(), userId, env);
+        }
+        
+        return response;
+      }
+
+      if (path.startsWith('/api/books/') && request.method === 'DELETE') {
+        const id = parseInt(path.split('/')[3]);
+        const response = await deleteBook(userId, env, corsHeaders, id);
+        
+        // Invalidate book cache after deleting
+        if (response.ok) {
+          await invalidateBookCache(id.toString(), userId, env);
+        }
+        
+        return response;
+      }
+
+      // Invitation endpoints
+      if (path.match(/^\/api\/locations\/\d+\/invite$/) && request.method === 'POST') {
+        const locationId = parseInt(path.split('/')[3]);
+        return await createLocationInvitation(request, locationId, userId, env, corsHeaders);
+      }
+
+      if (path === '/api/invitations/accept' && request.method === 'POST') {
+        return await acceptLocationInvitation(request, userId, env, corsHeaders);
+      }
+
+      if (path.match(/^\/api\/locations\/\d+\/invitations$/) && request.method === 'GET') {
+        const locationId = parseInt(path.split('/')[3]);
+        return await getLocationInvitations(locationId, userId, env, corsHeaders);
+      }
+
+      if (path.match(/^\/api\/invitations\/\d+\/revoke$/) && request.method === 'DELETE') {
+        const invitationId = parseInt(path.split('/')[3]);
+        return await revokeLocationInvitation(invitationId, userId, env, corsHeaders);
+      }
+
+      // Leave location endpoint
+      if (path.match(/^\/api\/locations\/\d+\/leave$/) && request.method === 'POST') {
+        const locationId = parseInt(path.split('/')[3]);
+        return await leaveLocation(locationId, userId, env, corsHeaders);
+      }
+
+      // Book removal request endpoints
+      if (path === '/api/book-removal-requests' && request.method === 'POST') {
+        return await createBookRemovalRequest(request, userId, env, corsHeaders);
+      }
+
+      if (path === '/api/book-removal-requests' && request.method === 'GET') {
+        return await getBookRemovalRequests(userId, env, corsHeaders);
+      }
+
+      if (path.match(/^\/api\/book-removal-requests\/\d+\/approve$/) && request.method === 'POST') {
+        const requestId = parseInt(path.split('/')[3]);
+        return await approveBookRemovalRequest(requestId, userId, env, corsHeaders);
+      }
+
+      if (path.match(/^\/api\/book-removal-requests\/\d+\/deny$/) && request.method === 'POST') {
+        const requestId = parseInt(path.split('/')[3]);
+        return await denyBookRemovalRequest(request, requestId, userId, env, corsHeaders);
+      }
+
+      if (path.match(/^\/api\/book-removal-requests\/\d+$/) && request.method === 'DELETE') {
+        const requestId = parseInt(path.split('/')[3]);
+        return await deleteBookRemovalRequest(requestId, userId, env, corsHeaders);
+      }
+
+      // Book rating endpoints
+      if (path.match(/^\/api\/books\/\d+\/rate$/) && request.method === 'POST') {
+        const bookId = parseInt(path.split('/')[3]);
+        return await rateBook(request, bookId, userId, env, corsHeaders);
+      }
+
+      if (path.match(/^\/api\/books\/\d+\/ratings$/) && request.method === 'GET') {
+        const bookId = parseInt(path.split('/')[3]);
+        return await getBookRating(bookId, userId, env, corsHeaders);
+      }
+
+      // Review moderation endpoints (GitHub Issue #256)
+      if (path === '/api/admin/reviews/pending' && request.method === 'GET') {
+        return await getPendingReviews(userId, env, corsHeaders);
+      }
+
+      if (path.match(/^\/api\/admin\/reviews\/\d+\/moderate$/) && request.method === 'POST') {
+        const reviewId = parseInt(path.split('/')[4]);
+        return await moderateReview(request, reviewId, userId, env, corsHeaders);
+      }
+
+      // Profile endpoints
+      if (path === '/api/profile' && request.method === 'GET') {
+        return await getUserProfile(userId, env, corsHeaders);
+      }
+
+      if (path === '/api/profile' && request.method === 'PUT') {
+        return await updateUserProfile(request, userId, env, corsHeaders);
+      }
+
+      if (path === '/api/user/rejected-reviews' && request.method === 'GET') {
+        return await getUserRejectedReviews(userId, env, corsHeaders);
+      }
+
+      // Batched dashboard endpoint - combines all initial page load data
+      if (path === '/api/dashboard' && request.method === 'GET') {
+        const fields = url.searchParams.get('fields');
+        return await getDashboardData(userId, env, corsHeaders, fields || undefined);
+      }
+
+      // Change password endpoint (authenticated users only)
+      if (path === '/api/auth/change-password' && request.method === 'POST') {
+        return await changePassword(request, userId, env, corsHeaders);
+      }
+      
+      // Logout endpoint (authenticated users only) - clears user cache
+      if (path === '/api/auth/logout' && request.method === 'POST') {
+        try {
+          await invalidateUserCache(userId, env);
+          return new Response(JSON.stringify({ message: 'Logged out successfully' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error) {
+          console.error('Logout cache invalidation error:', error);
+          return new Response(JSON.stringify({ message: 'Logged out successfully' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+
+      // Admin Genre Management endpoints
+      if (path === '/api/admin/genres' && request.method === 'GET') {
+        const genreService = new GenreService(env.DB);
+        try {
+          // Check if user is super admin
+          const user = await env.DB.prepare('SELECT user_role FROM users WHERE id = ?').bind(userId).first() as any;
+          if (!user || user.user_role !== 'super_admin') {
+            return new Response(JSON.stringify({ error: 'Super admin access required' }), {
+              status: 403,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          const genres = await genreService.getAllGenres();
+          return new Response(JSON.stringify(genres), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error: any) {
+          console.error('Error fetching all genres for admin:', error);
+          return new Response(JSON.stringify({ error: 'Failed to fetch genres' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      if (path === '/api/admin/genres' && request.method === 'POST') {
+        const genreService = new GenreService(env.DB);
+        try {
+          // Check if user is super admin
+          const user = await env.DB.prepare('SELECT user_role FROM users WHERE id = ?').bind(userId).first() as any;
+          if (!user || user.user_role !== 'super_admin') {
+            return new Response(JSON.stringify({ error: 'Super admin access required' }), {
+              status: 403,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          const body = await request.json() as any;
+          const newGenre = await genreService.createGenre(body, userId);
+          return new Response(JSON.stringify(newGenre), {
+            status: 201,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error: any) {
+          console.error('Error creating genre:', error);
+          const status = error.message.includes('UNIQUE constraint') ? 409 : 500;
+          return new Response(JSON.stringify({ error: error.message || 'Failed to create genre' }), {
+            status,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      if (path.match(/^\/api\/admin\/genres\/\d+$/) && request.method === 'PUT') {
+        const genreService = new GenreService(env.DB);
+        try {
+          // Check if user is super admin
+          const user = await env.DB.prepare('SELECT user_role FROM users WHERE id = ?').bind(userId).first() as any;
+          if (!user || user.user_role !== 'super_admin') {
+            return new Response(JSON.stringify({ error: 'Super admin access required' }), {
+              status: 403,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          const genreId = parseInt(path.split('/')[4]);
+          const body = await request.json() as any;
+          const updatedGenre = await genreService.updateGenre(genreId, body);
+          
+          if (!updatedGenre) {
+            return new Response(JSON.stringify({ error: 'Genre not found' }), {
+              status: 404,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          return new Response(JSON.stringify(updatedGenre), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error: any) {
+          console.error('Error updating genre:', error);
+          const status = error.message.includes('UNIQUE constraint') ? 409 : 500;
+          return new Response(JSON.stringify({ error: error.message || 'Failed to update genre' }), {
+            status,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      if (path === '/api/admin/genre-request' && request.method === 'POST') {
+        try {
+          const body = await request.json() as any;
+          const { genreName, description, reason, requesterName, requesterEmail } = body;
+
+          if (!genreName || !reason || !requesterEmail) {
+            return new Response(JSON.stringify({ error: 'Genre name, reason, and email are required' }), {
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          // Get requester's user info
+          const userStmt = env.DB.prepare('SELECT first_name, last_name FROM users WHERE id = ?');
+          const user = await userStmt.bind(userId).first() as any;
+          const displayName = requesterName || (user?.first_name && user?.last_name ? `${user.first_name} ${user.last_name}` : requesterEmail);
+
+          // Save genre request to database
+          const insertStmt = env.DB.prepare(`
+            INSERT INTO genre_requests (genre_name, description, reason, requested_by, requester_name, requester_email)
+            VALUES (?, ?, ?, ?, ?, ?)
+            RETURNING id
+          `);
+          
+          const result = await insertStmt.bind(
+            genreName,
+            description || null,
+            reason,
+            userId,
+            displayName,
+            requesterEmail
+          ).first() as any;
+
+          if (!result) {
+            throw new Error('Failed to save genre request');
+          }
+
+          // Send email to super admins
+          await sendContactEmail({
+            name: displayName,
+            email: requesterEmail,
+            subject: `Genre Request: ${genreName}`,
+            message: `A genre request has been submitted:
+
+Genre Name: ${genreName}${description ? `
+Description: ${description}` : ''}
+Requested by: ${displayName} (${requesterEmail})
+Reason: ${reason}
+
+To review this request, log in as a super administrator and go to Admin Dashboard > Notifications > Genre Requests.`
+          } as any, env, corsHeaders);
+
+          return new Response(JSON.stringify({ 
+            message: 'Genre request sent successfully',
+            requestId: result.id 
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error: any) {
+          console.error('Error sending genre request:', error);
+          return new Response(JSON.stringify({ error: 'Failed to send genre request' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      // Genre requests management endpoints (super admin only)
+      if (path === '/api/admin/genre-requests' && request.method === 'GET') {
+        try {
+          // Check if user is super admin
+          const user = await env.DB.prepare('SELECT user_role FROM users WHERE id = ?').bind(userId).first() as any;
+          if (!user || user.user_role !== 'super_admin') {
+            return new Response(JSON.stringify({ error: 'Super admin access required' }), {
+              status: 403,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          const stmt = env.DB.prepare(`
+            SELECT id, genre_name, description, reason, requested_by, requester_name, requester_email,
+                   status, created_at, reviewed_by, reviewed_at, notes
+            FROM genre_requests
+            ORDER BY 
+              CASE status WHEN 'pending' THEN 1 ELSE 2 END,
+              created_at DESC
+          `);
+          
+          const result = await stmt.all();
+          return new Response(JSON.stringify(result.results || []), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error: any) {
+          console.error('Error fetching genre requests:', error);
+          return new Response(JSON.stringify({ error: 'Failed to fetch genre requests' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      if (path.match(/^\/api\/admin\/genre-requests\/\d+\/approve$/) && request.method === 'POST') {
+        try {
+          // Check if user is super admin
+          const user = await env.DB.prepare('SELECT user_role FROM users WHERE id = ?').bind(userId).first() as any;
+          if (!user || user.user_role !== 'super_admin') {
+            return new Response(JSON.stringify({ error: 'Super admin access required' }), {
+              status: 403,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          const requestId = parseInt(path.split('/')[4]);
+          const body = await request.json() as any;
+          const { notes, createGenre } = body;
+
+          // Get the genre request
+          const requestStmt = env.DB.prepare('SELECT * FROM genre_requests WHERE id = ? AND status = ?');
+          const genreRequest = await requestStmt.bind(requestId, 'pending').first() as any;
+          
+          if (!genreRequest) {
+            return new Response(JSON.stringify({ error: 'Genre request not found or already processed' }), {
+              status: 404,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          // If createGenre is true, create the genre
+          let genreId = null;
+          if (createGenre) {
+            const genreService = new GenreService(env.DB);
+            const newGenre = await genreService.createGenre({
+              name: genreRequest.genre_name,
+              description: genreRequest.description
+            }, userId);
+            genreId = newGenre.id;
+          }
+
+          // Update request status
+          const updateStmt = env.DB.prepare(`
+            UPDATE genre_requests 
+            SET status = 'approved', reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP, notes = ?
+            WHERE id = ?
+          `);
+          
+          await updateStmt.bind(userId, notes || null, requestId).run();
+
+          return new Response(JSON.stringify({ 
+            message: 'Genre request approved successfully',
+            genreId 
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error: any) {
+          console.error('Error approving genre request:', error);
+          return new Response(JSON.stringify({ error: 'Failed to approve genre request' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      if (path.match(/^\/api\/admin\/genre-requests\/\d+\/reject$/) && request.method === 'POST') {
+        try {
+          // Check if user is super admin
+          const user = await env.DB.prepare('SELECT user_role FROM users WHERE id = ?').bind(userId).first() as any;
+          if (!user || user.user_role !== 'super_admin') {
+            return new Response(JSON.stringify({ error: 'Super admin access required' }), {
+              status: 403,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          const requestId = parseInt(path.split('/')[4]);
+          const body = await request.json() as any;
+          const { notes } = body;
+
+          // Update request status
+          const updateStmt = env.DB.prepare(`
+            UPDATE genre_requests 
+            SET status = 'rejected', reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP, notes = ?
+            WHERE id = ? AND status = 'pending'
+          `);
+          
+          const result = await updateStmt.bind(userId, notes || null, requestId).run();
+          
+          if (!result.changes) {
+            return new Response(JSON.stringify({ error: 'Genre request not found or already processed' }), {
+              status: 404,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          return new Response(JSON.stringify({ message: 'Genre request rejected successfully' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error: any) {
+          console.error('Error rejecting genre request:', error);
+          return new Response(JSON.stringify({ error: 'Failed to reject genre request' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      // Get genre deletion info (book count) for confirmation
+      if (path.match(/^\/api\/admin\/genres\/\d+\/delete-info$/) && request.method === 'GET') {
+        try {
+          // Check if user is super admin
+          const user = await env.DB.prepare('SELECT user_role FROM users WHERE id = ?').bind(userId).first() as any;
+          if (!user || user.user_role !== 'super_admin') {
+            return new Response(JSON.stringify({ error: 'Super admin access required' }), {
+              status: 403,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          const genreId = parseInt(path.split('/')[4]);
+          
+          // Check how many books have this genre
+          const bookCountStmt = env.DB.prepare(`
+            SELECT COUNT(*) as count 
+            FROM book_genres 
+            WHERE genre_id = ?
+          `);
+          const bookCount = await bookCountStmt.bind(genreId).first() as any;
+          const affectedBooks = bookCount?.count || 0;
+
+          // Get some example book titles
+          const examplesStmt = env.DB.prepare(`
+            SELECT b.title, b.authors
+            FROM books b
+            JOIN book_genres bg ON b.id = bg.book_id
+            WHERE bg.genre_id = ?
+            LIMIT 5
+          `);
+          const examples = await examplesStmt.bind(genreId).all();
+
+          return new Response(JSON.stringify({ 
+            affectedBooks,
+            examples: examples.results || []
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error: any) {
+          console.error('Error getting genre delete info:', error);
+          return new Response(JSON.stringify({ error: 'Failed to get genre info' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      if (path.match(/^\/api\/admin\/genres\/\d+$/) && request.method === 'DELETE') {
+        const genreService = new GenreService(env.DB);
+        try {
+          // Check if user is super admin
+          const user = await env.DB.prepare('SELECT user_role FROM users WHERE id = ?').bind(userId).first() as any;
+          if (!user || user.user_role !== 'super_admin') {
+            return new Response(JSON.stringify({ error: 'Super admin access required' }), {
+              status: 403,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          const genreId = parseInt(path.split('/')[4]);
+          
+          // Check how many books have this genre
+          const bookCountStmt = env.DB.prepare(`
+            SELECT COUNT(*) as count 
+            FROM book_genres 
+            WHERE genre_id = ?
+          `);
+          const bookCount = await bookCountStmt.bind(genreId).first() as any;
+          const affectedBooks = bookCount?.count || 0;
+
+          // Check if genre exists (don't filter by is_active since we want to delete it)
+          const genreExistsStmt = env.DB.prepare('SELECT id FROM curated_genres WHERE id = ?');
+          const genreExists = await genreExistsStmt.bind(genreId).first();
+          if (!genreExists) {
+            return new Response(JSON.stringify({ error: 'Genre not found' }), {
+              status: 404,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          // Delete all book-genre assignments for this genre
+          const deleteAssignmentsStmt = env.DB.prepare('DELETE FROM book_genres WHERE genre_id = ?');
+          await deleteAssignmentsStmt.bind(genreId).run();
+
+          // Delete the genre
+          const deleteGenreStmt = env.DB.prepare('DELETE FROM curated_genres WHERE id = ?');
+          const result = await deleteGenreStmt.bind(genreId).run();
+
+          const changes = result.meta?.changes || result.changes || 0;
+          if (!changes) {
+            return new Response(JSON.stringify({ error: 'Failed to delete genre' }), {
+              status: 500,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          // Invalidate caches since genre deletion affects both genres and books
+          try {
+            const cache = new CacheManager(env);
+            const invalidator = new CacheInvalidator(cache);
+            
+            // Invalidate genre caches
+            await invalidator.invalidateGenres();
+            
+            // Invalidate all user book caches since books will no longer show this genre
+            await cache.delPrefix('library:');
+          } catch (cacheError) {
+            console.warn('Cache invalidation failed after genre deletion:', cacheError);
+            // Don't fail the operation if cache invalidation fails
+          }
+
+          return new Response(JSON.stringify({ 
+            message: 'Genre deleted successfully',
+            affectedBooks 
+          }), {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error: any) {
+          console.error('Error deleting genre:', error);
+          return new Response(JSON.stringify({ error: 'Failed to delete genre' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      // Admin-only cleanup endpoint
+      if (path === '/api/admin/cleanup-user' && request.method === 'POST') {
+        return await cleanupUser(request, userId, env, corsHeaders);
+      }
+
+      // Admin-only debug endpoint to list all users
+      if (path === '/api/admin/debug-users' && request.method === 'GET') {
+        return await debugListUsers(userId, env, corsHeaders);
+      }
+
+      // Admin-only analytics endpoint
+      if (path === '/api/admin/analytics' && request.method === 'GET') {
+        return await getCachedAdminAnalytics(userId, env, corsHeaders);
+      }
+
+      // Admin-only enhanced users endpoint
+      if (path === '/api/admin/users' && request.method === 'GET') {
+        return await getCachedAdminUsers(userId, env, corsHeaders);
+      }
+
+      // Admin-only user role management endpoint
+      if (path.match(/^\/api\/admin\/users\/[^\/]+\/role$/) && request.method === 'PUT') {
+        const targetUserId = path.split('/')[4];
+        return await updateUserRole(request, targetUserId, userId, env, corsHeaders);
+      }
+
+      // Admin-only endpoint to get available admin users for ownership transfer
+      if (path === '/api/admin/available-admins' && request.method === 'GET') {
+        return await getAvailableAdmins(userId, env, corsHeaders);
+      }
+
+      // Super admin-only endpoints for location assignment
+      if (path.match(/^\/api\/admin\/users\/[^\/]+\/locations$/) && request.method === 'GET') {
+        const targetUserId = path.split('/')[4];
+        return await getUserLocationAssignments(targetUserId, userId, env, corsHeaders);
+      }
+
+      if (path.match(/^\/api\/admin\/users\/[^\/]+\/locations\/[^\/]+$/) && request.method === 'POST') {
+        const targetUserId = path.split('/')[4];
+        const locationId = path.split('/')[6];
+        const response = await assignLocationToUser(targetUserId, locationId, userId, env, corsHeaders);
+        
+        // Invalidate admin cache after location assignment
+        if (response.ok) {
+          await invalidateAllAdminAnalytics(env);
+        }
+        
+        return response;
+      }
+
+      if (path.match(/^\/api\/admin\/users\/[^\/]+\/locations\/[^\/]+$/) && request.method === 'DELETE') {
+        const targetUserId = path.split('/')[4];
+        const locationId = path.split('/')[6];
+        const response = await unassignLocationFromUser(targetUserId, locationId, userId, env, corsHeaders);
+        
+        // Invalidate admin cache after location unassignment
+        if (response.ok) {
+          await invalidateAllAdminAnalytics(env);
+        }
+        
+        return response;
+      }
+
+      // Handle permission management endpoints directly (already authenticated)
+      if (path === '/api/admin/location-admin-capabilities') {
+        switch (request.method) {
+          case 'GET':
+            return await getLocationAdminCapabilities(request, userId, env, corsHeaders);
+          case 'POST':
+            return await grantAdminCapability(request, userId, env, corsHeaders);
+          case 'DELETE':
+            return await revokeAdminCapability(request, userId, env, corsHeaders);
+        }
+      }
+
+      if (path === '/api/admin/location-user-permissions') {
+        switch (request.method) {
+          case 'GET':
+            return await getLocationUserPermissions(request, userId, env, corsHeaders);
+          case 'POST':
+            return await grantUserPermission(request, userId, env, corsHeaders);
+          case 'DELETE':
+            return await revokeUserPermission(request, userId, env, corsHeaders);
+        }
+      }
+
+      if (path === '/api/permissions/check' && request.method === 'GET') {
+        return await checkUserPermission(request, userId, env, corsHeaders);
+      }
+
+      if (path === '/api/permissions/can-manage' && request.method === 'GET') {
+        return await checkLocationPermissionManagement(request, userId, env, corsHeaders);
+      }
+
+      if (path === '/api/permissions/user' && request.method === 'GET') {
+        return await getUserPermissions(request, userId, env, corsHeaders);
+      }
+
+      // Global permissions endpoints
+      if (path === '/api/permissions/global' && request.method === 'GET') {
+        return await getUserGlobalPermissions(request, userId, env, corsHeaders);
+      }
+
+      if (path === '/api/permissions/global') {
+        switch (request.method) {
+          case 'POST':
+            return await grantGlobalPermission(request, userId, env, corsHeaders);
+          case 'DELETE':
+            return await revokeGlobalPermission(request, userId, env, corsHeaders);
+        }
+      }
+
+      // Notification preference endpoints
+      if (path === '/api/notifications/preferences' && request.method === 'GET') {
+        return await getUserNotificationPreferences(request, userId, env, corsHeaders);
+      }
+      if (path === '/api/notifications/preferences' && request.method === 'PUT') {
+        return await updateNotificationPreference(request, userId, env, corsHeaders);
+      }
+      if (path === '/api/notifications/settings' && request.method === 'GET') {
+        return await getNotificationSettings(request, userId, env, corsHeaders);
+      }
+      if (path === '/api/notifications/preferences/reset' && request.method === 'POST') {
+        return await resetNotificationPreferences(request, userId, env, corsHeaders);
+      }
+
+      // In-app notification endpoints
+      if (path === '/api/notifications/in-app' && request.method === 'GET') {
+        return await getInAppNotifications(request, userId, env, corsHeaders);
+      }
+      if (path === '/api/notifications/unread-count' && request.method === 'GET') {
+        return await getUnreadCount(request, userId, env, corsHeaders);
+      }
+      if (path === '/api/notifications/mark-read' && request.method === 'POST') {
+        return await markNotificationRead(request, userId, env, corsHeaders);
+      }
+      if (path === '/api/notifications/mark-all-read' && request.method === 'POST') {
+        return await markAllNotificationsRead(request, userId, env, corsHeaders);
+      }
+      if (path === '/api/notifications/test' && request.method === 'POST') {
+        return await createTestNotification(request, userId, env, corsHeaders);
+      }
+
+      // Admin cache management endpoints
+      if (path === '/api/admin/cache/warm' && request.method === 'POST') {
+        if (!(await getCachedIsUserAdmin(userId, env))) {
+          return new Response(JSON.stringify({ error: 'Admin privileges required' }), {
+            status: 403,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        
+        try {
+          await warmAdminCache(userId, env);
+          return new Response(JSON.stringify({ message: 'Cache warmed successfully' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error) {
+          return new Response(JSON.stringify({ error: 'Failed to warm cache' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      if (path === '/api/admin/cache/metrics' && request.method === 'GET') {
+        if (!(await getCachedIsUserAdmin(userId, env))) {
+          return new Response(JSON.stringify({ error: 'Admin privileges required' }), {
+            status: 403,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        
+        try {
+          const metrics = await getAdminCacheMetrics(userId, env);
+          return new Response(JSON.stringify(metrics), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error) {
+          return new Response(JSON.stringify({ error: 'Failed to get cache metrics' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      // Series endpoints
+      if (path === '/api/series' && request.method === 'GET') {
+        return await getUserSeries(userId, env, corsHeaders);
+      }
+
+      if (path === '/api/series' && request.method === 'POST') {
+        return await createSeries(request, userId, env, corsHeaders);
+      }
+
+      if (path.match(/^\/api\/series\/[^\/]+$/) && request.method === 'PUT') {
+        const seriesId = path.split('/')[3];
+        return await updateSeries(request, seriesId, userId, env, corsHeaders);
+      }
+
+      if (path.match(/^\/api\/series\/[^\/]+$/) && request.method === 'DELETE') {
+        const seriesId = path.split('/')[3];
+        return await deleteSeries(seriesId, userId, env, corsHeaders);
+      }
+
+      if (path.match(/^\/api\/series\/[^\/]+\/books$/) && request.method === 'POST') {
+        const seriesId = path.split('/')[3];
+        return await addBooksToSeries(request, seriesId, userId, env, corsHeaders);
+      }
+
+      if (path.match(/^\/api\/series\/[^\/]+\/books\/[^\/]+$/) && request.method === 'DELETE') {
+        const seriesId = path.split('/')[3];
+        const bookId = path.split('/')[5];
+        return await removeBookFromSeries(seriesId, bookId, userId, env, corsHeaders);
+      }
+
+      if (path.match(/^\/api\/series\/[^\/]+\/books$/) && request.method === 'GET') {
+        const seriesId = path.split('/')[3];
+        // Pass the URL for pagination parameters
+        const modifiedCorsHeaders = { ...corsHeaders, 'request-url': request.url };
+        return await getSeriesBooks(seriesId, userId, env, modifiedCorsHeaders);
+      }
+
+      // Admin series approval endpoints
+      if (path === '/api/admin/series/pending' && request.method === 'GET') {
+        return await getPendingSeries(userId, env, corsHeaders);
+      }
+      if (path.match(/^\/api\/admin\/series\/[^\/]+\/approve$/) && request.method === 'POST') {
+        const seriesId = path.split('/')[4];
+        const body = await request.json() as any;
+        return await approveRejectSeries(seriesId, userId, body, env, corsHeaders);
+      }
+
+      // OpenLibrary Analytics endpoint (development only)
+      if (path === '/api/admin/openlibrary-analytics' && request.method === 'GET') {
+        // Check admin permission
+        const user = await env.DB.prepare(`
+          SELECT user_role FROM users WHERE id = ?
+        `).bind(userId).first() as any;
+        
+        if (!user || user.user_role !== 'admin') {
+          return new Response(JSON.stringify({ error: 'Admin access required' }), {
+            status: 403,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        try {
+          const analytics = getSessionAnalytics();
+          // Also log to worker console for debugging
+          logSessionAnalytics();
+          
+          return new Response(JSON.stringify({
+            ...analytics,
+            recommendation: analytics.savingsPercentage > 70 
+              ? 'Excellent optimization performance'
+              : analytics.savingsPercentage > 50
+              ? 'Good optimization performance' 
+              : 'Consider reviewing optimization strategies'
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error) {
+          return new Response(JSON.stringify({ error: 'Failed to get OpenLibrary analytics' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      return CommonErrors.NOT_FOUND(env, corsHeaders);
+    } catch (error) {
+      // Note: userId might be null or undefined if error occurs before authentication
+      const userContext = userId || undefined;
+      return createSecureErrorResponse(
+        env,
+        error,
+        ErrorCategory.SERVER_ERROR,
+        { endpoint: path, userId: userContext }
+      );
+    }
+  },
+};
+
+

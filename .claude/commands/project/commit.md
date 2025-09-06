@@ -10,7 +10,6 @@ Complete the standard LibraryCard development workflow: update documentation, co
 First, update all relevant project documentation:
 - Update docs/reference/CHANGELOG.md with the completed work
 - Update any relevant documentation in docs/ that relates to this work
-- Update docs/reference/TODO.md to mark completed items and add any new todos discovered
 
 ## Git Workflow  
 Follow the LibraryCard branch-based development workflow:
@@ -31,10 +30,12 @@ Create a pull request following LibraryCard standards:
 - Return the PR URL for easy access
 
 ## Jira Issue Updates
+When creating a new Jira ticket, first create the ticket and then add the detailed description to avoid errors
+
 If working on a specific Jira ticket, update it with progress:
 - Use `jira issue edit LCWEB-123 --no-input` with progress comments
 - Include summary of changes implemented, technical details, and PR link
-- Use `jira issue transition LCWEB-123 Done` when work is completed
+- Use `jira issue transition LCWEB-123 Test` when work is completed
 - Provide clear documentation for future reference with branch name and commit details
 
 ## Branch Management
