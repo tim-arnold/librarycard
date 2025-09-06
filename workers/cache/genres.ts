@@ -111,38 +111,39 @@ export class CachedGenreService {
   }
 
   /**
-   * Assign genre to book and invalidate relevant caches
+   * Assign genre to book and invalidate relevant caches surgically
    */
   async assignGenreToBook(
     bookId: number, 
     request: { genreId: number; isAutoAssigned?: boolean }, 
-    assignedBy: string
+    assignedBy: string,
+    env: Env
   ): Promise<BookGenre | null> {
     const bookGenre = await this.genreService.assignGenreToBook(bookId, request, assignedBy);
     
     if (bookGenre) {
-      // Invalidate book metadata cache
-      await this.cache.del(CacheKeys.bookMetadata(bookId.toString()));
+      // Get affected users for surgical invalidation
+      const affectedUsers = await this.invalidator.getBookAffectedUsers(bookId.toString(), env);
       
-      // Invalidate user book libraries (since book genres changed)
-      await this.cache.delPrefix('library:');
+      // Use surgical invalidation instead of broad prefix deletion
+      await this.invalidator.invalidateBook(bookId.toString(), affectedUsers);
     }
     
     return bookGenre;
   }
 
   /**
-   * Remove genre from book and invalidate relevant caches
+   * Remove genre from book and invalidate relevant caches surgically
    */
-  async removeGenreFromBook(bookId: number, genreId: number): Promise<boolean> {
+  async removeGenreFromBook(bookId: number, genreId: number, env: Env): Promise<boolean> {
     const success = await this.genreService.removeGenreFromBook(bookId, genreId);
     
     if (success) {
-      // Invalidate book metadata cache
-      await this.cache.del(CacheKeys.bookMetadata(bookId.toString()));
+      // Get affected users for surgical invalidation
+      const affectedUsers = await this.invalidator.getBookAffectedUsers(bookId.toString(), env);
       
-      // Invalidate user book libraries (since book genres changed)
-      await this.cache.delPrefix('library:');
+      // Use surgical invalidation instead of broad prefix deletion
+      await this.invalidator.invalidateBook(bookId.toString(), affectedUsers);
     }
     
     return success;
@@ -185,7 +186,7 @@ export class CachedGenreService {
   }
 
   /**
-   * Invalidate all genre-related caches
+   * Invalidate all genre-related caches surgically
    */
   private async invalidateGenreCaches(): Promise<void> {
     await this.invalidator.invalidateGenres();
@@ -193,8 +194,8 @@ export class CachedGenreService {
     // Also invalidate usage stats
     await this.cache.del('genres:usage:stats');
     
-    // Invalidate user book libraries since genre availability changed
-    await this.cache.delPrefix('library:');
+    // Note: Don't invalidate all libraries - genre changes affect visibility
+    // but existing book data remains valid. Let React Query handle stale data.
   }
 
   /**
