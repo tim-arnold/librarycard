@@ -154,6 +154,11 @@ export function shouldProtectWithCSRF(path: string, method: string): boolean {
     return false;
   }
 
+  // Skip CSRF for invitation endpoints (part of auth flow)
+  if (path.startsWith('/api/invitations/')) {
+    return false;
+  }
+
   // Skip CSRF for safe methods
   if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase())) {
     return false;
