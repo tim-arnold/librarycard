@@ -1342,7 +1342,7 @@ export default function AdminUserManager() {
                   
                   {/* Collapsible Filters */}
                   <Collapse in={showInvitationFilters}>
-                    <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+                    <Box sx={{ mt: 2, p: 2, bgcolor: 'action.hover', borderRadius: 1 }}>
                       <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                         <Box sx={{ minWidth: 150, flex: 1 }}>
                           <FormControl size="small" fullWidth>
