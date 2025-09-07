@@ -77,14 +77,30 @@ export default function TourTooltip({ step, targetPosition }: TourTooltipProps) 
         break
     }
 
-    // Keep tooltip within viewport
+    // Keep tooltip within viewport with better boundary detection
     const viewportWidth = window.innerWidth
     const viewportHeight = window.innerHeight
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop
 
-    if (left < padding) left = padding
-    if (left + tooltipWidth > viewportWidth - padding) left = viewportWidth - tooltipWidth - padding
-    if (top < padding) top = padding
-    if (top + tooltipHeight > viewportHeight - padding) top = viewportHeight - tooltipHeight - padding
+    // Horizontal boundary checks
+    if (left < padding) {
+      left = padding
+      transform = transform.replace('translateX(-50%)', '')
+    }
+    if (left + tooltipWidth > viewportWidth - padding) {
+      left = viewportWidth - tooltipWidth - padding
+      transform = transform.replace('translateX(-50%)', '')
+    }
+
+    // Vertical boundary checks - consider current scroll position
+    if (top < scrollTop + padding) {
+      top = scrollTop + padding
+      transform = transform.replace('translateY(-50%)', '')
+    }
+    if (top + tooltipHeight > scrollTop + viewportHeight - padding) {
+      top = scrollTop + viewportHeight - tooltipHeight - padding
+      transform = transform.replace('translateY(-50%)', '')
+    }
 
     return {
       position: 'absolute' as const,
