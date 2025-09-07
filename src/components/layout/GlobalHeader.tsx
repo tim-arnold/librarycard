@@ -64,7 +64,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
       // Authenticated: Functional navigation
       const items = [
         { name: 'My Library', href: '/library', key: 'library' },
-        { name: 'Add Books', href: '/add-books', key: 'add-books' },
+        { name: 'Add Books', href: '/add-books', key: 'add-books', dataTour: 'add-books-nav' },
       ]
 
       // Add admin navigation for admin users
@@ -173,6 +173,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                 <li key={item.key}>
                   <button
                     onClick={() => handleNavClick(item.href)}
+                    {...(item.dataTour && { 'data-tour': item.dataTour })}
                     style={{
                       background: 'none',
                       border: 'none',
@@ -446,6 +447,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                 {/* Account Menu */}
                 <div style={{ position: 'relative' }}>
                   <button
+                    data-tour="user-menu"
                     onClick={() => setAccountMenuOpen(!accountMenuOpen)}
                     style={{
                       background: 'none',
