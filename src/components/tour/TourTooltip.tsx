@@ -49,38 +49,54 @@ export default function TourTooltip({ step, targetPosition }: TourTooltipProps) 
     const padding = 20
     const tooltipWidth = 320
     const tooltipHeight = 200 // Approximate height
+    const viewportHeight = window.innerHeight
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop
 
     let top = 0
     let left = 0
     let transform = ''
 
-    switch (step.placement) {
-      case 'top':
-        top = targetPosition.top - tooltipHeight - padding
-        left = targetPosition.left + (targetPosition.width / 2)
-        transform = 'translateX(-50%)'
-        break
-      case 'bottom':
-        top = targetPosition.top + targetPosition.height + padding
-        left = targetPosition.left + (targetPosition.width / 2)
-        transform = 'translateX(-50%)'
-        break
-      case 'left':
-        top = targetPosition.top + (targetPosition.height / 2)
-        left = targetPosition.left - tooltipWidth - padding
-        transform = 'translateY(-50%)'
-        break
-      case 'right':
-        top = targetPosition.top + (targetPosition.height / 2)
-        left = targetPosition.left + targetPosition.width + padding
-        transform = 'translateY(-50%)'
-        break
+    // For very large target elements, position relative to viewport instead of element
+    const targetTooLarge = targetPosition.height > viewportHeight * 0.6
+
+    if (targetTooLarge || step.id === 'book-grid') {
+      // Position at top of viewport for large elements or book-grid
+      if (step.id === 'book-grid') {
+        // For book grid, position tooltip at the current scroll position (don't rely on element position)
+        top = scrollTop + padding + 60 // Position relative to current viewport
+      } else {
+        top = scrollTop + padding + 60 // Extra padding for header
+      }
+      left = Math.min(targetPosition.left + (targetPosition.width / 2), window.innerWidth - tooltipWidth - padding)
+      transform = 'translateX(-50%)'
+    } else {
+      // Normal positioning for reasonably sized elements
+      switch (step.placement) {
+        case 'top':
+          top = targetPosition.top - tooltipHeight - padding
+          left = targetPosition.left + (targetPosition.width / 2)
+          transform = 'translateX(-50%)'
+          break
+        case 'bottom':
+          top = targetPosition.top + targetPosition.height + padding
+          left = targetPosition.left + (targetPosition.width / 2)
+          transform = 'translateX(-50%)'
+          break
+        case 'left':
+          top = targetPosition.top + (targetPosition.height / 2)
+          left = targetPosition.left - tooltipWidth - padding
+          transform = 'translateY(-50%)'
+          break
+        case 'right':
+          top = targetPosition.top + (targetPosition.height / 2)
+          left = targetPosition.left + targetPosition.width + padding
+          transform = 'translateY(-50%)'
+          break
+      }
     }
 
     // Keep tooltip within viewport with better boundary detection
     const viewportWidth = window.innerWidth
-    const viewportHeight = window.innerHeight
-    const scrollTop = window.pageYOffset || document.documentElement.scrollTop
 
     // Horizontal boundary checks
     if (left < padding) {

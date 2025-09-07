@@ -6,9 +6,13 @@ import { useTour } from './TourProvider'
 import TourTooltip from './TourTooltip'
 import { ElementPosition } from './tourTypes'
 
+interface ExtendedElementPosition extends ElementPosition {
+  firstBookHeight?: number
+}
+
 export default function TourOverlay() {
   const { isActive, currentStepIndex, steps, skipTour } = useTour()
-  const [targetPosition, setTargetPosition] = useState<ElementPosition | null>(null)
+  const [targetPosition, setTargetPosition] = useState<ExtendedElementPosition | null>(null)
   const [portalContainer, setPortalContainer] = useState<Element | null>(null)
 
   // Create portal container
@@ -36,21 +40,36 @@ export default function TourOverlay() {
       const scrollTop = window.pageYOffset || document.documentElement.scrollTop
       const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft
 
+      // For book-grid, get the first book's height for proper highlighting
+      let firstBookHeight = 300 // fallback
+      if (currentStep.id === 'book-grid') {
+        const firstBook = targetElement.querySelector('[data-tour="book-item"]')
+        if (firstBook) {
+          const bookRect = firstBook.getBoundingClientRect()
+          firstBookHeight = bookRect.height
+        }
+      }
+
       setTargetPosition({
         top: rect.top + scrollTop,
         left: rect.left + scrollLeft,
         width: rect.width,
-        height: rect.height
+        height: rect.height,
+        firstBookHeight // Store the first book's actual height
       })
 
-      // Scroll element into view if needed (but not for welcome step)
-      const currentStep = steps[currentStepIndex]
-      if (currentStep && currentStep.id !== 'welcome') {
+      // Scroll element into view if needed (but not for welcome step, book-grid, or book-interaction)
+      if (currentStep && currentStep.id !== 'welcome' && currentStep.id !== 'book-grid' && currentStep.id !== 'book-interaction') {
         targetElement.scrollIntoView({
           behavior: 'smooth',
           block: 'center',
           inline: 'center'
         })
+      } else if (currentStep && currentStep.id === 'book-grid') {
+        // For book-grid step, don't scroll at all - use current position
+      } else if (currentStep && currentStep.id === 'book-interaction') {
+        // For book-interaction step, don't scroll - step 4 will have positioned things perfectly
+        // This avoids additional scrolling that would misalign the highlight
       } else {
         // For welcome step, scroll to top of page
         window.scrollTo({
@@ -130,18 +149,36 @@ export default function TourOverlay() {
           backgroundColor: 'rgba(0, 0, 0, 0.5)',
           cursor: 'pointer',
           ...(targetPosition && {
-            clipPath: `polygon(
-              0% 0%, 
-              0% 100%, 
-              ${targetPosition.left}px 100%, 
-              ${targetPosition.left}px ${targetPosition.top}px, 
-              ${targetPosition.left + targetPosition.width}px ${targetPosition.top}px, 
-              ${targetPosition.left + targetPosition.width}px ${targetPosition.top + targetPosition.height}px, 
-              ${targetPosition.left}px ${targetPosition.top + targetPosition.height}px, 
-              ${targetPosition.left}px 100%, 
-              100% 100%, 
-              100% 0%
-            )`
+            clipPath: currentStep.id === 'book-grid' 
+              ? (() => {
+                  const rightEdge = window.innerWidth - 40;
+                  const topEdge = targetPosition.top; // Use recalculated position
+                  const bottomEdge = topEdge + Math.max((targetPosition.firstBookHeight || 280) + 80, 380);
+                  return `polygon(
+                    0% 0%, 
+                    0% 100%, 
+                    40px 100%, 
+                    40px ${topEdge}px, 
+                    ${rightEdge}px ${topEdge}px, 
+                    ${rightEdge}px ${bottomEdge}px, 
+                    40px ${bottomEdge}px, 
+                    40px 100%, 
+                    100% 100%, 
+                    100% 0%
+                  )`;
+                })() 
+              : `polygon(
+                  0% 0%, 
+                  0% 100%, 
+                  ${targetPosition.left}px 100%, 
+                  ${targetPosition.left}px ${targetPosition.top}px, 
+                  ${targetPosition.left + targetPosition.width}px ${targetPosition.top}px, 
+                  ${targetPosition.left + targetPosition.width}px ${targetPosition.top + targetPosition.height}px, 
+                  ${targetPosition.left}px ${targetPosition.top + targetPosition.height}px, 
+                  ${targetPosition.left}px 100%, 
+                  100% 100%, 
+                  100% 0%
+                )`
           })
         }}
       />
@@ -151,10 +188,18 @@ export default function TourOverlay() {
         <div
           style={{
             position: 'absolute',
-            top: targetPosition.top - 4,
-            left: targetPosition.left - 4,
-            width: targetPosition.width + 8,
-            height: targetPosition.height + 8,
+            top: currentStep.id === 'book-grid' 
+              ? targetPosition.top  // Use recalculated position after scroll
+              : targetPosition.top - 4,
+            left: currentStep.id === 'book-grid'
+              ? 40  // Fixed left position for book grid area
+              : targetPosition.left - 4,
+            width: currentStep.id === 'book-grid'
+              ? window.innerWidth - 80  // Full width minus padding
+              : targetPosition.width + 8,
+            height: currentStep.id === 'book-grid' 
+              ? Math.max((targetPosition.firstBookHeight || 280) + 80, 380)  // Increased height for better row coverage
+              : Math.min(targetPosition.height + 8, window.innerHeight * 0.8),
             border: '2px solid #1976d2',
             borderRadius: '8px',
             pointerEvents: currentStep.allowClicksOnTarget ? 'none' : 'auto',
