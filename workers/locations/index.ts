@@ -773,3 +773,100 @@ export async function applyDefaultPermissionsToUser(locationId: number, targetUs
     }
   }
 }
+
+/**
+ * Enhanced User Onboarding Helper Functions (LCWEB-169)
+ */
+
+// Assign user to existing location with specific permissions
+export async function assignUserToLocation(
+  userId: string, 
+  locationId: number, 
+  role: 'member' | 'owner',
+  permissions: string[],
+  granterUserId: string,
+  env: Env
+): Promise<void> {
+  // Add user to location_members
+  await env.DB.prepare(`
+    INSERT INTO location_members (location_id, user_id, role, invited_by, joined_at)
+    VALUES (?, ?, ?, ?, datetime('now'))
+  `).bind(locationId, userId, role, granterUserId).run();
+
+  // Apply specified permissions
+  for (const permission of permissions) {
+    try {
+      await env.DB.prepare(`
+        INSERT OR IGNORE INTO location_user_permissions (location_id, user_id, permission, granted_by)
+        VALUES (?, ?, ?, ?)
+      `).bind(locationId, userId, permission, granterUserId).run();
+    } catch (error) {
+      console.warn(`Failed to grant permission "${permission}" to user ${userId}:`, error);
+    }
+  }
+}
+
+// Create personal location for new user with owner permissions
+export async function createPersonalLocation(
+  userId: string,
+  userName: string,
+  userPermissions: string[],
+  adminCapabilities: string[],
+  env: Env
+): Promise<{ locationId: number; locationName: string }> {
+  const locationName = `${userName}'s Library`;
+  
+  // Create location with user as owner
+  const locationResult = await env.DB.prepare(`
+    INSERT INTO locations (name, owner_id, created_at, updated_at)
+    VALUES (?, ?, datetime('now'), datetime('now'))
+    RETURNING id
+  `).bind(locationName, userId).first() as any;
+  
+  const locationId = locationResult.id;
+
+  // Add user as owner in location_members  
+  await env.DB.prepare(`
+    INSERT INTO location_members (location_id, user_id, role, invited_by, joined_at)
+    VALUES (?, ?, 'owner', ?, datetime('now'))
+  `).bind(locationId, userId, userId).run();
+
+  // Apply user permissions
+  for (const permission of userPermissions) {
+    try {
+      await env.DB.prepare(`
+        INSERT OR IGNORE INTO location_user_permissions (location_id, user_id, permission, granted_by)
+        VALUES (?, ?, ?, ?)
+      `).bind(locationId, userId, permission, userId).run();
+    } catch (error) {
+      console.warn(`Failed to grant permission "${permission}" to new location owner:`, error);
+    }
+  }
+
+  // Apply admin capabilities
+  for (const capability of adminCapabilities) {
+    try {
+      await env.DB.prepare(`
+        INSERT OR IGNORE INTO location_admin_capabilities (location_id, user_id, capability, granted_by)
+        VALUES (?, ?, ?, ?)
+      `).bind(locationId, userId, capability, userId).run();
+    } catch (error) {
+      console.warn(`Failed to grant admin capability "${capability}" to new location owner:`, error);
+    }
+  }
+
+  // Create default shelves
+  const defaultShelves = DEFAULT_SHELVES || ['Fiction', 'Non-Fiction', 'Reference'];
+  for (const shelfName of defaultShelves) {
+    try {
+      await env.DB.prepare(`
+        INSERT INTO shelves (name, location_id, created_by, created_at, updated_at)
+        VALUES (?, ?, ?, datetime('now'), datetime('now'))
+      `).bind(shelfName, locationId, userId).run();
+    } catch (error) {
+      console.warn(`Failed to create default shelf "${shelfName}":`, error);
+    }
+  }
+
+  return { locationId, locationName };
+}

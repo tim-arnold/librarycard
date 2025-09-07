@@ -49,7 +49,16 @@ export async function approveSignupRequest(request: Request, requestId: number, 
   }
 
   try {
-    const { comment }: { comment?: string } = await request.json().catch(() => ({ comment: undefined }));
+    const { 
+      comment, 
+      onboarding 
+    }: { 
+      comment?: string;
+      onboarding?: {
+        type: 'existing_location' | 'new_location';
+        location_id?: number;
+      };
+    } = await request.json().catch(() => ({ comment: undefined, onboarding: undefined }));
 
     // Get the signup request
     const signupRequest = await env.DB.prepare(`
@@ -88,6 +97,81 @@ export async function approveSignupRequest(request: Request, requestId: number, 
       'user'
     ).run();
 
+    // Enhanced User Onboarding (LCWEB-169) - Handle location assignment
+    let onboardingResult: {
+      type: string;
+      location_id: number | null;
+      location_name: string | null;
+      permissions_granted: string[];
+      capabilities_granted: string[];
+    } = {
+      type: 'none',
+      location_id: null,
+      location_name: null,
+      permissions_granted: [],
+      capabilities_granted: []
+    };
+
+    if (onboarding) {
+      const { assignUserToLocation, createPersonalLocation } = await import('../locations');
+      
+      if (onboarding.type === 'existing_location' && onboarding.location_id) {
+        // Path 1: Assign to existing location
+        const memberPermissions = ['can_add_books', 'can_create_shelves'];
+        
+        try {
+          await assignUserToLocation(
+            newUserId, 
+            onboarding.location_id, 
+            'member', 
+            memberPermissions, 
+            userId, 
+            env
+          );
+
+          // Get location name for response
+          const locationResult = await env.DB.prepare(`
+            SELECT name FROM locations WHERE id = ?
+          `).bind(onboarding.location_id).first() as any;
+
+          onboardingResult = {
+            type: 'existing_location',
+            location_id: onboarding.location_id,
+            location_name: locationResult?.name || 'Unknown Location',
+            permissions_granted: memberPermissions,
+            capabilities_granted: []
+          };
+        } catch (error) {
+          console.error('Failed to assign user to existing location:', error);
+        }
+      } else if (onboarding.type === 'new_location') {
+        // Path 2: Create new personal location
+        const ownerPermissions = ['can_add_books', 'can_create_shelves', 'can_delete_books', 'can_move_books'];
+        const adminCapabilities = ['can_manage_location_settings', 'can_invite_users', 'can_control_user_capabilities'];
+        
+        try {
+          const userName = `${requestData.first_name}${requestData.last_name ? ' ' + requestData.last_name : ''}`;
+          const result = await createPersonalLocation(
+            newUserId,
+            userName,
+            ownerPermissions,
+            adminCapabilities,
+            env
+          );
+
+          onboardingResult = {
+            type: 'new_location',
+            location_id: result.locationId,
+            location_name: result.locationName,
+            permissions_granted: ownerPermissions,
+            capabilities_granted: adminCapabilities
+          };
+        } catch (error) {
+          console.error('Failed to create personal location for user:', error);
+        }
+      }
+    }
+
     // Update the signup request
     await env.DB.prepare(`
       UPDATE signup_approval_requests 
@@ -113,7 +197,8 @@ export async function approveSignupRequest(request: Request, requestId: number, 
     return new Response(JSON.stringify({ 
       message: 'Signup request approved successfully',
       user_id: newUserId,
-      email: requestData.email
+      email: requestData.email,
+      onboarding: onboardingResult
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
