@@ -397,6 +397,16 @@ export async function verifyEmail(request: Request, env: Env, corsHeaders: Recor
     SET email_verified = TRUE, email_verification_token = NULL, email_verification_expires = NULL, updated_at = datetime('now')
     WHERE id = ?
   `).bind(user.id).run();
+
+  // Invalidate admin caches since user verification status changed
+  try {
+    const { invalidateAllAdminAnalytics } = await import('../admin/cached');
+    await invalidateAllAdminAnalytics(env);
+    console.log('Invalidated admin cache after email verification');
+  } catch (cacheError) {
+    console.warn('Failed to invalidate admin cache after email verification:', cacheError);
+    // Don't fail verification if cache invalidation fails
+  }
   
   // Check if there are any pending invitations for this email
   const pendingInvitation = await env.DB.prepare(`
