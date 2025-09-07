@@ -19,13 +19,15 @@ import {
   Notifications,
   Palette,
   LightMode,
-  DarkMode
+  DarkMode,
+  Tour
 } from '@mui/icons-material'
 import { isAdmin } from '@/lib/permissions'
 import { useUnreadNotificationCount } from '@/hooks/useNotifications'
 import { useRejectedReviewNotifications } from '@/hooks/useRejectedReviewNotifications'
 import { useAdminPendingCounts } from '@/hooks/useAdminPendingCounts'
 import { themeVariants, type ThemeVariant } from '@/lib/theme'
+import { useTour } from '@/components/tour/TourProvider'
 
 interface GlobalHeaderProps {
   userRole?: string | null
@@ -44,6 +46,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
   const { unreadCount } = useUnreadNotificationCount()
   const { unreadRejectedCount } = useRejectedReviewNotifications()
   const { counts: adminCounts } = useAdminPendingCounts()
+  const { startTour } = useTour()
 
   const totalNotifications = unreadCount + unreadRejectedCount
   const totalAdminNotifications = adminCounts.total
@@ -544,6 +547,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                         { icon: <History />, label: 'Checkout History', action: () => router.push('/checkout-history') },
                         { icon: <Lock />, label: 'Security', action: () => router.push('/security') },
                         { icon: <Help />, label: 'Help', action: () => {} }, // TODO: Implement help modal
+                        { icon: <Tour />, label: 'Start Tour', action: () => startTour() },
                         { icon: <ExitToApp />, label: 'Sign Out', action: handleSignOut },
                       ].map((item, index) => (
                         <button
@@ -564,7 +568,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                             cursor: 'pointer',
                             fontSize: 'var(--marketing-text-sm)',
                             color: 'var(--marketing-gray-700)',
-                            borderBottom: index < 6 ? '1px solid var(--marketing-gray-100)' : 'none',
+                            borderBottom: index < 7 ? '1px solid var(--marketing-gray-100)' : 'none',
                             transition: 'background-color 0.2s ease'
                           }}
                           onMouseOver={(e) => {
