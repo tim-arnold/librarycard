@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useContext } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useTheme } from '@/lib/ThemeContext'
@@ -27,7 +27,7 @@ import { useUnreadNotificationCount } from '@/hooks/useNotifications'
 import { useRejectedReviewNotifications } from '@/hooks/useRejectedReviewNotifications'
 import { useAdminPendingCounts } from '@/hooks/useAdminPendingCounts'
 import { themeVariants, type ThemeVariant } from '@/lib/theme'
-import { useTour } from '@/components/tour/TourProvider'
+import { TourContext } from '@/components/tour/TourProvider'
 
 interface GlobalHeaderProps {
   userRole?: string | null
@@ -46,7 +46,11 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
   const { unreadCount } = useUnreadNotificationCount()
   const { unreadRejectedCount } = useRejectedReviewNotifications()
   const { counts: adminCounts } = useAdminPendingCounts()
-  const { startTour } = useTour()
+  // Safe tour usage - might not be available on marketing pages
+  const tourContext = useContext(TourContext)
+  const startTour = tourContext?.startTour || (() => {
+    console.log('Tour not available on this page')
+  })
 
   const totalNotifications = unreadCount + unreadRejectedCount
   const totalAdminNotifications = adminCounts.total

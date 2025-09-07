@@ -6,6 +6,8 @@ import { TOUR_STEPS } from './tourSteps'
 
 const TourContext = createContext<TourContextType | null>(null)
 
+export { TourContext }
+
 export const useTour = () => {
   const context = useContext(TourContext)
   if (!context) {

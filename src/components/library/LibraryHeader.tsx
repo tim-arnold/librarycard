@@ -86,7 +86,7 @@ export default function LibraryHeader({
   }
 
   return (
-    <Box sx={{ mb: 3 }}>
+    <Box sx={{ mb: 3 }} data-tour="library-header">
       <Typography variant="h4" component="h2">
         {getLibraryTitle()}
       </Typography>
