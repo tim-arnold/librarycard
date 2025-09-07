@@ -23,7 +23,13 @@ export default function TourOverlay() {
     if (!isActive || currentStepIndex >= steps.length) return
 
     const currentStep = steps[currentStepIndex]
-    const targetElement = document.querySelector(currentStep.targetSelector)
+    // Try multiple selectors (comma-separated) until we find one
+    const selectors = currentStep.targetSelector.split(',').map(s => s.trim())
+    let targetElement = null
+    for (const selector of selectors) {
+      targetElement = document.querySelector(selector)
+      if (targetElement) break
+    }
 
     if (targetElement) {
       const rect = targetElement.getBoundingClientRect()
@@ -37,12 +43,21 @@ export default function TourOverlay() {
         height: rect.height
       })
 
-      // Scroll element into view if needed
-      targetElement.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-        inline: 'center'
-      })
+      // Scroll element into view if needed (but not for welcome step)
+      const currentStep = steps[currentStepIndex]
+      if (currentStep && currentStep.id !== 'welcome') {
+        targetElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+          inline: 'center'
+        })
+      } else {
+        // For welcome step, scroll to top of page
+        window.scrollTo({
+          top: 0,
+          behavior: 'smooth'
+        })
+      }
     } else {
       console.warn(`Tour target element not found: ${currentStep.targetSelector}`)
       setTargetPosition(null)
@@ -97,8 +112,8 @@ export default function TourOverlay() {
         position: 'fixed',
         top: 0,
         left: 0,
-        width: '100%',
-        height: '100%',
+        width: '100vw',
+        height: '100vh',
         zIndex: 9999,
         pointerEvents: 'auto'
       }}
@@ -111,7 +126,7 @@ export default function TourOverlay() {
           top: 0,
           left: 0,
           width: '100%',
-          height: '100%',
+          height: Math.max(document.documentElement.scrollHeight, window.innerHeight),
           backgroundColor: 'rgba(0, 0, 0, 0.5)',
           cursor: 'pointer',
           ...(targetPosition && {

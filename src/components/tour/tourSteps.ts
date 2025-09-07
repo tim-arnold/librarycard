@@ -5,7 +5,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: 'welcome',
     title: 'Welcome to LibraryCard!',
     content: 'Let\'s take a quick tour to help you discover all the ways LibraryCard can help you manage your book collection. This tour will only take a minute!',
-    targetSelector: '[data-tour="main-content"]',
+    targetSelector: '[data-tour="main-content"], main, .container, body',
     placement: 'bottom'
   },
   {
