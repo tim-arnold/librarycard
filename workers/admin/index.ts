@@ -112,6 +112,11 @@ export async function approveSignupRequest(request: Request, requestId: number, 
       capabilities_granted: []
     };
 
+    // Default to personal library creation if no onboarding specified (backward compatibility)
+    if (!onboarding) {
+      onboarding = { type: 'new_location' };
+    }
+
     if (onboarding) {
       const { assignUserToLocation, createPersonalLocation } = await import('../locations');
       
@@ -147,7 +152,7 @@ export async function approveSignupRequest(request: Request, requestId: number, 
       } else if (onboarding.type === 'new_location') {
         // Path 2: Create new personal location
         const ownerPermissions = ['can_add_books', 'can_create_shelves', 'can_delete_books', 'can_move_books'];
-        const adminCapabilities = ['can_manage_location_settings', 'can_invite_users', 'can_control_user_capabilities'];
+        const adminCapabilities = ['can_manage_location_settings', 'can_invite_users', 'can_control_user_capabilities', 'can_manage_users'];
         
         try {
           const userName = `${requestData.first_name}${requestData.last_name ? ' ' + requestData.last_name : ''}`;
