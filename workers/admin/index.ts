@@ -51,7 +51,7 @@ export async function approveSignupRequest(request: Request, requestId: number, 
   try {
     const { 
       comment, 
-      onboarding 
+      onboarding: onboardingParam 
     }: { 
       comment?: string;
       onboarding?: {
@@ -113,9 +113,7 @@ export async function approveSignupRequest(request: Request, requestId: number, 
     };
 
     // Default to personal library creation if no onboarding specified (backward compatibility)
-    if (!onboarding) {
-      onboarding = { type: 'new_location' };
-    }
+    const onboarding = onboardingParam || { type: 'new_location' };
 
     if (onboarding) {
       const { assignUserToLocation, createPersonalLocation } = await import('../locations');
