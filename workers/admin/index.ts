@@ -150,7 +150,7 @@ export async function approveSignupRequest(request: Request, requestId: number, 
       } else if (onboarding.type === 'new_location') {
         // Path 2: Create new personal location
         const ownerPermissions = ['can_add_books', 'can_create_shelves', 'can_delete_books', 'can_move_books'];
-        const adminCapabilities = ['can_manage_location_settings', 'can_invite_users', 'can_control_user_capabilities', 'can_manage_users'];
+        const adminCapabilities = ['can_control_user_capabilities', 'can_invite_users', 'can_manage_shelves', 'can_manage_location_settings'];
         
         try {
           const userName = `${requestData.first_name}${requestData.last_name ? ' ' + requestData.last_name : ''}`;
