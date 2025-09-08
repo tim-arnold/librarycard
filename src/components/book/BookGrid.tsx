@@ -43,6 +43,7 @@ interface BookCardProps {
   onCoverEdit?: (book: EnhancedBook) => void
   isAnimating: boolean
   onCoverAnimationComplete?: (bookId: string) => void
+  isFirstBook?: boolean
 }
 
 interface BookGridProps {
@@ -94,6 +95,7 @@ const BookCard = React.memo<BookCardProps>(({
   onCoverEdit,
   isAnimating,
   onCoverAnimationComplete,
+  isFirstBook,
 }) => {
   // Memoized event handlers to prevent child re-renders
   const handleAuthorClick = useCallback((author: string) => {
@@ -127,20 +129,23 @@ const BookCard = React.memo<BookCardProps>(({
   }, [onCoverAnimationComplete, book.id])
 
   return (
-    <Card sx={{ 
-      height: '100%', 
-      display: 'flex', 
-      flexDirection: 'column',
-      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-      position: 'relative',
-      overflow: 'hidden',
-      '&:hover': {
-        transform: 'translateY(-3px)',
-        '& .book-cover': {
-          transform: 'scale(1.05)',
+    <Card 
+      sx={{ 
+        height: '100%', 
+        display: 'flex', 
+        flexDirection: 'column',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        position: 'relative',
+        overflow: 'hidden',
+        '&:hover': {
+          transform: 'translateY(-3px)',
+          '& .book-cover': {
+            transform: 'scale(1.05)',
+          },
         },
-      },
-    }}>
+      }}
+      {...(isFirstBook && { 'data-tour': 'book-item' })}
+    >
       <CardContent sx={{ flex: 1 }}>
         <Box sx={{ display: 'flex', gap: 2 }}>
           <Box sx={{ position: 'relative' }}>
@@ -511,7 +516,7 @@ const BookGrid = React.memo<BookGridProps>(({
         },
       },
     }}>
-      {books.map(book => (
+      {books.map((book, index) => (
         <BookCard
           key={book.id}
           book={book}
@@ -536,6 +541,7 @@ const BookGrid = React.memo<BookGridProps>(({
           onCoverEdit={onCoverEdit}
           isAnimating={animatingCovers.has(book.id)}
           onCoverAnimationComplete={onCoverAnimationComplete}
+          isFirstBook={index === 0}
         />
       ))}
     </Box>

@@ -111,6 +111,7 @@ interface VirtualizedBookCardProps {
   onCoverEdit?: (book: EnhancedBook) => void
   isAnimating: boolean
   onCoverAnimationComplete?: (bookId: string) => void
+  isFirstBook?: boolean
 }
 
 const VirtualizedBookCard = React.memo<VirtualizedBookCardProps>(({
@@ -136,6 +137,7 @@ const VirtualizedBookCard = React.memo<VirtualizedBookCardProps>(({
   onCoverEdit,
   isAnimating,
   onCoverAnimationComplete,
+  isFirstBook,
 }) => {
   // Memoized event handlers
   const handleAuthorClick = useCallback((author: string) => {
@@ -169,7 +171,10 @@ const VirtualizedBookCard = React.memo<VirtualizedBookCardProps>(({
   }, [onCoverAnimationComplete, book.id])
 
   return (
-    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <Card 
+      sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+      {...(isFirstBook && { 'data-tour': 'book-item' })}
+    >
       <CardContent sx={{ flex: 1 }}>
         <Box sx={{ display: 'flex', gap: 2 }}>
           <Box sx={{ position: 'relative' }}>
@@ -535,6 +540,7 @@ const VirtualizedBookGrid: React.FC<VirtualizedBookGridProps> = ({
         <VirtualizedBookCard
           book={book}
           isAnimating={animatingCovers.has(book.id)}
+          isFirstBook={bookIndex === 0}
           {...props}
         />
       </div>
@@ -575,11 +581,12 @@ const VirtualizedBookGrid: React.FC<VirtualizedBookGridProps> = ({
         }, 
         gap: 2 
       }}>
-        {books.map(book => (
+        {books.map((book, index) => (
           <VirtualizedBookCard
             key={book.id}
             book={book}
             isAnimating={animatingCovers.has(book.id)}
+            isFirstBook={index === 0}
             {...props}
           />
         ))}

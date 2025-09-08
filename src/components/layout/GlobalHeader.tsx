@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useContext } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useTheme } from '@/lib/ThemeContext'
@@ -19,13 +19,15 @@ import {
   Notifications,
   Palette,
   LightMode,
-  DarkMode
+  DarkMode,
+  Tour
 } from '@mui/icons-material'
 import { isAdmin } from '@/lib/permissions'
 import { useUnreadNotificationCount } from '@/hooks/useNotifications'
 import { useRejectedReviewNotifications } from '@/hooks/useRejectedReviewNotifications'
 import { useAdminPendingCounts } from '@/hooks/useAdminPendingCounts'
 import { themeVariants, type ThemeVariant } from '@/lib/theme'
+import { TourContext } from '@/components/tour/TourProvider'
 
 interface GlobalHeaderProps {
   userRole?: string | null
@@ -44,6 +46,11 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
   const { unreadCount } = useUnreadNotificationCount()
   const { unreadRejectedCount } = useRejectedReviewNotifications()
   const { counts: adminCounts } = useAdminPendingCounts()
+  // Safe tour usage - might not be available on marketing pages
+  const tourContext = useContext(TourContext)
+  const startTour = tourContext?.startTour || (() => {
+    console.log('Tour not available on this page')
+  })
 
   const totalNotifications = unreadCount + unreadRejectedCount
   const totalAdminNotifications = adminCounts.total
@@ -64,7 +71,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
       // Authenticated: Functional navigation
       const items = [
         { name: 'My Library', href: '/library', key: 'library' },
-        { name: 'Add Books', href: '/add-books', key: 'add-books' },
+        { name: 'Add Books', href: '/add-books', key: 'add-books', dataTour: 'add-books-nav' },
       ]
 
       // Add admin navigation for admin users
@@ -173,6 +180,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                 <li key={item.key}>
                   <button
                     onClick={() => handleNavClick(item.href)}
+                    {...(item.dataTour && { 'data-tour': item.dataTour })}
                     style={{
                       background: 'none',
                       border: 'none',
@@ -446,6 +454,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                 {/* Account Menu */}
                 <div style={{ position: 'relative' }}>
                   <button
+                    data-tour="user-menu"
                     onClick={() => setAccountMenuOpen(!accountMenuOpen)}
                     style={{
                       background: 'none',
@@ -542,6 +551,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                         { icon: <History />, label: 'Checkout History', action: () => router.push('/checkout-history') },
                         { icon: <Lock />, label: 'Security', action: () => router.push('/security') },
                         { icon: <Help />, label: 'Help', action: () => {} }, // TODO: Implement help modal
+                        { icon: <Tour />, label: 'Start Tour', action: () => startTour() },
                         { icon: <ExitToApp />, label: 'Sign Out', action: handleSignOut },
                       ].map((item, index) => (
                         <button
@@ -562,7 +572,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                             cursor: 'pointer',
                             fontSize: 'var(--marketing-text-sm)',
                             color: 'var(--marketing-gray-700)',
-                            borderBottom: index < 6 ? '1px solid var(--marketing-gray-100)' : 'none',
+                            borderBottom: index < 7 ? '1px solid var(--marketing-gray-100)' : 'none',
                             transition: 'background-color 0.2s ease'
                           }}
                           onMouseOver={(e) => {
