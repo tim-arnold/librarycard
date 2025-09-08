@@ -24,6 +24,14 @@ import {
   TableRow,
   Paper,
   Divider,
+  Radio,
+  RadioGroup,
+  FormControlLabel,
+  FormControl,
+  FormLabel,
+  Select,
+  MenuItem,
+  InputLabel,
 } from '@mui/material'
 import {
   Check,
@@ -51,6 +59,13 @@ interface SignupRequest {
   review_comment?: string
 }
 
+interface Location {
+  id: number
+  name: string
+}
+
+type OnboardingType = 'existing_location' | 'new_location'
+
 interface AdminSignupManagerProps {
   onCountChange?: () => void;
 }
@@ -68,6 +83,12 @@ export default function AdminSignupManager({ onCountChange }: AdminSignupManager
   const [reviewAction, setReviewAction] = useState<'approve' | 'deny' | null>(null)
   const [reviewComment, setReviewComment] = useState('')
   const [dataLoaded, setDataLoaded] = useState(false)
+
+  // Enhanced onboarding state (LCWEB-169)
+  const [onboardingType, setOnboardingType] = useState<OnboardingType>('new_location')
+  const [selectedLocationId, setSelectedLocationId] = useState<number | ''>('')
+  const [availableLocations, setAvailableLocations] = useState<Location[]>([])
+  const [locationsLoading, setLocationsLoading] = useState(false)
 
   useEffect(() => {
     if (session?.user?.email && !dataLoaded) {
@@ -106,31 +127,82 @@ export default function AdminSignupManager({ onCountChange }: AdminSignupManager
     }
   }
 
+  const loadAvailableLocations = async () => {
+    if (!session?.user?.email) return
+
+    try {
+      setLocationsLoading(true)
+      const response = await fetch(`${getApiBaseUrl()}/api/locations`, {
+        headers: {
+          'Authorization': `Bearer ${session.user.email}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setAvailableLocations(data)
+      } else {
+        console.error('Failed to load locations')
+        setAvailableLocations([])
+      }
+    } catch (error) {
+      console.error('Error loading locations:', error)
+      setAvailableLocations([])
+    } finally {
+      setLocationsLoading(false)
+    }
+  }
+
   const handleReviewRequest = (request: SignupRequest, action: 'approve' | 'deny') => {
     setReviewRequest(request)
     setReviewAction(action)
     setReviewComment('')
+    
+    // Reset onboarding state
+    setOnboardingType('new_location')
+    setSelectedLocationId('')
+    
+    // Load locations if approving
+    if (action === 'approve') {
+      loadAvailableLocations()
+    }
+    
     setShowReviewDialog(true)
   }
 
   const submitReview = async () => {
     if (!reviewRequest || !reviewAction || !session?.user?.email) return
 
+    // Validation for approval with existing location
+    if (reviewAction === 'approve' && onboardingType === 'existing_location' && !selectedLocationId) {
+      setError('Please select a location for the user to join')
+      return
+    }
+
     try {
       setProcessingId(reviewRequest.id)
-      const endpoint = reviewAction === 'approve' 
-        ? `${getApiBaseUrl()}/api/signup-requests/${reviewRequest.id}/approve`
-        : `${getApiBaseUrl()}/api/signup-requests/${reviewRequest.id}/deny`
-
       const apiPath = reviewAction === 'approve' 
         ? `/api/signup-requests/${reviewRequest.id}/approve`
         : `/api/signup-requests/${reviewRequest.id}/deny`
 
+      const requestBody: any = {
+        comment: reviewComment.trim() || undefined
+      }
+
+      // Add onboarding configuration for approvals
+      if (reviewAction === 'approve') {
+        requestBody.onboarding = {
+          type: onboardingType,
+          ...(onboardingType === 'existing_location' && selectedLocationId && {
+            location_id: selectedLocationId
+          })
+        }
+      }
+
       const response = await authenticatedApiCall(apiPath, {
         method: 'POST',
-        body: JSON.stringify({
-          comment: reviewComment.trim() || undefined
-        })
+        body: JSON.stringify(requestBody)
       })
 
       if (response.ok) {
@@ -377,6 +449,82 @@ export default function AdminSignupManager({ onCountChange }: AdminSignupManager
               <Typography variant="body1" gutterBottom>
                 <strong>Requested:</strong> {formatDate(reviewRequest.requested_at)}
               </Typography>
+            </Box>
+          )}
+
+          {/* Enhanced User Onboarding Selection (LCWEB-169) */}
+          {reviewAction === 'approve' && (
+            <Box sx={{ mt: 3, mb: 2 }}>
+              <FormControl component="fieldset" fullWidth>
+                <FormLabel component="legend" sx={{ mb: 2, fontWeight: 'bold' }}>
+                  User Onboarding Setup
+                </FormLabel>
+                <RadioGroup
+                  value={onboardingType}
+                  onChange={(e) => {
+                    setOnboardingType(e.target.value as OnboardingType)
+                    setSelectedLocationId('') // Reset location selection
+                  }}
+                >
+                  <FormControlLabel
+                    value="new_location"
+                    control={<Radio />}
+                    label={
+                      <Box>
+                        <Typography variant="body1" fontWeight="medium">
+                          Create Personal Library
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          User gets their own library with full admin control (recommended for individual users)
+                        </Typography>
+                      </Box>
+                    }
+                  />
+                  <FormControlLabel
+                    value="existing_location"
+                    control={<Radio />}
+                    label={
+                      <Box>
+                        <Typography variant="body1" fontWeight="medium">
+                          Assign to Existing Location
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          User becomes a member of an existing location (good for family libraries)
+                        </Typography>
+                      </Box>
+                    }
+                  />
+                </RadioGroup>
+
+                {onboardingType === 'existing_location' && (
+                  <Box sx={{ mt: 2, ml: 4 }}>
+                    <FormControl fullWidth size="small">
+                      <InputLabel>Select Location</InputLabel>
+                      <Select
+                        value={selectedLocationId}
+                        onChange={(e) => setSelectedLocationId(e.target.value as number)}
+                        label="Select Location"
+                        disabled={locationsLoading}
+                      >
+                        {locationsLoading ? (
+                          <MenuItem disabled>
+                            <CircularProgress size={16} sx={{ mr: 1 }} />
+                            Loading locations...
+                          </MenuItem>
+                        ) : availableLocations.length > 0 ? (
+                          availableLocations.map((location) => (
+                            <MenuItem key={location.id} value={location.id}>
+                              {location.name}
+                            </MenuItem>
+                          ))
+                        ) : (
+                          <MenuItem disabled>No locations available</MenuItem>
+                        )}
+                      </Select>
+                    </FormControl>
+                  </Box>
+                )}
+              </FormControl>
             </Box>
           )}
           
