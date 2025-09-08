@@ -372,30 +372,32 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
         )}
 
 
-        <BookFilters
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          shelfFilter={shelfFilter}
-          setShelfFilter={setShelfFilter}
-          categoryFilter={categoryFilter}
-          setCategoryFilter={setCategoryFilter}
-          locationFilter={locationFilter}
-          setLocationFilter={setLocationFilter}
-          checkoutFilter={checkoutFilter}
-          setCheckoutFilter={setCheckoutFilter}
-          sortField={sortField}
-          setSortField={handleSortFieldChange}
-          sortDirection={sortDirection}
-          setSortDirection={handleSortDirectionChange}
-          userRole={userRole || ''}
-          shelves={isAdmin(userRole) ? shelves : shelves.filter(shelf => currentLocation && shelf.location_id === currentLocation.id)}
-          books={books}
-          allLocations={allLocations}
-          userLocations={userLocations}
-          currentLocation={currentLocation}
-          onLocationSwitch={switchToLocation}
-          allCategories={allCategories}
-        />
+        <div data-tour="search-filters">
+          <BookFilters
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            shelfFilter={shelfFilter}
+            setShelfFilter={setShelfFilter}
+            categoryFilter={categoryFilter}
+            setCategoryFilter={setCategoryFilter}
+            locationFilter={locationFilter}
+            setLocationFilter={setLocationFilter}
+            checkoutFilter={checkoutFilter}
+            setCheckoutFilter={setCheckoutFilter}
+            sortField={sortField}
+            setSortField={handleSortFieldChange}
+            sortDirection={sortDirection}
+            setSortDirection={handleSortDirectionChange}
+            userRole={userRole || ''}
+            shelves={isAdmin(userRole) ? shelves : shelves.filter(shelf => currentLocation && shelf.location_id === currentLocation.id)}
+            books={books}
+            allLocations={allLocations}
+            userLocations={userLocations}
+            currentLocation={currentLocation}
+            onLocationSwitch={switchToLocation}
+            allCategories={allCategories}
+          />
+        </div>
 
         <ActiveFilters
           authorFilter={authorFilter}
@@ -430,44 +432,46 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
           onBooksPerPageChange={handleBooksPerPageChange}
         />
 
-        <BookViews
-          viewMode={viewMode}
-          userRole={userRole}
-          userPermissions={userPermissions}
-          userGlobalPermissions={userGlobalPermissions}
-          userLocations={userLocations}
-          currentUserId={currentUserId}
-          shelves={shelves}
-          pendingRemovalRequests={pendingRemovalRequests}
-          filteredBooks={filteredBooks}
-          paginatedBooks={paginatedBooks}
-          booksByLocation={booksByLocation}
-          locationFilter={locationFilter}
-          shelfFilter={shelfFilter}
-          categoryFilter={categoryFilter}
-          checkoutFilter={checkoutFilter}
-          authorFilter={authorFilter}
-          searchTerm={searchTerm}
-          currentPage={currentPage}
-          booksPerPage={booksPerPage}
-          onCheckout={checkoutBook}
-          onCheckin={checkinBook}
-          onDelete={deleteBook}
-          onRelocate={handleRelocateClick}
-          onRequestRemoval={requestBookRemoval}
-          onCancelRemovalRequest={cancelRemovalRequest}
-          onMoreDetailsClick={handleMoreDetailsClick}
-          onAuthorClick={handleAuthorClick}
-          onSeriesClick={handleSeriesClick}
-          onRateBook={handleRateBook}
-          onGenreEdit={userPermissions.includes('can_edit_genres') ? handleGenreEdit : undefined}
-          onCoverEdit={userPermissions.includes('can_add_books') ? handleCoverEdit : undefined}
-          animatingCovers={animatingCovers}
-          onCoverAnimationComplete={handleCoverAnimationComplete}
-          onPageChange={handlePageChange}
-          getTotalPages={getTotalPages}
-          getPaginatedBooksForView={getPaginatedBooksForView}
-        />
+        <div data-tour="book-grid">
+          <BookViews
+            viewMode={viewMode}
+            userRole={userRole}
+            userPermissions={userPermissions}
+            userGlobalPermissions={userGlobalPermissions}
+            userLocations={userLocations}
+            currentUserId={currentUserId}
+            shelves={shelves}
+            pendingRemovalRequests={pendingRemovalRequests}
+            filteredBooks={filteredBooks}
+            paginatedBooks={paginatedBooks}
+            booksByLocation={booksByLocation}
+            locationFilter={locationFilter}
+            shelfFilter={shelfFilter}
+            categoryFilter={categoryFilter}
+            checkoutFilter={checkoutFilter}
+            authorFilter={authorFilter}
+            searchTerm={searchTerm}
+            currentPage={currentPage}
+            booksPerPage={booksPerPage}
+            onCheckout={checkoutBook}
+            onCheckin={checkinBook}
+            onDelete={deleteBook}
+            onRelocate={handleRelocateClick}
+            onRequestRemoval={requestBookRemoval}
+            onCancelRemovalRequest={cancelRemovalRequest}
+            onMoreDetailsClick={handleMoreDetailsClick}
+            onAuthorClick={handleAuthorClick}
+            onSeriesClick={handleSeriesClick}
+            onRateBook={handleRateBook}
+            onGenreEdit={userPermissions.includes('can_edit_genres') ? handleGenreEdit : undefined}
+            onCoverEdit={userPermissions.includes('can_add_books') ? handleCoverEdit : undefined}
+            animatingCovers={animatingCovers}
+            onCoverAnimationComplete={handleCoverAnimationComplete}
+            onPageChange={handlePageChange}
+            getTotalPages={getTotalPages}
+            getPaginatedBooksForView={getPaginatedBooksForView}
+          />
+        </div>
         
         {/* Modal Components */}
         {modalState.type === 'confirm' && (

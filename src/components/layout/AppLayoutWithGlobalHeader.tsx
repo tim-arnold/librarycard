@@ -10,6 +10,8 @@ import { Container, Box } from '@mui/material'
 import Footer from './Footer'
 import GlobalHeader from './GlobalHeader'
 import HelpModal from '@/components/modals/HelpModal'
+import TourProvider from '@/components/tour/TourProvider'
+import TourOverlay from '@/components/tour/TourOverlay'
 
 interface AppLayoutWithGlobalHeaderProps {
   children: React.ReactNode
@@ -121,24 +123,28 @@ export default function AppLayoutWithGlobalHeader({ children }: AppLayoutWithGlo
   }
 
   return (
-    <div>
-      <GlobalHeader 
-        userRole={userRole}
-        userFirstName={userFirstName}
-      />
+    <TourProvider>
+      <div>
+        <GlobalHeader 
+          userRole={userRole}
+          userFirstName={userFirstName}
+        />
+        
+        <main data-tour="main-content">
+          <Container maxWidth="xl" sx={{ py: 3 }}>
+            {children}
+          </Container>
+        </main>
+        
+        <Footer />
+        
+        <HelpModal 
+          open={helpModalOpen} 
+          onClose={() => setHelpModalOpen(false)} 
+        />
+      </div>
       
-      <main>
-        <Container maxWidth="xl" sx={{ py: 3 }}>
-          {children}
-        </Container>
-      </main>
-      
-      <Footer />
-      
-      <HelpModal 
-        open={helpModalOpen} 
-        onClose={() => setHelpModalOpen(false)} 
-      />
-    </div>
+      <TourOverlay />
+    </TourProvider>
   )
 }
