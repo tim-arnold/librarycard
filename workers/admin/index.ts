@@ -115,6 +115,16 @@ export async function approveSignupRequest(request: Request, requestId: number, 
     // Default to personal library creation if no onboarding specified (backward compatibility)
     const onboarding = onboardingParam || { type: 'new_location' };
 
+    // Determine user role based on onboarding type
+    const userRole = onboarding.type === 'new_location' ? 'admin' : 'user';
+
+    // Update user role for location owners
+    if (userRole === 'admin') {
+      await env.DB.prepare(`
+        UPDATE users SET user_role = ? WHERE id = ?
+      `).bind(userRole, newUserId).run();
+    }
+
     if (onboarding) {
       const { assignUserToLocation, createPersonalLocation } = await import('../locations');
       
