@@ -10,9 +10,8 @@ import {
   Chip,
   Rating,
   LinearProgress,
-  Tooltip,
 } from '@mui/material'
-import { TrendingUp, Star, People, Whatshot } from '@mui/icons-material'
+import { People, Whatshot } from '@mui/icons-material'
 import type { ActivityItem } from '@/lib/types'
 
 interface PopularBooksProps {
@@ -20,6 +19,7 @@ interface PopularBooksProps {
   onBookClick?: (bookId: string) => void
   onAuthorClick?: (authorName: string) => void
   onFilterApply?: (filterType: string, value: string) => void
+  showUserInfo?: boolean
 }
 
 export default function PopularBooks({
@@ -27,6 +27,7 @@ export default function PopularBooks({
   onBookClick,
   onAuthorClick,
   onFilterApply,
+  showUserInfo = false,
 }: PopularBooksProps) {
   if (items.length === 0) {
     return (

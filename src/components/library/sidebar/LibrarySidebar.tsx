@@ -24,6 +24,7 @@ import {
 } from '@mui/icons-material'
 import type { LibraryActivityResponse, SidebarPreferences } from '@/lib/types'
 import { getApiBaseUrl } from '@/lib/apiConfig'
+import { isAdmin, isSuperAdmin } from '@/lib/permissions'
 import RecentReviews from './RecentReviews'
 import NewlyAdded from './NewlyAdded'
 import PopularBooks from './PopularBooks'
@@ -32,12 +33,14 @@ interface LibrarySidebarProps {
   onBookClick?: (bookId: string) => void
   onAuthorClick?: (authorName: string) => void
   onFilterApply?: (filterType: string, value: string) => void
+  onMobileClose?: () => void // New prop for closing mobile drawer
 }
 
 export default function LibrarySidebar({
   onBookClick,
   onAuthorClick,
   onFilterApply,
+  onMobileClose,
 }: LibrarySidebarProps) {
   const { data: session } = useSession()
   const theme = useTheme()
@@ -45,12 +48,13 @@ export default function LibrarySidebar({
   
   // State
   const [preferences, setPreferences] = useState<SidebarPreferences>({
-    collapsed: isMobile,
+    collapsed: false, // Always start expanded on mobile since it's in a drawer
     activeSection: 'reviews',
   })
   const [activityData, setActivityData] = useState<LibraryActivityResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [userRole, setUserRole] = useState<string | null>(null)
 
   // Load sidebar preferences from localStorage
   useEffect(() => {
@@ -59,7 +63,7 @@ export default function LibrarySidebar({
       try {
         const parsed = JSON.parse(saved)
         setPreferences({
-          collapsed: isMobile ? true : parsed.collapsed || false,
+          collapsed: isMobile ? false : parsed.collapsed || false, // Always expanded on mobile
           activeSection: parsed.activeSection || 'reviews',
         })
       } catch (e) {
@@ -88,18 +92,33 @@ export default function LibrarySidebar({
       setError(null)
       
       const apiUrl = getApiBaseUrl()
-      const response = await fetch(`${apiUrl}/api/library/activity?limit=8`, {
-        headers: {
-          'Authorization': `Bearer ${session.user.email}`,
-        },
-      })
+      
+      // Fetch both activity data and user profile in parallel
+      const [activityResponse, profileResponse] = await Promise.all([
+        fetch(`${apiUrl}/api/library/activity?limit=8`, {
+          headers: {
+            'Authorization': `Bearer ${session.user.email}`,
+          },
+        }),
+        fetch(`${apiUrl}/api/profile`, {
+          headers: {
+            'Authorization': `Bearer ${session.user.email}`,
+          },
+        })
+      ])
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch activity: ${response.status}`)
+      if (!activityResponse.ok) {
+        throw new Error(`Failed to fetch activity: ${activityResponse.status}`)
       }
 
-      const data = await response.json()
-      setActivityData(data)
+      const activityData = await activityResponse.json()
+      setActivityData(activityData)
+      
+      // Get user role if profile request was successful
+      if (profileResponse.ok) {
+        const profileData = await profileResponse.json()
+        setUserRole(profileData.user_role)
+      }
     } catch (err) {
       console.error('Error fetching library activity:', err)
       setError(err instanceof Error ? err.message : 'Failed to load activity')
@@ -117,10 +136,19 @@ export default function LibrarySidebar({
 
   // Toggle collapsed state
   const toggleCollapsed = () => {
-    updatePreferences({ collapsed: !preferences.collapsed })
+    if (isMobile && onMobileClose) {
+      // On mobile, close the drawer instead of collapsing the sidebar
+      onMobileClose()
+    } else {
+      // On desktop, use normal collapse behavior
+      updatePreferences({ collapsed: !preferences.collapsed })
+    }
   }
 
   // Section definitions
+  // Check if user can see admin info (names, etc.)
+  const canSeeAdminInfo = userRole && (isAdmin(userRole) || isSuperAdmin(userRole))
+
   const sections = [
     {
       id: 'reviews' as const,
@@ -152,15 +180,15 @@ export default function LibrarySidebar({
 
   return (
     <Paper
-      elevation={2}
+      elevation={isMobile ? 0 : 2}
       sx={{
-        position: 'sticky',
-        top: 16,
-        height: 'fit-content',
-        maxHeight: 'calc(100vh - 100px)',
-        width: sidebarWidth,
-        flexShrink: 0, // Prevent compression in flex container
-        transition: 'width 0.3s ease',
+        position: isMobile ? 'relative' : 'sticky',
+        top: isMobile ? 0 : 100, // No sticky positioning in mobile drawer
+        height: isMobile ? '100vh' : 'fit-content',
+        maxHeight: isMobile ? 'none' : 'calc(100vh - 116px)',
+        width: isMobile ? '100%' : sidebarWidth,
+        flexShrink: 0,
+        transition: isMobile ? 'none' : 'width 0.3s ease',
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
@@ -227,7 +255,9 @@ export default function LibrarySidebar({
                   <React.Fragment key={section.id}>
                     {/* Section Header */}
                     <Box
-                      onClick={() => updatePreferences({ activeSection: section.id })}
+                      onClick={() => updatePreferences({ 
+                        activeSection: isActive ? undefined : section.id 
+                      })}
                       sx={{
                         p: 2,
                         cursor: 'pointer',
@@ -273,12 +303,13 @@ export default function LibrarySidebar({
 
                     {/* Section Content */}
                     <Collapse in={isActive}>
-                      <Box sx={{ px: 1, pb: 2 }}>
+                      <Box sx={{ px: 1, py: 1 }}>
                         <SectionComponent
                           items={section.data}
                           onBookClick={onBookClick}
                           onAuthorClick={onAuthorClick}
                           onFilterApply={onFilterApply}
+                          showUserInfo={canSeeAdminInfo || false}
                         />
                       </Box>
                     </Collapse>
@@ -289,7 +320,7 @@ export default function LibrarySidebar({
               })}
 
               {!loading && activityData && 
-               Object.values(activityData).every(arr => arr.length === 0) && (
+               Object.values(activityData).every((arr: any[]) => arr.length === 0) && (
                 <Box sx={{ p: 3, textAlign: 'center' }}>
                   <Typography variant="body2" color="text.secondary">
                     No recent activity found.

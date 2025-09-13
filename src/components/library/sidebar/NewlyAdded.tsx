@@ -18,6 +18,7 @@ interface NewlyAddedProps {
   onBookClick?: (bookId: string) => void
   onAuthorClick?: (authorName: string) => void
   onFilterApply?: (filterType: string, value: string) => void
+  showUserInfo?: boolean
 }
 
 export default function NewlyAdded({
@@ -25,6 +26,7 @@ export default function NewlyAdded({
   onBookClick,
   onAuthorClick,
   onFilterApply,
+  showUserInfo = false,
 }: NewlyAddedProps) {
   if (items.length === 0) {
     return (
@@ -172,16 +174,18 @@ export default function NewlyAdded({
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'space-between',
+                  justifyContent: showUserInfo ? 'space-between' : 'flex-end',
                   mb: 1,
                 }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <PersonAdd sx={{ fontSize: 14 }} />
-                  <Typography variant="caption" color="text.secondary">
-                    Added by {user?.first_name} {user?.last_name}
-                  </Typography>
-                </Box>
+                {showUserInfo && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <PersonAdd sx={{ fontSize: 14 }} />
+                    <Typography variant="caption" color="text.secondary">
+                      Added by {user?.first_name} {user?.last_name}
+                    </Typography>
+                  </Box>
+                )}
                 
                 <Typography 
                   variant="caption" 
