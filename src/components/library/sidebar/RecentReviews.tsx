@@ -19,6 +19,7 @@ interface RecentReviewsProps {
   onBookClick?: (bookId: string) => void
   onAuthorClick?: (authorName: string) => void
   onFilterApply?: (filterType: string, value: string) => void
+  showUserInfo?: boolean
 }
 
 export default function RecentReviews({
@@ -26,6 +27,7 @@ export default function RecentReviews({
   onBookClick,
   onAuthorClick,
   onFilterApply,
+  showUserInfo = false,
 }: RecentReviewsProps) {
   if (items.length === 0) {
     return (
@@ -157,16 +159,18 @@ export default function RecentReviews({
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'space-between',
+                  justifyContent: showUserInfo ? 'space-between' : 'flex-end',
                   pt: 0.5,
                 }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <Person sx={{ fontSize: 14 }} />
-                  <Typography variant="caption" color="text.secondary">
-                    {user?.first_name} {user?.last_name}
-                  </Typography>
-                </Box>
+                {showUserInfo && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Person sx={{ fontSize: 14 }} />
+                    <Typography variant="caption" color="text.secondary">
+                      {user?.first_name} {user?.last_name}
+                    </Typography>
+                  </Box>
+                )}
                 
                 <Typography variant="caption" color="text.secondary">
                   {formatTimeAgo(item.timestamp)}

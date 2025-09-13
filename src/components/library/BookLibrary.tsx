@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Alert, Typography, Box, CircularProgress, useTheme, useMediaQuery } from '@mui/material'
-import { LibraryBooks } from '@mui/icons-material'
+import { Alert, Typography, Box, CircularProgress, useTheme, useMediaQuery, Fab, Drawer } from '@mui/material'
+import { LibraryBooks, MenuBook } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
 import { useModal } from '@/hooks/useModal'
 import { useBookLibraryEnhanced as useBookLibrary } from '@/hooks/useBookLibraryEnhanced'
@@ -146,6 +146,9 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
   const [selectedBookForRating, setSelectedBookForRating] = useState<EnhancedBook | null>(null)
   const [selectedBookForGenreEdit, setSelectedBookForGenreEdit] = useState<EnhancedBook | null>(null)
   const [selectedBookForCoverEdit, setSelectedBookForCoverEdit] = useState<EnhancedBook | null>(null)
+  
+  // Mobile sidebar state
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
   // Modal handlers
   const handleMoreDetailsClick = (book: EnhancedBook) => {
@@ -198,11 +201,19 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
     const book = books.find(b => b.id === bookId)
     if (book) {
       handleMoreDetailsClick(book)
+      // Close mobile sidebar when action is taken
+      if (isMobile) {
+        setMobileSidebarOpen(false)
+      }
     }
   }
 
   const handleSidebarAuthorClick = (authorName: string) => {
     handleAuthorClick(authorName)
+    // Close mobile sidebar when filter is applied
+    if (isMobile) {
+      setMobileSidebarOpen(false)
+    }
   }
 
   const handleSidebarFilterApply = (filterType: string, value: string) => {
@@ -218,6 +229,10 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
         break
       default:
         console.warn('Unknown filter type from sidebar:', filterType)
+    }
+    // Close mobile sidebar when filter is applied
+    if (isMobile) {
+      setMobileSidebarOpen(false)
     }
   }
 
@@ -523,6 +538,45 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
             </div>
           </Box>
         </Box>
+
+        {/* Mobile Floating Action Button */}
+        {isMobile && (
+          <Fab
+            color="primary"
+            aria-label="library activity"
+            onClick={() => setMobileSidebarOpen(true)}
+            sx={{
+              position: 'fixed',
+              bottom: 16,
+              right: 16,
+              zIndex: 1000,
+            }}
+          >
+            <MenuBook />
+          </Fab>
+        )}
+
+        {/* Mobile Sidebar Drawer */}
+        {isMobile && (
+          <Drawer
+            anchor="right"
+            open={mobileSidebarOpen}
+            onClose={() => setMobileSidebarOpen(false)}
+            PaperProps={{
+              sx: {
+                width: '85vw',
+                maxWidth: 400,
+              }
+            }}
+          >
+            <LibrarySidebar
+              onBookClick={handleSidebarBookClick}
+              onAuthorClick={handleSidebarAuthorClick}
+              onFilterApply={handleSidebarFilterApply}
+              onMobileClose={() => setMobileSidebarOpen(false)}
+            />
+          </Drawer>
+        )}
         
         {/* Modal Components */}
         {modalState.type === 'confirm' && (
