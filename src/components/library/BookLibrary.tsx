@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Alert, Typography, Box, CircularProgress } from '@mui/material'
-import { LibraryBooks } from '@mui/icons-material'
+import { Alert, Typography, Box, CircularProgress, useTheme, useMediaQuery, Fab, Drawer } from '@mui/material'
+import { LibraryBooks, MenuBook } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
 import { useModal } from '@/hooks/useModal'
 import { useBookLibraryEnhanced as useBookLibrary } from '@/hooks/useBookLibraryEnhanced'
@@ -24,6 +24,7 @@ import LibraryHeader from './LibraryHeader'
 import ActiveFilters from './ActiveFilters'
 import ViewModeControls from './ViewModeControls'
 import BookViews from './BookViews'
+import LibrarySidebar from './sidebar/LibrarySidebar'
 import PageContainer from '../layout/PageContainer'
 
 interface BookLibraryProps {
@@ -37,6 +38,8 @@ interface BookLibraryProps {
 }
 
 export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
   const { modalState, confirmAsync, alert, closeModal } = useModal()
   
   // Core data and state from hooks
@@ -143,6 +146,9 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
   const [selectedBookForRating, setSelectedBookForRating] = useState<EnhancedBook | null>(null)
   const [selectedBookForGenreEdit, setSelectedBookForGenreEdit] = useState<EnhancedBook | null>(null)
   const [selectedBookForCoverEdit, setSelectedBookForCoverEdit] = useState<EnhancedBook | null>(null)
+  
+  // Mobile sidebar state
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
   // Modal handlers
   const handleMoreDetailsClick = (book: EnhancedBook) => {
@@ -188,6 +194,46 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
   const handleSeriesClick = (seriesName: string) => {
     // Use the dedicated series filter for precise filtering
     setSeriesFilter(seriesName)
+  }
+
+  // Sidebar handlers
+  const handleSidebarBookClick = (bookId: string) => {
+    const book = books.find(b => b.id === bookId)
+    if (book) {
+      handleMoreDetailsClick(book)
+      // Close mobile sidebar when action is taken
+      if (isMobile) {
+        setMobileSidebarOpen(false)
+      }
+    }
+  }
+
+  const handleSidebarAuthorClick = (authorName: string) => {
+    handleAuthorClick(authorName)
+    // Close mobile sidebar when filter is applied
+    if (isMobile) {
+      setMobileSidebarOpen(false)
+    }
+  }
+
+  const handleSidebarFilterApply = (filterType: string, value: string) => {
+    switch (filterType) {
+      case 'shelf':
+        setShelfFilter(value)
+        break
+      case 'category':
+        setCategoryFilter([value])
+        break
+      case 'author':
+        setAuthorFilter(value)
+        break
+      default:
+        console.warn('Unknown filter type from sidebar:', filterType)
+    }
+    // Close mobile sidebar when filter is applied
+    if (isMobile) {
+      setMobileSidebarOpen(false)
+    }
   }
 
   // Handle book relocation
@@ -432,8 +478,26 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
           onBooksPerPageChange={handleBooksPerPageChange}
         />
 
-        <div data-tour="book-grid">
-          <BookViews
+        {/* Main Content Layout */}
+        <Box sx={{ 
+          display: 'flex',
+          gap: 2,
+          alignItems: 'flex-start',
+          flexDirection: { xs: 'column', md: 'row' }
+        }}>
+          {/* Sidebar - Hidden on mobile, collapsible on larger screens */}
+          {!isMobile && (
+            <LibrarySidebar
+              onBookClick={handleSidebarBookClick}
+              onAuthorClick={handleSidebarAuthorClick}
+              onFilterApply={handleSidebarFilterApply}
+            />
+          )}
+          
+          {/* Main Book Content */}
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <div data-tour="book-grid">
+              <BookViews
             viewMode={viewMode}
             userRole={userRole}
             userPermissions={userPermissions}
@@ -471,7 +535,48 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
             getTotalPages={getTotalPages}
             getPaginatedBooksForView={getPaginatedBooksForView}
           />
-        </div>
+            </div>
+          </Box>
+        </Box>
+
+        {/* Mobile Floating Action Button */}
+        {isMobile && (
+          <Fab
+            color="primary"
+            aria-label="library activity"
+            onClick={() => setMobileSidebarOpen(true)}
+            sx={{
+              position: 'fixed',
+              bottom: 16,
+              right: 16,
+              zIndex: 1000,
+            }}
+          >
+            <MenuBook />
+          </Fab>
+        )}
+
+        {/* Mobile Sidebar Drawer */}
+        {isMobile && (
+          <Drawer
+            anchor="right"
+            open={mobileSidebarOpen}
+            onClose={() => setMobileSidebarOpen(false)}
+            PaperProps={{
+              sx: {
+                width: '85vw',
+                maxWidth: 400,
+              }
+            }}
+          >
+            <LibrarySidebar
+              onBookClick={handleSidebarBookClick}
+              onAuthorClick={handleSidebarAuthorClick}
+              onFilterApply={handleSidebarFilterApply}
+              onMobileClose={() => setMobileSidebarOpen(false)}
+            />
+          </Drawer>
+        )}
         
         {/* Modal Components */}
         {modalState.type === 'confirm' && (
