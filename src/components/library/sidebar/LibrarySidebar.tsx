@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
 import {
   Box,
   Paper,
@@ -38,6 +39,7 @@ export default function LibrarySidebar({
   onAuthorClick,
   onFilterApply,
 }: LibrarySidebarProps) {
+  const { data: session } = useSession()
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
   
@@ -75,6 +77,12 @@ export default function LibrarySidebar({
 
   // Fetch activity data
   const fetchActivityData = async () => {
+    if (!session?.user?.email) {
+      setError('Authentication required')
+      setLoading(false)
+      return
+    }
+
     try {
       setLoading(true)
       setError(null)
@@ -82,7 +90,7 @@ export default function LibrarySidebar({
       const apiUrl = getApiBaseUrl()
       const response = await fetch(`${apiUrl}/api/library/activity?limit=8`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth-email') || ''}`,
+          'Authorization': `Bearer ${session.user.email}`,
         },
       })
 
@@ -100,10 +108,12 @@ export default function LibrarySidebar({
     }
   }
 
-  // Load data on mount
+  // Load data when session is available
   useEffect(() => {
-    fetchActivityData()
-  }, [])
+    if (session?.user?.email) {
+      fetchActivityData()
+    }
+  }, [session?.user?.email])
 
   // Toggle collapsed state
   const toggleCollapsed = () => {
