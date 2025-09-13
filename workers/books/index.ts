@@ -1076,19 +1076,34 @@ export async function rateBook(request: Request, bookId: number, userId: string,
         }
       }
     } else {
-      // Check if there was a previously rejected review to mark its notification as read
-      const previousReviewStmt = env.DB.prepare(`
-        SELECT review_status FROM book_ratings WHERE book_id = ? AND user_id = ?
+      // Check existing review to properly handle status preservation
+      const existingReviewStmt = env.DB.prepare(`
+        SELECT review_text, review_status FROM book_ratings WHERE book_id = ? AND user_id = ?
       `);
-      const previousReview = await previousReviewStmt.bind(bookId, userId).first();
-      const wasPreviouslyRejected = (previousReview as any)?.review_status === 'rejected';
+      const existingReview = await existingReviewStmt.bind(bookId, userId).first();
+      const wasPreviouslyRejected = (existingReview as any)?.review_status === 'rejected';
       
-      // Determine review status based on user permissions and content
+      // Determine review status based on user permissions and content changes
       const isAdmin = await isUserAdmin(userId, env);
       const hasReviewText = reviewText && reviewText.trim().length > 0;
       
-      // Star ratings are always approved, written reviews need moderation (unless admin)
-      const reviewStatus = hasReviewText && !isAdmin ? 'pending' : 'approved';
+      // Check if review text has actually changed
+      const existingReviewText = (existingReview as any)?.review_text || '';
+      const newReviewText = reviewText?.trim() || '';
+      const reviewTextChanged = existingReviewText !== newReviewText;
+      
+      // Only require re-approval if review text has changed (star ratings never need approval)
+      let reviewStatus: string;
+      if (hasReviewText && !isAdmin && reviewTextChanged) {
+        // New or changed review text needs moderation
+        reviewStatus = 'pending';
+      } else if (existingReview && !reviewTextChanged) {
+        // Preserve existing status if only rating changed
+        reviewStatus = (existingReview as any).review_status || 'approved';
+      } else {
+        // No review text or admin user - auto approve
+        reviewStatus = 'approved';
+      }
       
       // Insert or update rating in book_ratings table
       const upsertRatingStmt = env.DB.prepare(`
