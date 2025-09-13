@@ -152,8 +152,8 @@ const BookCard = React.memo<BookCardProps>(({
             <AnimatedBookCover
               src={book.thumbnail}
               alt={book.title}
-              width={80}
-              height={120}
+              width={110}
+              height={165}
               borderRadius={1}
               objectFit="cover"
               cursor={onCoverEdit && userPermissions.includes('can_add_books') ? 'pointer' : 'default'}
@@ -495,12 +495,12 @@ const BookGrid = React.memo<BookGridProps>(({
     <Box sx={{ 
       display: 'grid', 
       gridTemplateColumns: { 
-        xs: 'repeat(auto-fit, minmax(350px, 1fr))', // Mobile: better minimum width, auto-fit (no empty columns)
-        sm: 'repeat(2, 1fr)', // Tablet: exactly 2 columns
-        lg: 'repeat(3, 1fr)' // Large Desktop: exactly 3 columns (1200px+)
+        xs: 'repeat(auto-fit, minmax(320px, 1fr))', // Mobile: single column with better minimum width
+        sm: 'repeat(2, 1fr)', // Tablet: 2 columns
+        md: 'repeat(2, 1fr)', // Medium: 2 columns (was 3, now 2 for wider cards)
+        lg: 'repeat(2, 1fr)' // Large Desktop: 2 columns (was 3, now 2 for wider cards)
       }, 
       gap: { xs: 2, sm: 2.5, lg: 3 },
-      padding: { xs: 1, sm: 1.5, lg: 2 },
       '& > *': {
         animation: 'fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
         animationFillMode: 'both',
