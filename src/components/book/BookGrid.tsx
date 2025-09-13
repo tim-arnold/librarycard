@@ -501,7 +501,6 @@ const BookGrid = React.memo<BookGridProps>(({
         lg: 'repeat(2, 1fr)' // Large Desktop: 2 columns (was 3, now 2 for wider cards)
       }, 
       gap: { xs: 2, sm: 2.5, lg: 3 },
-      padding: { xs: 1, sm: 1.5, lg: 2 },
       '& > *': {
         animation: 'fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
         animationFillMode: 'both',
