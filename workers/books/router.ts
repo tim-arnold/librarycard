@@ -399,7 +399,241 @@ export class BooksRouter {
       return await getBookRating(bookId, userId, env, corsHeaders);
     }
 
+    // Library activity endpoints for sidebar
+    if (path === '/api/library/activity' && request.method === 'GET') {
+      return await BooksRouter.getLibraryActivity(userId, env, corsHeaders, url);
+    }
+
     // Route not handled by books router
     return null;
+  }
+
+  /**
+   * Get library activity data for sidebar
+   */
+  static async getLibraryActivity(
+    userId: string,
+    env: Env,
+    corsHeaders: Record<string, string>,
+    url: URL
+  ): Promise<Response> {
+    try {
+      // Get query parameters for filtering
+      const limit = parseInt(url.searchParams.get('limit') || '10');
+      const includeReviews = url.searchParams.get('reviews') !== 'false';
+      const includeNew = url.searchParams.get('new') !== 'false';
+      const includePopular = url.searchParams.get('popular') !== 'false';
+      
+      // Get user's accessible locations
+      const userLocationsStmt = env.DB.prepare(`
+        SELECT DISTINCT l.id 
+        FROM locations l 
+        LEFT JOIN location_members lm ON l.id = lm.location_id 
+        WHERE l.owner_id = ? OR lm.user_id = ?
+      `);
+      const userLocations = await userLocationsStmt.bind(userId, userId).all();
+      const locationIds = userLocations.results.map((l: any) => l.id);
+      
+      if (locationIds.length === 0) {
+        return new Response(JSON.stringify({
+          recent_reviews: [],
+          newly_added: [],
+          popular_books: [],
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const results: any = {
+        recent_reviews: [],
+        newly_added: [],
+        popular_books: [],
+      };
+
+      // Get recent reviews (last 30 days)
+      if (includeReviews) {
+        const recentReviewsStmt = env.DB.prepare(`
+          SELECT 
+            br.id,
+            br.rating,
+            br.review_text as review,
+            br.created_at,
+            u.first_name,
+            u.last_name,
+            b.id as book_id,
+            b.title,
+            b.authors,
+            b.thumbnail,
+            b.description,
+            b.published_date,
+            b.categories,
+            b.tags,
+            s.name as shelf_name,
+            l.name as location_name
+          FROM book_ratings br
+          JOIN books b ON br.book_id = CAST(b.id AS INTEGER)
+          JOIN users u ON br.user_id = u.id
+          JOIN shelves s ON b.shelf_id = s.id
+          JOIN locations l ON s.location_id = l.id
+          WHERE l.id IN (${locationIds.map(() => '?').join(',')})
+            AND br.created_at > datetime('now', '-30 days')
+            AND (br.review_status = 'approved' OR br.review_status IS NULL)
+          ORDER BY br.created_at DESC
+          LIMIT ?
+        `);
+        
+        const recentReviews = await recentReviewsStmt.bind(...locationIds, limit).all();
+        
+        results.recent_reviews = recentReviews.results.map((review: any) => ({
+          id: `review-${review.id}`,
+          type: 'recent_review',
+          timestamp: review.created_at,
+          data: {
+            book: {
+              id: review.book_id.toString(),
+              title: review.title,
+              authors: JSON.parse(review.authors || '[]'),
+              thumbnail: review.thumbnail,
+              description: review.description,
+              publishedDate: review.published_date,
+              categories: JSON.parse(review.categories || '[]'),
+              tags: JSON.parse(review.tags || '[]'),
+              shelf_name: review.shelf_name,
+              location_name: review.location_name,
+            },
+            user: {
+              id: review.user_id,
+              first_name: review.first_name,
+              last_name: review.last_name,
+            },
+            rating: review.rating,
+            review: review.review,
+          },
+        }));
+      }
+
+      // Get newly added books (last 14 days)
+      if (includeNew) {
+        const newBooksStmt = env.DB.prepare(`
+          SELECT 
+            b.id,
+            b.title,
+            b.authors,
+            b.thumbnail,
+            b.description,
+            b.published_date,
+            b.categories,
+            b.tags,
+            b.created_at,
+            u.first_name,
+            u.last_name,
+            s.name as shelf_name,
+            l.name as location_name,
+            julianday('now') - julianday(b.created_at) as days_ago
+          FROM books b
+          JOIN users u ON b.added_by = u.id
+          JOIN shelves s ON b.shelf_id = s.id
+          JOIN locations l ON s.location_id = l.id
+          WHERE l.id IN (${locationIds.map(() => '?').join(',')})
+            AND b.created_at > datetime('now', '-14 days')
+          ORDER BY b.created_at DESC
+          LIMIT ?
+        `);
+        
+        const newBooks = await newBooksStmt.bind(...locationIds, limit).all();
+        
+        results.newly_added = newBooks.results.map((book: any) => ({
+          id: `new-${book.id}`,
+          type: 'newly_added',
+          timestamp: book.created_at,
+          data: {
+            book: {
+              id: book.id.toString(),
+              title: book.title,
+              authors: JSON.parse(book.authors || '[]'),
+              thumbnail: book.thumbnail,
+              description: book.description,
+              publishedDate: book.published_date,
+              categories: JSON.parse(book.categories || '[]'),
+              tags: JSON.parse(book.tags || '[]'),
+              shelf_name: book.shelf_name,
+              location_name: book.location_name,
+            },
+            user: {
+              first_name: book.first_name,
+              last_name: book.last_name,
+            },
+            action: 'added',
+            days_ago: Math.floor(book.days_ago),
+          },
+        }));
+      }
+
+      // Get popular books (most rated and highest average ratings)
+      if (includePopular) {
+        const popularBooksStmt = env.DB.prepare(`
+          SELECT 
+            b.id,
+            b.title,
+            b.authors,
+            b.thumbnail,
+            b.description,
+            b.published_date,
+            b.categories,
+            b.tags,
+            s.name as shelf_name,
+            l.name as location_name,
+            COUNT(br.id) as rating_count,
+            AVG(CAST(br.rating AS REAL)) as average_rating,
+            COUNT(CASE WHEN br.created_at > datetime('now', '-7 days') THEN 1 END) as recent_activity_count
+          FROM books b
+          JOIN shelves s ON b.shelf_id = s.id
+          JOIN locations l ON s.location_id = l.id
+          LEFT JOIN book_ratings br ON br.book_id = CAST(b.id AS INTEGER)
+          WHERE l.id IN (${locationIds.map(() => '?').join(',')})
+            AND br.id IS NOT NULL
+          GROUP BY b.id
+          HAVING rating_count >= 2
+          ORDER BY (average_rating * LOG(rating_count + 1) + recent_activity_count * 0.5) DESC
+          LIMIT ?
+        `);
+        
+        const popularBooks = await popularBooksStmt.bind(...locationIds, limit).all();
+        
+        results.popular_books = popularBooks.results.map((book: any) => ({
+          id: `popular-${book.id}`,
+          type: 'popular_book',
+          timestamp: new Date().toISOString(),
+          data: {
+            book: {
+              id: book.id.toString(),
+              title: book.title,
+              authors: JSON.parse(book.authors || '[]'),
+              thumbnail: book.thumbnail,
+              description: book.description,
+              publishedDate: book.published_date,
+              categories: JSON.parse(book.categories || '[]'),
+              tags: JSON.parse(book.tags || '[]'),
+              shelf_name: book.shelf_name,
+              location_name: book.location_name,
+            },
+            popularity_score: parseFloat((book.average_rating * Math.log(book.rating_count + 1) + book.recent_activity_count * 0.5).toFixed(2)),
+            rating_count: book.rating_count,
+            average_rating: book.average_rating ? parseFloat(book.average_rating.toFixed(1)) : null,
+            recent_activity_count: book.recent_activity_count,
+          },
+        }));
+      }
+
+      return new Response(JSON.stringify(results), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    } catch (error) {
+      console.error('Error getting library activity:', error);
+      return new Response(JSON.stringify({ error: 'Failed to get library activity' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
   }
 }
