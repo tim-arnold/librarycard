@@ -159,6 +159,7 @@ export default function LibrarySidebar({
         height: 'fit-content',
         maxHeight: 'calc(100vh - 100px)',
         width: sidebarWidth,
+        flexShrink: 0, // Prevent compression in flex container
         transition: 'width 0.3s ease',
         overflow: 'hidden',
         display: 'flex',

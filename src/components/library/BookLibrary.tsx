@@ -472,17 +472,11 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
         }}>
           {/* Sidebar - Hidden on mobile, collapsible on larger screens */}
           {!isMobile && (
-            <Box sx={{ 
-              flexShrink: 0,
-              width: { md: '320px' }, // Fixed width for sidebar
-              maxWidth: '320px'
-            }}>
-              <LibrarySidebar
-                onBookClick={handleSidebarBookClick}
-                onAuthorClick={handleSidebarAuthorClick}
-                onFilterApply={handleSidebarFilterApply}
-              />
-            </Box>
+            <LibrarySidebar
+              onBookClick={handleSidebarBookClick}
+              onAuthorClick={handleSidebarAuthorClick}
+              onFilterApply={handleSidebarFilterApply}
+            />
           )}
           
           {/* Main Book Content */}
