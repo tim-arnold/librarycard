@@ -364,3 +364,65 @@ export interface PendingSeriesWithCreator extends Series {
 export interface PendingSeriesResponse {
   series: PendingSeriesWithCreator[]
 }
+
+// Library Activity Sidebar Types
+
+export interface ActivityItem {
+  id: string
+  type: 'recent_review' | 'newly_added' | 'popular_book' | 'checkout_activity'
+  timestamp: string
+  data: ActivityItemData
+}
+
+export interface ActivityItemData {
+  book: EnhancedBook
+  user?: {
+    id: string
+    first_name?: string
+    last_name?: string
+  }
+  rating?: number
+  review?: string
+  action?: 'added' | 'checked_out' | 'checked_in' | 'rated'
+  popularity_score?: number
+  days_ago?: number
+  rating_count?: number
+  average_rating?: number
+  recent_activity_count?: number
+}
+
+export interface LibraryActivityResponse {
+  recent_reviews: ActivityItem[]
+  newly_added: ActivityItem[]
+  popular_books: ActivityItem[]
+  checkout_activity: ActivityItem[]
+}
+
+export interface RecentReview {
+  id: number
+  book: EnhancedBook
+  user_name?: string
+  rating: number
+  review?: string
+  created_at: string
+}
+
+export interface NewlyAddedBook {
+  book: EnhancedBook
+  added_by_name?: string
+  days_ago: number
+  created_at: string
+}
+
+export interface PopularBook {
+  book: EnhancedBook
+  popularity_score: number
+  rating_count: number
+  average_rating?: number
+  recent_activity_count: number
+}
+
+export interface SidebarPreferences {
+  collapsed: boolean
+  activeSection?: 'reviews' | 'new' | 'popular' | 'activity'
+}

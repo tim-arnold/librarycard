@@ -146,7 +146,7 @@ export class MainRouter {
       }
 
       // Books endpoints
-      if (path.startsWith('/api/books') || path.startsWith('/api/book-')) {
+      if (path.startsWith('/api/books') || path.startsWith('/api/book-') || path.startsWith('/api/library')) {
         const booksResponse = await BooksRouter.handleBooksEndpoints(
           request, env, corsHeaders, userId
         );
