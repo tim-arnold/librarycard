@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Alert, Typography, Box, CircularProgress } from '@mui/material'
+import { Alert, Typography, Box, CircularProgress, useTheme, useMediaQuery } from '@mui/material'
 import { LibraryBooks } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
 import { useModal } from '@/hooks/useModal'
@@ -24,6 +24,7 @@ import LibraryHeader from './LibraryHeader'
 import ActiveFilters from './ActiveFilters'
 import ViewModeControls from './ViewModeControls'
 import BookViews from './BookViews'
+import LibrarySidebar from './sidebar/LibrarySidebar'
 import PageContainer from '../layout/PageContainer'
 
 interface BookLibraryProps {
@@ -37,6 +38,8 @@ interface BookLibraryProps {
 }
 
 export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
   const { modalState, confirmAsync, alert, closeModal } = useModal()
   
   // Core data and state from hooks
@@ -188,6 +191,34 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
   const handleSeriesClick = (seriesName: string) => {
     // Use the dedicated series filter for precise filtering
     setSeriesFilter(seriesName)
+  }
+
+  // Sidebar handlers
+  const handleSidebarBookClick = (bookId: string) => {
+    const book = books.find(b => b.id === bookId)
+    if (book) {
+      handleMoreDetailsClick(book)
+    }
+  }
+
+  const handleSidebarAuthorClick = (authorName: string) => {
+    handleAuthorClick(authorName)
+  }
+
+  const handleSidebarFilterApply = (filterType: string, value: string) => {
+    switch (filterType) {
+      case 'shelf':
+        setShelfFilter(value)
+        break
+      case 'category':
+        setCategoryFilter([value])
+        break
+      case 'author':
+        setAuthorFilter(value)
+        break
+      default:
+        console.warn('Unknown filter type from sidebar:', filterType)
+    }
   }
 
   // Handle book relocation
@@ -432,8 +463,32 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
           onBooksPerPageChange={handleBooksPerPageChange}
         />
 
-        <div data-tour="book-grid">
-          <BookViews
+        {/* Main Content Layout */}
+        <Box sx={{ 
+          display: 'flex',
+          gap: 2,
+          alignItems: 'flex-start',
+          flexDirection: { xs: 'column', md: 'row' }
+        }}>
+          {/* Sidebar - Hidden on mobile, collapsible on larger screens */}
+          {!isMobile && (
+            <Box sx={{ 
+              flexShrink: 0,
+              width: { md: '320px' }, // Fixed width for sidebar
+              maxWidth: '320px'
+            }}>
+              <LibrarySidebar
+                onBookClick={handleSidebarBookClick}
+                onAuthorClick={handleSidebarAuthorClick}
+                onFilterApply={handleSidebarFilterApply}
+              />
+            </Box>
+          )}
+          
+          {/* Main Book Content */}
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <div data-tour="book-grid">
+              <BookViews
             viewMode={viewMode}
             userRole={userRole}
             userPermissions={userPermissions}
@@ -471,7 +526,9 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
             getTotalPages={getTotalPages}
             getPaginatedBooksForView={getPaginatedBooksForView}
           />
-        </div>
+            </div>
+          </Box>
+        </Box>
         
         {/* Modal Components */}
         {modalState.type === 'confirm' && (
