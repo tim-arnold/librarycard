@@ -107,15 +107,16 @@ export async function createLocation(request: Request, userId: string, env: Env,
   
   // Create location
   const locationStmt = env.DB.prepare(`
-    INSERT INTO locations (name, description, owner_id, single_shelf_location, created_at)
-    VALUES (?, ?, ?, ?, datetime('now'))
+    INSERT INTO locations (name, description, owner_id, single_shelf_location, activity_visibility, created_at)
+    VALUES (?, ?, ?, ?, ?, datetime('now'))
   `);
 
   const locationResult = await locationStmt.bind(
     location.name,
     location.description || null,
     userId,
-    location.single_shelf_location || false
+    location.single_shelf_location || false,
+    location.activity_visibility || 'private'
   ).run();
 
   const locationId = locationResult.meta.last_row_id;
@@ -168,8 +169,8 @@ export async function updateLocation(request: Request, userId: string, env: Env,
   }
 
   const stmt = env.DB.prepare(`
-    UPDATE locations 
-    SET name = ?, description = ?, single_shelf_location = ?, updated_at = datetime('now')
+    UPDATE locations
+    SET name = ?, description = ?, single_shelf_location = ?, activity_visibility = ?, updated_at = datetime('now')
     WHERE id = ?
   `);
 
@@ -177,6 +178,7 @@ export async function updateLocation(request: Request, userId: string, env: Env,
     location.name,
     location.description || null,
     location.single_shelf_location || false,
+    location.activity_visibility || 'private',
     id
   ).run();
 
