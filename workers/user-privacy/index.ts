@@ -279,7 +279,7 @@ export async function bulkUpdateActivityPrivacy(
     const results = [];
     for (const update of updates) {
       try {
-        await setActivityPrivacy(update.activity_type, update.activity_id, userId, update.is_anonymous, env);
+        await setActivityPrivacy(userId, update.activity_type, update.activity_id, update.is_anonymous, env);
         results.push({
           activity_type: update.activity_type,
           activity_id: update.activity_id,
@@ -290,7 +290,7 @@ export async function bulkUpdateActivityPrivacy(
           activity_type: update.activity_type,
           activity_id: update.activity_id,
           success: false,
-          error: error.message
+          error: error instanceof Error ? error.message : String(error)
         });
       }
     }
