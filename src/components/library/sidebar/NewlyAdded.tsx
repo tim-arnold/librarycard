@@ -32,10 +32,10 @@ export default function NewlyAdded({
     return (
       <Box sx={{ p: 2, textAlign: 'center' }}>
         <Typography variant="body2" color="text.secondary">
-          No recently added books
+          Nothing new in the last 14 days
         </Typography>
         <Typography variant="caption" color="text.secondary">
-          New books will appear here
+          Build the community and add some books yourself!
         </Typography>
       </Box>
     )
