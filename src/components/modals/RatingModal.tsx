@@ -167,10 +167,12 @@ export default function RatingModal({
             sx={{ mb: 1 }}
           />
           
-          {/* Moderation Notice */}
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2, fontStyle: 'italic' }}>
-            Reviews will be submitted for moderation, while star ratings will be registered immediately.
-          </Typography>
+          {/* Moderation Notice - only show for books without approved text reviews */}
+          {!(currentReviewStatus === 'approved' && currentReview) && (
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2, fontStyle: 'italic' }}>
+              Reviews will be submitted for moderation, while star ratings will be registered immediately.
+            </Typography>
+          )}
           
           {/* Review Status Messages */}
           {currentReviewStatus === 'pending' && (
@@ -187,7 +189,7 @@ export default function RatingModal({
           
           {currentReviewStatus === 'approved' && currentReview && (
             <Alert severity="success" sx={{ mb: 2 }}>
-              Your review has been approved. You can edit it, and changes will be resubmitted for approval.
+              Your review has been approved. You can edit it, and changes will be resubmitted for approval. Changes to star ratings do not require approval.
             </Alert>
           )}
         </Box>
