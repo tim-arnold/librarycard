@@ -35,6 +35,9 @@ export interface User {
   email_verification_token?: string;
   email_verification_expires?: string;
   user_role?: string;
+  // Privacy & Display Settings (LCWEB-174)
+  display_name_preference?: 'first_name' | 'full_name' | 'email' | 'custom_username' | 'anonymous';
+  custom_username?: string;
   // 2FA fields
   totp_secret?: string;
   totp_enabled?: boolean;
@@ -48,6 +51,8 @@ export interface Location {
   description?: string;
   owner_id: string;
   single_shelf_location?: boolean;
+  // Privacy Settings (LCWEB-174)
+  activity_visibility?: 'private' | 'public';
 }
 
 export interface Shelf {
@@ -87,6 +92,8 @@ export interface Book {
   alternative_covers?: string | any[]; // JSON string or array
   selected_cover_source?: string | any; // JSON string or object
   cover_selection_date?: string;
+  // Privacy fields (LCWEB-174)
+  added_by_anonymous?: boolean;
   // Frontend camelCase aliases
   publishedDate?: string;
   extendedDescription?: string;
@@ -396,4 +403,38 @@ export interface TwoFactorStatus {
   enabled: boolean;
   enabledAt: string | null;
   backupCodes: BackupCodesStatus;
+}
+
+// Privacy & Display Settings Types (LCWEB-174)
+export type DisplayNamePreference = 'first_name' | 'full_name' | 'email' | 'custom_username' | 'anonymous';
+export type ActivityVisibility = 'private' | 'public';
+export type ActivityType = 'book_addition' | 'review' | 'checkout';
+
+export interface UserActivityPrivacy {
+  id: number;
+  user_id: string;
+  activity_type: ActivityType;
+  activity_id: string;
+  is_anonymous: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DisplayNameOptions {
+  first_name?: string;
+  full_name?: string;
+  email?: string;
+  custom_username?: string;
+}
+
+export interface PrivacySettings {
+  locationPrivacy: ActivityVisibility;
+  userDisplayPreference: DisplayNamePreference;
+  customUsername?: string;
+}
+
+export interface UserDisplayInfo {
+  displayName: string;
+  isAnonymous: boolean;
+  canViewRealName: boolean;
 }
