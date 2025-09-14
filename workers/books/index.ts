@@ -1290,41 +1290,102 @@ export async function getBookRating(bookId: number, userId: string, env: Env, co
 
     // Get all reviews for this book
     let allReviewsStmt;
-    
+
     if (isAdmin) {
       // Admins can see all approved reviews for any book
       allReviewsStmt = env.DB.prepare(`
-        SELECT 
-          br.rating, br.review_text, br.created_at, br.updated_at,
-          u.first_name as user_name
+        SELECT DISTINCT
+          br.id,
+          br.rating,
+          br.review_text,
+          br.created_at,
+          br.updated_at,
+          br.user_id,
+          br.reviewer_anonymous,
+          u.id as user_id,
+          u.email,
+          u.first_name,
+          u.last_name,
+          u.display_name_preference,
+          u.custom_username,
+          l.id as location_id,
+          l.activity_visibility
         FROM book_ratings br
         INNER JOIN users u ON br.user_id = u.id
-        WHERE br.book_id = ? 
+        INNER JOIN books b ON br.book_id = b.id
+        INNER JOIN shelves s ON b.shelf_id = s.id
+        INNER JOIN locations l ON s.location_id = l.id
+        WHERE br.book_id = ?
           AND br.review_text IS NOT NULL AND br.review_text != ''
           AND br.review_status = 'approved'
-        ORDER BY br.created_at DESC
+        GROUP BY br.user_id
+        ORDER BY MAX(br.updated_at) DESC
       `);
     } else {
       // Regular users see approved reviews from users with location access
       allReviewsStmt = env.DB.prepare(`
-        SELECT 
-          br.rating, br.review_text, br.created_at, br.updated_at,
-          u.first_name as user_name
+        SELECT DISTINCT
+          br.id,
+          br.rating,
+          br.review_text,
+          br.created_at,
+          br.updated_at,
+          br.user_id,
+          br.reviewer_anonymous,
+          u.id as user_id,
+          u.email,
+          u.first_name,
+          u.last_name,
+          u.display_name_preference,
+          u.custom_username,
+          l.id as location_id,
+          l.activity_visibility
         FROM book_ratings br
         INNER JOIN books b ON br.book_id = b.id
         INNER JOIN shelves s ON b.shelf_id = s.id
         INNER JOIN locations l ON s.location_id = l.id
         LEFT JOIN location_members lm ON l.id = lm.location_id
         INNER JOIN users u ON br.user_id = u.id
-        WHERE br.book_id = ? 
+        WHERE br.book_id = ?
           AND (b.added_by = br.user_id OR l.owner_id = br.user_id OR lm.user_id = br.user_id)
           AND br.review_text IS NOT NULL AND br.review_text != ''
           AND br.review_status = 'approved'
-        ORDER BY br.created_at DESC
+        GROUP BY br.user_id
+        ORDER BY MAX(br.updated_at) DESC
       `);
     }
 
     const reviewsResult = await allReviewsStmt.bind(bookId).all();
+
+    // Apply privacy settings to each review
+    const { getUserDisplayInfo } = await import('../privacy');
+    const privacyAwareReviews = [];
+
+    for (const review of reviewsResult.results || []) {
+      const user = {
+        id: review.user_id,
+        email: review.email,
+        first_name: review.first_name,
+        last_name: review.last_name,
+        display_name_preference: review.display_name_preference,
+        custom_username: review.custom_username
+      };
+
+      // Get privacy-aware user display info
+      const userDisplayInfo = await getUserDisplayInfo(
+        user,
+        userId,
+        review.location_id,
+        'review',
+        review.id.toString(),
+        env
+      );
+
+      privacyAwareReviews.push({
+        ...review,
+        user_name: userDisplayInfo.displayName
+      });
+    }
 
     return new Response(JSON.stringify({
       book_id: bookId,
@@ -1334,7 +1395,7 @@ export async function getBookRating(bookId: number, userId: string, env: Env, co
       average_rating: bookRating.average_rating || null,
       rating_count: bookRating.rating_count || 0,
       location_id: bookRating.location_id,
-      all_ratings: reviewsResult.results || []
+      all_ratings: privacyAwareReviews
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
