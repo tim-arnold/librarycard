@@ -486,6 +486,8 @@ export class BooksRouter {
           JOIN locations l ON s.location_id = l.id
           WHERE l.id IN (${locationIds.map(() => '?').join(',')})
             AND br.created_at > datetime('now', '-30 days')
+            AND br.review_text IS NOT NULL
+            AND br.review_text != ''
             AND (br.review_status = 'approved' OR br.review_status IS NULL)
           ORDER BY br.created_at DESC
           LIMIT ?
