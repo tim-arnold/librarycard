@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { getApiBaseUrl } from '@/lib/apiConfig'
-import { authenticatedApiCall } from '@/lib/api'
 import {
   Container,
   Paper,
@@ -145,14 +144,24 @@ export default function ProfilePage() {
         custom_username: formData.custom_username
       }
 
-      // Send both requests
+      // Send both requests using direct fetch (matching the existing profile pattern)
       const [profileResponse, displayResponse] = await Promise.all([
-        authenticatedApiCall('/api/profile', {
+        fetch(`${getApiBaseUrl()}/api/profile`, {
           method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${session?.user?.email}`,
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+          },
           body: JSON.stringify(profileUpdateData)
         }),
-        authenticatedApiCall('/api/user/display-preferences', {
+        fetch(`${getApiBaseUrl()}/api/user/display-preferences`, {
           method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${session?.user?.email}`,
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+          },
           body: JSON.stringify(displayUpdateData)
         })
       ])
