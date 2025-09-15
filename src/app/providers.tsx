@@ -5,6 +5,7 @@ import { ThemeContextProvider } from '@/lib/ThemeContext'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import PerformanceTracker from '@/components/performance/PerformanceTracker'
 import inputEventDebug from '@/lib/inputEventDebug'
+import { UserDataProvider } from '@/contexts/UserDataContext'
 import { useState, useEffect } from 'react'
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -46,9 +47,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <SessionProvider>
       <QueryClientProvider client={queryClient}>
         <ThemeContextProvider>
-          {children}
-          {/* Performance monitoring */}
-          <PerformanceTracker />
+          <UserDataProvider>
+            {children}
+            {/* Performance monitoring */}
+            <PerformanceTracker />
+          </UserDataProvider>
         </ThemeContextProvider>
       </QueryClientProvider>
     </SessionProvider>
