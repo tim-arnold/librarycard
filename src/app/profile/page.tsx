@@ -51,6 +51,7 @@ export default function ProfilePage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
+
   const [formData, setFormData] = useState({
     email: '',
     first_name: '',
@@ -168,12 +169,15 @@ export default function ProfilePage() {
       ])
 
       if (profileResponse.ok && displayResponse.ok) {
-        setSuccess('Profile and display preferences updated successfully!')
-
-        // Auto-dismiss success message after 5 seconds
+        // Use setTimeout to set success message after current execution completes
         setTimeout(() => {
-          setSuccess('')
-        }, 5000)
+          setSuccess('Profile and display preferences updated successfully!')
+
+          // Auto-dismiss success message after 5 seconds
+          setTimeout(() => {
+            setSuccess('')
+          }, 5000)
+        }, 10)
       } else {
         // Handle individual response errors
         let errorMessages = []
@@ -272,12 +276,6 @@ export default function ProfilePage() {
               {error}
             </Alert>
           )}
-          
-          {success && (
-            <Alert severity="success" onClose={() => setSuccess('')}>
-              {success}
-            </Alert>
-          )}
 
           <TextField
             fullWidth
@@ -374,6 +372,12 @@ export default function ProfilePage() {
               helperText="Choose a unique username (3-30 characters, letters, numbers, and underscores only)"
               inputProps={{ maxLength: 30 }}
             />
+          )}
+
+          {success && (
+            <Alert severity="success" onClose={() => setSuccess('')} sx={{ mb: 2 }}>
+              {success}
+            </Alert>
           )}
 
           <Button
