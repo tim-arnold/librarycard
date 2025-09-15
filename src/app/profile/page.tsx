@@ -54,6 +54,9 @@ export default function ProfilePage() {
   // Debug success state changes
   useEffect(() => {
     console.log('Success state changed:', success)
+    if (success === '') {
+      console.trace('Success message cleared by:')
+    }
   }, [success])
   const [formData, setFormData] = useState({
     email: '',
@@ -177,7 +180,11 @@ export default function ProfilePage() {
       if (profileResponse.ok && displayResponse.ok) {
         console.log('Setting success message...')
         setSuccess('Profile and display preferences updated successfully!')
-        fetchProfile() // Refresh profile data
+
+        // Refresh profile data after a short delay to avoid interfering with success message
+        setTimeout(() => {
+          fetchProfile()
+        }, 100)
 
         // Auto-dismiss success message after 5 seconds
         setTimeout(() => {
