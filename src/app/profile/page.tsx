@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { getApiBaseUrl } from '@/lib/apiConfig'
-import { authenticatedApiCall } from '@/lib/api'
 import {
   Container,
   Paper,
@@ -14,6 +13,12 @@ import {
   TextField,
   Alert,
   CircularProgress,
+  FormControl,
+  FormLabel,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
+  Divider,
 } from '@mui/material'
 import {
   ArrowBack,
@@ -32,6 +37,8 @@ interface ProfileData {
   last_name: string
   auth_provider: string
   user_role: string
+  display_name_preference: string
+  custom_username?: string
 }
 
 export default function ProfilePage() {
@@ -43,10 +50,14 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+
+
   const [formData, setFormData] = useState({
     email: '',
     first_name: '',
-    last_name: ''
+    last_name: '',
+    display_name_preference: 'first_name',
+    custom_username: ''
   })
 
 
@@ -63,19 +74,39 @@ export default function ProfilePage() {
 
   const fetchProfile = async () => {
     try {
-      const response = await fetch(`${getApiBaseUrl()}/api/profile`, {
-        headers: {
-          'Authorization': `Bearer ${session?.user?.email}`,
-          'Content-Type': 'application/json',
-        },
-      })
-      if (response.ok) {
-        const profileData = await response.json()
-        setProfile(profileData)
+      // Fetch both profile and display preferences
+      const [profileResponse, displayResponse] = await Promise.all([
+        fetch(`${getApiBaseUrl()}/api/profile`, {
+          headers: {
+            'Authorization': `Bearer ${session?.user?.email}`,
+            'Content-Type': 'application/json',
+          },
+        }),
+        fetch(`${getApiBaseUrl()}/api/user/display-preferences`, {
+          headers: {
+            'Authorization': `Bearer ${session?.user?.email}`,
+            'Content-Type': 'application/json',
+          },
+        })
+      ])
+
+      if (profileResponse.ok) {
+        const profileData = await profileResponse.json()
+        const displayData = displayResponse.ok ? await displayResponse.json() : {}
+
+        const combinedData = {
+          ...profileData,
+          display_name_preference: displayData.display_name_preference || 'first_name',
+          custom_username: displayData.custom_username || ''
+        }
+
+        setProfile(combinedData)
         setFormData({
-          email: profileData.email || '',
-          first_name: profileData.first_name || '',
-          last_name: profileData.last_name || ''
+          email: combinedData.email || '',
+          first_name: combinedData.first_name || '',
+          last_name: combinedData.last_name || '',
+          display_name_preference: combinedData.display_name_preference,
+          custom_username: combinedData.custom_username
         })
       } else {
         setError('Failed to load profile data')
@@ -94,7 +125,8 @@ export default function ProfilePage() {
     setSuccess('')
 
     try {
-      const updateData: {
+      // Update profile data
+      const profileUpdateData: {
         first_name: string
         last_name: string
         email?: string
@@ -105,23 +137,73 @@ export default function ProfilePage() {
 
       // Only include email for email/password users
       if (profile?.auth_provider === 'email') {
-        updateData.email = formData.email
+        profileUpdateData.email = formData.email
       }
 
-      const response = await authenticatedApiCall('/api/profile', {
-        method: 'PUT',
-        body: JSON.stringify(updateData)
-      })
+      // Update display preferences
+      const displayUpdateData = {
+        display_name_preference: formData.display_name_preference,
+        custom_username: formData.custom_username
+      }
 
-      if (response.ok) {
-        setSuccess('Profile updated successfully!')
-        fetchProfile() // Refresh profile data
+      // Send both requests using direct fetch (matching the existing profile pattern)
+      const [profileResponse, displayResponse] = await Promise.all([
+        fetch(`${getApiBaseUrl()}/api/profile`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${session?.user?.email}`,
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+          body: JSON.stringify(profileUpdateData)
+        }),
+        fetch(`${getApiBaseUrl()}/api/user/display-preferences`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${session?.user?.email}`,
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+          body: JSON.stringify(displayUpdateData)
+        })
+      ])
+
+      if (profileResponse.ok && displayResponse.ok) {
+        // Use setTimeout to set success message after current execution completes
+        setTimeout(() => {
+          setSuccess('Profile and display preferences updated successfully!')
+
+          // Auto-dismiss success message after 5 seconds
+          setTimeout(() => {
+            setSuccess('')
+          }, 5000)
+        }, 10)
       } else {
-        const errorData = await response.json()
-        setError(errorData.error || 'Failed to update profile')
+        // Handle individual response errors
+        let errorMessages = []
+
+        if (!profileResponse.ok) {
+          try {
+            const profileError = await profileResponse.json()
+            errorMessages.push(`Profile: ${profileError.error || 'Update failed'}`)
+          } catch {
+            errorMessages.push(`Profile: HTTP ${profileResponse.status}`)
+          }
+        }
+
+        if (!displayResponse.ok) {
+          try {
+            const displayError = await displayResponse.json()
+            errorMessages.push(`Display preferences: ${displayError.error || 'Update failed'}`)
+          } catch {
+            errorMessages.push(`Display preferences: HTTP ${displayResponse.status}`)
+          }
+        }
+
+        setError(errorMessages.join(', ') || 'Failed to update settings')
       }
     } catch {
-      setError('Failed to update profile')
+      setError('Failed to update settings')
     } finally {
       setSaving(false)
     }
@@ -132,6 +214,14 @@ export default function ProfilePage() {
     setFormData(prev => ({
       ...prev,
       [name]: value
+    }))
+  }
+
+  const handleDisplayPreferenceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setFormData(prev => ({
+      ...prev,
+      display_name_preference: value
     }))
   }
 
@@ -186,12 +276,6 @@ export default function ProfilePage() {
               {error}
             </Alert>
           )}
-          
-          {success && (
-            <Alert severity="success" onClose={() => setSuccess('')}>
-              {success}
-            </Alert>
-          )}
 
           <TextField
             fullWidth
@@ -226,6 +310,75 @@ export default function ProfilePage() {
             onChange={handleInputChange}
             variant="outlined"
           />
+
+          <Divider sx={{ my: 2 }} />
+
+          <Typography variant="h6" gutterBottom>
+            Display Preferences
+          </Typography>
+
+          <Alert severity="info" sx={{ mb: 2 }}>
+            <Typography variant="body2">
+              Control how your name appears in public locations when activity visibility is enabled.
+              These settings only apply to locations where privacy is set to "public".
+            </Typography>
+          </Alert>
+
+          <FormControl component="fieldset" sx={{ mb: 2 }}>
+            <FormLabel component="legend">When my name appears, show:</FormLabel>
+            <RadioGroup
+              value={formData.display_name_preference}
+              onChange={handleDisplayPreferenceChange}
+              sx={{ mt: 1 }}
+            >
+              <FormControlLabel
+                value="first_name"
+                control={<Radio />}
+                label={`First name only (${formData.first_name || 'e.g., "John"'})`}
+              />
+              <FormControlLabel
+                value="full_name"
+                control={<Radio />}
+                label={`Full name (${formData.first_name} ${formData.last_name || 'Smith'})`}
+              />
+              <FormControlLabel
+                value="email"
+                control={<Radio />}
+                label={`Email address (${formData.email})`}
+              />
+              <FormControlLabel
+                value="custom_username"
+                control={<Radio />}
+                label="Custom username"
+              />
+              <FormControlLabel
+                value="anonymous"
+                control={<Radio />}
+                label='Always anonymous ("Library Member")'
+              />
+            </RadioGroup>
+          </FormControl>
+
+          {formData.display_name_preference === 'custom_username' && (
+            <TextField
+              fullWidth
+              type="text"
+              label="Custom Username"
+              name="custom_username"
+              value={formData.custom_username}
+              onChange={handleInputChange}
+              variant="outlined"
+              sx={{ mb: 2 }}
+              helperText="Choose a unique username (3-30 characters, letters, numbers, and underscores only)"
+              inputProps={{ maxLength: 30 }}
+            />
+          )}
+
+          {success && (
+            <Alert severity="success" onClose={() => setSuccess('')} sx={{ mb: 2 }}>
+              {success}
+            </Alert>
+          )}
 
           <Button
             type="submit"

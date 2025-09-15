@@ -5,6 +5,10 @@ import {
   getDashboardData,
   getUserRejectedReviews
 } from '../profile';
+import {
+  getUserDisplayPreferences,
+  updateUserDisplayPreferences
+} from '../user-privacy';
 
 /**
  * Profile Router - Handles all user profile and dashboard endpoints
@@ -32,6 +36,15 @@ export class ProfileRouter {
 
     if (path === '/api/user/rejected-reviews' && request.method === 'GET') {
       return await getUserRejectedReviews(userId, env, corsHeaders);
+    }
+
+    // User display preferences endpoints
+    if (path === '/api/user/display-preferences' && request.method === 'GET') {
+      return await getUserDisplayPreferences(userId, env, corsHeaders);
+    }
+
+    if (path === '/api/user/display-preferences' && request.method === 'PUT') {
+      return await updateUserDisplayPreferences(request, userId, env, corsHeaders);
     }
 
     // Batched dashboard endpoint - combines all initial page load data

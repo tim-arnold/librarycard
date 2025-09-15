@@ -20,6 +20,10 @@ import {
   DialogContent,
   DialogActions,
   FormControlLabel,
+  FormControl,
+  FormLabel,
+  RadioGroup,
+  Radio,
   Checkbox,
   List,
   ListItem,
@@ -56,6 +60,7 @@ interface Location {
   owner_id: string
   created_at: string
   single_shelf_location?: boolean
+  activity_visibility?: 'private' | 'public'
   book_count?: number
   shelf_count?: number
   owner_name?: string
@@ -81,6 +86,7 @@ export default function LocationManager() {
   const [newLocationName, setNewLocationName] = useState('')
   const [newLocationDescription, setNewLocationDescription] = useState('')
   const [newLocationSingleShelf, setNewLocationSingleShelf] = useState(false)
+  const [newLocationActivityVisibility, setNewLocationActivityVisibility] = useState<'private' | 'public'>('private')
   const [editingLocation, setEditingLocation] = useState<Location | null>(null)
   const [editingShelf, setEditingShelf] = useState<Shelf | null>(null)
   const [showShelfForm, setShowShelfForm] = useState(false)
@@ -200,6 +206,7 @@ export default function LocationManager() {
           name: newLocationName.trim(),
           description: newLocationDescription.trim() || null,
           single_shelf_location: newLocationSingleShelf,
+          activity_visibility: newLocationActivityVisibility,
         }),
       })
 
@@ -209,6 +216,8 @@ export default function LocationManager() {
         setSelectedLocation(newLocation)
         setNewLocationName('')
         setNewLocationDescription('')
+        setNewLocationSingleShelf(false)
+        setNewLocationActivityVisibility('private')
         setShowCreateForm(false)
         // The API will create default shelves, so reload them
         await loadShelves(newLocation.id)
@@ -234,6 +243,7 @@ export default function LocationManager() {
           name: newLocationName.trim(),
           description: newLocationDescription.trim() || null,
           single_shelf_location: newLocationSingleShelf,
+          activity_visibility: newLocationActivityVisibility,
         }),
       })
 
@@ -244,6 +254,7 @@ export default function LocationManager() {
         setNewLocationName('')
         setNewLocationDescription('')
         setNewLocationSingleShelf(false)
+        setNewLocationActivityVisibility('private')
         setShowCreateForm(false)
       } else {
         const errorData = await response.json()
@@ -367,6 +378,7 @@ export default function LocationManager() {
     setNewLocationName(location.name)
     setNewLocationDescription(location.description || '')
     setNewLocationSingleShelf(location.single_shelf_location || false)
+    setNewLocationActivityVisibility(location.activity_visibility || 'private')
     setShowCreateForm(true)
     // Check permissions for the specific location being edited
     checkLocationManagePermission(location.id)
@@ -840,11 +852,42 @@ export default function LocationManager() {
                 label="Single shelf location"
               />
               <Typography variant="caption" color="text.secondary" sx={{ mt: -1, mb: 1, display: 'block' }}>
-                {editingLocation && shelves.length > 1 
+                {editingLocation && shelves.length > 1
                   ? "Cannot enable single shelf mode when multiple shelves exist. Delete shelves to enable this option."
                   : "When enabled, this location will operate with only one shelf. Users cannot create additional shelves or move books between shelves."
                 }
               </Typography>
+
+              <Divider sx={{ my: 2 }} />
+
+              <FormControl component="fieldset" sx={{ width: '100%' }}>
+                <FormLabel component="legend" sx={{ mb: 1, fontWeight: 'bold' }}>
+                  Privacy Settings
+                </FormLabel>
+                <RadioGroup
+                  value={newLocationActivityVisibility}
+                  onChange={(e) => setNewLocationActivityVisibility(e.target.value as 'private' | 'public')}
+                >
+                  <FormControlLabel
+                    value="private"
+                    control={<Radio />}
+                    label="Private Activity (Anonymous)"
+                    sx={{ mb: 0.5 }}
+                  />
+                  <Typography variant="caption" color="text.secondary" sx={{ ml: 4, mb: 2, display: 'block' }}>
+                    All user activity (book additions, reviews, checkouts) will be anonymous to other members. Only "Library Member" will be shown.
+                  </Typography>
+
+                  <FormControlLabel
+                    value="public"
+                    control={<Radio />}
+                    label="Public Activity with Privacy Controls"
+                  />
+                  <Typography variant="caption" color="text.secondary" sx={{ ml: 4, mb: 1, display: 'block' }}>
+                    Users can choose how their names appear and can set individual activities as anonymous. Members will see each other's activity based on their privacy preferences.
+                  </Typography>
+                </RadioGroup>
+              </FormControl>
             </Box>
           </DialogContent>
           <DialogActions>
@@ -855,6 +898,7 @@ export default function LocationManager() {
                 setNewLocationName('')
                 setNewLocationDescription('')
                 setNewLocationSingleShelf(false)
+                setNewLocationActivityVisibility('private')
               }}
               startIcon={<Cancel />}
             >
