@@ -50,6 +50,11 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+
+  // Debug success state changes
+  useEffect(() => {
+    console.log('Success state changed:', success)
+  }, [success])
   const [formData, setFormData] = useState({
     email: '',
     first_name: '',
@@ -166,14 +171,41 @@ export default function ProfilePage() {
         })
       ])
 
+      console.log('Profile response:', profileResponse.status, profileResponse.ok)
+      console.log('Display response:', displayResponse.status, displayResponse.ok)
+
       if (profileResponse.ok && displayResponse.ok) {
+        console.log('Setting success message...')
         setSuccess('Profile and display preferences updated successfully!')
         fetchProfile() // Refresh profile data
+
+        // Auto-dismiss success message after 5 seconds
+        setTimeout(() => {
+          setSuccess('')
+        }, 5000)
       } else {
-        const profileError = profileResponse.ok ? null : await profileResponse.json()
-        const displayError = displayResponse.ok ? null : await displayResponse.json()
-        const errorMessage = profileError?.error || displayError?.error || 'Failed to update settings'
-        setError(errorMessage)
+        // Handle individual response errors
+        let errorMessages = []
+
+        if (!profileResponse.ok) {
+          try {
+            const profileError = await profileResponse.json()
+            errorMessages.push(`Profile: ${profileError.error || 'Update failed'}`)
+          } catch {
+            errorMessages.push(`Profile: HTTP ${profileResponse.status}`)
+          }
+        }
+
+        if (!displayResponse.ok) {
+          try {
+            const displayError = await displayResponse.json()
+            errorMessages.push(`Display preferences: ${displayError.error || 'Update failed'}`)
+          } catch {
+            errorMessages.push(`Display preferences: HTTP ${displayResponse.status}`)
+          }
+        }
+
+        setError(errorMessages.join(', ') || 'Failed to update settings')
       }
     } catch {
       setError('Failed to update settings')
