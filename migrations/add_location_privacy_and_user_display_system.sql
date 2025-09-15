@@ -22,10 +22,25 @@ CREATE TABLE IF NOT EXISTS user_activity_privacy (
 );
 
 -- ==================================================
+-- COLUMN ADDITIONS
+-- ==================================================
+
+-- Add activity visibility column to locations table
+ALTER TABLE locations ADD COLUMN activity_visibility TEXT DEFAULT 'private' CHECK (activity_visibility IN ('private', 'public'));
+
+-- Add display preference columns to users table
+ALTER TABLE users ADD COLUMN display_name_preference TEXT DEFAULT 'first_name' CHECK (display_name_preference IN ('first_name', 'full_name', 'email', 'custom_username', 'anonymous'));
+ALTER TABLE users ADD COLUMN custom_username VARCHAR(50);
+
+-- Add anonymity flags to activity tables
+ALTER TABLE books ADD COLUMN added_by_anonymous BOOLEAN DEFAULT FALSE;
+ALTER TABLE book_ratings ADD COLUMN reviewer_anonymous BOOLEAN DEFAULT FALSE;
+
+-- ==================================================
 -- PERFORMANCE INDEXES
 -- ==================================================
 
--- Indexes for location privacy (works whether columns exist or not)
+-- Indexes for location privacy
 CREATE INDEX IF NOT EXISTS idx_locations_activity_visibility ON locations(activity_visibility);
 
 -- Indexes for user display preferences
@@ -40,15 +55,4 @@ CREATE INDEX IF NOT EXISTS idx_user_activity_privacy_activity ON user_activity_p
 CREATE INDEX IF NOT EXISTS idx_books_added_by_anonymous ON books(added_by_anonymous);
 CREATE INDEX IF NOT EXISTS idx_book_ratings_reviewer_anonymous ON book_ratings(reviewer_anonymous);
 
--- ==================================================
--- REQUIRED COLUMN ADDITIONS FOR NEW DEPLOYMENTS
--- ==================================================
--- These columns need to be added for fresh deployments:
---
--- ALTER TABLE locations ADD COLUMN activity_visibility TEXT DEFAULT 'private' CHECK (activity_visibility IN ('private', 'public'));
--- ALTER TABLE users ADD COLUMN display_name_preference TEXT DEFAULT 'first_name' CHECK (display_name_preference IN ('first_name', 'full_name', 'email', 'custom_username', 'anonymous'));
--- ALTER TABLE users ADD COLUMN custom_username VARCHAR(50);
--- ALTER TABLE books ADD COLUMN added_by_anonymous BOOLEAN DEFAULT FALSE;
--- ALTER TABLE book_ratings ADD COLUMN reviewer_anonymous BOOLEAN DEFAULT FALSE;
---
--- Note: These will be handled by the GitHub Actions deployment process to avoid conflicts with existing databases
+-- Migration complete - all required columns and indexes have been created
