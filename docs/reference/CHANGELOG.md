@@ -2,6 +2,36 @@
 
 This file documents all completed features, fixes, and improvements to the LibraryCard project.
 
+## September 15, 2025 - Privacy & Activity Features
+
+### Added
+- **Privacy & User Display System (LCWEB-174)**
+  - 5 display name options for users (first name, full name, email, username, anonymous)
+  - Location-level privacy controls for activity visibility
+  - User profile interface for privacy preferences
+  - Privacy-aware activity feeds throughout application
+  - GDPR-compliant privacy controls with user data control
+
+- **Library Activity Sidebar (LCWEB-172)**
+  - Real-time activity feed showing newly added books and recent reviews
+  - Responsive 2-column book layout with larger covers for better discoverability
+  - Mobile-optimized collapsible sidebar with hamburger menu
+  - Privacy-integrated activity display respecting user preferences
+  - Enhanced community engagement and book discovery
+
+### Fixed
+- **Review System (LCWEB-173)**
+  - Star rating changes no longer trigger unnecessary review re-approval
+  - Preserved approved review status when only star ratings change
+  - Improved review workflow messaging for approved reviews
+  - Better separation between rating updates and review text moderation
+
+### Technical Improvements
+- Enhanced mobile accessibility for activity sidebar
+- Optimized library content width when sidebar collapses
+- CSRF-compatible authentication with XMLHttpRequest headers
+- Privacy-aware database queries and activity feed optimization
+
 ## September 6, 2025 - Worker Architecture Refactoring - LCWEB-161
 
 ### 🏗️ Major Refactoring: Worker Architecture Optimization

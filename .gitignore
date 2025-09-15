@@ -42,6 +42,13 @@ FAILED_BATCH_*.sql
 batch_sql_*.sql
 temp_sql_*.sql
 
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+.dev-database.db
+wrangler.local.db
+
 # Production
 /build
 /dist
@@ -57,6 +64,7 @@ temp_sql_*.sql
 # Editor
 .vscode/*
 .DS_Store
+.idea/
 
 # Temporary
 /tmp
@@ -68,7 +76,6 @@ temp_sql_*.sql
 workers/index-backup.ts
 workers/updated-index.ts
 workers/node_modules/
-.idea/
 als
 /google-service-account.json
 /testing/screenshots
