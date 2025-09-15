@@ -64,23 +64,23 @@ const Button = ({ variant, children }) => {
 
 ### Task 1: Migrate GlobalHeader
 - ✅ Already uses marketing variables
-- 🔄 Add direct theme usage for colors
-- 🔄 Reduce dependency on marketing CSS classes
+- ✅ Add direct theme usage for colors
+- ❌ **BLOCKED**: Reduce dependency on marketing CSS classes
 
 ### Task 2: Migrate Button Component
-- 🔄 Add useTheme hook integration
-- 🔄 Add theme-aware style overrides
-- 🔄 Maintain CSS class fallbacks
+- ❌ **NOT STARTED**: Add useTheme hook integration
+- ❌ **NOT STARTED**: Add theme-aware style overrides
+- ❌ **NOT STARTED**: Maintain CSS class fallbacks
 
 ### Task 3: Migrate Typography Components
-- 🔄 Text component theme integration
-- 🔄 Heading component theme integration
-- 🔄 Dynamic font family/sizing from theme
+- ❌ **NOT STARTED**: Text component theme integration
+- ❌ **NOT STARTED**: Heading component theme integration
+- ❌ **NOT STARTED**: Dynamic font family/sizing from theme
 
 ### Task 4: Test Migration
-- 🔄 Verify all marketing pages still work
-- 🔄 Test theme switching functionality
-- 🔄 Check for visual regressions
+- ❌ **NOT STARTED**: Verify all marketing pages still work
+- ❌ **NOT STARTED**: Test theme switching functionality
+- ❌ **NOT STARTED**: Check for visual regressions
 
 ## Implementation Notes
 
@@ -118,6 +118,23 @@ const styles = {
 - [ ] Improved theme consistency across app/marketing
 - [ ] Reduced reliance on static CSS variables
 - [ ] Maintained backward compatibility
+
+## Current Blockers (September 2025)
+
+### Primary Issue
+**Marketing components are not migrated** - The Button component (`src/components/marketing/ui/Button.tsx`) still uses pure CSS classes without any theme integration. This means:
+
+1. Marketing pages don't respect user theme preferences
+2. Dark mode doesn't work on marketing pages
+3. Theme color variants don't apply to marketing content
+4. The infrastructure is ready but components aren't using it
+
+### Specific Tasks Needed
+1. **Update Button component** to use `useTheme()` and inject CSS custom properties
+2. **Verify and migrate Card component** if it exists
+3. **Find and migrate Typography components** (Text, Heading)
+4. **Update any other marketing UI components** to use theme system
+5. **Test marketing pages** (`/`, `/pricing`, `/features`, etc.) with theme switching
 
 ## Rollback Plan
 
