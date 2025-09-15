@@ -4,7 +4,10 @@ A comprehensive overview of LibraryCard's capabilities and functionality.
 
 ## Recent Highlights
 
-### ✅ Recently Completed
+### ✅ Recently Completed (September 2025)
+- **🎭 Privacy & User Display System**: Comprehensive privacy controls with 5 display name options and location-level activity visibility settings
+- **📱 Library Activity Sidebar**: Real-time activity feed with newly added books and recent reviews, featuring responsive 2-column layout
+- **⭐ Enhanced Review System**: Fixed star rating re-approval workflow to preserve approved status when only ratings change
 - **🔍 Enhanced Filtering System**: Clickable author names and multi-genre selection with visual filter chips
 - **🔧 Admin Permission Fixes**: Regular admins can now invite users to locations they manage
 - **🔐 Super Admin Role System**: Hierarchical permission structure separating global system administration from location-scoped management
@@ -19,7 +22,27 @@ A comprehensive overview of LibraryCard's capabilities and functionality.
 - **Curated Genre Classification**: 26 meaningful categories for better organization
 - **Book Removal Request System**: Admin approval workflows for book management
 
+### 🔗 Quick Links to New Features
+- **[Library Activity Sidebar Guide](./library-activity-sidebar.md)** - Complete documentation for the activity sidebar feature
+- **[Privacy System Guide](./privacy-system.md)** - Comprehensive privacy and user display system documentation
+
 ## Core Platform Features
+
+### 🎭 Privacy & Community Features
+
+#### Privacy & User Display System
+- **5 Display Name Options**: First name, full name, email, custom username, or anonymous
+- **Location Privacy Controls**: Admins can set activity visibility (public/private)
+- **User Preferences**: Individual control over personal display settings
+- **Privacy-Aware Activity**: All activity feeds respect privacy preferences
+- **GDPR Compliance**: User control over personal data display
+
+#### Library Activity Sidebar
+- **Real-Time Activity Feed**: See newly added books and recent reviews
+- **Responsive Design**: 2-column book grid with collapsible sidebar
+- **Mobile Optimized**: Touch-friendly interface with hamburger menu
+- **Privacy Integration**: Activity displays respect user privacy settings
+- **Community Engagement**: Stay connected with library community activity
 
 ### 📱 Book Scanning & Data Collection
 

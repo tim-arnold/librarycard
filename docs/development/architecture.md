@@ -28,6 +28,9 @@ LibraryCard is built as a modern, serverless web application using a hybrid arch
 ### Frontend
 - **Framework**: Next.js 14 with App Router
 - **Language**: TypeScript
+- **UI Library**: Material-UI (MUI) with custom theme system
+- **State Management**: React Context + useState/useEffect patterns
+- **Authentication**: NextAuth.js with Google OAuth and email/password
 - **Styling**: Material-UI (MUI) with theme system
 - **State Management**: React hooks (useState, useEffect, useContext)
 - **Build Tool**: Next.js built-in bundler
