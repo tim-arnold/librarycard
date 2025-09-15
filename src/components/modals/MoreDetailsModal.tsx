@@ -485,17 +485,22 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole, user
                           <ListItem alignItems="flex-start">
                             <ListItemText
                               primary={
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                  <Box sx={{ display: 'flex' }}>
-                                    {[1, 2, 3, 4, 5].map((star) => (
-                                      <Star
-                                        key={star}
-                                        sx={{
-                                          fontSize: 16,
-                                          color: star <= review.rating ? 'warning.main' : 'action.disabled'
-                                        }}
-                                      />
-                                    ))}
+                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <Box sx={{ display: 'flex' }}>
+                                      {[1, 2, 3, 4, 5].map((star) => (
+                                        <Star
+                                          key={star}
+                                          sx={{
+                                            fontSize: 16,
+                                            color: star <= review.rating ? 'warning.main' : 'action.disabled'
+                                          }}
+                                        />
+                                      ))}
+                                    </Box>
+                                    <Typography variant="caption" color="text.secondary">
+                                      by {review.userName || 'Library Member'}
+                                    </Typography>
                                   </Box>
                                   <Typography variant="caption" color="text.secondary">
                                     {new Date(review.createdAt).toLocaleDateString('en-US', {

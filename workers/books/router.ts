@@ -1,4 +1,5 @@
 import { Env } from '../types';
+import { getUserDisplayInfo, canViewUserActivity } from '../privacy';
 import {
   getUserBooks,
   createBook,
@@ -453,13 +454,19 @@ export class BooksRouter {
       // Get recent reviews (last 30 days)
       if (includeReviews) {
         const recentReviewsStmt = env.DB.prepare(`
-          SELECT 
+          SELECT
             br.id,
             br.rating,
             br.review_text as review,
             br.created_at,
+            br.user_id,
+            br.reviewer_anonymous,
+            u.id as user_id,
+            u.email,
             u.first_name,
             u.last_name,
+            u.display_name_preference,
+            u.custom_username,
             b.id as book_id,
             b.title,
             b.authors,
@@ -469,7 +476,9 @@ export class BooksRouter {
             b.categories,
             b.tags,
             s.name as shelf_name,
-            l.name as location_name
+            l.id as location_id,
+            l.name as location_name,
+            l.activity_visibility
           FROM book_ratings br
           JOIN books b ON br.book_id = CAST(b.id AS INTEGER)
           JOIN users u ON br.user_id = u.id
@@ -477,45 +486,76 @@ export class BooksRouter {
           JOIN locations l ON s.location_id = l.id
           WHERE l.id IN (${locationIds.map(() => '?').join(',')})
             AND br.created_at > datetime('now', '-30 days')
+            AND br.review_text IS NOT NULL
+            AND br.review_text != ''
             AND (br.review_status = 'approved' OR br.review_status IS NULL)
           ORDER BY br.created_at DESC
           LIMIT ?
         `);
         
         const recentReviews = await recentReviewsStmt.bind(...locationIds, limit).all();
-        
-        results.recent_reviews = recentReviews.results.map((review: any) => ({
-          id: `review-${review.id}`,
-          type: 'recent_review',
-          timestamp: review.created_at,
-          data: {
-            book: {
-              id: review.book_id.toString(),
-              title: review.title,
-              authors: JSON.parse(review.authors || '[]'),
-              thumbnail: review.thumbnail,
-              description: review.description,
-              publishedDate: review.published_date,
-              categories: JSON.parse(review.categories || '[]'),
-              tags: JSON.parse(review.tags || '[]'),
-              shelf_name: review.shelf_name,
-              location_name: review.location_name,
+
+        // Apply privacy settings to each review
+        const privacyAwareReviews = [];
+        for (const review of recentReviews.results) {
+          const user = {
+            id: review.user_id,
+            email: review.email,
+            first_name: review.first_name,
+            last_name: review.last_name,
+            display_name_preference: review.display_name_preference,
+            custom_username: review.custom_username
+          };
+
+          // Get privacy-aware user display info
+          const userDisplayInfo = await getUserDisplayInfo(
+            user,
+            userId,
+            review.location_id,
+            'review',
+            review.id.toString(),
+            env
+          );
+
+          privacyAwareReviews.push({
+            id: `review-${review.id}`,
+            type: 'recent_review',
+            timestamp: review.created_at,
+            data: {
+              book: {
+                id: review.book_id.toString(),
+                title: review.title,
+                authors: JSON.parse(review.authors || '[]'),
+                thumbnail: review.thumbnail,
+                description: review.description,
+                publishedDate: review.published_date,
+                categories: JSON.parse(review.categories || '[]'),
+                tags: JSON.parse(review.tags || '[]'),
+                shelf_name: review.shelf_name,
+                location_name: review.location_name,
+              },
+              user: {
+                id: review.user_id,
+                first_name: user.first_name,
+                last_name: user.last_name,
+                display_name: userDisplayInfo.displayName,
+                is_anonymous: userDisplayInfo.isAnonymous,
+                display_name_preference: user.display_name_preference,
+                custom_username: user.custom_username
+              },
+              rating: review.rating,
+              review: review.review,
             },
-            user: {
-              id: review.user_id,
-              first_name: review.first_name,
-              last_name: review.last_name,
-            },
-            rating: review.rating,
-            review: review.review,
-          },
-        }));
+          });
+        }
+
+        results.recent_reviews = privacyAwareReviews;
       }
 
       // Get newly added books (last 14 days)
       if (includeNew) {
         const newBooksStmt = env.DB.prepare(`
-          SELECT 
+          SELECT
             b.id,
             b.title,
             b.authors,
@@ -525,10 +565,18 @@ export class BooksRouter {
             b.categories,
             b.tags,
             b.created_at,
+            b.added_by,
+            b.added_by_anonymous,
+            u.id as user_id,
+            u.email,
             u.first_name,
             u.last_name,
+            u.display_name_preference,
+            u.custom_username,
             s.name as shelf_name,
+            l.id as location_id,
             l.name as location_name,
+            l.activity_visibility,
             julianday('now') - julianday(b.created_at) as days_ago
           FROM books b
           JOIN users u ON b.added_by = u.id
@@ -541,32 +589,62 @@ export class BooksRouter {
         `);
         
         const newBooks = await newBooksStmt.bind(...locationIds, limit).all();
-        
-        results.newly_added = newBooks.results.map((book: any) => ({
-          id: `new-${book.id}`,
-          type: 'newly_added',
-          timestamp: book.created_at,
-          data: {
-            book: {
-              id: book.id.toString(),
-              title: book.title,
-              authors: JSON.parse(book.authors || '[]'),
-              thumbnail: book.thumbnail,
-              description: book.description,
-              publishedDate: book.published_date,
-              categories: JSON.parse(book.categories || '[]'),
-              tags: JSON.parse(book.tags || '[]'),
-              shelf_name: book.shelf_name,
-              location_name: book.location_name,
+
+        // Apply privacy settings to each newly added book
+        const privacyAwareBooks = [];
+        for (const book of newBooks.results) {
+          const user = {
+            id: book.user_id,
+            email: book.email,
+            first_name: book.first_name,
+            last_name: book.last_name,
+            display_name_preference: book.display_name_preference,
+            custom_username: book.custom_username
+          };
+
+          // Get privacy-aware user display info
+          const userDisplayInfo = await getUserDisplayInfo(
+            user,
+            userId,
+            book.location_id,
+            'book_addition',
+            book.id.toString(),
+            env
+          );
+
+          privacyAwareBooks.push({
+            id: `new-${book.id}`,
+            type: 'newly_added',
+            timestamp: book.created_at,
+            data: {
+              book: {
+                id: book.id.toString(),
+                title: book.title,
+                authors: JSON.parse(book.authors || '[]'),
+                thumbnail: book.thumbnail,
+                description: book.description,
+                publishedDate: book.published_date,
+                categories: JSON.parse(book.categories || '[]'),
+                tags: JSON.parse(book.tags || '[]'),
+                shelf_name: book.shelf_name,
+                location_name: book.location_name,
+              },
+              user: {
+                id: book.user_id,
+                first_name: user.first_name,
+                last_name: user.last_name,
+                display_name: userDisplayInfo.displayName,
+                is_anonymous: userDisplayInfo.isAnonymous,
+                display_name_preference: user.display_name_preference,
+                custom_username: user.custom_username
+              },
+              action: 'added',
+              days_ago: Math.floor(book.days_ago),
             },
-            user: {
-              first_name: book.first_name,
-              last_name: book.last_name,
-            },
-            action: 'added',
-            days_ago: Math.floor(book.days_ago),
-          },
-        }));
+          });
+        }
+
+        results.newly_added = privacyAwareBooks;
       }
 
       // Get popular books (most rated and highest average ratings)

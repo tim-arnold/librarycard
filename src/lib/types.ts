@@ -380,6 +380,11 @@ export interface ActivityItemData {
     id: string
     first_name?: string
     last_name?: string
+    // Privacy & Display Settings (LCWEB-174)
+    display_name_preference?: 'first_name' | 'full_name' | 'email' | 'custom_username' | 'anonymous'
+    custom_username?: string
+    display_name?: string // Computed display name based on privacy settings
+    is_anonymous?: boolean // Whether this specific activity should be shown as anonymous
   }
   rating?: number
   review?: string
@@ -425,4 +430,31 @@ export interface PopularBook {
 export interface SidebarPreferences {
   collapsed: boolean
   activeSection?: 'reviews' | 'new' | 'popular' | 'activity'
+}
+
+// Privacy & Display Settings Types (LCWEB-174)
+export type DisplayNamePreference = 'first_name' | 'full_name' | 'email' | 'custom_username' | 'anonymous'
+export type ActivityVisibility = 'private' | 'public'
+
+export interface LocationPrivacySettings {
+  id: number
+  activity_visibility: ActivityVisibility
+}
+
+export interface UserDisplayPreferences {
+  display_name_preference: DisplayNamePreference
+  custom_username?: string
+}
+
+export interface PrivacyControlOptions {
+  canSetAnonymous: boolean
+  canViewRealNames: boolean
+  locationIsPublic: boolean
+  userIsAdmin: boolean
+}
+
+export interface ActivityPrivacyOverride {
+  activity_type: 'book_addition' | 'review' | 'checkout'
+  activity_id: string
+  is_anonymous: boolean
 }
