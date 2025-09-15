@@ -146,8 +146,13 @@ export default function LibrarySidebar({
   }
 
   // Section definitions
-  // Check if user can see admin info (names, etc.)
-  const canSeeAdminInfo = userRole && (isAdmin(userRole) || isSuperAdmin(userRole))
+  // Check if user can see user info based on privacy settings
+  // If any activity items have display_name data, it means location privacy allows showing names
+  const canSeeUserInfo = activityData && (
+    (activityData.recent_reviews && activityData.recent_reviews.some((item: any) => item.data?.user?.display_name)) ||
+    (activityData.newly_added && activityData.newly_added.some((item: any) => item.data?.user?.display_name)) ||
+    (userRole && (isAdmin(userRole) || isSuperAdmin(userRole))) // Admins can always see names
+  )
 
   const sections = [
     {
@@ -309,7 +314,7 @@ export default function LibrarySidebar({
                           onBookClick={onBookClick}
                           onAuthorClick={onAuthorClick}
                           onFilterApply={onFilterApply}
-                          showUserInfo={canSeeAdminInfo || false}
+                          showUserInfo={canSeeUserInfo || false}
                         />
                       </Box>
                     </Collapse>

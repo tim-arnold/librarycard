@@ -163,11 +163,11 @@ export default function RecentReviews({
                   pt: 0.5,
                 }}
               >
-                {showUserInfo && (
+                {showUserInfo && review && (
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <Person sx={{ fontSize: 14 }} />
                     <Typography variant="caption" color="text.secondary">
-                      {user?.first_name} {user?.last_name}
+                      {user?.display_name || 'Library Member'}
                     </Typography>
                   </Box>
                 )}
