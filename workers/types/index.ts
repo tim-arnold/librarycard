@@ -1,6 +1,7 @@
 // Cloudflare Workers types
 type D1Database = any;
 type KVNamespace = any;
+type R2Bucket = any;
 
 export interface Env {
   DB: D1Database;
@@ -22,6 +23,8 @@ export interface Env {
   GOOGLE_API_KEY?: string;
   // Cloudflare KV for caching
   CACHE?: KVNamespace;
+  // Cloudflare R2 for image storage
+  R2_BUCKET?: R2Bucket;
 }
 
 export interface User {
