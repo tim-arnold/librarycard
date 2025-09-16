@@ -39,12 +39,34 @@ export async function uploadBookCoverImage(
   corsHeaders: Record<string, string>
 ): Promise<Response> {
   try {
+    // If R2 is not available, return the original image data URL for staging/testing
     if (!env.R2_BUCKET) {
+      const body: ImageUploadRequest = await request.json();
+
+      if (!body.image) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Image data is required'
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // For staging without R2, return the original data URL
       return new Response(JSON.stringify({
-        success: false,
-        error: 'Image storage not configured'
+        success: true,
+        imageUrl: body.image, // Return original data URL
+        metadata: {
+          key: `fallback-${Date.now()}`,
+          size: body.metadata?.size || 0,
+          format: body.metadata?.format || 'jpeg',
+          width: body.metadata?.width || 0,
+          height: body.metadata?.height || 0,
+        },
+        fallback: true,
+        message: 'Using data URL fallback - R2 storage not available'
       }), {
-        status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
