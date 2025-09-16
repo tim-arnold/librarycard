@@ -134,3 +134,21 @@
   --marketing-screen-xl: 1280px;
   --marketing-screen-2xl: 1536px;
 }
+
+/* Dark Mode Variables */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Dark Mode Neutral Colors - Inverted for proper contrast */
+    --marketing-white: #1f2937;
+    --marketing-gray-50: #111827;
+    --marketing-gray-100: #1f2937;
+    --marketing-gray-200: #374151;
+    --marketing-gray-300: #4b5563;
+    --marketing-gray-400: #6b7280;
+    --marketing-gray-500: #9ca3af;
+    --marketing-gray-600: #d1d5db;
+    --marketing-gray-700: #e5e7eb;
+    --marketing-gray-800: #f3f4f6;
+    --marketing-gray-900: #ffffff;
+  }
+}
