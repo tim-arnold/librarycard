@@ -428,7 +428,7 @@ export class BooksRouter {
           bucketTest = {
             success: false,
             canList: false,
-            error: error.message || 'Unknown error accessing bucket'
+            error: error instanceof Error ? error.message : 'Unknown error accessing bucket'
           };
         }
       } else {
