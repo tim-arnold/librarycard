@@ -20,8 +20,11 @@ import {
   FormControlLabel,
   Switch,
   Tooltip,
+  Tabs,
+  Tab,
 } from '@mui/material'
-import { Close, Image, Search, AutoAwesome, Book, Public } from '@mui/icons-material'
+import { Close, Image, Search, AutoAwesome, Book, Public, CameraAlt } from '@mui/icons-material'
+import BookCoverCapture from '../library/BookCoverCapture'
 
 interface CoverOption {
   id: string
@@ -72,6 +75,7 @@ export default function CoverSelectionModal({
   const [error, setError] = useState<string>('')
   const [searchQuery, setSearchQuery] = useState(`${title} ${author}`.trim())
   const [enhancedMode, setEnhancedMode] = useState(true) // Default to enhanced mode
+  const [currentTab, setCurrentTab] = useState(0) // 0 = Search, 1 = Camera
   const { data: session } = useSession()
 
   const fetchEditions = async (queryParam?: string) => {
@@ -140,7 +144,32 @@ export default function CoverSelectionModal({
 
   const handleClose = () => {
     setError('')
+    setCurrentTab(0) // Reset to search tab
     onClose()
+  }
+
+  const handleCameraCapture = (imageDataUrl: string) => {
+    // Create a cover option from the captured image
+    const cameraCover: CoverOption = {
+      id: `camera-${Date.now()}`,
+      title: title,
+      authors: [author],
+      covers: {
+        thumbnail: imageDataUrl,
+        small: imageDataUrl,
+        medium: imageDataUrl,
+        large: imageDataUrl,
+        extraLarge: imageDataUrl
+      },
+      source: 'camera' as any
+    }
+
+    handleCoverSelect(cameraCover)
+  }
+
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setCurrentTab(newValue)
+    setError('')
   }
 
   const getCoverUrl = (covers: CoverOption['covers']) => {
@@ -175,13 +204,13 @@ export default function CoverSelectionModal({
   }
 
   return (
-    <Dialog 
-      open={open} 
+    <Dialog
+      open={open}
       onClose={handleClose}
       maxWidth="lg"
       fullWidth
       PaperProps={{
-        sx: { maxHeight: '90vh' }
+        sx: { maxHeight: '85vh', height: currentTab === 1 ? '600px' : 'auto' }
       }}
     >
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
@@ -200,8 +229,29 @@ export default function CoverSelectionModal({
       </DialogTitle>
 
       <DialogContent sx={{ pb: 1 }}>
-        {/* Search Controls */}
-        <Box sx={{ mb: 3, p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
+        {/* Tabs */}
+        <Tabs
+          value={currentTab}
+          onChange={handleTabChange}
+          sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}
+        >
+          <Tab
+            icon={<Search />}
+            label="Search Online"
+            iconPosition="start"
+          />
+          <Tab
+            icon={<CameraAlt />}
+            label="Camera Capture"
+            iconPosition="start"
+          />
+        </Tabs>
+
+        {/* Search Tab Content */}
+        {currentTab === 0 && (
+          <>
+            {/* Search Controls */}
+            <Box sx={{ mb: 3, p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
             <Typography variant="subtitle2">
               Search Settings
@@ -270,44 +320,44 @@ export default function CoverSelectionModal({
           </Box>
         </Box>
 
-        {/* Error Display */}
-        {error && (
-          <Alert severity="warning" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
+            {/* Error Display */}
+            {error && (
+              <Alert severity="warning" sx={{ mb: 2 }}>
+                {error}
+              </Alert>
+            )}
 
-        {/* Loading State */}
-        {isLoading && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-            <CircularProgress />
-          </Box>
-        )}
+            {/* Loading State */}
+            {isLoading && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                <CircularProgress />
+              </Box>
+            )}
 
-        {/* Cover Grid */}
-        {!isLoading && editions.length > 0 && (
-          <Box sx={{
-            columns: {
-              xs: 2,    // 2 columns on phones
-              sm: 3,    // 3 columns on tablets
-              md: 4,    // 4 columns on small laptops
-              lg: 5,    // 5 columns on desktops
-              xl: 6     // 6 columns on large screens
-            },
-            columnGap: 3,
-            '& > *': {
-              breakInside: 'avoid',
-              marginBottom: 3,
-              display: 'block'
-            }
-          }}>
-            {editions.map((edition) => {
-              const coverUrl = getCoverUrl(edition.covers)
-              const isSelected = false
-              const isCurrent = isCurrentCover(edition)
-              
-              return (
-                <Card 
+            {/* Cover Grid */}
+            {!isLoading && editions.length > 0 && (
+              <Box sx={{
+                columns: {
+                  xs: 2,    // 2 columns on phones
+                  sm: 3,    // 3 columns on tablets
+                  md: 4,    // 4 columns on small laptops
+                  lg: 5,    // 5 columns on desktops
+                  xl: 6     // 6 columns on large screens
+                },
+                columnGap: 3,
+                '& > *': {
+                  breakInside: 'avoid',
+                  marginBottom: 3,
+                  display: 'block'
+                }
+              }}>
+                {editions.map((edition) => {
+                  const coverUrl = getCoverUrl(edition.covers)
+                  const isSelected = false
+                  const isCurrent = isCurrentCover(edition)
+
+                  return (
+                    <Card 
                   key={edition.id}
                   sx={{ 
                     position: 'relative',
@@ -407,13 +457,27 @@ export default function CoverSelectionModal({
           </Box>
         )}
 
-        {/* No Results */}
-        {!isLoading && editions.length === 0 && !error && (
-          <Box sx={{ textAlign: 'center', py: 4 }}>
-            <Image sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
-            <Typography variant="body1" color="text.secondary">
-              No editions found. Try adjusting your search terms.
-            </Typography>
+            {/* No Results */}
+            {!isLoading && editions.length === 0 && !error && (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Image sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+                <Typography variant="body1" color="text.secondary">
+                  No editions found. Try adjusting your search terms.
+                </Typography>
+              </Box>
+            )}
+          </>
+        )}
+
+        {/* Camera Tab Content */}
+        {currentTab === 1 && (
+          <Box sx={{ height: 350 }}>
+            <BookCoverCapture
+              title={title}
+              author={author}
+              onCoverCapture={handleCameraCapture}
+              onCancel={() => setCurrentTab(0)}
+            />
           </Box>
         )}
       </DialogContent>
