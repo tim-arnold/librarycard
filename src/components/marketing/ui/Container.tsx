@@ -29,13 +29,19 @@ interface SectionProps {
   size?: 'sm' | 'md' | 'lg'
   background?: 'white' | 'gray-50' | 'gray-100' | 'primary' | 'secondary'
   className?: string
+  style?: React.CSSProperties
+  role?: string
+  'aria-label'?: string
 }
 
 export function Section({
   children,
   size = 'md',
   background = 'white',
-  className = ''
+  className = '',
+  style,
+  role,
+  'aria-label': ariaLabel
 }: SectionProps) {
   const classes = [
     'marketing-section',
@@ -45,7 +51,12 @@ export function Section({
   ].filter(Boolean).join(' ')
 
   return (
-    <section className={classes}>
+    <section
+      className={classes}
+      style={style}
+      role={role}
+      aria-label={ariaLabel}
+    >
       {children}
     </section>
   )
