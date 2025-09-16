@@ -3,13 +3,15 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
-import { CreditCard, Menu, X } from '@mui/icons-material'
+import { CreditCard, Menu, X, LightMode, DarkMode } from '@mui/icons-material'
+import { useTheme } from '@/lib/ThemeContext'
 import Button from '../ui/Button'
 import Container from '../ui/Container'
 
 export default function MarketingHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { data: session } = useSession()
+  const { isDarkMode, toggleTheme } = useTheme()
 
   const navigation = [
     { name: 'Features', href: '/features' },
@@ -81,6 +83,36 @@ export default function MarketingHeader() {
 
           {/* Desktop CTAs */}
           <div className="marketing-hidden-mobile marketing-flex marketing-items-center marketing-gap-4">
+            {/* Light/Dark Mode Toggle - only shown when logged out */}
+            {!session && (
+              <button
+                onClick={toggleTheme}
+                style={{
+                  background: 'none',
+                  border: '1px solid var(--marketing-gray-300)',
+                  borderRadius: 'var(--marketing-radius-base)',
+                  padding: 'var(--marketing-spacing-2)',
+                  cursor: 'pointer',
+                  color: 'var(--marketing-gray-600)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--marketing-primary)'
+                  e.currentTarget.style.color = 'var(--marketing-primary)'
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--marketing-gray-300)'
+                  e.currentTarget.style.color = 'var(--marketing-gray-600)'
+                }}
+                title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                {isDarkMode ? <LightMode /> : <DarkMode />}
+              </button>
+            )}
+
             {session ? (
               <Button href="/library" variant="primary">
                 Go to Library
@@ -147,10 +179,38 @@ export default function MarketingHeader() {
               </ul>
             </nav>
             
-            <div 
+            <div
               className="marketing-flex marketing-flex-col marketing-gap-4"
               style={{ marginTop: 'var(--marketing-spacing-6)' }}
             >
+              {/* Light/Dark Mode Toggle for Mobile - only shown when logged out */}
+              {!session && (
+                <button
+                  onClick={() => {
+                    toggleTheme()
+                    setMobileMenuOpen(false)
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 'var(--marketing-spacing-2)',
+                    padding: 'var(--marketing-spacing-3)',
+                    background: 'none',
+                    border: '1px solid var(--marketing-gray-300)',
+                    borderRadius: 'var(--marketing-radius-base)',
+                    cursor: 'pointer',
+                    color: 'var(--marketing-gray-700)',
+                    fontSize: 'var(--marketing-text-base)',
+                    fontWeight: 'var(--marketing-font-medium)',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  {isDarkMode ? <LightMode /> : <DarkMode />}
+                  {isDarkMode ? 'Light Mode' : 'Dark Mode'}
+                </button>
+              )}
+
               {session ? (
                 <Button href="/library" variant="primary" fullWidth>
                   Go to Library
