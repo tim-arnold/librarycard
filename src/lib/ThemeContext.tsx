@@ -32,7 +32,7 @@ interface ThemeContextProviderProps {
 
 export function ThemeContextProvider({ children }: ThemeContextProviderProps) {
   const [isDarkMode, setIsDarkMode] = useState(false)
-  const [themeVariant, setThemeVariant] = useState<ThemeVariant>('green')
+  const [themeVariant, setThemeVariant] = useState<ThemeVariant>('amber')
   const [isLoaded, setIsLoaded] = useState(false)
 
   // Load theme preferences from localStorage on mount
@@ -52,8 +52,8 @@ export function ThemeContextProvider({ children }: ThemeContextProviderProps) {
     if (savedVariant && ['indigo', 'green', 'red', 'blue', 'purple', 'amber'].includes(savedVariant)) {
       setThemeVariant(savedVariant)
     } else if (!savedVariant) {
-      // Default to forest green for new users
-      setThemeVariant('green')
+      // Default to golden amber for new users
+      setThemeVariant('amber')
     }
     
     setIsLoaded(true)
