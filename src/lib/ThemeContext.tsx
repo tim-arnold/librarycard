@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { ThemeProvider } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
+import { useSession } from 'next-auth/react'
 import { createAppTheme, type ThemeVariant } from './theme'
 import { getStorageItem, setStorageItem } from './storage'
 import { generateMarketingVariables, injectMarketingVariables } from './generateMarketingVariables'
@@ -31,15 +32,21 @@ interface ThemeContextProviderProps {
 }
 
 export function ThemeContextProvider({ children }: ThemeContextProviderProps) {
+  const { data: session, status } = useSession()
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [themeVariant, setThemeVariant] = useState<ThemeVariant>('amber')
   const [isLoaded, setIsLoaded] = useState(false)
 
-  // Load theme preferences from localStorage on mount
+  // Load theme preferences based on authentication state
   useEffect(() => {
+    // Wait for session to be determined
+    if (status === 'loading') {
+      return
+    }
+
     const savedTheme = getStorageItem('librarycard-theme', 'functional')
-    const savedVariant = getStorageItem('librarycard-theme-variant', 'functional') as ThemeVariant
-    
+
+    // Light/Dark mode preference is always honored (both logged in and out)
     if (savedTheme === 'light') {
       setIsDarkMode(false)
     } else if (!savedTheme) {
@@ -48,16 +55,25 @@ export function ThemeContextProvider({ children }: ThemeContextProviderProps) {
     } else {
       setIsDarkMode(savedTheme === 'dark')
     }
-    
-    if (savedVariant && ['indigo', 'green', 'red', 'blue', 'purple', 'amber'].includes(savedVariant)) {
-      setThemeVariant(savedVariant)
-    } else if (!savedVariant) {
-      // Default to golden amber for new users
+
+    // Theme variant logic depends on authentication state
+    if (session) {
+      // User is logged in - honor their saved preference
+      const savedVariant = getStorageItem('librarycard-theme-variant', 'functional') as ThemeVariant
+
+      if (savedVariant && ['indigo', 'green', 'red', 'blue', 'purple', 'amber'].includes(savedVariant)) {
+        setThemeVariant(savedVariant)
+      } else {
+        // Default to golden amber for new logged-in users
+        setThemeVariant('amber')
+      }
+    } else {
+      // User is logged out - force Golden Amber theme for marketing pages
       setThemeVariant('amber')
     }
-    
+
     setIsLoaded(true)
-  }, [])
+  }, [session, status])
 
   // Save theme preferences to localStorage when they change
   useEffect(() => {
@@ -67,17 +83,22 @@ export function ThemeContextProvider({ children }: ThemeContextProviderProps) {
   }, [isDarkMode, isLoaded])
 
   useEffect(() => {
-    if (isLoaded) {
+    // Only save theme variant preference when user is logged in
+    if (isLoaded && session) {
       setStorageItem('librarycard-theme-variant', themeVariant, 'functional')
     }
-  }, [themeVariant, isLoaded])
+  }, [themeVariant, isLoaded, session])
 
   const toggleTheme = () => {
     setIsDarkMode(prev => !prev)
   }
 
   const handleSetThemeVariant = (variant: ThemeVariant) => {
-    setThemeVariant(variant)
+    // Only allow theme variant changes when user is logged in
+    if (session) {
+      setThemeVariant(variant)
+    }
+    // For logged-out users, theme variant is always locked to 'amber'
   }
 
   const theme = createAppTheme(isDarkMode, themeVariant)
