@@ -6,8 +6,38 @@ import { Flex } from '../ui/Container'
 
 export default function HeroSection() {
   return (
-    <Section background="white" size="lg">
-      <Container>
+    <Section
+      background="white"
+      size="lg"
+      className="hero-background-section"
+      style={{
+        position: 'relative',
+        backgroundImage: 'url(/images/hero-bg.jpg)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        backgroundAttachment: 'fixed',
+        minHeight: '80vh'
+      }}
+      role="banner"
+      aria-label="Hero section with community library management information"
+    >
+      {/* Dark overlay for text readability */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.4)',
+          zIndex: 1
+        }}
+      />
+
+      {/* Content container with higher z-index */}
+      <div style={{ position: 'relative', zIndex: 2 }}>
+        <Container>
         <div 
           className="marketing-text-center"
           style={{ 
@@ -17,23 +47,28 @@ export default function HeroSection() {
           }}
         >
           {/* Main headline */}
-          <Heading level="display" className="marketing-text-center">
+          <Heading
+            level="display"
+            className="marketing-text-center"
+            style={{ color: 'white' }}
+          >
             <Highlight>Community Library</Highlight> Management Beta
           </Heading>
-          
+
           {/* Subheading */}
-          <Text 
-            variant="lead" 
+          <Text
+            variant="lead"
             className="marketing-text-center"
-            style={{ 
+            style={{
               marginTop: 'var(--marketing-spacing-6)',
               marginBottom: 'var(--marketing-spacing-8)',
               maxWidth: '700px',
               marginLeft: 'auto',
-              marginRight: 'auto'
+              marginRight: 'auto',
+              color: 'rgba(255, 255, 255, 0.9)'
             }}
           >
-            Help us build the perfect community library management tool. 
+            Help us build the perfect community library management tool.
             Join our beta and shape the future of shared book collections.
           </Text>
 
@@ -56,18 +91,20 @@ export default function HeroSection() {
           </Flex>
 
           {/* Trust indicators */}
-          <div 
-            style={{ 
+          <div
+            style={{
               marginTop: 'var(--marketing-spacing-12)',
               paddingTop: 'var(--marketing-spacing-8)',
-              borderTop: '1px solid var(--marketing-gray-200)'
+              borderTop: '1px solid rgba(255, 255, 255, 0.3)'
             }}
           >
-            <Text 
-              variant="small" 
-              color="muted" 
+            <Text
+              variant="small"
               className="marketing-text-center"
-              style={{ marginBottom: 'var(--marketing-spacing-6)' }}
+              style={{
+                marginBottom: 'var(--marketing-spacing-6)',
+                color: 'rgba(255, 255, 255, 0.8)'
+              }}
             >
               Join the beta program and help shape the future
             </Text>
@@ -105,17 +142,42 @@ export default function HeroSection() {
             </div>
           </div>
         </div>
-      </Container>
+        </Container>
+      </div>
     </Section>
   )
 }
 
-// Add responsive styles
+// Add responsive styles and accessibility
 const styles = `
 @media (min-width: 768px) {
   .marketing-flex-md-row {
     flex-direction: row !important;
   }
+}
+
+/* Hero background responsiveness and accessibility */
+@media (max-width: 768px) {
+  .hero-background-section {
+    background-attachment: scroll !important;
+    min-height: 60vh;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-background-section {
+    background-attachment: scroll !important;
+  }
+}
+
+/* Fallback for when image fails to load */
+.hero-background-section {
+  background-color: var(--marketing-primary);
+}
+
+/* Improve contrast for better accessibility */
+.hero-text-shadow {
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 `
 
