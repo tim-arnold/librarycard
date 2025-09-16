@@ -381,20 +381,3 @@
     font-size: var(--marketing-text-3xl);
   }
 }
-
-/* Dark mode support (future) */
-@media (prefers-color-scheme: dark) {
-  .marketing-card,
-  .marketing-pricing-card,
-  .marketing-feature-card,
-  .marketing-testimonial-card,
-  .marketing-stats-card,
-  .marketing-blog-card {
-    background: var(--marketing-gray-800);
-    border-color: var(--marketing-gray-700);
-  }
-  
-  .marketing-card-flat {
-    border-color: var(--marketing-gray-700);
-  }
-}
