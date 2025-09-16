@@ -148,23 +148,57 @@ export default function CoverSelectionModal({
     onClose()
   }
 
-  const handleCameraCapture = (imageDataUrl: string) => {
-    // Create a cover option from the captured image
-    const cameraCover: CoverOption = {
-      id: `camera-${Date.now()}`,
-      title: title,
-      authors: [author],
-      covers: {
-        thumbnail: imageDataUrl,
-        small: imageDataUrl,
-        medium: imageDataUrl,
-        large: imageDataUrl,
-        extraLarge: imageDataUrl
-      },
-      source: 'camera' as any
-    }
+  const handleCameraCapture = async (imageDataUrl: string) => {
+    try {
+      // Upload the captured image to our backend storage
+      const response = await fetch(`${getApiBaseUrl()}/api/books/images/upload`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session?.user?.email}`,
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: JSON.stringify({
+          image: imageDataUrl,
+          metadata: {
+            width: 0, // Will be filled by backend processing
+            height: 0,
+            size: 0,
+            format: 'jpeg'
+          }
+        })
+      });
 
-    handleCoverSelect(cameraCover)
+      if (!response.ok) {
+        throw new Error('Failed to upload image');
+      }
+
+      const uploadResult = await response.json();
+
+      if (!uploadResult.success) {
+        throw new Error(uploadResult.error || 'Image upload failed');
+      }
+
+      // Create a cover option from the uploaded image
+      const cameraCover: CoverOption = {
+        id: `camera-${Date.now()}`,
+        title: title,
+        authors: [author],
+        covers: {
+          thumbnail: uploadResult.imageUrl,
+          small: uploadResult.imageUrl,
+          medium: uploadResult.imageUrl,
+          large: uploadResult.imageUrl,
+          extraLarge: uploadResult.imageUrl
+        },
+        source: 'camera' as any
+      }
+
+      handleCoverSelect(cameraCover)
+    } catch (error) {
+      console.error('Error uploading camera capture:', error);
+      setError('Failed to upload captured image. Please try again.');
+    }
   }
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {

@@ -30,6 +30,11 @@ import {
 import {
   getEnhancedBookEditions
 } from '../books/loc-cached';
+import {
+  uploadBookCoverImage,
+  deleteBookCoverImage,
+  getBookCoverImages
+} from '../books/images';
 import { GenreService } from '../genres';
 import { invalidateAllAdminAnalytics } from '../admin/cached';
 
@@ -403,6 +408,23 @@ export class BooksRouter {
     // Library activity endpoints for sidebar
     if (path === '/api/library/activity' && request.method === 'GET') {
       return await BooksRouter.getLibraryActivity(userId, env, corsHeaders, url);
+    }
+
+    // Image upload endpoints
+    if (path === '/api/books/images/upload' && request.method === 'POST') {
+      return await uploadBookCoverImage(request, userId, env, corsHeaders);
+    }
+
+    // Get book cover images
+    if (path.match(/^\/api\/books\/\d+\/images$/) && request.method === 'GET') {
+      const bookId = parseInt(path.split('/')[3]);
+      return await getBookCoverImages(userId, env, corsHeaders, bookId);
+    }
+
+    // Delete book cover image
+    if (path.match(/^\/api\/books\/\d+\/images\/cover$/) && request.method === 'DELETE') {
+      const bookId = parseInt(path.split('/')[3]);
+      return await deleteBookCoverImage(request, userId, env, corsHeaders, bookId);
     }
 
     // Route not handled by books router
