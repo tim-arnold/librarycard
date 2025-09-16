@@ -371,71 +371,75 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                     </div>
                   </div>
 
-                  {/* Divider */}
-                  <div style={{ 
-                    height: '1px', 
-                    background: 'var(--marketing-gray-200)', 
-                    margin: 'var(--marketing-spacing-2) var(--marketing-spacing-4)' 
-                  }} />
+                  {/* Divider - only shown when color scheme options are available */}
+                  {session && (
+                    <div style={{
+                      height: '1px',
+                      background: 'var(--marketing-gray-200)',
+                      margin: 'var(--marketing-spacing-2) var(--marketing-spacing-4)'
+                    }} />
+                  )}
 
-                  {/* Color Scheme Options */}
-                  <div style={{ padding: '0 var(--marketing-spacing-4)' }}>
-                    <div style={{ 
-                      fontSize: 'var(--marketing-text-sm)', 
-                      fontWeight: 'var(--marketing-font-medium)',
-                      color: 'var(--marketing-gray-700)',
-                      marginBottom: 'var(--marketing-spacing-2)'
-                    }}>
-                      Color Scheme
-                    </div>
-                    <div className="marketing-grid marketing-grid-cols-2 marketing-gap-2">
-                      {themeOptions.map((option) => (
-                        <button
-                          key={option.value}
-                          onClick={() => {
-                            setThemeVariant(option.value)
-                            setThemeMenuOpen(false)
-                          }}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 'var(--marketing-spacing-2)',
-                            padding: 'var(--marketing-spacing-2)',
-                            background: themeVariant === option.value ? 'var(--marketing-gray-100)' : 'none',
-                            border: '1px solid',
-                            borderColor: themeVariant === option.value ? 'var(--marketing-primary)' : 'transparent',
-                            borderRadius: 'var(--marketing-radius-base)',
-                            cursor: 'pointer',
-                            fontSize: 'var(--marketing-text-sm)',
-                            color: 'var(--marketing-gray-700)',
-                            transition: 'all 0.2s ease',
-                            textAlign: 'left'
-                          }}
-                          onMouseOver={(e) => {
-                            if (themeVariant !== option.value) {
-                              e.currentTarget.style.backgroundColor = 'var(--marketing-gray-50)'
-                            }
-                          }}
-                          onMouseOut={(e) => {
-                            if (themeVariant !== option.value) {
-                              e.currentTarget.style.backgroundColor = 'transparent'
-                            }
-                          }}
-                        >
-                          <div
-                            style={{
-                              width: '16px',
-                              height: '16px',
-                              borderRadius: '50%',
-                              backgroundColor: option.color,
-                              flexShrink: 0
+                  {/* Color Scheme Options - only shown when logged in */}
+                  {session && (
+                    <div style={{ padding: '0 var(--marketing-spacing-4)' }}>
+                      <div style={{
+                        fontSize: 'var(--marketing-text-sm)',
+                        fontWeight: 'var(--marketing-font-medium)',
+                        color: 'var(--marketing-gray-700)',
+                        marginBottom: 'var(--marketing-spacing-2)'
+                      }}>
+                        Color Scheme
+                      </div>
+                      <div className="marketing-grid marketing-grid-cols-2 marketing-gap-2">
+                        {themeOptions.map((option) => (
+                          <button
+                            key={option.value}
+                            onClick={() => {
+                              setThemeVariant(option.value)
+                              setThemeMenuOpen(false)
                             }}
-                          />
-                          {option.label}
-                        </button>
-                      ))}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 'var(--marketing-spacing-2)',
+                              padding: 'var(--marketing-spacing-2)',
+                              background: themeVariant === option.value ? 'var(--marketing-gray-100)' : 'none',
+                              border: '1px solid',
+                              borderColor: themeVariant === option.value ? 'var(--marketing-primary)' : 'transparent',
+                              borderRadius: 'var(--marketing-radius-base)',
+                              cursor: 'pointer',
+                              fontSize: 'var(--marketing-text-sm)',
+                              color: 'var(--marketing-gray-700)',
+                              transition: 'all 0.2s ease',
+                              textAlign: 'left'
+                            }}
+                            onMouseOver={(e) => {
+                              if (themeVariant !== option.value) {
+                                e.currentTarget.style.backgroundColor = 'var(--marketing-gray-50)'
+                              }
+                            }}
+                            onMouseOut={(e) => {
+                              if (themeVariant !== option.value) {
+                                e.currentTarget.style.backgroundColor = 'transparent'
+                              }
+                            }}
+                          >
+                            <div
+                              style={{
+                                width: '16px',
+                                height: '16px',
+                                borderRadius: '50%',
+                                backgroundColor: option.color,
+                                flexShrink: 0
+                              }}
+                            />
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               )}
             </div>
@@ -854,55 +858,57 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                     </div>
                   </div>
 
-                  {/* Color Scheme Options */}
-                  <div>
-                    <div style={{ 
-                      fontSize: 'var(--marketing-text-sm)', 
-                      fontWeight: 'var(--marketing-font-medium)',
-                      color: 'var(--marketing-gray-700)',
-                      marginBottom: 'var(--marketing-spacing-2)'
-                    }}>
-                      Color Scheme
-                    </div>
-                    <div className="marketing-grid marketing-grid-cols-2 marketing-gap-2">
-                      {themeOptions.map((option) => (
-                        <button
-                          key={option.value}
-                          onClick={() => {
-                            setThemeVariant(option.value)
-                            setThemeMenuOpen(false)
-                            setMobileMenuOpen(false)
-                          }}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 'var(--marketing-spacing-2)',
-                            padding: 'var(--marketing-spacing-2)',
-                            background: themeVariant === option.value ? 'var(--marketing-gray-100)' : 'var(--marketing-white)',
-                            border: '1px solid',
-                            borderColor: themeVariant === option.value ? 'var(--marketing-primary)' : 'var(--marketing-gray-200)',
-                            borderRadius: 'var(--marketing-radius-base)',
-                            cursor: 'pointer',
-                            fontSize: 'var(--marketing-text-sm)',
-                            color: 'var(--marketing-gray-700)',
-                            transition: 'all 0.2s ease',
-                            textAlign: 'left'
-                          }}
-                        >
-                          <div
-                            style={{
-                              width: '16px',
-                              height: '16px',
-                              borderRadius: '50%',
-                              backgroundColor: option.color,
-                              flexShrink: 0
+                  {/* Color Scheme Options - only shown when logged in */}
+                  {session && (
+                    <div>
+                      <div style={{
+                        fontSize: 'var(--marketing-text-sm)',
+                        fontWeight: 'var(--marketing-font-medium)',
+                        color: 'var(--marketing-gray-700)',
+                        marginBottom: 'var(--marketing-spacing-2)'
+                      }}>
+                        Color Scheme
+                      </div>
+                      <div className="marketing-grid marketing-grid-cols-2 marketing-gap-2">
+                        {themeOptions.map((option) => (
+                          <button
+                            key={option.value}
+                            onClick={() => {
+                              setThemeVariant(option.value)
+                              setThemeMenuOpen(false)
+                              setMobileMenuOpen(false)
                             }}
-                          />
-                          {option.label}
-                        </button>
-                      ))}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 'var(--marketing-spacing-2)',
+                              padding: 'var(--marketing-spacing-2)',
+                              background: themeVariant === option.value ? 'var(--marketing-gray-100)' : 'var(--marketing-white)',
+                              border: '1px solid',
+                              borderColor: themeVariant === option.value ? 'var(--marketing-primary)' : 'var(--marketing-gray-200)',
+                              borderRadius: 'var(--marketing-radius-base)',
+                              cursor: 'pointer',
+                              fontSize: 'var(--marketing-text-sm)',
+                              color: 'var(--marketing-gray-700)',
+                              transition: 'all 0.2s ease',
+                              textAlign: 'left'
+                            }}
+                          >
+                            <div
+                              style={{
+                                width: '16px',
+                                height: '16px',
+                                borderRadius: '50%',
+                                backgroundColor: option.color,
+                                flexShrink: 0
+                              }}
+                            />
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               )}
             </div>
