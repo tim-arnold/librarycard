@@ -9,6 +9,28 @@ import Button from '@/components/marketing/ui/Button'
 export const metadata: Metadata = {
   title: 'Join Beta - LibraryCard',
   description: 'Join the LibraryCard beta program and help us build the perfect community library management tool. Free access during development.',
+  openGraph: {
+    title: 'Join Beta - LibraryCard',
+    description: 'Join the LibraryCard beta program and help us build the perfect community library management tool. Free access during development.',
+    url: 'https://librarycard.tim52.io/pricing',
+    siteName: 'LibraryCard',
+    images: [
+      {
+        url: 'https://librarycard.tim52.io/images/hero-bg.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Join LibraryCard Beta - Community Library Management Platform',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Join Beta - LibraryCard',
+    description: 'Join the LibraryCard beta program and help us build the perfect community library management tool. Free access during development.',
+    images: ['https://librarycard.tim52.io/images/hero-bg.jpg'],
+  },
 }
 
 function BetaHeader() {

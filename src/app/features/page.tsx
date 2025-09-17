@@ -23,6 +23,28 @@ import Button from '@/components/marketing/ui/Button'
 export const metadata: Metadata = {
   title: 'Beta Features - LibraryCard',
   description: 'Explore LibraryCard beta features for community library management. ISBN scanning, multi-user access, location tracking, and more. Join our beta program today.',
+  openGraph: {
+    title: 'Beta Features - LibraryCard',
+    description: 'Explore LibraryCard beta features for community library management. ISBN scanning, multi-user access, location tracking, and more. Join our beta program today.',
+    url: 'https://librarycard.tim52.io/features',
+    siteName: 'LibraryCard',
+    images: [
+      {
+        url: 'https://librarycard.tim52.io/images/hero-bg.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'LibraryCard Beta Features - Community Library Management Platform',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Beta Features - LibraryCard',
+    description: 'Explore LibraryCard beta features for community library management. ISBN scanning, multi-user access, location tracking, and more. Join our beta program today.',
+    images: ['https://librarycard.tim52.io/images/hero-bg.jpg'],
+  },
 }
 
 function FeaturesHeader() {
