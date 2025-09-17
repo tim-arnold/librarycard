@@ -97,7 +97,12 @@ export default function BookCoverCapture({
     canvas.height = video.videoHeight
     ctx.drawImage(video, 0, 0)
 
-    const imageDataUrl = canvas.toDataURL('image/webp', 0.8)
+    // Try WebP first, fallback to JPEG if not supported
+    let imageDataUrl = canvas.toDataURL('image/webp', 0.8)
+    // Check if WebP is actually supported (some browsers return PNG as fallback)
+    if (!imageDataUrl.startsWith('data:image/webp')) {
+      imageDataUrl = canvas.toDataURL('image/jpeg', 0.8)
+    }
     setCapturedImage(imageDataUrl)
     stopCamera()
   }
@@ -139,7 +144,11 @@ export default function BookCoverCapture({
         croppedAreaPixels.height
       )
 
-      const croppedImageDataUrl = canvas.toDataURL('image/webp', 0.8)
+      // Try WebP first, fallback to JPEG if not supported
+      let croppedImageDataUrl = canvas.toDataURL('image/webp', 0.8)
+      if (!croppedImageDataUrl.startsWith('data:image/webp')) {
+        croppedImageDataUrl = canvas.toDataURL('image/jpeg', 0.8)
+      }
       onCoverCapture(croppedImageDataUrl)
 
     } catch (err) {
