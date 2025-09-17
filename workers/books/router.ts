@@ -30,6 +30,11 @@ import {
 import {
   getEnhancedBookEditions
 } from '../books/loc-cached';
+import {
+  uploadBookCoverImage,
+  deleteBookCoverImage,
+  getBookCoverImages
+} from '../books/images';
 import { GenreService } from '../genres';
 import { invalidateAllAdminAnalytics } from '../admin/cached';
 
@@ -403,6 +408,67 @@ export class BooksRouter {
     // Library activity endpoints for sidebar
     if (path === '/api/library/activity' && request.method === 'GET') {
       return await BooksRouter.getLibraryActivity(userId, env, corsHeaders, url);
+    }
+
+    // Debug R2 binding endpoint with actual bucket test
+    if (path === '/api/debug/r2' && request.method === 'GET') {
+      let bucketTest = null;
+
+      if (env.R2_BUCKET) {
+        try {
+          // Try to list objects to verify bucket access
+          const listResult = await env.R2_BUCKET.list({ limit: 1 });
+          bucketTest = {
+            success: true,
+            canList: true,
+            objectCount: listResult.objects.length,
+            truncated: listResult.truncated
+          };
+        } catch (error) {
+          bucketTest = {
+            success: false,
+            canList: false,
+            error: error instanceof Error ? error.message : 'Unknown error accessing bucket'
+          };
+        }
+      } else {
+        bucketTest = {
+          success: false,
+          canList: false,
+          error: 'R2_BUCKET binding not available'
+        };
+      }
+
+      return new Response(JSON.stringify({
+        r2_available: !!env.R2_BUCKET,
+        environment: env.ENVIRONMENT,
+        bindings: {
+          has_db: !!env.DB,
+          has_cache: !!env.CACHE,
+          has_r2: !!env.R2_BUCKET
+        },
+        bucketTest: bucketTest,
+        timestamp: new Date().toISOString()
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Image upload endpoints
+    if (path === '/api/books/images/upload' && request.method === 'POST') {
+      return await uploadBookCoverImage(request, userId, env, corsHeaders);
+    }
+
+    // Get book cover images
+    if (path.match(/^\/api\/books\/\d+\/images$/) && request.method === 'GET') {
+      const bookId = parseInt(path.split('/')[3]);
+      return await getBookCoverImages(userId, env, corsHeaders, bookId);
+    }
+
+    // Delete book cover image
+    if (path.match(/^\/api\/books\/\d+\/images\/cover$/) && request.method === 'DELETE') {
+      const bookId = parseInt(path.split('/')[3]);
+      return await deleteBookCoverImage(request, userId, env, corsHeaders, bookId);
     }
 
     // Route not handled by books router
