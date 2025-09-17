@@ -97,7 +97,7 @@ export default function BookCoverCapture({
     canvas.height = video.videoHeight
     ctx.drawImage(video, 0, 0)
 
-    const imageDataUrl = canvas.toDataURL('image/jpeg', 0.8)
+    const imageDataUrl = canvas.toDataURL('image/webp', 0.8)
     setCapturedImage(imageDataUrl)
     stopCamera()
   }
@@ -139,7 +139,7 @@ export default function BookCoverCapture({
         croppedAreaPixels.height
       )
 
-      const croppedImageDataUrl = canvas.toDataURL('image/jpeg', 0.8)
+      const croppedImageDataUrl = canvas.toDataURL('image/webp', 0.8)
       onCoverCapture(croppedImageDataUrl)
 
     } catch (err) {
