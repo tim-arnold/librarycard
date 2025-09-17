@@ -99,6 +99,7 @@ export default function BookCoverCapture({
 
     // Try WebP first, fallback to JPEG if not supported
     let imageDataUrl = canvas.toDataURL('image/webp', 0.8)
+    console.log('WebP code version: 2025-01-16-v2')
     // Check if WebP is actually supported (some browsers return PNG as fallback)
     if (!imageDataUrl.startsWith('data:image/webp')) {
       imageDataUrl = canvas.toDataURL('image/jpeg', 0.8)
