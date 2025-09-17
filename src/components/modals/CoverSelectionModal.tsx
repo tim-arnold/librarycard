@@ -164,7 +164,7 @@ export default function CoverSelectionModal({
             width: 0, // Will be filled by backend processing
             height: 0,
             size: 0,
-            format: 'jpeg'
+            format: imageDataUrl.startsWith('data:image/webp') ? 'webp' : 'jpeg'
           }
         })
       });
