@@ -18,6 +18,28 @@ import Button from '@/components/marketing/ui/Button'
 export const metadata: Metadata = {
   title: 'About - LibraryCard',
   description: 'Learn about LibraryCard\'s mission to make library management accessible to every community. Founded to bridge the gap between personal tools and expensive institutional software.',
+  openGraph: {
+    title: 'About - LibraryCard',
+    description: 'Learn about LibraryCard\'s mission to make library management accessible to every community. Founded to bridge the gap between personal tools and expensive institutional software.',
+    url: 'https://librarycard.tim52.io/about',
+    siteName: 'LibraryCard',
+    images: [
+      {
+        url: 'https://librarycard.tim52.io/images/hero-bg.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'About LibraryCard - Community Library Management Platform',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'About - LibraryCard',
+    description: 'Learn about LibraryCard\'s mission to make library management accessible to every community. Founded to bridge the gap between personal tools and expensive institutional software.',
+    images: ['https://librarycard.tim52.io/images/hero-bg.jpg'],
+  },
 }
 
 function AboutHeader() {
