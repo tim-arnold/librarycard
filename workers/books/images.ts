@@ -165,10 +165,12 @@ export async function uploadBookCoverImage(
       const mimeType = `image/${imageFormat}`;
       const base64Image = btoa(String.fromCharCode(...imageBuffer));
       imageUrl = `data:${mimeType};base64,${base64Image}`;
+    } else if (env.ENVIRONMENT === 'staging') {
+      // Staging uses Cloudflare public URL
+      imageUrl = `https://pub-d1960ed90aca4c518d42d3f1cdeafac2.r2.dev/${key}`;
     } else {
-      // For staging/production, construct proper R2 public URL
-      // Note: This requires R2 public access to be configured or a custom domain
-      imageUrl = `https://librarycard-images.r2.dev/${key}`;
+      // Production - configure custom domain when ready
+      imageUrl = `https://images.librarycard.tim52.io/${key}`;
     }
 
     // If bookId is provided, save image reference to database
