@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Alert, Typography, Box, CircularProgress, useTheme, useMediaQuery, Fab, Drawer } from '@mui/material'
+import { Alert, Typography, Box, CircularProgress, Fab, Drawer } from '@mui/material'
 import { LibraryBooks, MenuBook } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
 import { useModal } from '@/hooks/useModal'
+import useMobileBreakpoints from '@/hooks/useMobileBreakpoints'
 import { useBookLibraryEnhanced as useBookLibrary } from '@/hooks/useBookLibraryEnhanced'
 import { useBookActions } from '@/hooks/useBookActions'
 import { useBookFilters } from '@/hooks/useBookFilters'
@@ -38,8 +39,7 @@ interface BookLibraryProps {
 }
 
 export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
-  const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
+  const { isMobile } = useMobileBreakpoints()
   const { modalState, confirmAsync, alert, closeModal } = useModal()
   
   // Core data and state from hooks
