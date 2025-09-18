@@ -429,32 +429,35 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
         )}
 
 
-        <div data-tour="search-filters">
-          <BookFilters
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            shelfFilter={shelfFilter}
-            setShelfFilter={setShelfFilter}
-            categoryFilter={categoryFilter}
-            setCategoryFilter={setCategoryFilter}
-            locationFilter={locationFilter}
-            setLocationFilter={setLocationFilter}
-            checkoutFilter={checkoutFilter}
-            setCheckoutFilter={setCheckoutFilter}
-            sortField={sortField}
-            setSortField={handleSortFieldChange}
-            sortDirection={sortDirection}
-            setSortDirection={handleSortDirectionChange}
-            userRole={userRole || ''}
-            shelves={isAdmin(userRole) ? shelves : shelves.filter(shelf => currentLocation && shelf.location_id === currentLocation.id)}
-            books={books}
-            allLocations={allLocations}
-            userLocations={userLocations}
-            currentLocation={currentLocation}
-            onLocationSwitch={switchToLocation}
-            allCategories={allCategories}
-          />
-        </div>
+        {/* Desktop Filters - Hidden on mobile (mobile uses bottom nav + filter drawer) */}
+        {!isMobile && (
+          <div data-tour="search-filters">
+            <BookFilters
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              shelfFilter={shelfFilter}
+              setShelfFilter={setShelfFilter}
+              categoryFilter={categoryFilter}
+              setCategoryFilter={setCategoryFilter}
+              locationFilter={locationFilter}
+              setLocationFilter={setLocationFilter}
+              checkoutFilter={checkoutFilter}
+              setCheckoutFilter={setCheckoutFilter}
+              sortField={sortField}
+              setSortField={handleSortFieldChange}
+              sortDirection={sortDirection}
+              setSortDirection={handleSortDirectionChange}
+              userRole={userRole || ''}
+              shelves={isAdmin(userRole) ? shelves : shelves.filter(shelf => currentLocation && shelf.location_id === currentLocation.id)}
+              books={books}
+              allLocations={allLocations}
+              userLocations={userLocations}
+              currentLocation={currentLocation}
+              onLocationSwitch={switchToLocation}
+              allCategories={allCategories}
+            />
+          </div>
+        )}
 
         <ActiveFilters
           authorFilter={authorFilter}
@@ -591,6 +594,8 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
         <MobileFilterDrawer
           open={mobileFiltersOpen}
           onClose={() => setMobileFiltersOpen(false)}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
           shelfFilter={shelfFilter}
           setShelfFilter={setShelfFilter}
           categoryFilter={categoryFilter}
