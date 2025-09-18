@@ -27,6 +27,7 @@ import ViewModeControls from './ViewModeControls'
 import BookViews from './BookViews'
 import LibrarySidebar from './sidebar/LibrarySidebar'
 import PageContainer from '../layout/PageContainer'
+import MobileBottomNav from '../layout/MobileBottomNav'
 
 interface BookLibraryProps {
   initialFilters?: {
@@ -149,6 +150,15 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
   
   // Mobile sidebar state
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
+
+  // Calculate active filters count for mobile bottom nav
+  const activeFiltersCount = [
+    locationFilter,
+    shelfFilter,
+    checkoutFilter,
+    categoryFilter.length > 0 ? 'genre' : '',
+  ].filter(Boolean).length
 
   // Modal handlers
   const handleMoreDetailsClick = (book: EnhancedBook) => {
@@ -479,11 +489,13 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
         />
 
         {/* Main Content Layout */}
-        <Box sx={{ 
+        <Box sx={{
           display: 'flex',
           gap: 2,
           alignItems: 'flex-start',
-          flexDirection: { xs: 'column', md: 'row' }
+          flexDirection: { xs: 'column', md: 'row' },
+          // Add bottom padding for mobile bottom navigation
+          paddingBottom: { xs: '80px', md: 0 }
         }}>
           {/* Sidebar - Hidden on mobile, collapsible on larger screens */}
           {!isMobile && (
@@ -539,22 +551,18 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
           </Box>
         </Box>
 
-        {/* Mobile Floating Action Button */}
-        {isMobile && (
-          <Fab
-            color="primary"
-            aria-label="library activity"
-            onClick={() => setMobileSidebarOpen(true)}
-            sx={{
-              position: 'fixed',
-              bottom: 16,
-              right: 16,
-              zIndex: 1000,
-            }}
-          >
-            <MenuBook />
-          </Fab>
-        )}
+        {/* Mobile Bottom Navigation */}
+        <MobileBottomNav
+          onFilterToggle={() => setMobileFiltersOpen(!mobileFiltersOpen)}
+          onSidebarToggle={() => setMobileSidebarOpen(true)}
+          activeFiltersCount={activeFiltersCount}
+          searchTerm={searchTerm}
+          onSearchFocus={() => {
+            // Focus search field in BookFilters
+            const searchInput = document.querySelector('input[placeholder="Search books..."]') as HTMLInputElement
+            searchInput?.focus()
+          }}
+        />
 
         {/* Mobile Sidebar Drawer */}
         {isMobile && (
