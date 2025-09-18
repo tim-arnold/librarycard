@@ -16,6 +16,7 @@ import {
   Settings,
 } from '@mui/icons-material'
 import Footer from '@/components/layout/Footer'
+import ProfileSettingsMobileBottomNav from '@/components/layout/ProfileSettingsMobileBottomNav'
 
 export default function SettingsPage() {
   const { data: session, status } = useSession()
@@ -48,7 +49,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <Container maxWidth="md" sx={{ py: 3 }}>
+    <Container maxWidth="md" sx={{ py: 3, pb: { xs: '80px', md: 3 } }}>
       <Paper sx={{ p: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
           <Button 
@@ -99,8 +100,17 @@ export default function SettingsPage() {
           </Typography>
         </Alert>
       </Paper>
-      
+
       <Footer />
+
+      {/* Mobile Bottom Navigation */}
+      <ProfileSettingsMobileBottomNav
+        currentPage="settings"
+        onLibraryClick={() => router.push('/library')}
+        onAccountClick={() => router.push('/profile')}
+        onLocationsClick={() => router.push('/locations')}
+        onSettingsClick={() => router.push('/settings')}
+      />
     </Container>
   )
 }
