@@ -2,6 +2,40 @@
 
 This file documents all completed features, fixes, and improvements to the LibraryCard project.
 
+## January 16, 2025 - Camera Capture Custom Covers
+
+### Added
+- **Camera Capture for Custom Book Covers (LCWEB-170)**
+  - Professional camera capture interface with live video preview
+  - React Easy Crop integration for precise 2:3 aspect ratio cropping
+  - WebP image format with JPEG fallback for optimal compression (25-50% smaller files)
+  - Cloudflare R2 storage integration with environment-specific URLs
+  - Real-time crop preview with green overlay showing exact selection area
+  - Mobile-optimized touch controls for crop adjustment
+  - Automatic image optimization and metadata tracking
+  - End-to-end workflow: camera → crop → upload → display
+
+### Technical Infrastructure
+- **R2 Storage System**
+  - Environment-specific public URL configuration
+  - Staging: Cloudflare public URLs (`pub-*.r2.dev`)
+  - Production: Custom domain preparation (`images.librarycard.tim52.io`)
+  - Local: Data URL fallbacks for offline development
+- **Enhanced Debug Endpoints**
+  - R2 binding verification with actual bucket access testing
+  - Comprehensive environment status reporting
+- **Image Format Optimization**
+  - Intelligent WebP detection with graceful JPEG fallback
+  - Browser compatibility across all modern and legacy devices
+  - Dynamic format selection based on canvas export capabilities
+
+### Database & API
+- **Custom Cover Support**
+  - Database schema for book cover metadata and storage keys
+  - User access control for cover upload permissions
+  - Image deletion and cleanup workflows
+  - Integration with existing book management system
+
 ## September 15, 2025 - Privacy & Activity Features
 
 ### Added

@@ -21,6 +21,11 @@ database_id = "7269bb90-837c-48f4-8787-73bf1b2c55b7"
 binding = "CACHE"
 id = "9f569f411f764d83a6c87e1bda2494ae"
 
+# R2 bucket for image storage
+[[r2_buckets]]
+binding = "R2_BUCKET"
+bucket_name = "librarycard-images-local"
+
 # Local environment (explicit)
 # Use: npx wrangler dev --env=local
 [env.local]
@@ -42,6 +47,10 @@ database_id = "7269bb90-837c-48f4-8787-73bf1b2c55b7"
 binding = "CACHE"
 id = "9f569f411f764d83a6c87e1bda2494ae"
 
+[[env.local.r2_buckets]]
+binding = "R2_BUCKET"
+bucket_name = "librarycard-images-local"
+
 # Staging environment
 # Use: npx wrangler deploy --env=staging
 [env.staging]
@@ -61,7 +70,11 @@ database_id = "4283d8af-c667-4673-8505-108f02b4609c"
 
 [[env.staging.kv_namespaces]]
 binding = "CACHE"
-id = "22522f1582fc4b45b8b59446fca5c791"
+id = "a7451e32dc8740efb83e3c0751ea3c08"
+
+[[env.staging.r2_buckets]]
+binding = "R2_BUCKET"
+bucket_name = "librarycard-images-staging"
 
 # Production environment  
 # Use: npx wrangler deploy --env=production
@@ -83,3 +96,7 @@ database_id = "368ab7bc-fb42-4607-a4cf-761dc7795284"
 [[env.production.kv_namespaces]]
 binding = "CACHE"
 id = "8f5a86fc82a64b10ba946d749f2dc8f4"
+
+[[env.production.r2_buckets]]
+binding = "R2_BUCKET"
+bucket_name = "librarycard-images-production"
