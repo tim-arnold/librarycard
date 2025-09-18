@@ -28,6 +28,7 @@ import BookViews from './BookViews'
 import LibrarySidebar from './sidebar/LibrarySidebar'
 import PageContainer from '../layout/PageContainer'
 import MobileBottomNav from '../layout/MobileBottomNav'
+import MobileFilterDrawer from '../layout/MobileFilterDrawer'
 
 interface BookLibraryProps {
   initialFilters?: {
@@ -585,6 +586,32 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
             />
           </Drawer>
         )}
+
+        {/* Mobile Filter Drawer */}
+        <MobileFilterDrawer
+          open={mobileFiltersOpen}
+          onClose={() => setMobileFiltersOpen(false)}
+          shelfFilter={shelfFilter}
+          setShelfFilter={setShelfFilter}
+          categoryFilter={categoryFilter}
+          setCategoryFilter={setCategoryFilter}
+          locationFilter={locationFilter}
+          setLocationFilter={setLocationFilter}
+          checkoutFilter={checkoutFilter}
+          setCheckoutFilter={setCheckoutFilter}
+          sortField={sortField}
+          setSortField={handleSortFieldChange}
+          sortDirection={sortDirection}
+          setSortDirection={handleSortDirectionChange}
+          userRole={userRole || ''}
+          shelves={isAdmin(userRole) ? shelves : shelves.filter(shelf => currentLocation && shelf.location_id === currentLocation.id)}
+          books={books}
+          allLocations={allLocations}
+          userLocations={userLocations}
+          currentLocation={currentLocation}
+          onLocationSwitch={switchToLocation}
+          allCategories={allCategories}
+        />
         
         {/* Modal Components */}
         {modalState.type === 'confirm' && (
