@@ -559,6 +559,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
         <MobileBottomNav
           onFilterToggle={() => setMobileFiltersOpen(!mobileFiltersOpen)}
           onSidebarToggle={() => setMobileSidebarOpen(true)}
+          onAddBookClick={() => window.location.href = '/add-books'}
           activeFiltersCount={activeFiltersCount}
           searchTerm={searchTerm}
           onSearchFocus={() => {

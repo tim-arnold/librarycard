@@ -8,7 +8,7 @@ import {
   Box
 } from '@mui/material'
 import {
-  LibraryBooks,
+  Add,
   FilterList,
   Search,
   MenuBook,
@@ -18,6 +18,7 @@ import useMobileBreakpoints from '@/hooks/useMobileBreakpoints'
 interface MobileBottomNavProps {
   onFilterToggle: () => void
   onSidebarToggle: () => void
+  onAddBookClick: () => void
   activeFiltersCount?: number
   searchTerm?: string
   onSearchFocus?: () => void
@@ -26,12 +27,13 @@ interface MobileBottomNavProps {
 export default function MobileBottomNav({
   onFilterToggle,
   onSidebarToggle,
+  onAddBookClick,
   activeFiltersCount = 0,
   searchTerm = '',
   onSearchFocus,
 }: MobileBottomNavProps) {
   const { isMobile } = useMobileBreakpoints()
-  const [value, setValue] = useState('library')
+  const [value, setValue] = useState('search')
 
   // Only show on mobile devices
   if (!isMobile) return null
@@ -40,6 +42,9 @@ export default function MobileBottomNav({
     setValue(newValue)
 
     switch (newValue) {
+      case 'add-books':
+        onAddBookClick()
+        break
       case 'filters':
         onFilterToggle()
         break
@@ -86,9 +91,9 @@ export default function MobileBottomNav({
         }}
       >
         <BottomNavigationAction
-          label="Library"
-          value="library"
-          icon={<LibraryBooks />}
+          label="Add Books"
+          value="add-books"
+          icon={<Add />}
         />
 
         <BottomNavigationAction
