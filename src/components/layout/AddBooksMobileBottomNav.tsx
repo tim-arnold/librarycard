@@ -96,15 +96,15 @@ export default function AddBooksMobileBottomNav({
         />
 
         <BottomNavigationAction
-          label="Camera"
-          value="camera"
-          icon={<CameraAlt color={activeTab === 1 ? 'primary' : 'inherit'} />}
+          label="Search"
+          value="manual"
+          icon={<Search color={activeTab === 0 ? 'primary' : 'inherit'} />}
         />
 
         <BottomNavigationAction
-          label="Manual"
-          value="manual"
-          icon={<Search color={activeTab === 0 ? 'primary' : 'inherit'} />}
+          label="Scan"
+          value="camera"
+          icon={<CameraAlt color={activeTab === 1 ? 'primary' : 'inherit'} />}
         />
 
         <BottomNavigationAction

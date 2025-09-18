@@ -22,8 +22,6 @@ import {
   Tooltip,
   FormControlLabel,
   Switch,
-  useMediaQuery,
-  useTheme,
 } from '@mui/material'
 import {
   Search,
@@ -41,6 +39,7 @@ import type { EnhancedBook, GoogleBookItem } from '@/lib/types'
 import { useBookSelection } from '@/contexts/BookSelectionContext'
 import { getApiBaseUrl } from '@/lib/apiConfig'
 import { useSession } from 'next-auth/react'
+import useMobileBreakpoints from '@/hooks/useMobileBreakpoints'
 
 // Utility function to ensure Google Books thumbnail URLs use HTTPS
 function ensureHttps(url: string | undefined): string | undefined {
@@ -97,8 +96,7 @@ export default function BookSearch({
   // Selection context for cart functionality
   const { state: selectionState, actions: selectionActions } = useBookSelection()
   const { data: session } = useSession()
-  const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
+  const { isMobile } = useMobileBreakpoints()
   
   const [isSearching, setIsSearching] = useState(false)
   const [displayedResults, setDisplayedResults] = useState(parentDisplayedResults || 10)

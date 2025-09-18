@@ -8,14 +8,13 @@ import {
   MenuItem,
   ToggleButton,
   ToggleButtonGroup,
-  useMediaQuery,
-  useTheme,
   Typography,
 } from '@mui/material'
-import { 
+import {
   GridView,
   FormatListBulleted,
 } from '@mui/icons-material'
+import useMobileBreakpoints from '@/hooks/useMobileBreakpoints'
 
 interface ViewModeControlsProps {
   viewMode: 'card' | 'list'
@@ -34,8 +33,7 @@ export default function ViewModeControls({
   onViewModeChange,
   onBooksPerPageChange
 }: ViewModeControlsProps) {
-  const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+  const { isSmallMobile: isMobile } = useMobileBreakpoints()
 
   // Only show if there are books to display
   if (filteredBooksCount === 0) {
