@@ -19,7 +19,6 @@ import {
   History,
   Book,
 } from '@mui/icons-material'
-import Footer from '@/components/layout/Footer'
 import ProfileSettingsMobileBottomNav from '@/components/layout/ProfileSettingsMobileBottomNav'
 
 interface CheckoutHistoryItem {
@@ -168,7 +167,6 @@ export default function CheckoutHistoryPage() {
         )}
       </Paper>
 
-      <Footer />
 
       {/* Mobile Bottom Navigation */}
       <ProfileSettingsMobileBottomNav

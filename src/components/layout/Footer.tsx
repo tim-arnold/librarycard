@@ -10,12 +10,13 @@ export default function Footer() {
 
   return (
     <>
-      <Box 
-        component="footer" 
-        sx={{ 
+      <Box
+        component="footer"
+        sx={{
           mt: 4,
           py: 3,
           px: 2,
+          mb: { xs: '80px', md: 0 }, // Add bottom margin on mobile to appear above mobile nav
           backgroundColor: 'background.paper',
           borderTop: 1,
           borderColor: 'divider'

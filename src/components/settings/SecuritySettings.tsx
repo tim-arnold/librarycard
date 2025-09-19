@@ -234,55 +234,27 @@ export default function SecuritySettings() {
           )}
 
           {/* Two-Factor Authentication */}
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-            <Box sx={{ flex: 1 }}>
-              <Typography variant="subtitle1" sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <Shield />
-                Two-Factor Authentication
-                {twoFactorStatus?.enabled && (
-                  <Chip
-                    icon={<CheckCircle />}
-                    label="Enabled"
-                    color="success"
-                    size="small"
-                  />
-                )}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                {twoFactorStatus?.enabled 
-                  ? 'Your account is protected with two-factor authentication using an authenticator app.'
-                  : 'Add an extra layer of security to your account with two-factor authentication.'
-                }
-              </Typography>
-              
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="subtitle1" sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <Shield />
+              Two-Factor Authentication
               {twoFactorStatus?.enabled && (
-                <Box sx={{ mt: 2 }}>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                    <strong>Backup Codes:</strong> {twoFactorStatus.backupCodes.remaining} of {twoFactorStatus.backupCodes.total} remaining
-                  </Typography>
-                  
-                  {twoFactorStatus.backupCodes.remaining <= 2 && (
-                    <Alert severity="warning" sx={{ mb: 2 }}>
-                      <Typography variant="body2">
-                        You're running low on backup codes. Consider regenerating new ones.
-                      </Typography>
-                    </Alert>
-                  )}
-                  
-                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                    <Button
-                      size="small"
-                      startIcon={<Refresh />}
-                      onClick={() => setRegenerateOpen(true)}
-                    >
-                      Regenerate Backup Codes
-                    </Button>
-                  </Box>
-                </Box>
+                <Chip
+                  icon={<CheckCircle />}
+                  label="Enabled"
+                  color="success"
+                  size="small"
+                />
               )}
-            </Box>
-            
-            <Box>
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              {twoFactorStatus?.enabled
+                ? 'Your account is protected with two-factor authentication using an authenticator app.'
+                : 'Add an extra layer of security to your account with two-factor authentication.'
+              }
+            </Typography>
+
+            <Box sx={{ mb: 2 }}>
               {twoFactorStatus?.enabled ? (
                 <Button
                   variant="outlined"
@@ -302,6 +274,32 @@ export default function SecuritySettings() {
                 </Button>
               )}
             </Box>
+
+            {twoFactorStatus?.enabled && (
+              <Box>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  <strong>Backup Codes:</strong> {twoFactorStatus.backupCodes.remaining} of {twoFactorStatus.backupCodes.total} remaining
+                </Typography>
+
+                {twoFactorStatus.backupCodes.remaining <= 2 && (
+                  <Alert severity="warning" sx={{ mb: 2 }}>
+                    <Typography variant="body2">
+                      You're running low on backup codes. Consider regenerating new ones.
+                    </Typography>
+                  </Alert>
+                )}
+
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  <Button
+                    size="small"
+                    startIcon={<Refresh />}
+                    onClick={() => setRegenerateOpen(true)}
+                  >
+                    Regenerate Backup Codes
+                  </Button>
+                </Box>
+              </Box>
+            )}
           </Box>
 
           {session?.user?.authProvider === 'google' && !twoFactorStatus?.enabled && (

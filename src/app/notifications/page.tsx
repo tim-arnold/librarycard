@@ -15,7 +15,6 @@ import {
   Notifications,
 } from '@mui/icons-material'
 import UserNotificationCenter from '@/components/user/UserNotificationCenter'
-import Footer from '@/components/layout/Footer'
 import ProfileSettingsMobileBottomNav from '@/components/layout/ProfileSettingsMobileBottomNav'
 
 export default function NotificationsPage() {
@@ -53,7 +52,6 @@ export default function NotificationsPage() {
         <UserNotificationCenter />
       </Paper>
 
-      <Footer />
 
       {/* Mobile Bottom Navigation */}
       <ProfileSettingsMobileBottomNav

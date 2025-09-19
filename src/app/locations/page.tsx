@@ -23,7 +23,6 @@ import {
 } from '@mui/icons-material'
 import ConfirmationModal from '@/components/modals/ConfirmationModal'
 import AlertModal from '@/components/modals/AlertModal'
-import Footer from '@/components/layout/Footer'
 import ProfileSettingsMobileBottomNav from '@/components/layout/ProfileSettingsMobileBottomNav'
 import { useModal } from '@/hooks/useModal'
 
@@ -251,7 +250,6 @@ export default function LocationsPage() {
         )}
       </Paper>
       
-      <Footer />
 
       {/* Mobile Bottom Navigation */}
       <ProfileSettingsMobileBottomNav

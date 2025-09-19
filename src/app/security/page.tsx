@@ -15,7 +15,6 @@ import {
   ArrowBack,
   Security,
 } from '@mui/icons-material'
-import Footer from '@/components/layout/Footer'
 import SecuritySettings from '@/components/settings/SecuritySettings'
 import ProfileSettingsMobileBottomNav from '@/components/layout/ProfileSettingsMobileBottomNav'
 
@@ -67,7 +66,6 @@ export default function SecurityPage() {
         <SecuritySettings />
       </Paper>
 
-      <Footer />
 
       {/* Mobile Bottom Navigation */}
       <ProfileSettingsMobileBottomNav
