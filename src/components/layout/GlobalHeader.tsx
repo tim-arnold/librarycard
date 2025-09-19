@@ -41,8 +41,10 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
   const { isDarkMode, themeVariant, toggleTheme, setThemeVariant } = useTheme()
   const muiTheme = useMuiTheme()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [mobileMenuClosing, setMobileMenuClosing] = useState(false)
   const [accountMenuOpen, setAccountMenuOpen] = useState(false)
   const [themeMenuOpen, setThemeMenuOpen] = useState(false)
+  const [themeMenuClosing, setThemeMenuClosing] = useState(false)
   const { unreadCount } = useUnreadNotificationCount()
   const { unreadRejectedCount } = useRejectedReviewNotifications()
   const { counts: adminCounts } = useAdminPendingCounts()
@@ -116,7 +118,23 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
 
   const handleNavClick = (href: string) => {
     router.push(href)
-    setMobileMenuOpen(false)
+    closeMobileMenu()
+  }
+
+  const closeMobileMenu = () => {
+    setMobileMenuClosing(true)
+    setTimeout(() => {
+      setMobileMenuOpen(false)
+      setMobileMenuClosing(false)
+    }, 300) // Match animation duration
+  }
+
+  const closeThemeMenu = () => {
+    setThemeMenuClosing(true)
+    setTimeout(() => {
+      setThemeMenuOpen(false)
+      setThemeMenuClosing(false)
+    }, 300) // Match animation duration
   }
 
   const isActivePath = (href: string, key: string) => {
@@ -130,20 +148,28 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
   }
 
   return (
-    <header 
-      style={{ 
-        backgroundColor: muiTheme.palette.background.paper,
-        borderBottom: `1px solid ${muiTheme.palette.divider}`,
+    <header
+      style={{
         position: 'sticky',
         top: 0,
-        zIndex: 1000,
+        zIndex: 1300, // Higher than Material-UI modal (1300) and all page content
         // Fallback to CSS variables for compatibility
         '--marketing-white': muiTheme.palette.background.paper,
         '--marketing-gray-200': muiTheme.palette.divider,
+        '--header-height': '80px'
       } as React.CSSProperties}
     >
-      <div className="marketing-container marketing-container-xl">
-        <div 
+      <div
+        className="marketing-container marketing-container-xl"
+        style={{
+          backgroundColor: muiTheme.palette.background.paper,
+          borderBottom: `1px solid ${muiTheme.palette.divider}`,
+          position: 'relative',
+          zIndex: 1302, // Higher than mobile menus within header context
+          boxShadow: (mobileMenuOpen || themeMenuOpen) ? '0 2px 8px rgba(0,0,0,0.15)' : 'none'
+        }}
+      >
+        <div
           className="marketing-flex marketing-items-center marketing-justify-between"
           style={{ padding: 'var(--marketing-spacing-4) 0' }}
         >
@@ -644,8 +670,12 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
             {/* Mobile theme button */}
             <button
               onClick={() => {
-                setThemeMenuOpen(!themeMenuOpen)
-                if (mobileMenuOpen) setMobileMenuOpen(false)
+                if (themeMenuOpen) {
+                  closeThemeMenu()
+                } else {
+                  setThemeMenuOpen(true)
+                  if (mobileMenuOpen) closeMobileMenu()
+                }
               }}
               aria-label="Theme options"
               style={{
@@ -677,8 +707,12 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
             {/* Mobile menu button */}
             <button
               onClick={() => {
-                setMobileMenuOpen(!mobileMenuOpen)
-                if (themeMenuOpen) setThemeMenuOpen(false)
+                if (mobileMenuOpen) {
+                  closeMobileMenu()
+                } else {
+                  setMobileMenuOpen(true)
+                  if (themeMenuOpen) closeThemeMenu()
+                }
               }}
               aria-label={mobileMenuOpen ? 'Close mobile menu' : 'Open mobile menu'}
               aria-expanded={mobileMenuOpen}
@@ -712,22 +746,29 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
       </div>
 
       {/* Mobile Theme Dropdown - Outside container for full width */}
-      {themeMenuOpen && (
+      {(themeMenuOpen || themeMenuClosing) && (
         <div
           className="marketing-hidden-desktop"
-          onClick={(e) => {
-            e.stopPropagation()
-          }}
+          onClick={closeThemeMenu}
           style={{
-            borderTop: '1px solid var(--marketing-gray-200)',
-            paddingTop: 'var(--marketing-spacing-4)',
+            borderTop: `1px solid ${muiTheme.palette.divider}`,
             paddingBottom: 'var(--marketing-spacing-6)',
-            background: 'var(--marketing-gray-50)',
-            position: 'relative',
-            zIndex: 1001 // Higher than backdrop (999)
+            background: muiTheme.palette.background.paper,
+            position: 'fixed',
+            top: 'var(--header-height, 80px)',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 1301, // Above all page content but below header bar
+            animation: themeMenuClosing
+              ? 'slideUpToBehindHeader 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+              : 'slideDownFromBehindHeader 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            transformOrigin: 'top',
+            paddingTop: 'var(--marketing-spacing-4)'
           }}
         >
           <div
+            onClick={(e) => e.stopPropagation()}
             style={{
               maxWidth: '1280px', // Same as marketing-container-xl
               margin: '0 auto',
@@ -871,17 +912,29 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
       )}
 
       {/* Mobile Navigation - Outside container for full width */}
-      {mobileMenuOpen && (
+      {(mobileMenuOpen || mobileMenuClosing) && (
         <div
           className="marketing-hidden-desktop"
+          onClick={closeMobileMenu}
           style={{
-            borderTop: '1px solid var(--marketing-gray-200)',
-            paddingTop: 'var(--marketing-spacing-4)',
+            borderTop: `1px solid ${muiTheme.palette.divider}`,
             paddingBottom: 'var(--marketing-spacing-6)',
-            background: 'var(--marketing-gray-50)'
+            background: muiTheme.palette.background.paper,
+            position: 'fixed',
+            top: 'var(--header-height, 80px)',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 1301, // Above all page content but below header bar
+            animation: mobileMenuClosing
+              ? 'slideUpToBehindHeader 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+              : 'slideDownFromBehindHeader 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            transformOrigin: 'top',
+            paddingTop: 'var(--marketing-spacing-4)'
           }}
         >
           <div
+            onClick={(e) => e.stopPropagation()}
             style={{
               maxWidth: '1280px', // Same as marketing-container-xl
               margin: '0 auto',
@@ -971,7 +1024,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                 style={{
                   marginTop: 'var(--marketing-spacing-6)',
                   paddingTop: 'var(--marketing-spacing-4)',
-                  borderTop: '1px solid var(--marketing-gray-200)',
+                  borderTop: `1px solid ${muiTheme.palette.divider}`,
                   padding: 'var(--marketing-spacing-4) var(--marketing-spacing-4) 0'
                 }}
               >
@@ -1010,7 +1063,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                 style={{
                   marginTop: 'var(--marketing-spacing-6)',
                   paddingTop: 'var(--marketing-spacing-4)',
-                  borderTop: '1px solid var(--marketing-gray-200)',
+                  borderTop: `1px solid ${muiTheme.palette.divider}`,
                   padding: 'var(--marketing-spacing-4) var(--marketing-spacing-4) 0'
                 }}
               >
