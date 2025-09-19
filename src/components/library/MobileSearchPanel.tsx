@@ -9,6 +9,7 @@ import {
   Typography,
   InputAdornment,
   Button,
+  Chip,
   Slide,
 } from '@mui/material'
 import {
@@ -191,10 +192,23 @@ export default function MobileSearchPanel({
               <Typography
                 variant="body2"
                 color="primary.main"
-                sx={{ fontWeight: 500 }}
+                sx={{ fontWeight: 500, mb: 1 }}
               >
-                Current search: "{searchTerm}"
+                Current search:
               </Typography>
+              <Chip
+                label={`"${searchTerm}"`}
+                onDelete={() => setSearchTerm('')}
+                color="primary"
+                variant="outlined"
+                sx={{
+                  fontSize: '0.9rem',
+                  fontWeight: 500,
+                  '& .MuiChip-deleteIcon': {
+                    color: 'primary.main'
+                  }
+                }}
+              />
             </Box>
           )}
         </Box>
