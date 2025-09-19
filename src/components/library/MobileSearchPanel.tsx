@@ -132,8 +132,44 @@ export default function MobileSearchPanel({
           </IconButton>
         </Box>
 
-        {/* Main content area */}
-        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
+        {/* Spacer to push content down */}
+        <Box sx={{ flex: 1 }} />
+
+        {/* Current search display */}
+        {searchTerm && (
+          <Box sx={{
+            mb: 3,
+            p: 2,
+            backgroundColor: 'primary.50',
+            borderRadius: 2,
+            border: '1px solid',
+            borderColor: 'primary.200'
+          }}>
+            <Typography
+              variant="body2"
+              color="primary.main"
+              sx={{ fontWeight: 500, mb: 1 }}
+            >
+              Current search:
+            </Typography>
+            <Chip
+              label={`"${searchTerm}"`}
+              onDelete={() => setSearchTerm('')}
+              color="primary"
+              variant="outlined"
+              sx={{
+                fontSize: '0.9rem',
+                fontWeight: 500,
+                '& .MuiChip-deleteIcon': {
+                  color: 'primary.main'
+                }
+              }}
+            />
+          </Box>
+        )}
+
+        {/* Search input and button grouped together */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           <TextField
             inputRef={searchInputRef}
             fullWidth
@@ -181,40 +217,6 @@ export default function MobileSearchPanel({
             }}
           />
 
-          {searchTerm && (
-            <Box sx={{
-              p: 2,
-              backgroundColor: 'primary.50',
-              borderRadius: 2,
-              border: '1px solid',
-              borderColor: 'primary.200'
-            }}>
-              <Typography
-                variant="body2"
-                color="primary.main"
-                sx={{ fontWeight: 500, mb: 1 }}
-              >
-                Current search:
-              </Typography>
-              <Chip
-                label={`"${searchTerm}"`}
-                onDelete={() => setSearchTerm('')}
-                color="primary"
-                variant="outlined"
-                sx={{
-                  fontSize: '0.9rem',
-                  fontWeight: 500,
-                  '& .MuiChip-deleteIcon': {
-                    color: 'primary.main'
-                  }
-                }}
-              />
-            </Box>
-          )}
-        </Box>
-
-        {/* Search button at bottom */}
-        <Box sx={{ mt: 3 }}>
           <Button
             variant="contained"
             fullWidth

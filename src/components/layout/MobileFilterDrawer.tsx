@@ -403,8 +403,8 @@ export default function MobileFilterDrawer({
               <Sort /> Sort Options
             </Typography>
 
-            <Stack spacing={2}>
-              <FormControl fullWidth>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <FormControl sx={{ flex: 1 }}>
                 <InputLabel>Sort by</InputLabel>
                 <Select
                   value={sortField}
@@ -421,18 +421,17 @@ export default function MobileFilterDrawer({
 
               <Button
                 variant="outlined"
-                fullWidth
                 startIcon={sortDirection === 'asc' ? <ArrowUpward /> : <ArrowDownward />}
                 onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
                 sx={{
                   minHeight: 56,
-                  justifyContent: 'flex-start',
+                  minWidth: 80,
                   textTransform: 'none'
                 }}
               >
-                {sortDirection === 'asc' ? 'A-Z (Ascending)' : 'Z-A (Descending)'}
+                {sortDirection === 'asc' ? 'A-Z' : 'Z-A'}
               </Button>
-            </Stack>
+            </Box>
           </Box>
         </Stack>
 
