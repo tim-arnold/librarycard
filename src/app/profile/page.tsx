@@ -245,14 +245,7 @@ export default function ProfilePage() {
   return (
     <Container maxWidth="md" sx={{ py: 3, pb: { xs: '80px', md: 3 } }}>
       <Paper sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-          <Button 
-            variant="outlined"
-            startIcon={<ArrowBack />}
-            onClick={() => router.push('/')}
-          >
-            Back to App
-          </Button>
+        <Box sx={{ mb: 3 }}>
           <Typography variant="h4" component="h1" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Person /> Profile
           </Typography>
