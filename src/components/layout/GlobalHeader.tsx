@@ -755,52 +755,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                   >
                     Signed in as {userFirstName || session?.user?.name?.split(' ')[0] || 'User'}
                   </div>
-                  <div className="marketing-flex marketing-flex-col marketing-gap-2">
-                    {[
-                      // Removed Profile, Notifications, Locations, Security - now available in mobile toolbar
-                    ].map((item, index) => (
-                      <button
-                        key={index}
-                        onClick={() => {
-                          item.action()
-                          setMobileMenuOpen(false)
-                        }}
-                        style={{
-                          background: 'none',
-                          border: '1px solid var(--marketing-gray-200)',
-                          borderRadius: 'var(--marketing-radius-base)',
-                          padding: 'var(--marketing-spacing-2) var(--marketing-spacing-3)',
-                          textAlign: 'left',
-                          cursor: 'pointer',
-                          fontSize: 'var(--marketing-text-sm)',
-                          color: 'var(--marketing-gray-700)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between'
-                        }}
-                      >
-                        {item.label}
-                        {item.badge && item.badge > 0 && (
-                          <span
-                            style={{
-                              backgroundColor: 'var(--marketing-error)',
-                              color: 'var(--marketing-white)',
-                              borderRadius: '50%',
-                              width: '20px',
-                              height: '20px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: '0.75rem',
-                              fontWeight: 'bold'
-                            }}
-                          >
-                            {item.badge}
-                          </span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
+                  {/* Profile items removed - now available in mobile toolbar when visiting Account & Settings */}
                 </div>
               )}
 
