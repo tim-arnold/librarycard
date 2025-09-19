@@ -28,6 +28,7 @@ import {
 import ConfirmationModal from '@/components/modals/ConfirmationModal'
 import AlertModal from '@/components/modals/AlertModal'
 import Footer from '@/components/layout/Footer'
+import ProfileSettingsMobileBottomNav from '@/components/layout/ProfileSettingsMobileBottomNav'
 import { useModal } from '@/hooks/useModal'
 
 interface ProfileData {
@@ -242,7 +243,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <Container maxWidth="md" sx={{ py: 3 }}>
+    <Container maxWidth="md" sx={{ py: 3, pb: { xs: '80px', md: 3 } }}>
       <Paper sx={{ p: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
           <Button 
@@ -418,8 +419,24 @@ export default function ProfilePage() {
             buttonText={modalState.options.buttonText}
           />
         )}
-      
+
       <Footer />
+
+      {/* Mobile Bottom Navigation */}
+      <ProfileSettingsMobileBottomNav
+        currentPage="profile"
+        onLibraryClick={() => router.push('/library')}
+        onAccountClick={() => router.push('/profile')}
+        onLocationsClick={() => router.push('/locations')}
+        onSecurityClick={() => router.push('/security')}
+        onNotificationsClick={() => router.push('/notifications')}
+        onCheckoutHistoryClick={() => router.push('/checkout-history')}
+        onHelpClick={() => {
+          // TODO: Implement help modal or page
+          console.log('Help clicked')
+        }}
+        notificationCount={0} // TODO: Get actual notification count
+      />
     </Container>
   )
 }

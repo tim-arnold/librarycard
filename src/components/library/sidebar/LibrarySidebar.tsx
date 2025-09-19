@@ -12,7 +12,6 @@ import {
   CircularProgress,
   Alert,
   useTheme,
-  useMediaQuery,
 } from '@mui/material'
 import {
   ChevronLeft,
@@ -28,6 +27,7 @@ import { isAdmin, isSuperAdmin } from '@/lib/permissions'
 import RecentReviews from './RecentReviews'
 import NewlyAdded from './NewlyAdded'
 import PopularBooks from './PopularBooks'
+import useMobileBreakpoints from '@/hooks/useMobileBreakpoints'
 
 interface LibrarySidebarProps {
   onBookClick?: (bookId: string) => void
@@ -43,9 +43,9 @@ export default function LibrarySidebar({
   onMobileClose,
 }: LibrarySidebarProps) {
   const { data: session } = useSession()
+  const { isMobile } = useMobileBreakpoints()
   const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
-  
+
   // State
   const [preferences, setPreferences] = useState<SidebarPreferences>({
     collapsed: false, // Always start expanded on mobile since it's in a drawer

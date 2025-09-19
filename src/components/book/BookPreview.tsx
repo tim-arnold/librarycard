@@ -12,8 +12,6 @@ import {
   Chip,
   Alert,
   CircularProgress,
-  useTheme,
-  useMediaQuery,
 } from '@mui/material'
 import {
   Save,
@@ -24,6 +22,7 @@ import {
 } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
 import CoverSelectionModal from '../modals/CoverSelectionModal'
+import useMobileBreakpoints from '@/hooks/useMobileBreakpoints'
 
 interface BookPreviewProps {
   book: EnhancedBook
@@ -64,8 +63,7 @@ export default function BookPreview({
 }: BookPreviewProps) {
   const [tagsError, setTagsError] = useState<string>('')
   const [showCoverSelection, setShowCoverSelection] = useState(false)
-  const theme = useTheme()
-  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'))
+  const { isSmallMobile: isSmallScreen } = useMobileBreakpoints()
 
   const handleTagsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
