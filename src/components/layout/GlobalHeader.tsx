@@ -634,13 +634,29 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
           <button
             className="marketing-hidden-desktop"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label={mobileMenuOpen ? 'Close mobile menu' : 'Open mobile menu'}
+            aria-expanded={mobileMenuOpen}
             style={{
               background: 'none',
               border: 'none',
               cursor: 'pointer',
               color: 'var(--marketing-gray-600)',
               padding: 'var(--marketing-spacing-2)',
-              borderRadius: 'var(--marketing-radius-base)'
+              borderRadius: 'var(--marketing-radius-base)',
+              transition: 'all 0.2s ease',
+              minWidth: 44,
+              minHeight: 44,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--marketing-gray-100)'
+              e.currentTarget.style.color = 'var(--marketing-primary)'
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent'
+              e.currentTarget.style.color = 'var(--marketing-gray-600)'
             }}
           >
             {mobileMenuOpen ? <Close /> : <Menu />}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -66,6 +66,11 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole, user
   const [loadingReviews, setLoadingReviews] = useState(false)
   const [locationName, setLocationName] = useState<string>('')
   const [bookLocationId, setBookLocationId] = useState<number | undefined>(undefined)
+
+  // Mobile swipe gesture state
+  const dialogRef = useRef<HTMLDivElement>(null)
+  const [startY, setStartY] = useState<number | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
   
   // Series management state
   const { series, addBooksToSeries, removeBookFromSeries, createSeries, refreshSeries } = useSeries(bookLocationId)
@@ -131,6 +136,49 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole, user
   useEffect(() => {
     setCurrentSeries(book?.current_series || [])
   }, [book?.current_series])
+
+  // Mobile swipe gesture handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!isMobile) return
+    setStartY(e.touches[0].clientY)
+    setIsDragging(false)
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isMobile || startY === null) return
+
+    const currentY = e.touches[0].clientY
+    const diffY = currentY - startY
+
+    // Only consider downward swipes
+    if (diffY > 20) {
+      setIsDragging(true)
+      // Add visual feedback for swipe down
+      if (dialogRef.current) {
+        const transform = Math.min(diffY / 4, 50) // Limit the drag distance
+        dialogRef.current.style.transform = `translateY(${transform}px)`
+        dialogRef.current.style.opacity = String(Math.max(1 - diffY / 300, 0.7))
+      }
+    }
+  }
+
+  const handleTouchEnd = () => {
+    if (!isMobile || startY === null) return
+
+    // Reset styles
+    if (dialogRef.current) {
+      dialogRef.current.style.transform = ''
+      dialogRef.current.style.opacity = ''
+    }
+
+    // If dragged far enough, close the modal
+    if (isDragging) {
+      handleClose()
+    }
+
+    setStartY(null)
+    setIsDragging(false)
+  }
 
   if (!book) return null
   
@@ -307,9 +355,64 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole, user
   }
 
   return (
-    <Dialog open={isOpen} onClose={handleClose} maxWidth="md" fullWidth>
-      <DialogTitle>
-        <MenuBook sx={{ mr: 1, verticalAlign: 'middle' }} /> View/edit details: {book.title}
+    <Dialog
+      open={isOpen}
+      onClose={handleClose}
+      maxWidth="md"
+      fullWidth
+      fullScreen={isMobile}
+      ref={dialogRef}
+      sx={{
+        '& .MuiDialog-paper': {
+          ...(isMobile && {
+            margin: 0,
+            borderRadius: 0,
+            height: '100vh',
+            transition: 'transform 0.2s ease-out, opacity 0.2s ease-out',
+          })
+        }
+      }}
+      PaperProps={{
+        onTouchStart: handleTouchStart,
+        onTouchMove: handleTouchMove,
+        onTouchEnd: handleTouchEnd,
+      }}
+    >
+      <DialogTitle sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        borderBottom: isMobile ? '1px solid' : 'none',
+        borderColor: 'divider',
+        bgcolor: isMobile ? 'background.default' : 'transparent',
+        position: isMobile ? 'sticky' : 'relative',
+        top: 0,
+        zIndex: 1
+      }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
+          <MenuBook sx={{ mr: 1, flexShrink: 0 }} />
+          <Typography
+            variant="h6"
+            component="div"
+            sx={{
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              fontSize: isMobile ? '1.1rem' : '1.25rem'
+            }}
+          >
+            {book.title}
+          </Typography>
+        </Box>
+        {isMobile && (
+          <IconButton
+            onClick={handleClose}
+            sx={{ ml: 1, flexShrink: 0 }}
+            aria-label="Close"
+          >
+            <Close />
+          </IconButton>
+        )}
       </DialogTitle>
       <DialogContent>
         <Box sx={{ py: 1 }}>
@@ -988,60 +1091,104 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole, user
       <DialogActions sx={{
         flexDirection: { xs: 'column', sm: 'row' },
         gap: 1,
-        p: 2
+        p: isMobile ? 2 : 2,
+        bgcolor: isMobile ? 'background.default' : 'transparent',
+        borderTop: isMobile ? '1px solid' : 'none',
+        borderColor: 'divider',
+        position: isMobile ? 'sticky' : 'relative',
+        bottom: 0,
+        zIndex: 1
       }}>
         {isMobile && (
           <Box sx={{
-            display: 'flex',
-            justifyContent: 'space-around',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, 1fr)',
             width: '100%',
-            mb: 1,
-            gap: 1
+            gap: 1,
+            mb: 2
           }}>
             <Button
               variant="outlined"
+              size="small"
               startIcon={<LibraryBooks />}
               onClick={handleLibraryAction}
-              sx={{ flex: 1, minWidth: 0 }}
+              sx={{
+                minWidth: 0,
+                flexDirection: 'column',
+                gap: 0.5,
+                py: 1.5,
+                borderRadius: 2,
+                '&:active': {
+                  transform: 'scale(0.95)',
+                }
+              }}
             >
               Library
             </Button>
             <Button
               variant="outlined"
+              size="small"
               startIcon={<Edit />}
               onClick={handleEditAction}
-              sx={{ flex: 1, minWidth: 0 }}
+              sx={{
+                minWidth: 0,
+                flexDirection: 'column',
+                gap: 0.5,
+                py: 1.5,
+                borderRadius: 2,
+                '&:active': {
+                  transform: 'scale(0.95)',
+                }
+              }}
             >
               Edit
             </Button>
             <Button
               variant="outlined"
+              size="small"
               startIcon={<Star />}
               onClick={handleRateAction}
-              sx={{ flex: 1, minWidth: 0 }}
+              sx={{
+                minWidth: 0,
+                flexDirection: 'column',
+                gap: 0.5,
+                py: 1.5,
+                borderRadius: 2,
+                '&:active': {
+                  transform: 'scale(0.95)',
+                }
+              }}
             >
               Rate
             </Button>
             <Button
               variant="outlined"
+              size="small"
               startIcon={<Share />}
               onClick={handleShareAction}
-              sx={{ flex: 1, minWidth: 0 }}
+              sx={{
+                minWidth: 0,
+                flexDirection: 'column',
+                gap: 0.5,
+                py: 1.5,
+                borderRadius: 2,
+                '&:active': {
+                  transform: 'scale(0.95)',
+                }
+              }}
             >
               Share
             </Button>
           </Box>
         )}
-        <Button
-          onClick={handleClose}
-          variant="outlined"
-          sx={{
-            alignSelf: { xs: 'stretch', sm: 'auto' },
-            order: { xs: 2, sm: 1 }
-          }}
-        >
-          Close
-        </Button>
+        {!isMobile && (
+          <Button
+            onClick={handleClose}
+            variant="outlined"
+          >
+            Close
+          </Button>
+        )}
       </DialogActions>
 
       {/* Series Creation Modal */}
