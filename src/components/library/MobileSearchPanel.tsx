@@ -118,7 +118,7 @@ export default function MobileSearchPanel({
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           variant="outlined"
-          size="large"
+          size="medium"
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">

@@ -295,6 +295,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
               {/* Theme Dropdown Menu */}
               {themeMenuOpen && (
                 <div
+                  className="marketing-hidden-mobile"
                   style={{
                     position: 'absolute',
                     top: '100%',
@@ -321,7 +322,9 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                     </div>
                     <div className="marketing-flex marketing-gap-2">
                       <button
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
                           if (isDarkMode) toggleTheme()
                           setThemeMenuOpen(false)
                         }}
@@ -345,7 +348,9 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                         Light
                       </button>
                       <button
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
                           if (!isDarkMode) toggleTheme()
                           setThemeMenuOpen(false)
                         }}
@@ -395,7 +400,9 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                         {themeOptions.map((option) => (
                           <button
                             key={option.value}
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
                               setThemeVariant(option.value)
                               setThemeMenuOpen(false)
                             }}
@@ -630,47 +637,253 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
             )}
           </div>
 
-          {/* Mobile menu button */}
-          <button
-            className="marketing-hidden-desktop"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label={mobileMenuOpen ? 'Close mobile menu' : 'Open mobile menu'}
-            aria-expanded={mobileMenuOpen}
+          {/* Mobile controls */}
+          <div
+            className="marketing-hidden-desktop marketing-flex marketing-items-center marketing-gap-2"
+          >
+            {/* Mobile theme button */}
+            <button
+              onClick={() => {
+                setThemeMenuOpen(!themeMenuOpen)
+                if (mobileMenuOpen) setMobileMenuOpen(false)
+              }}
+              aria-label="Theme options"
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: 'var(--marketing-gray-600)',
+                padding: 'var(--marketing-spacing-2)',
+                borderRadius: 'var(--marketing-radius-base)',
+                transition: 'all 0.2s ease',
+                minWidth: 44,
+                minHeight: 44,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--marketing-gray-100)'
+                e.currentTarget.style.color = 'var(--marketing-primary)'
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent'
+                e.currentTarget.style.color = 'var(--marketing-gray-600)'
+              }}
+            >
+              <Palette />
+            </button>
+
+            {/* Mobile menu button */}
+            <button
+              onClick={() => {
+                setMobileMenuOpen(!mobileMenuOpen)
+                if (themeMenuOpen) setThemeMenuOpen(false)
+              }}
+              aria-label={mobileMenuOpen ? 'Close mobile menu' : 'Open mobile menu'}
+              aria-expanded={mobileMenuOpen}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: 'var(--marketing-gray-600)',
+                padding: 'var(--marketing-spacing-2)',
+                borderRadius: 'var(--marketing-radius-base)',
+                transition: 'all 0.2s ease',
+                minWidth: 44,
+                minHeight: 44,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--marketing-gray-100)'
+                e.currentTarget.style.color = 'var(--marketing-primary)'
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent'
+                e.currentTarget.style.color = 'var(--marketing-gray-600)'
+              }}
+            >
+              {mobileMenuOpen ? <Close /> : <Menu />}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Theme Dropdown - Outside container for full width */}
+      {themeMenuOpen && (
+        <div
+          className="marketing-hidden-desktop"
+          onClick={(e) => {
+            e.stopPropagation()
+          }}
+          style={{
+            borderTop: '1px solid var(--marketing-gray-200)',
+            paddingTop: 'var(--marketing-spacing-4)',
+            paddingBottom: 'var(--marketing-spacing-6)',
+            background: 'var(--marketing-gray-50)',
+            position: 'relative',
+            zIndex: 1001 // Higher than backdrop (999)
+          }}
+        >
+          <div
             style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              color: 'var(--marketing-gray-600)',
-              padding: 'var(--marketing-spacing-2)',
-              borderRadius: 'var(--marketing-radius-base)',
-              transition: 'all 0.2s ease',
-              minWidth: 44,
-              minHeight: 44,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--marketing-gray-100)'
-              e.currentTarget.style.color = 'var(--marketing-primary)'
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent'
-              e.currentTarget.style.color = 'var(--marketing-gray-600)'
+              maxWidth: '1280px', // Same as marketing-container-xl
+              margin: '0 auto',
+              padding: 'var(--marketing-spacing-4)',
+              background: 'transparent'
             }}
           >
-            {mobileMenuOpen ? <Close /> : <Menu />}
-          </button>
-        </div>
+            {/* Light/Dark Mode Toggle */}
+            <div style={{
+              marginBottom: 'var(--marketing-spacing-3)'
+            }}>
+            <div style={{
+              fontSize: 'var(--marketing-text-sm)',
+              fontWeight: 'var(--marketing-font-medium)',
+              color: 'var(--marketing-gray-700)',
+              marginBottom: 'var(--marketing-spacing-2)'
+            }}>
+              Mode
+            </div>
+            <div className="marketing-flex marketing-gap-2">
+              <button
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  if (isDarkMode) {
+                    toggleTheme()
+                  }
+                  setThemeMenuOpen(false)
+                }}
+                style={{
+                  flex: 1,
+                  padding: 'var(--marketing-spacing-2) var(--marketing-spacing-3)',
+                  border: '1px solid',
+                  borderColor: !isDarkMode ? 'var(--marketing-primary)' : 'var(--marketing-gray-300)',
+                  borderRadius: 'var(--marketing-radius-base)',
+                  background: !isDarkMode ? 'var(--marketing-primary)' : 'var(--marketing-white)',
+                  color: !isDarkMode ? 'var(--marketing-white)' : 'var(--marketing-gray-700)',
+                  cursor: 'pointer',
+                  fontSize: 'var(--marketing-text-sm)',
+                  fontWeight: 'var(--marketing-font-medium)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 'var(--marketing-spacing-1)',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <LightMode style={{ fontSize: '1rem' }} />
+                Light
+              </button>
+              <button
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  if (!isDarkMode) {
+                    toggleTheme()
+                  }
+                  setThemeMenuOpen(false)
+                }}
+                style={{
+                  flex: 1,
+                  padding: 'var(--marketing-spacing-2) var(--marketing-spacing-3)',
+                  border: '1px solid',
+                  borderColor: isDarkMode ? 'var(--marketing-primary)' : 'var(--marketing-gray-300)',
+                  borderRadius: 'var(--marketing-radius-base)',
+                  background: isDarkMode ? 'var(--marketing-primary)' : 'var(--marketing-white)',
+                  color: isDarkMode ? 'var(--marketing-white)' : 'var(--marketing-gray-700)',
+                  cursor: 'pointer',
+                  fontSize: 'var(--marketing-text-sm)',
+                  fontWeight: 'var(--marketing-font-medium)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 'var(--marketing-spacing-1)',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <DarkMode style={{ fontSize: '1rem' }} />
+                Dark
+              </button>
+            </div>
+          </div>
 
-        {/* Mobile Navigation */}
-        {mobileMenuOpen && (
-          <div 
-            className="marketing-hidden-desktop"
+            {/* Color Scheme Options - only shown when logged in */}
+            {session && (
+              <div>
+              <div style={{
+                fontSize: 'var(--marketing-text-sm)',
+                fontWeight: 'var(--marketing-font-medium)',
+                color: 'var(--marketing-gray-700)',
+                marginBottom: 'var(--marketing-spacing-2)'
+              }}>
+                Color Scheme
+              </div>
+              <div className="marketing-grid marketing-grid-cols-2 marketing-gap-2">
+                {themeOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      setThemeVariant(option.value)
+                      setThemeMenuOpen(false)
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 'var(--marketing-spacing-2)',
+                      padding: 'var(--marketing-spacing-2)',
+                      background: themeVariant === option.value ? 'var(--marketing-white)' : 'transparent',
+                      border: '1px solid',
+                      borderColor: themeVariant === option.value ? 'var(--marketing-primary)' : 'var(--marketing-gray-200)',
+                      borderRadius: 'var(--marketing-radius-base)',
+                      cursor: 'pointer',
+                      fontSize: 'var(--marketing-text-sm)',
+                      color: 'var(--marketing-gray-700)',
+                      transition: 'all 0.2s ease',
+                      textAlign: 'left'
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: '16px',
+                        height: '16px',
+                        borderRadius: '50%',
+                        backgroundColor: option.color,
+                        flexShrink: 0
+                      }}
+                    />
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Navigation - Outside container for full width */}
+      {mobileMenuOpen && (
+        <div
+          className="marketing-hidden-desktop"
+          style={{
+            borderTop: '1px solid var(--marketing-gray-200)',
+            paddingTop: 'var(--marketing-spacing-4)',
+            paddingBottom: 'var(--marketing-spacing-6)',
+            background: 'var(--marketing-gray-50)'
+          }}
+        >
+          <div
             style={{
-              borderTop: '1px solid var(--marketing-gray-200)',
-              paddingTop: 'var(--marketing-spacing-4)',
-              paddingBottom: 'var(--marketing-spacing-6)'
+              maxWidth: '1280px', // Same as marketing-container-xl
+              margin: '0 auto',
+              padding: '0 var(--marketing-spacing-4)',
+              background: 'transparent'
             }}
           >
             <nav>
@@ -682,18 +895,45 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                       style={{
                         width: '100%',
                         textAlign: 'left',
-                        background: 'none',
-                        border: 'none',
+                        background: isActivePath(item.href, item.key)
+                          ? 'var(--marketing-white)'
+                          : 'transparent',
+                        border: isActivePath(item.href, item.key)
+                          ? '1px solid var(--marketing-primary)'
+                          : '1px solid var(--marketing-gray-200)',
                         cursor: 'pointer',
-                        color: isActivePath(item.href, item.key) 
+                        color: isActivePath(item.href, item.key)
                           ? muiTheme.palette.primary.main
                           : muiTheme.palette.text.primary,
                         fontSize: 'var(--marketing-text-lg)',
-                        fontWeight: 'var(--marketing-font-medium)',
-                        padding: 'var(--marketing-spacing-3) 0',
+                        fontWeight: isActivePath(item.href, item.key)
+                          ? 'var(--marketing-font-semibold)'
+                          : 'var(--marketing-font-medium)',
+                        padding: 'var(--marketing-spacing-4)',
+                        borderRadius: 'var(--marketing-radius-lg)',
+                        margin: '0',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'space-between'
+                        justifyContent: 'space-between',
+                        transition: 'all 0.2s ease',
+                        minHeight: '56px',
+                        boxShadow: isActivePath(item.href, item.key)
+                          ? 'var(--marketing-shadow-sm)'
+                          : 'none'
+                      }}
+                      onMouseOver={(e) => {
+                        if (!isActivePath(item.href, item.key)) {
+                          e.currentTarget.style.backgroundColor = 'var(--marketing-white)'
+                          e.currentTarget.style.borderColor = 'var(--marketing-gray-300)'
+                          e.currentTarget.style.boxShadow = 'var(--marketing-shadow-sm)'
+                        }
+                      }}
+                      onMouseOut={(e) => {
+                        if (!isActivePath(item.href, item.key)) {
+                          e.currentTarget.style.backgroundColor = 'transparent'
+                          e.currentTarget.style.borderColor = 'var(--marketing-gray-200)'
+                          e.currentTarget.style.boxShadow = 'none'
+                        }
                       }}
                     >
                       <span>{item.name}</span>
@@ -723,166 +963,70 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
             </nav>
             
             {/* Mobile User Controls */}
-            <div 
-              style={{
-                marginTop: 'var(--marketing-spacing-6)',
-                paddingTop: 'var(--marketing-spacing-4)',
-                borderTop: '1px solid var(--marketing-gray-200)'
-              }}
-            >
-              <div className="marketing-flex marketing-items-center marketing-justify-between marketing-gap-4">
-                <button
-                  onClick={() => setThemeMenuOpen(!themeMenuOpen)}
-                  className="marketing-button marketing-button-outline marketing-button-sm"
-                  style={{ flex: 1 }}
-                >
-                  <Palette style={{ marginRight: '8px' }} />
-                  Theme
-                </button>
-
-                {session ? (
-                  <button
-                    onClick={handleSignOut}
-                    className="marketing-button marketing-button-primary marketing-button-sm"
-                    style={{ flex: 1 }}
-                  >
-                    <ExitToApp style={{ marginRight: '8px' }} />
-                    Sign Out
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handleNavClick('/auth/signin')}
-                    className="marketing-button marketing-button-primary marketing-button-sm"
-                    style={{ flex: 1 }}
-                  >
-                    Get Started
-                  </button>
-                )}
-              </div>
-
-              {session && (
-                <div style={{ marginTop: 'var(--marketing-spacing-4)' }}>
-                  <div 
-                    style={{ 
-                      fontSize: 'var(--marketing-text-sm)',
-                      color: 'var(--marketing-gray-600)',
-                      marginBottom: 'var(--marketing-spacing-3)'
-                    }}
-                  >
-                    Signed in as {userFirstName || session?.user?.name?.split(' ')[0] || 'User'}
-                  </div>
-                  {/* Profile items removed - now available in mobile toolbar when visiting Account & Settings */}
-                </div>
-              )}
-
-              {/* Mobile Theme Options Menu */}
-              {themeMenuOpen && (
-                <div 
+            {session && (
+              <div
+                style={{
+                  marginTop: 'var(--marketing-spacing-6)',
+                  paddingTop: 'var(--marketing-spacing-4)',
+                  borderTop: '1px solid var(--marketing-gray-200)',
+                  padding: 'var(--marketing-spacing-4) var(--marketing-spacing-4) 0'
+                }}
+              >
+                <div
                   style={{
-                    marginTop: 'var(--marketing-spacing-4)',
-                    paddingTop: 'var(--marketing-spacing-4)',
-                    borderTop: '1px solid var(--marketing-gray-200)',
-                    background: 'var(--marketing-white)',
+                    fontSize: 'var(--marketing-text-sm)',
+                    color: 'var(--marketing-gray-600)',
+                    marginBottom: 'var(--marketing-spacing-4)',
+                    textAlign: 'center',
+                    padding: 'var(--marketing-spacing-3)',
+                    backgroundColor: 'var(--marketing-gray-50)',
                     borderRadius: 'var(--marketing-radius-lg)',
-                    border: '1px solid var(--marketing-gray-200)',
-                    padding: 'var(--marketing-spacing-4)'
+                    border: '1px solid var(--marketing-gray-200)'
                   }}
                 >
-                  {/* Light/Dark Mode Toggle */}
-                  <div style={{ marginBottom: 'var(--marketing-spacing-4)' }}>
-                    <div style={{ 
-                      fontSize: 'var(--marketing-text-sm)', 
-                      fontWeight: 'var(--marketing-font-medium)',
-                      color: 'var(--marketing-gray-700)',
-                      marginBottom: 'var(--marketing-spacing-2)'
-                    }}>
-                      Mode
-                    </div>
-                    <div className="marketing-flex marketing-gap-2">
-                      <button
-                        onClick={() => {
-                          if (isDarkMode) toggleTheme()
-                          setThemeMenuOpen(false)
-                          setMobileMenuOpen(false)
-                        }}
-                        className={`marketing-button ${!isDarkMode ? 'marketing-button-primary' : 'marketing-button-outline'} marketing-button-sm`}
-                        style={{ flex: 1 }}
-                      >
-                        <LightMode style={{ marginRight: '8px', fontSize: '1rem' }} />
-                        Light
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (!isDarkMode) toggleTheme()
-                          setThemeMenuOpen(false)
-                          setMobileMenuOpen(false)
-                        }}
-                        className={`marketing-button ${isDarkMode ? 'marketing-button-primary' : 'marketing-button-outline'} marketing-button-sm`}
-                        style={{ flex: 1 }}
-                      >
-                        <DarkMode style={{ marginRight: '8px', fontSize: '1rem' }} />
-                        Dark
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Color Scheme Options - only shown when logged in */}
-                  {session && (
-                    <div>
-                      <div style={{
-                        fontSize: 'var(--marketing-text-sm)',
-                        fontWeight: 'var(--marketing-font-medium)',
-                        color: 'var(--marketing-gray-700)',
-                        marginBottom: 'var(--marketing-spacing-2)'
-                      }}>
-                        Color Scheme
-                      </div>
-                      <div className="marketing-grid marketing-grid-cols-2 marketing-gap-2">
-                        {themeOptions.map((option) => (
-                          <button
-                            key={option.value}
-                            onClick={() => {
-                              setThemeVariant(option.value)
-                              setThemeMenuOpen(false)
-                              setMobileMenuOpen(false)
-                            }}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 'var(--marketing-spacing-2)',
-                              padding: 'var(--marketing-spacing-2)',
-                              background: themeVariant === option.value ? 'var(--marketing-gray-100)' : 'var(--marketing-white)',
-                              border: '1px solid',
-                              borderColor: themeVariant === option.value ? 'var(--marketing-primary)' : 'var(--marketing-gray-200)',
-                              borderRadius: 'var(--marketing-radius-base)',
-                              cursor: 'pointer',
-                              fontSize: 'var(--marketing-text-sm)',
-                              color: 'var(--marketing-gray-700)',
-                              transition: 'all 0.2s ease',
-                              textAlign: 'left'
-                            }}
-                          >
-                            <div
-                              style={{
-                                width: '16px',
-                                height: '16px',
-                                borderRadius: '50%',
-                                backgroundColor: option.color,
-                                flexShrink: 0
-                              }}
-                            />
-                            {option.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  👋 Hello, {userFirstName || session?.user?.name?.split(' ')[0] || 'User'}!
                 </div>
-              )}
-            </div>
+
+                <button
+                  onClick={handleSignOut}
+                  className="marketing-button marketing-button-primary marketing-button-md"
+                  style={{
+                    width: '100%',
+                    borderRadius: 'var(--marketing-radius-lg)',
+                    minHeight: '48px'
+                  }}
+                >
+                  <ExitToApp style={{ marginRight: '8px' }} />
+                  Sign Out
+                </button>
+              </div>
+            )}
+
+            {!session && (
+              <div
+                style={{
+                  marginTop: 'var(--marketing-spacing-6)',
+                  paddingTop: 'var(--marketing-spacing-4)',
+                  borderTop: '1px solid var(--marketing-gray-200)',
+                  padding: 'var(--marketing-spacing-4) var(--marketing-spacing-4) 0'
+                }}
+              >
+                <button
+                  onClick={() => handleNavClick('/auth/signin')}
+                  className="marketing-button marketing-button-primary marketing-button-md"
+                  style={{
+                    width: '100%',
+                    borderRadius: 'var(--marketing-radius-lg)',
+                    minHeight: '48px'
+                  }}
+                >
+                  Get Started Free
+                </button>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Click outside to close menus */}
       {accountMenuOpen && (
@@ -900,6 +1044,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
       )}
       {themeMenuOpen && (
         <div
+          className="marketing-hidden-mobile"
           style={{
             position: 'fixed',
             top: 0,
