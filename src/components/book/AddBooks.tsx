@@ -47,6 +47,8 @@ import {
 } from '@mui/material'
 import { getApiBaseUrl } from '@/lib/apiConfig'
 import { authenticatedApiCall } from '@/lib/api'
+import AddBooksMobileBottomNav from '../layout/AddBooksMobileBottomNav'
+import useMobileBreakpoints from '@/hooks/useMobileBreakpoints'
 
 // More Details Modal Component
 interface MoreDetailsModalProps {
@@ -171,8 +173,7 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
   const { data: session } = useSession()
   const { modalState, alert, closeModal } = useModal()
   const { state: selectionState, actions: selectionActions } = useBookSelection()
-  const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
+  const { isMobile } = useMobileBreakpoints()
   
   const [activeTab, setActiveTab] = useState(() => {
     // If initialTab is provided (from URL), use that
@@ -741,27 +742,27 @@ try {
           </Alert>
         )}
 
-        {/* Tab Navigation - only show on mobile when there are multiple tabs */}
-        {isMobile && (
+        {/* Tab Navigation - show on desktop only (mobile uses bottom navigation) */}
+        {!isMobile && (
           <Box sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}>
-            <Tabs 
-              value={activeTab} 
+            <Tabs
+              value={activeTab}
               onChange={handleTabChange}
               variant="fullWidth"
             >
-              <Tab 
+              <Tab
                 label="Search"
                 icon={<MenuBook />}
                 iconPosition="start"
               />
-              <Tab 
+              <Tab
                 label="Scan ISBN"
                 icon={<QrCodeScanner />}
                 iconPosition="start"
               />
               {/*
               <Tab
-                value="bookshelf" 
+                value="bookshelf"
                 label="Scan Shelf"
                 icon={<PhotoLibrary />}
                 iconPosition="start"
@@ -961,8 +962,40 @@ try {
         />
 
         {/* Floating Selection Indicator */}
-        <CartIndicator 
+        <CartIndicator
           onViewSelection={() => setShowBulkReviewModal(true)}
+        />
+
+        {/* Mobile Bottom Navigation */}
+        <AddBooksMobileBottomNav
+          activeTab={activeTab}
+          onLibraryClick={() => window.location.href = '/library'}
+          onCameraClick={() => {
+            // Switch to the scan tab for ISBN scanning
+            if (activeTab !== 1) {
+              setActiveTab(1)
+              setStorageItem('addBooks_preferredTab', 'scan', 'functional')
+            }
+          }}
+          onManualClick={() => {
+            // Switch to search tab and focus search input
+            if (activeTab !== 0) {
+              setActiveTab(0)
+              setStorageItem('addBooks_preferredTab', 'search', 'functional')
+            }
+            setTimeout(() => {
+              const searchInput = document.querySelector('input[placeholder*="Search"]') as HTMLInputElement
+              searchInput?.focus()
+            }, 100)
+          }}
+          onRecentClick={() => {
+            // Show recent activity or additions
+            alert({
+              title: 'Recent Activity',
+              message: 'Recent book additions and scan history feature coming soon!',
+              variant: 'info'
+            })
+          }}
         />
       </Paper>
     </Container>

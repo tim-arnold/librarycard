@@ -239,6 +239,7 @@ export default function ISBNScanner({
             startIcon={isScannerLoading ? <CircularProgress size={16} color="inherit" /> : <PhotoCamera />}
             onClick={startScanner}
             disabled={isScannerLoading || isScanning || !codeReader || disabled}
+            fullWidth
             sx={{ mb: 2 }}
           >
             {isScannerLoading ? 'Starting Camera...' : isScanning ? 'Scanning...' : 'Start Camera Scanner'}
@@ -250,10 +251,16 @@ export default function ISBNScanner({
             </Typography>
           )}
           
-          <Box 
-            component="form" 
-            onSubmit={handleManualISBNEntry} 
-            sx={{ display: 'flex', gap: 1, alignItems: 'center', mt: 2 }}
+          <Box
+            component="form"
+            onSubmit={handleManualISBNEntry}
+            sx={{
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              gap: { xs: 2, sm: 1 },
+              alignItems: { xs: 'stretch', sm: 'center' },
+              mt: 2
+            }}
           >
             <TextField
               name="isbn"
@@ -269,12 +276,15 @@ export default function ISBNScanner({
                 }
               }}
             />
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               variant="outlined"
               startIcon={isLoading ? <CircularProgress size={16} color="inherit" /> : <Search />}
               disabled={disabled || isLoading}
-              sx={{ minWidth: 120 }}
+              sx={{
+                minWidth: { xs: 'auto', sm: 120 },
+                width: { xs: '100%', sm: 'auto' }
+              }}
             >
               {isLoading ? 'Looking Up...' : 'Look Up Book'}
             </Button>

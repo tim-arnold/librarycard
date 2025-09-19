@@ -114,9 +114,6 @@ export default function UserNotificationCenter() {
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h5" gutterBottom>
-          <Notifications sx={{ mr: 1, verticalAlign: 'middle' }} /> Notifications
-        </Typography>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Button
             variant="outlined"

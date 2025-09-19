@@ -13,11 +13,10 @@ import {
   ListItemText,
   Button,
   Collapse,
-  useMediaQuery,
-  useTheme,
 } from '@mui/material'
 import { Search, Sort, ArrowUpward, ArrowDownward, FilterList, ExpandMore, ExpandLess } from '@mui/icons-material'
 import { isAdmin } from '@/lib/permissions'
+import useMobileBreakpoints from '@/hooks/useMobileBreakpoints'
 
 export type SortField = 'title' | 'author' | 'publishedDate' | 'dateAdded'
 export type SortDirection = 'asc' | 'desc'
@@ -80,8 +79,7 @@ export default function BookFilters({
 }: BookFiltersProps) {
   const [genreSelectOpen, setGenreSelectOpen] = useState(false)
   const [filtersExpanded, setFiltersExpanded] = useState(false)
-  const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
+  const { isMobile } = useMobileBreakpoints()
   
   // Memoize filtered shelves to prevent re-rendering
   const filteredShelves = useMemo(() => {

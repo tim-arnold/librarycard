@@ -2,9 +2,10 @@
 
 import React, { useCallback, useMemo, useEffect, useRef, useState } from 'react'
 import { VariableSizeGrid as Grid, GridChildComponentProps } from 'react-window'
-import { Box, useMediaQuery, useTheme, Card, CardContent, CardActions, Typography, Chip, Button } from '@mui/material'
+import { Box, Card, CardContent, CardActions, Typography, Chip, Button } from '@mui/material'
 import { Info, Star, Edit, Image, MenuBook } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
+import useMobileBreakpoints from '@/hooks/useMobileBreakpoints'
 import { getDisplayGenres } from '@/lib/genreUtils'
 import BookActions from './BookActions'
 import StarRating from './StarRating'
@@ -226,7 +227,7 @@ const VirtualizedBookCard = React.memo<VirtualizedBookCardProps>(({
             >
               {book.title}
             </Typography>
-r            <Typography variant="body2" color="text.secondary" gutterBottom>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
               {book.authors.map((author, index) => (
                 <span key={index}>
                   <Typography 
@@ -436,19 +437,17 @@ const VirtualizedBookGrid: React.FC<VirtualizedBookGridProps> = ({
   animatingCovers = new Set(),
   ...props
 }) => {
-  const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
-  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'lg'))
+  const { isSmallMobile, isLargeMobile, isTablet } = useMobileBreakpoints()
   const gridRef = useRef<Grid>(null)
   const [containerWidth, setContainerWidth] = useState(1200)
   const scrollPositionRef = useRef({ scrollLeft: 0, scrollTop: 0 })
   
   // Calculate responsive column count
   const columnCount = useMemo(() => {
-    if (isMobile) return 1
-    if (isTablet) return 2
+    if (isSmallMobile) return 1
+    if (isLargeMobile || isTablet) return 2
     return 3 // Desktop
-  }, [isMobile, isTablet])
+  }, [isSmallMobile, isLargeMobile, isTablet])
 
   // Calculate row count
   const rowCount = useMemo(() => {

@@ -24,7 +24,7 @@ import {
   InputLabel,
   IconButton,
 } from '@mui/material'
-import { ExpandMore, History, Email, Star, MenuBook, CollectionsBookmark, Add, Close } from '@mui/icons-material'
+import { ExpandMore, History, Email, Star, MenuBook, CollectionsBookmark, Add, Close, LibraryBooks, Edit, Share } from '@mui/icons-material'
 import type { EnhancedBook, BookRating, Series } from '@/lib/types'
 import { isAdmin, canManageSeriesBooks } from '@/lib/permissions'
 import { useSession } from 'next-auth/react'
@@ -32,6 +32,7 @@ import { authenticatedFetch } from '@/lib/auth-utils'
 import { useSeries } from '@/hooks/useSeries'
 import SeriesModal from './SeriesModal'
 import CoverAttribution from '@/components/common/CoverAttribution'
+import useMobileBreakpoints from '@/hooks/useMobileBreakpoints'
 
 interface CheckoutHistoryItem {
   id: number
@@ -56,6 +57,7 @@ interface MoreDetailsModalProps {
 
 export default function MoreDetailsModal({ book, isOpen, onClose, userRole, userPermissions, onBookUpdate }: MoreDetailsModalProps) {
   const { data: session } = useSession()
+  const { isMobile } = useMobileBreakpoints()
   const [checkoutHistory, setCheckoutHistory] = useState<CheckoutHistoryItem[]>([])
   const [showCheckoutHistory, setShowCheckoutHistory] = useState(false)
   const [loadingHistory, setLoadingHistory] = useState(false)
@@ -264,6 +266,44 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole, user
       setSeriesModified(false)
     }
     onClose()
+  }
+
+  // Mobile navigation action handlers
+  const handleLibraryAction = () => {
+    handleClose()
+    // The user will naturally return to the library view when modal closes
+  }
+
+  const handleEditAction = () => {
+    // This would trigger edit mode - for now, just expand the series section which has edit functionality
+    if (!showSeries) {
+      setShowSeries(true)
+    }
+  }
+
+  const handleRateAction = () => {
+    // This would trigger rating modal - for now, just expand the reviews section
+    if (!showReviews) {
+      setShowReviews(true)
+    }
+  }
+
+  const handleShareAction = () => {
+    // Share the book details
+    if (navigator.share && book) {
+      navigator.share({
+        title: `${book.title} by ${book.authors.join(', ')}`,
+        text: `Check out "${book.title}" by ${book.authors.join(', ')} in our library!`,
+        url: window.location.href
+      }).catch(console.error)
+    } else if (book) {
+      // Fallback to copy to clipboard
+      const shareText = `Check out "${book.title}" by ${book.authors.join(', ')} in our library!`
+      navigator.clipboard.writeText(shareText).then(() => {
+        // Could show a toast notification here
+        console.log('Book details copied to clipboard')
+      }).catch(console.error)
+    }
   }
 
   return (
@@ -945,8 +985,61 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole, user
           </Box>
         </Box>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={handleClose} variant="outlined">
+      <DialogActions sx={{
+        flexDirection: { xs: 'column', sm: 'row' },
+        gap: 1,
+        p: 2
+      }}>
+        {isMobile && (
+          <Box sx={{
+            display: 'flex',
+            justifyContent: 'space-around',
+            width: '100%',
+            mb: 1,
+            gap: 1
+          }}>
+            <Button
+              variant="outlined"
+              startIcon={<LibraryBooks />}
+              onClick={handleLibraryAction}
+              sx={{ flex: 1, minWidth: 0 }}
+            >
+              Library
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<Edit />}
+              onClick={handleEditAction}
+              sx={{ flex: 1, minWidth: 0 }}
+            >
+              Edit
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<Star />}
+              onClick={handleRateAction}
+              sx={{ flex: 1, minWidth: 0 }}
+            >
+              Rate
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<Share />}
+              onClick={handleShareAction}
+              sx={{ flex: 1, minWidth: 0 }}
+            >
+              Share
+            </Button>
+          </Box>
+        )}
+        <Button
+          onClick={handleClose}
+          variant="outlined"
+          sx={{
+            alignSelf: { xs: 'stretch', sm: 'auto' },
+            order: { xs: 2, sm: 1 }
+          }}
+        >
           Close
         </Button>
       </DialogActions>

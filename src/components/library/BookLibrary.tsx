@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Alert, Typography, Box, CircularProgress, useTheme, useMediaQuery, Fab, Drawer } from '@mui/material'
+import { Alert, Typography, Box, CircularProgress, Fab, Drawer } from '@mui/material'
 import { LibraryBooks, MenuBook } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
 import { useModal } from '@/hooks/useModal'
+import useMobileBreakpoints from '@/hooks/useMobileBreakpoints'
 import { useBookLibraryEnhanced as useBookLibrary } from '@/hooks/useBookLibraryEnhanced'
 import { useBookActions } from '@/hooks/useBookActions'
 import { useBookFilters } from '@/hooks/useBookFilters'
@@ -26,6 +27,9 @@ import ViewModeControls from './ViewModeControls'
 import BookViews from './BookViews'
 import LibrarySidebar from './sidebar/LibrarySidebar'
 import PageContainer from '../layout/PageContainer'
+import MobileBottomNav from '../layout/MobileBottomNav'
+import MobileFilterDrawer from '../layout/MobileFilterDrawer'
+import MobileSearchPanel from './MobileSearchPanel'
 
 interface BookLibraryProps {
   initialFilters?: {
@@ -38,8 +42,7 @@ interface BookLibraryProps {
 }
 
 export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
-  const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
+  const { isMobile } = useMobileBreakpoints()
   const { modalState, confirmAsync, alert, closeModal } = useModal()
   
   // Core data and state from hooks
@@ -149,6 +152,17 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
   
   // Mobile sidebar state
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
+
+
+  // Calculate active filters count for mobile bottom nav
+  const activeFiltersCount = [
+    locationFilter,
+    shelfFilter,
+    checkoutFilter,
+    categoryFilter.length > 0 ? 'genre' : '',
+  ].filter(Boolean).length
 
   // Modal handlers
   const handleMoreDetailsClick = (book: EnhancedBook) => {
@@ -418,32 +432,35 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
         )}
 
 
-        <div data-tour="search-filters">
-          <BookFilters
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            shelfFilter={shelfFilter}
-            setShelfFilter={setShelfFilter}
-            categoryFilter={categoryFilter}
-            setCategoryFilter={setCategoryFilter}
-            locationFilter={locationFilter}
-            setLocationFilter={setLocationFilter}
-            checkoutFilter={checkoutFilter}
-            setCheckoutFilter={setCheckoutFilter}
-            sortField={sortField}
-            setSortField={handleSortFieldChange}
-            sortDirection={sortDirection}
-            setSortDirection={handleSortDirectionChange}
-            userRole={userRole || ''}
-            shelves={isAdmin(userRole) ? shelves : shelves.filter(shelf => currentLocation && shelf.location_id === currentLocation.id)}
-            books={books}
-            allLocations={allLocations}
-            userLocations={userLocations}
-            currentLocation={currentLocation}
-            onLocationSwitch={switchToLocation}
-            allCategories={allCategories}
-          />
-        </div>
+        {/* Desktop Filters - Hidden on mobile (mobile uses bottom nav + filter drawer) */}
+        {!isMobile && (
+          <div data-tour="search-filters">
+            <BookFilters
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              shelfFilter={shelfFilter}
+              setShelfFilter={setShelfFilter}
+              categoryFilter={categoryFilter}
+              setCategoryFilter={setCategoryFilter}
+              locationFilter={locationFilter}
+              setLocationFilter={setLocationFilter}
+              checkoutFilter={checkoutFilter}
+              setCheckoutFilter={setCheckoutFilter}
+              sortField={sortField}
+              setSortField={handleSortFieldChange}
+              sortDirection={sortDirection}
+              setSortDirection={handleSortDirectionChange}
+              userRole={userRole || ''}
+              shelves={isAdmin(userRole) ? shelves : shelves.filter(shelf => currentLocation && shelf.location_id === currentLocation.id)}
+              books={books}
+              allLocations={allLocations}
+              userLocations={userLocations}
+              currentLocation={currentLocation}
+              onLocationSwitch={switchToLocation}
+              allCategories={allCategories}
+            />
+          </div>
+        )}
 
         <ActiveFilters
           authorFilter={authorFilter}
@@ -479,11 +496,13 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
         />
 
         {/* Main Content Layout */}
-        <Box sx={{ 
+        <Box sx={{
           display: 'flex',
           gap: 2,
           alignItems: 'flex-start',
-          flexDirection: { xs: 'column', md: 'row' }
+          flexDirection: { xs: 'column', md: 'row' },
+          // Add bottom padding for mobile bottom navigation
+          paddingBottom: { xs: '80px', md: 0 }
         }}>
           {/* Sidebar - Hidden on mobile, collapsible on larger screens */}
           {!isMobile && (
@@ -539,33 +558,53 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
           </Box>
         </Box>
 
-        {/* Mobile Floating Action Button */}
-        {isMobile && (
-          <Fab
-            color="primary"
-            aria-label="library activity"
-            onClick={() => setMobileSidebarOpen(true)}
-            sx={{
-              position: 'fixed',
-              bottom: 16,
-              right: 16,
-              zIndex: 1000,
-            }}
-          >
-            <MenuBook />
-          </Fab>
-        )}
+        {/* Mobile Bottom Navigation */}
+        <MobileBottomNav
+          onFilterToggle={() => {
+            setMobileFiltersOpen(!mobileFiltersOpen)
+            setMobileSearchOpen(false)
+            setMobileSidebarOpen(false)
+          }}
+          onSidebarToggle={() => {
+            setMobileSidebarOpen(!mobileSidebarOpen)
+            setMobileFiltersOpen(false)
+            setMobileSearchOpen(false)
+          }}
+          onAddBookClick={() => window.location.href = '/add-books'}
+          onSearchToggle={() => {
+            setMobileSearchOpen(!mobileSearchOpen)
+            setMobileFiltersOpen(false)
+            setMobileSidebarOpen(false)
+          }}
+          activeFiltersCount={activeFiltersCount}
+          searchTerm={searchTerm}
+        />
 
         {/* Mobile Sidebar Drawer */}
         {isMobile && (
           <Drawer
-            anchor="right"
+            anchor="bottom"
             open={mobileSidebarOpen}
             onClose={() => setMobileSidebarOpen(false)}
-            PaperProps={{
-              sx: {
-                width: '85vw',
-                maxWidth: 400,
+            ModalProps={{
+              keepMounted: false,
+              // Restore backdrop for proper click-outside behavior
+              BackdropProps: {
+                sx: {
+                  zIndex: 900, // Below toolbar (1000) but above content
+                }
+              }
+            }}
+            sx={{
+              zIndex: 950, // Below toolbar (1000) but above backdrop (900)
+              '& .MuiDrawer-paper': {
+                borderTopLeftRadius: 16,
+                borderTopRightRadius: 16,
+                maxHeight: 'calc(100vh - 80px)',
+                minHeight: '60vh',
+                bottom: 64,
+                height: 'auto',
+                zIndex: 950, // Same as drawer, below toolbar
               }
             }}
           >
@@ -577,6 +616,42 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
             />
           </Drawer>
         )}
+
+        {/* Mobile Filter Drawer */}
+        <MobileFilterDrawer
+          open={mobileFiltersOpen}
+          onClose={() => setMobileFiltersOpen(false)}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          shelfFilter={shelfFilter}
+          setShelfFilter={setShelfFilter}
+          categoryFilter={categoryFilter}
+          setCategoryFilter={setCategoryFilter}
+          locationFilter={locationFilter}
+          setLocationFilter={setLocationFilter}
+          checkoutFilter={checkoutFilter}
+          setCheckoutFilter={setCheckoutFilter}
+          sortField={sortField}
+          setSortField={handleSortFieldChange}
+          sortDirection={sortDirection}
+          setSortDirection={handleSortDirectionChange}
+          userRole={userRole || ''}
+          shelves={isAdmin(userRole) ? shelves : shelves.filter(shelf => currentLocation && shelf.location_id === currentLocation.id)}
+          books={books}
+          allLocations={allLocations}
+          userLocations={userLocations}
+          currentLocation={currentLocation}
+          onLocationSwitch={switchToLocation}
+          allCategories={allCategories}
+        />
+
+        {/* Mobile Search Panel */}
+        <MobileSearchPanel
+          open={mobileSearchOpen}
+          onClose={() => setMobileSearchOpen(false)}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+        />
         
         {/* Modal Components */}
         {modalState.type === 'confirm' && (
