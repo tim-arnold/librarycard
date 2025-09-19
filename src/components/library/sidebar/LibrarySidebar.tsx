@@ -307,8 +307,23 @@ export default function LibrarySidebar({
                     </Box>
 
                     {/* Section Content */}
-                    <Collapse in={isActive}>
-                      <Box sx={{ px: 1, py: 1 }}>
+                    <Collapse
+                      in={isActive}
+                      sx={{
+                        flex: isActive ? 1 : 0,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        overflow: 'hidden'
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          px: 1,
+                          py: 1,
+                          flex: 1,
+                          overflow: 'auto'
+                        }}
+                      >
                         <SectionComponent
                           items={section.data}
                           onBookClick={onBookClick}
