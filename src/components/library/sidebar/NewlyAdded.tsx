@@ -54,7 +54,7 @@ export default function NewlyAdded({
   }
 
   return (
-    <Box sx={{ maxHeight: 400, overflow: 'auto' }}>
+    <Box sx={{ height: '100%', overflow: 'auto' }}>
       {items.map((item) => {
         const { book, user, days_ago } = item.data
         

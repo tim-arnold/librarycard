@@ -6,6 +6,7 @@ import { LibraryBooks, MenuBook } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
 import { useModal } from '@/hooks/useModal'
 import useMobileBreakpoints from '@/hooks/useMobileBreakpoints'
+import useScrollLock from '@/hooks/useScrollLock'
 import { useBookLibraryEnhanced as useBookLibrary } from '@/hooks/useBookLibraryEnhanced'
 import { useBookActions } from '@/hooks/useBookActions'
 import { useBookFilters } from '@/hooks/useBookFilters'
@@ -154,6 +155,9 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
+
+  // Lock scroll when any mobile panel is open
+  useScrollLock(mobileSidebarOpen || mobileFiltersOpen || mobileSearchOpen)
 
 
   // Calculate active filters count for mobile bottom nav
@@ -463,6 +467,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
         )}
 
         <ActiveFilters
+          searchTerm={searchTerm}
           authorFilter={authorFilter}
           shelfFilter={shelfFilter}
           categoryFilter={categoryFilter}
@@ -470,6 +475,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
           checkoutFilter={checkoutFilter}
           seriesFilter={seriesFilter}
           allLocationsCount={allLocations.length}
+          onSearchRemove={() => setSearchTerm('')}
           onAuthorRemove={() => setAuthorFilter('')}
           onShelfRemove={() => setShelfFilter('')}
           onGenreRemove={handleGenreRemove}
@@ -477,6 +483,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
           onCheckoutRemove={() => setCheckoutFilter('')}
           onSeriesRemove={() => setSeriesFilter('')}
           onClearAll={() => {
+            setSearchTerm('')
             setAuthorFilter('')
             setShelfFilter('')
             setCategoryFilter([])
@@ -600,10 +607,9 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
               '& .MuiDrawer-paper': {
                 borderTopLeftRadius: 16,
                 borderTopRightRadius: 16,
-                maxHeight: 'calc(100vh - 80px)',
-                minHeight: '60vh',
-                bottom: 64,
-                height: 'auto',
+                height: 'calc(100vh - 120px)', // Full height minus header (80px) + 40px space
+                top: 120, // Header height (80px) + 40px
+                bottom: 'auto',
                 zIndex: 950, // Same as drawer, below toolbar
               }
             }}
@@ -621,8 +627,6 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
         <MobileFilterDrawer
           open={mobileFiltersOpen}
           onClose={() => setMobileFiltersOpen(false)}
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
           shelfFilter={shelfFilter}
           setShelfFilter={setShelfFilter}
           categoryFilter={categoryFilter}

@@ -6,6 +6,40 @@ html {
 
 /* Material UI CssBaseline will handle most of the global resets */
 
+/* Mobile menu animations */
+@keyframes slideDownFromTop {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideDownFromBehindHeader {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideUpToBehindHeader {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+}
+
 /* Legacy classes for components not yet converted to Material UI */
 .container {
   max-width: 1200px;

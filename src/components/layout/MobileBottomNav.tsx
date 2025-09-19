@@ -41,6 +41,13 @@ export default function MobileBottomNav({
   const handleChange = (event: React.SyntheticEvent, newValue: string) => {
     setValue(newValue)
 
+    // Add visual feedback with haptic-like delay
+    const target = event.currentTarget as HTMLElement
+    target.style.transform = 'scale(0.95)'
+    setTimeout(() => {
+      target.style.transform = 'scale(1)'
+    }, 100)
+
     switch (newValue) {
       case 'add-books':
         onAddBookClick()
@@ -83,10 +90,24 @@ export default function MobileBottomNav({
             paddingTop: 1,
             paddingBottom: 1,
             minHeight: 44, // Minimum touch target size
+            transition: 'all 0.2s ease-in-out',
+            borderRadius: 2,
+            margin: '4px 2px',
+            '&.Mui-selected': {
+              backgroundColor: 'primary.50',
+              '& .MuiBottomNavigationAction-label': {
+                color: 'primary.main',
+                fontWeight: 600,
+              }
+            },
+            '&:active': {
+              transform: 'scale(0.95)',
+            }
           },
           '& .MuiBottomNavigationAction-label': {
             fontSize: '0.75rem',
             lineHeight: 1.2,
+            transition: 'all 0.2s ease-in-out',
           }
         }}
       >
@@ -94,12 +115,14 @@ export default function MobileBottomNav({
           label="Add Books"
           value="add-books"
           icon={<Add />}
+          aria-label="Add new books to library"
         />
 
         <BottomNavigationAction
           label={searchTerm ? 'Searching' : 'Search'}
           value="search"
           icon={<Search color={searchTerm ? 'primary' : 'inherit'} />}
+          aria-label={searchTerm ? `Currently searching for: ${searchTerm}` : 'Search books'}
         />
 
         <BottomNavigationAction
@@ -125,18 +148,21 @@ export default function MobileBottomNav({
                     fontSize: '0.75rem',
                     fontWeight: 'bold',
                   }}
+                  aria-hidden="true"
                 >
                   {activeFiltersCount > 9 ? '9+' : activeFiltersCount}
                 </Box>
               )}
             </Box>
           }
+          aria-label={activeFiltersCount > 0 ? `Book filters (${activeFiltersCount} active)` : 'Book filters'}
         />
 
         <BottomNavigationAction
           label="Activity"
           value="activity"
           icon={<MenuBook />}
+          aria-label="View library activity and recent books"
         />
       </BottomNavigation>
     </Paper>

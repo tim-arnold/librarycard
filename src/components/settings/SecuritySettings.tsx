@@ -35,9 +35,11 @@ import { twoFactorAPI } from '@/lib/twoFactorApi'
 import { TwoFactorStatus } from '@/lib/types'
 import TwoFactorSetup from '@/components/auth/TwoFactorSetup'
 import PasskeyManager from '@/components/auth/PasskeyManager'
+import useMobileBreakpoints from '@/hooks/useMobileBreakpoints'
 
 export default function SecuritySettings() {
   const { data: session } = useSession()
+  const { isMobile } = useMobileBreakpoints()
   const [twoFactorStatus, setTwoFactorStatus] = useState<TwoFactorStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [setupOpen, setSetupOpen] = useState(false)
@@ -261,6 +263,7 @@ export default function SecuritySettings() {
                   color="error"
                   startIcon={<Warning />}
                   onClick={() => setDisableOpen(true)}
+                  fullWidth={isMobile}
                 >
                   Disable 2FA
                 </Button>
@@ -269,6 +272,7 @@ export default function SecuritySettings() {
                   variant="contained"
                   startIcon={<Add />}
                   onClick={() => setSetupOpen(true)}
+                  fullWidth={isMobile}
                 >
                   Enable 2FA
                 </Button>
@@ -294,6 +298,7 @@ export default function SecuritySettings() {
                     size="small"
                     startIcon={<Refresh />}
                     onClick={() => setRegenerateOpen(true)}
+                    fullWidth={isMobile}
                   >
                     Regenerate Backup Codes
                   </Button>
@@ -408,9 +413,10 @@ export default function SecuritySettings() {
                   <Button
                     type="submit"
                     variant="contained"
-                    sx={{ alignSelf: 'flex-start' }}
+                    sx={{ alignSelf: isMobile ? 'stretch' : 'flex-start' }}
                     disabled={passwordLoading}
                     startIcon={passwordLoading ? <CircularProgress size={16} color="inherit" /> : <Lock />}
+                    fullWidth={isMobile}
                   >
                     {passwordLoading ? 'Changing Password...' : 'Change Password'}
                   </Button>
@@ -483,12 +489,15 @@ export default function SecuritySettings() {
             autoFocus
           />
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => {
-            setDisableOpen(false)
-            setPassword('')
-            setError('')
-          }}>
+        <DialogActions sx={{ flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 1 : 0 }}>
+          <Button
+            onClick={() => {
+              setDisableOpen(false)
+              setPassword('')
+              setError('')
+            }}
+            fullWidth={isMobile}
+          >
             Cancel
           </Button>
           <Button
@@ -497,6 +506,7 @@ export default function SecuritySettings() {
             onClick={handleDisable2FA}
             disabled={actionLoading || !password.trim()}
             startIcon={actionLoading ? <CircularProgress size={16} /> : <Warning />}
+            fullWidth={isMobile}
           >
             {actionLoading ? 'Disabling...' : 'Disable 2FA'}
           </Button>
@@ -573,8 +583,8 @@ export default function SecuritySettings() {
             </Box>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={closeRegenerateModal}>
+        <DialogActions sx={{ flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 1 : 0 }}>
+          <Button onClick={closeRegenerateModal} fullWidth={isMobile}>
             {newBackupCodes.length > 0 ? 'Done' : 'Cancel'}
           </Button>
           {newBackupCodes.length === 0 && (
@@ -583,6 +593,7 @@ export default function SecuritySettings() {
               onClick={handleRegenerateBackupCodes}
               disabled={actionLoading}
               startIcon={actionLoading ? <CircularProgress size={16} /> : <Refresh />}
+              fullWidth={isMobile}
             >
               {actionLoading ? 'Generating...' : 'Generate New Codes'}
             </Button>
