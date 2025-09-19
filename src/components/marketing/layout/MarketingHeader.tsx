@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
-import { CreditCard, Menu, X, LightMode, DarkMode } from '@mui/icons-material'
+import { CreditCard, Menu, Close, LightMode, DarkMode } from '@mui/icons-material'
 import { useTheme } from '@/lib/ThemeContext'
 import Button from '../ui/Button'
 import Container from '../ui/Container'
@@ -142,7 +142,7 @@ export default function MarketingHeader() {
               borderRadius: 'var(--marketing-radius-base)'
             }}
           >
-            {mobileMenuOpen ? <X /> : <Menu />}
+            {mobileMenuOpen ? <Close /> : <Menu />}
           </button>
         </div>
 

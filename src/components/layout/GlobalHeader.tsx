@@ -5,10 +5,10 @@ import { useSession, signOut } from 'next-auth/react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useTheme } from '@/lib/ThemeContext'
 import { useTheme as useMuiTheme } from '@mui/material/styles'
-import { 
-  CreditCard, 
-  Menu, 
-  X, 
+import {
+  CreditCard,
+  Menu,
+  Close,
   AccountCircle, 
   ExitToApp,
   Help,
@@ -643,7 +643,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
               borderRadius: 'var(--marketing-radius-base)'
             }}
           >
-            {mobileMenuOpen ? <X /> : <Menu />}
+            {mobileMenuOpen ? <Close /> : <Menu />}
           </button>
         </div>
 
