@@ -13,7 +13,7 @@ import {
 } from '@mui/material'
 import {
   ArrowBack,
-  Lock,
+  Security,
 } from '@mui/icons-material'
 import Footer from '@/components/layout/Footer'
 import SecuritySettings from '@/components/settings/SecuritySettings'
@@ -54,7 +54,7 @@ export default function SecurityPage() {
       <Paper sx={{ p: 3 }}>
         <Box sx={{ mb: 3 }}>
           <Typography variant="h4" component="h1" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Lock /> Security
+            <Security /> Security
           </Typography>
         </Box>
 

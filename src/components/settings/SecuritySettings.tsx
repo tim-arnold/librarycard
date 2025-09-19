@@ -208,10 +208,6 @@ export default function SecuritySettings() {
     return (
       <Card variant="outlined">
         <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-            <Security />
-            <Typography variant="h6">Security</Typography>
-          </Box>
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
             <CircularProgress />
           </Box>
@@ -224,10 +220,6 @@ export default function SecuritySettings() {
     <>
       <Card variant="outlined">
         <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-            <Security />
-            <Typography variant="h6">Security</Typography>
-          </Box>
 
           {success && (
             <Alert severity="success" sx={{ mb: 2 }}>
