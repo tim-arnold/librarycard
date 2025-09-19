@@ -32,6 +32,7 @@ import {
   Warning,
 } from '@mui/icons-material'
 import { WebAuthnAPI, type WebAuthnCredential } from '@/lib/webauthnApi'
+import useMobileBreakpoints from '@/hooks/useMobileBreakpoints'
 
 interface PasskeyManagerProps {
   userEmail: string
@@ -40,6 +41,7 @@ interface PasskeyManagerProps {
 }
 
 export default function PasskeyManager({ userEmail, onError, onSuccess }: PasskeyManagerProps) {
+  const { isMobile } = useMobileBreakpoints()
   const [credentials, setCredentials] = useState<WebAuthnCredential[]>([])
   const [loading, setLoading] = useState(true)
   const [isSupported, setIsSupported] = useState(false)
@@ -194,8 +196,10 @@ export default function PasskeyManager({ userEmail, onError, onSuccess }: Passke
       <CardContent>
         <Box mb={2}>
           <Box display="flex" alignItems="center" gap={2} mb={1}>
-            <Fingerprint color="primary" />
-            <Typography variant="h6">Passkeys</Typography>
+            <Typography variant="subtitle1" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Fingerprint />
+              Passkeys
+            </Typography>
             <Chip
               label={platformAvailable ? 'Available' : 'External Only'}
               color={platformAvailable ? 'success' : 'warning'}
@@ -216,6 +220,7 @@ export default function PasskeyManager({ userEmail, onError, onSuccess }: Passke
             startIcon={<Add />}
             onClick={() => setAddDialogOpen(true)}
             disabled={loading}
+            fullWidth={isMobile}
           >
             Add Passkey
           </Button>
@@ -294,8 +299,8 @@ export default function PasskeyManager({ userEmail, onError, onSuccess }: Passke
             </Alert>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setAddDialogOpen(false)} disabled={actionLoading}>
+        <DialogActions sx={{ flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 1 : 0 }}>
+          <Button onClick={() => setAddDialogOpen(false)} disabled={actionLoading} fullWidth={isMobile}>
             Cancel
           </Button>
           <Button
@@ -303,6 +308,7 @@ export default function PasskeyManager({ userEmail, onError, onSuccess }: Passke
             variant="contained"
             disabled={actionLoading}
             startIcon={actionLoading ? <CircularProgress size={16} /> : <Fingerprint />}
+            fullWidth={isMobile}
           >
             Create Passkey
           </Button>
@@ -320,8 +326,8 @@ export default function PasskeyManager({ userEmail, onError, onSuccess }: Passke
             You won't be able to use this passkey to sign in anymore.
           </Typography>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)} disabled={actionLoading}>
+        <DialogActions sx={{ flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 1 : 0 }}>
+          <Button onClick={() => setDeleteDialogOpen(false)} disabled={actionLoading} fullWidth={isMobile}>
             Cancel
           </Button>
           <Button
@@ -330,6 +336,7 @@ export default function PasskeyManager({ userEmail, onError, onSuccess }: Passke
             color="error"
             disabled={actionLoading}
             startIcon={actionLoading ? <CircularProgress size={16} /> : <Delete />}
+            fullWidth={isMobile}
           >
             Remove
           </Button>
