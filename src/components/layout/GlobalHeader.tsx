@@ -117,8 +117,8 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
   }
 
   const handleNavClick = (href: string) => {
-    router.push(href)
     closeMobileMenu()
+    router.push(href)
   }
 
   const closeMobileMenu = () => {
@@ -948,7 +948,11 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                 {navigationItems.map((item) => (
                   <li key={item.key} style={{ marginBottom: 'var(--marketing-spacing-2)' }}>
                     <button
-                      onClick={() => handleNavClick(item.href)}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        handleNavClick(item.href)
+                      }}
                       style={{
                         width: '100%',
                         textAlign: 'left',
