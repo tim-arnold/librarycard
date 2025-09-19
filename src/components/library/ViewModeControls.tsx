@@ -59,41 +59,41 @@ export default function ViewModeControls({
         {getCountText()}
       </Typography>
 
-      <Box sx={{ 
-        display: 'flex', 
-        flexDirection: { xs: 'column', sm: 'row' },
-        justifyContent: 'space-between', 
-        alignItems: { xs: 'stretch', sm: 'center' },
-        gap: { xs: 2, sm: 0 }
+      <Box sx={{
+        display: 'flex',
+        flexDirection: 'row',
+        justifyContent: { xs: 'center', md: 'space-between' },
+        alignItems: 'center',
+        gap: { xs: 2, md: 0 },
+        flexWrap: 'wrap'
       }}>
         {/* Books per page dropdown */}
         <FormControl size="small" sx={{ minWidth: 120 }}>
-        <InputLabel>Books per page</InputLabel>
-        <Select
-          value={booksPerPage}
-          label="Books per page"
-          onChange={(e) => onBooksPerPageChange(Number(e.target.value))}
-        >
-          <MenuItem value={10}>10 books</MenuItem>
-          <MenuItem value={25}>25 books</MenuItem>
-          <MenuItem value={50}>50 books</MenuItem>
-          <MenuItem value={100}>100 books</MenuItem>
-        </Select>
-      </FormControl>
+          <InputLabel>Books per page</InputLabel>
+          <Select
+            value={booksPerPage}
+            label="Books per page"
+            onChange={(e) => onBooksPerPageChange(Number(e.target.value))}
+          >
+            <MenuItem value={10}>10 books</MenuItem>
+            <MenuItem value={25}>25 books</MenuItem>
+            <MenuItem value={50}>50 books</MenuItem>
+            <MenuItem value={100}>100 books</MenuItem>
+          </Select>
+        </FormControl>
 
-      {/* View mode toggle */}
-      <ToggleButtonGroup
-        value={viewMode}
-        exclusive
-        onChange={(_, newViewMode) => {
-          if (newViewMode !== null) {
-            onViewModeChange(newViewMode)
-          }
-        }}
-        size="small"
-        aria-label="view mode"
-        sx={{ alignSelf: { xs: 'center', sm: 'auto' } }}
-      >
+        {/* View mode toggle */}
+        <ToggleButtonGroup
+          value={viewMode}
+          exclusive
+          onChange={(_, newViewMode) => {
+            if (newViewMode !== null) {
+              onViewModeChange(newViewMode)
+            }
+          }}
+          size="small"
+          aria-label="view mode"
+        >
         <ToggleButton value="card" aria-label="card view">
           <GridView sx={{ mr: isMobile ? 0 : 1 }} />
           {!isMobile && 'Grid'}

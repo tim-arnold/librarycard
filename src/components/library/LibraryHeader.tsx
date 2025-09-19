@@ -42,44 +42,44 @@ export default function LibraryHeader({
       return (
         <Box component="span" sx={{ display: 'flex', alignItems: 'center' }}>
           <LibraryBooks sx={{ mr: 1 }} />
-          {locationFilter} ({filteredBooksCount} books)
+          {locationFilter}
         </Box>
       )
     }
-    
+
     if (!currentLocation) {
       return (
         <Box component="span" sx={{ display: 'flex', alignItems: 'center' }}>
           <MenuBook sx={{ mr: 1 }} />
-          My Library ({totalBooksCount} books)
+          My Library
         </Box>
       )
     }
-    
+
     if (shelvesCount <= 1) {
       // Single shelf - show location and shelf name
       const shelfName = 'Main Library' // This would need to be passed as a prop if we need the actual shelf name
       return (
         <Box component="span" sx={{ display: 'flex', alignItems: 'center' }}>
           <MenuBook sx={{ mr: 1 }} />
-          {currentLocation.name}: {shelfName} ({totalBooksCount} books)
+          {currentLocation.name}: {shelfName}
         </Box>
       )
     }
-    
+
     // Multiple shelves - show current filter or "All Shelves"
     if (shelfFilter) {
       return (
         <Box component="span" sx={{ display: 'flex', alignItems: 'center' }}>
           <MenuBook sx={{ mr: 1 }} />
-          {currentLocation.name}: {shelfFilter} ({filteredBooksCount} books)
+          {currentLocation.name}: {shelfFilter}
         </Box>
       )
     } else {
       return (
         <Box component="span" sx={{ display: 'flex', alignItems: 'center' }}>
           <MenuBook sx={{ mr: 1 }} />
-          {currentLocation.name}: All Shelves ({totalBooksCount} books)
+          {currentLocation.name}: All Shelves
         </Box>
       )
     }
