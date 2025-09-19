@@ -607,10 +607,9 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
               '& .MuiDrawer-paper': {
                 borderTopLeftRadius: 16,
                 borderTopRightRadius: 16,
-                maxHeight: 'calc(100vh - 80px)',
-                minHeight: '60vh',
-                bottom: 64,
-                height: 'auto',
+                height: 'calc(100vh - 120px)', // Full height minus header (80px) + 40px space
+                top: 120, // Header height (80px) + 40px
+                bottom: 'auto',
                 zIndex: 950, // Same as drawer, below toolbar
               }
             }}
