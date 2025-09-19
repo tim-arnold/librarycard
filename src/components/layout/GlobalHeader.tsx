@@ -166,18 +166,23 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
       } as React.CSSProperties}
     >
       <div
-        className="marketing-container marketing-container-xl"
         style={{
           backgroundColor: muiTheme.palette.background.paper,
           borderBottom: `1px solid ${muiTheme.palette.divider}`,
           position: 'relative',
           zIndex: 1302, // Higher than mobile menus within header context
-          boxShadow: (mobileMenuOpen || themeMenuOpen) ? '0 2px 8px rgba(0,0,0,0.15)' : 'none'
+          boxShadow: (mobileMenuOpen || themeMenuOpen) ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
+          width: '100%'
         }}
       >
         <div
           className="marketing-flex marketing-items-center marketing-justify-between"
-          style={{ padding: 'var(--marketing-spacing-4) 0' }}
+          style={{
+            padding: 'var(--marketing-spacing-4)',
+            maxWidth: '1280px',
+            margin: '0 auto',
+            width: '100%'
+          }}
         >
           {/* Logo */}
           <div
@@ -324,7 +329,18 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                 }}
                 title="Theme options"
               >
-                {themeMenuOpen ? <Close /> : <Palette />}
+                {themeMenuOpen ? (
+                  <Close />
+                ) : (
+                  <>
+                    <Palette style={{ fontSize: '1.71429rem' }} />
+                    {muiTheme.palette.mode === 'dark' ? (
+                      <DarkMode style={{ fontSize: '1.71429rem' }} />
+                    ) : (
+                      <LightMode style={{ fontSize: '1.71429rem' }} />
+                    )}
+                  </>
+                )}
               </button>
 
               {/* Theme Dropdown Menu */}
@@ -762,8 +778,9 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
       {/* Mobile Theme Dropdown - Outside container for full width */}
       {(themeMenuOpen || themeMenuClosing) && (
         <>
-          {/* Backdrop - lower z-index than header and footer */}
+          {/* Backdrop - lower z-index than header and footer - mobile only */}
           <div
+            className="marketing-hidden-desktop"
             style={{
               position: 'fixed',
               top: 0,
@@ -943,8 +960,9 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
       {/* Mobile Navigation - Outside container for full width */}
       {(mobileMenuOpen || mobileMenuClosing) && (
         <>
-          {/* Backdrop - lower z-index than header and footer */}
+          {/* Backdrop - lower z-index than header and footer - mobile only */}
           <div
+            className="marketing-hidden-desktop"
             style={{
               position: 'fixed',
               top: 0,
