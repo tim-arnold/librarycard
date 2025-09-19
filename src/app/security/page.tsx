@@ -13,9 +13,8 @@ import {
 } from '@mui/material'
 import {
   ArrowBack,
-  Lock,
+  Security,
 } from '@mui/icons-material'
-import Footer from '@/components/layout/Footer'
 import SecuritySettings from '@/components/settings/SecuritySettings'
 import ProfileSettingsMobileBottomNav from '@/components/layout/ProfileSettingsMobileBottomNav'
 
@@ -52,16 +51,9 @@ export default function SecurityPage() {
   return (
     <Container maxWidth="md" sx={{ py: 3, pb: { xs: '80px', md: 3 } }}>
       <Paper sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-          <Button
-            variant="outlined"
-            startIcon={<ArrowBack />}
-            onClick={() => router.push('/')}
-          >
-            Back to App
-          </Button>
+        <Box sx={{ mb: 3 }}>
           <Typography variant="h4" component="h1" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Lock /> Security
+            <Security /> Security
           </Typography>
         </Box>
 
@@ -74,7 +66,6 @@ export default function SecurityPage() {
         <SecuritySettings />
       </Paper>
 
-      <Footer />
 
       {/* Mobile Bottom Navigation */}
       <ProfileSettingsMobileBottomNav

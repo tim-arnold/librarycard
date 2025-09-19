@@ -192,16 +192,25 @@ export default function PasskeyManager({ userEmail, onError, onSuccess }: Passke
   return (
     <Card>
       <CardContent>
-        <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-          <Box display="flex" alignItems="center" gap={2}>
+        <Box mb={2}>
+          <Box display="flex" alignItems="center" gap={2} mb={1}>
             <Fingerprint color="primary" />
             <Typography variant="h6">Passkeys</Typography>
-            <Chip 
-              label={platformAvailable ? 'Available' : 'External Only'} 
+            <Chip
+              label={platformAvailable ? 'Available' : 'External Only'}
               color={platformAvailable ? 'success' : 'warning'}
               size="small"
             />
           </Box>
+
+          <Typography variant="body2" color="text.secondary" paragraph>
+            Passkeys provide secure, passwordless authentication using your device's biometric sensors or security keys.
+            {platformAvailable
+              ? ' You can use Touch ID, Face ID, or Windows Hello on this device.'
+              : ' Use an external security key or authenticator app.'
+            }
+          </Typography>
+
           <Button
             variant="contained"
             startIcon={<Add />}
@@ -211,14 +220,6 @@ export default function PasskeyManager({ userEmail, onError, onSuccess }: Passke
             Add Passkey
           </Button>
         </Box>
-
-        <Typography variant="body2" color="text.secondary" paragraph>
-          Passkeys provide secure, passwordless authentication using your device's biometric sensors or security keys.
-          {platformAvailable 
-            ? ' You can use Touch ID, Face ID, or Windows Hello on this device.'
-            : ' Use an external security key or authenticator app.'
-          }
-        </Typography>
 
         {loading ? (
           <Box display="flex" justifyContent="center" py={3}>
