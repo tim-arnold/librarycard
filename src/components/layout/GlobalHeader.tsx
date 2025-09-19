@@ -759,20 +759,21 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                 }}
                 style={{
                   flex: 1,
-                  padding: 'var(--marketing-spacing-2) var(--marketing-spacing-3)',
+                  padding: 'var(--marketing-spacing-3)',
                   border: '1px solid',
                   borderColor: !isDarkMode ? 'var(--marketing-primary)' : 'var(--marketing-gray-300)',
                   borderRadius: 'var(--marketing-radius-base)',
                   background: !isDarkMode ? 'var(--marketing-primary)' : 'var(--marketing-white)',
                   color: !isDarkMode ? 'var(--marketing-white)' : 'var(--marketing-gray-700)',
                   cursor: 'pointer',
-                  fontSize: 'var(--marketing-text-sm)',
+                  fontSize: 'var(--marketing-text-base)',
                   fontWeight: 'var(--marketing-font-medium)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: 'var(--marketing-spacing-1)',
-                  transition: 'all 0.2s ease'
+                  transition: 'all 0.2s ease',
+                  minHeight: '48px'
                 }}
               >
                 <LightMode style={{ fontSize: '1rem' }} />
@@ -789,20 +790,21 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                 }}
                 style={{
                   flex: 1,
-                  padding: 'var(--marketing-spacing-2) var(--marketing-spacing-3)',
+                  padding: 'var(--marketing-spacing-3)',
                   border: '1px solid',
                   borderColor: isDarkMode ? 'var(--marketing-primary)' : 'var(--marketing-gray-300)',
                   borderRadius: 'var(--marketing-radius-base)',
                   background: isDarkMode ? 'var(--marketing-primary)' : 'var(--marketing-white)',
                   color: isDarkMode ? 'var(--marketing-white)' : 'var(--marketing-gray-700)',
                   cursor: 'pointer',
-                  fontSize: 'var(--marketing-text-sm)',
+                  fontSize: 'var(--marketing-text-base)',
                   fontWeight: 'var(--marketing-font-medium)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: 'var(--marketing-spacing-1)',
-                  transition: 'all 0.2s ease'
+                  transition: 'all 0.2s ease',
+                  minHeight: '48px'
                 }}
               >
                 <DarkMode style={{ fontSize: '1rem' }} />
@@ -836,16 +838,17 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                       display: 'flex',
                       alignItems: 'center',
                       gap: 'var(--marketing-spacing-2)',
-                      padding: 'var(--marketing-spacing-2)',
+                      padding: 'var(--marketing-spacing-3)',
                       background: themeVariant === option.value ? 'var(--marketing-white)' : 'transparent',
                       border: '1px solid',
                       borderColor: themeVariant === option.value ? 'var(--marketing-primary)' : 'var(--marketing-gray-200)',
                       borderRadius: 'var(--marketing-radius-base)',
                       cursor: 'pointer',
-                      fontSize: 'var(--marketing-text-sm)',
+                      fontSize: 'var(--marketing-text-base)',
                       color: 'var(--marketing-gray-700)',
                       transition: 'all 0.2s ease',
-                      textAlign: 'left'
+                      textAlign: 'left',
+                      minHeight: '48px'
                     }}
                   >
                     <div
