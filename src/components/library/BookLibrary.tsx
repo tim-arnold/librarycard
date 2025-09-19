@@ -463,6 +463,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
         )}
 
         <ActiveFilters
+          searchTerm={searchTerm}
           authorFilter={authorFilter}
           shelfFilter={shelfFilter}
           categoryFilter={categoryFilter}
@@ -470,6 +471,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
           checkoutFilter={checkoutFilter}
           seriesFilter={seriesFilter}
           allLocationsCount={allLocations.length}
+          onSearchRemove={() => setSearchTerm('')}
           onAuthorRemove={() => setAuthorFilter('')}
           onShelfRemove={() => setShelfFilter('')}
           onGenreRemove={handleGenreRemove}
@@ -477,6 +479,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
           onCheckoutRemove={() => setCheckoutFilter('')}
           onSeriesRemove={() => setSeriesFilter('')}
           onClearAll={() => {
+            setSearchTerm('')
             setAuthorFilter('')
             setShelfFilter('')
             setCategoryFilter([])
@@ -621,8 +624,6 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
         <MobileFilterDrawer
           open={mobileFiltersOpen}
           onClose={() => setMobileFiltersOpen(false)}
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
           shelfFilter={shelfFilter}
           setShelfFilter={setShelfFilter}
           categoryFilter={categoryFilter}

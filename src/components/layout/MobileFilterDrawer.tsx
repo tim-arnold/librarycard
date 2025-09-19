@@ -35,8 +35,6 @@ interface MobileFilterDrawerProps {
   onClose: () => void
 
   // Filter state
-  searchTerm: string
-  setSearchTerm: (term: string) => void
   shelfFilter: string
   setShelfFilter: (shelf: string) => void
   categoryFilter: string[]
@@ -71,8 +69,6 @@ interface MobileFilterDrawerProps {
 export default function MobileFilterDrawer({
   open,
   onClose,
-  searchTerm,
-  setSearchTerm,
   shelfFilter,
   setShelfFilter,
   categoryFilter,
@@ -171,7 +167,6 @@ export default function MobileFilterDrawer({
 
   // Count active filters
   const activeFiltersCount = [
-    searchTerm,
     locationFilter,
     shelfFilter,
     checkoutFilter,
@@ -180,7 +175,6 @@ export default function MobileFilterDrawer({
 
   // Clear all filters
   const handleClearAll = () => {
-    setSearchTerm('')
     setLocationFilter('')
     setShelfFilter('')
     setCheckoutFilter('')
@@ -262,13 +256,6 @@ export default function MobileFilterDrawer({
               Active Filters:
             </Typography>
             <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-              {searchTerm && (
-                <Chip
-                  label={`Search: "${searchTerm}"`}
-                  onDelete={() => setSearchTerm('')}
-                  size="small"
-                />
-              )}
               {locationFilter && (
                 <Chip
                   label={`Location: ${locationFilter}`}
@@ -305,20 +292,6 @@ export default function MobileFilterDrawer({
 
         {/* Filter Controls */}
         <Stack spacing={3}>
-          {/* Search Input */}
-          <FormControl fullWidth>
-            <TextField
-              label="Search books..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              variant="outlined"
-              sx={{ minHeight: 56 }}
-              InputProps={{
-                sx: { minHeight: 56 }
-              }}
-            />
-          </FormControl>
-
           {/* Location Filter */}
           {isAdmin(userRole) && allLocations.length > 1 && (
             <FormControl fullWidth>

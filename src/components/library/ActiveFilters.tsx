@@ -4,6 +4,7 @@ import { Box, Chip, Button } from '@mui/material'
 import { ClearAll } from '@mui/icons-material'
 
 interface ActiveFiltersProps {
+  searchTerm: string
   authorFilter: string
   shelfFilter: string
   categoryFilter: string[]
@@ -11,6 +12,7 @@ interface ActiveFiltersProps {
   checkoutFilter: string
   seriesFilter: string
   allLocationsCount: number
+  onSearchRemove: () => void
   onAuthorRemove: () => void
   onShelfRemove: () => void
   onGenreRemove: (genre: string) => void
@@ -21,6 +23,7 @@ interface ActiveFiltersProps {
 }
 
 export default function ActiveFilters({
+  searchTerm,
   authorFilter,
   shelfFilter,
   categoryFilter,
@@ -28,6 +31,7 @@ export default function ActiveFilters({
   checkoutFilter,
   seriesFilter,
   allLocationsCount,
+  onSearchRemove,
   onAuthorRemove,
   onShelfRemove,
   onGenreRemove,
@@ -36,7 +40,7 @@ export default function ActiveFilters({
   onSeriesRemove,
   onClearAll
 }: ActiveFiltersProps) {
-  const hasActiveFilters = authorFilter || shelfFilter || categoryFilter.length > 0 || locationFilter || checkoutFilter || seriesFilter
+  const hasActiveFilters = searchTerm || authorFilter || shelfFilter || categoryFilter.length > 0 || locationFilter || checkoutFilter || seriesFilter
 
   return (
     <Box sx={{ 
@@ -48,6 +52,22 @@ export default function ActiveFilters({
     }}>
       {hasActiveFilters && (
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+      {searchTerm && (
+        <Chip
+          label={`Search: "${searchTerm}"`}
+          onDelete={onSearchRemove}
+          color="primary"
+          variant="outlined"
+          sx={{
+            fontSize: '0.9rem',
+            height: 32,
+            fontWeight: 500,
+            '& .MuiChip-deleteIcon': {
+              color: 'primary.main'
+            }
+          }}
+        />
+      )}
       {authorFilter && (
         <Chip
           label={`Author: ${authorFilter}`}
