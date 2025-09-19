@@ -29,6 +29,7 @@ import {
 import type { SortField, SortDirection } from '../library/BookFilters'
 import { isAdmin } from '@/lib/permissions'
 import useMobileBreakpoints from '@/hooks/useMobileBreakpoints'
+import useScrollLock from '@/hooks/useScrollLock'
 
 interface MobileFilterDrawerProps {
   open: boolean
@@ -91,6 +92,9 @@ export default function MobileFilterDrawer({
   allCategories,
 }: MobileFilterDrawerProps) {
   const { isMobile } = useMobileBreakpoints()
+
+  // Lock scroll when drawer is open
+  useScrollLock(open)
 
   // Memoize filtered shelves to prevent re-rendering
   const filteredShelves = useMemo(() => {

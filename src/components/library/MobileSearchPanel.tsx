@@ -18,6 +18,7 @@ import {
   Search,
 } from '@mui/icons-material'
 import useMobileBreakpoints from '@/hooks/useMobileBreakpoints'
+import useScrollLock from '@/hooks/useScrollLock'
 
 interface MobileSearchPanelProps {
   open: boolean
@@ -37,6 +38,9 @@ export default function MobileSearchPanel({
 
   // Local search term for the panel that gets cleared after search
   const [localSearchTerm, setLocalSearchTerm] = useState('')
+
+  // Lock scroll when panel is open
+  useScrollLock(open)
 
   // Auto-focus search input when panel opens
   useEffect(() => {
@@ -73,31 +77,27 @@ export default function MobileSearchPanel({
       open={open}
       onClose={onClose}
       variant="temporary"
-      SlideProps={{ direction: 'up' }}
       ModalProps={{
         // Restore backdrop for proper click-outside behavior
         BackdropProps: {
           sx: {
             zIndex: 900, // Below toolbar (1000) but above content
-            backgroundColor: 'rgba(0, 0, 0, 0.3)',
           }
         }
       }}
       sx={{
         zIndex: 950, // Below toolbar (1000) but above backdrop (900)
         '& .MuiDrawer-paper': {
-          borderTopLeftRadius: 20,
-          borderTopRightRadius: 20,
-          height: 'calc(100vh - 64px)', // Full height minus bottom nav
+          borderTopLeftRadius: 16,
+          borderTopRightRadius: 16,
+          maxHeight: 'calc(100vh - 80px)',
           bottom: 64,
+          height: 'auto',
           zIndex: 950, // Same as drawer, below toolbar
-          boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.15)',
-          display: 'flex',
-          flexDirection: 'column',
         },
       }}
     >
-      <Box sx={{ p: 3, flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{ p: 3 }}>
         {/* Handle bar for visual cue */}
         <Box sx={{
           width: 40,
@@ -132,9 +132,6 @@ export default function MobileSearchPanel({
           </IconButton>
         </Box>
 
-        {/* Spacer to push content down */}
-        <Box sx={{ flex: 1 }} />
-
         {/* Current search display */}
         {searchTerm && (
           <Box sx={{
@@ -168,7 +165,7 @@ export default function MobileSearchPanel({
           </Box>
         )}
 
-        {/* Search input and button grouped together */}
+        {/* Search input and button */}
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           <TextField
             inputRef={searchInputRef}
