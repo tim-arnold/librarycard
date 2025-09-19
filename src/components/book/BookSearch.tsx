@@ -519,7 +519,12 @@ export default function BookSearch({
       {/* Search Form */}
       <Box component="form" onSubmit={handleSearchSubmit} sx={{ mb: 3 }} ref={searchFormRef}>
         {/* Search Field */}
-        <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+        <Box sx={{
+          display: 'flex',
+          flexDirection: { xs: 'column', sm: 'row' },
+          gap: { xs: 2, sm: 1 },
+          mb: 2
+        }}>
           <TextField
             fullWidth
             value={searchQuery}
@@ -543,13 +548,14 @@ export default function BookSearch({
               )
             }}
           />
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             variant="contained"
             startIcon={isSearching ? <CircularProgress size={16} color="inherit" /> : <Search />}
             disabled={isSearching || !searchQuery.trim() || disabled}
-            sx={{ 
-              minWidth: 120,
+            sx={{
+              minWidth: { xs: 'auto', sm: 120 },
+              width: { xs: '100%', sm: 'auto' },
               color: (theme) => theme.palette.mode === 'dark' ? '#000000' : '#ffffff',
               '&.Mui-disabled': {
                 color: (theme) => theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.7)',
