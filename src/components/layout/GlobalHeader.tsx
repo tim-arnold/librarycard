@@ -9,7 +9,7 @@ import {
   CreditCard,
   Menu,
   Close,
-  AccountCircle, 
+  AccountCircle,
   ExitToApp,
   Help,
   LocationOn,
@@ -314,8 +314,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                 }}
                 title="Theme options"
               >
-                <Palette />
-                {isDarkMode ? <DarkMode /> : <LightMode />}
+                {themeMenuOpen ? <Close /> : <Palette />}
               </button>
 
               {/* Theme Dropdown Menu */}
@@ -352,7 +351,6 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                           e.preventDefault()
                           e.stopPropagation()
                           if (isDarkMode) toggleTheme()
-                          setThemeMenuOpen(false)
                         }}
                         style={{
                           flex: 1,
@@ -378,7 +376,6 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                           e.preventDefault()
                           e.stopPropagation()
                           if (!isDarkMode) toggleTheme()
-                          setThemeMenuOpen(false)
                         }}
                         style={{
                           flex: 1,
@@ -430,7 +427,6 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                               e.preventDefault()
                               e.stopPropagation()
                               setThemeVariant(option.value)
-                              setThemeMenuOpen(false)
                             }}
                             style={{
                               display: 'flex',
@@ -679,10 +675,10 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
               }}
               aria-label="Theme options"
               style={{
-                background: 'none',
+                background: themeMenuOpen ? 'var(--marketing-gray-100)' : 'none',
                 border: 'none',
                 cursor: 'pointer',
-                color: 'var(--marketing-gray-600)',
+                color: themeMenuOpen ? 'var(--marketing-primary)' : 'var(--marketing-gray-600)',
                 padding: 'var(--marketing-spacing-2)',
                 borderRadius: 'var(--marketing-radius-base)',
                 transition: 'all 0.2s ease',
@@ -693,15 +689,19 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                 justifyContent: 'center'
               }}
               onMouseOver={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--marketing-gray-100)'
-                e.currentTarget.style.color = 'var(--marketing-primary)'
+                if (!themeMenuOpen) {
+                  e.currentTarget.style.backgroundColor = 'var(--marketing-gray-100)'
+                  e.currentTarget.style.color = 'var(--marketing-primary)'
+                }
               }}
               onMouseOut={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent'
-                e.currentTarget.style.color = 'var(--marketing-gray-600)'
+                if (!themeMenuOpen) {
+                  e.currentTarget.style.backgroundColor = 'transparent'
+                  e.currentTarget.style.color = 'var(--marketing-gray-600)'
+                }
               }}
             >
-              <Palette />
+              {themeMenuOpen ? <Close /> : <Palette />}
             </button>
 
             {/* Mobile menu button */}
@@ -717,10 +717,10 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
               aria-label={mobileMenuOpen ? 'Close mobile menu' : 'Open mobile menu'}
               aria-expanded={mobileMenuOpen}
               style={{
-                background: 'none',
+                background: mobileMenuOpen ? 'var(--marketing-gray-100)' : 'none',
                 border: 'none',
                 cursor: 'pointer',
-                color: 'var(--marketing-gray-600)',
+                color: mobileMenuOpen ? 'var(--marketing-primary)' : 'var(--marketing-gray-600)',
                 padding: 'var(--marketing-spacing-2)',
                 borderRadius: 'var(--marketing-radius-base)',
                 transition: 'all 0.2s ease',
@@ -731,12 +731,16 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                 justifyContent: 'center'
               }}
               onMouseOver={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--marketing-gray-100)'
-                e.currentTarget.style.color = 'var(--marketing-primary)'
+                if (!mobileMenuOpen) {
+                  e.currentTarget.style.backgroundColor = 'var(--marketing-gray-100)'
+                  e.currentTarget.style.color = 'var(--marketing-primary)'
+                }
               }}
               onMouseOut={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent'
-                e.currentTarget.style.color = 'var(--marketing-gray-600)'
+                if (!mobileMenuOpen) {
+                  e.currentTarget.style.backgroundColor = 'transparent'
+                  e.currentTarget.style.color = 'var(--marketing-gray-600)'
+                }
               }}
             >
               {mobileMenuOpen ? <Close /> : <Menu />}
@@ -796,7 +800,6 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                   if (isDarkMode) {
                     toggleTheme()
                   }
-                  setThemeMenuOpen(false)
                 }}
                 style={{
                   flex: 1,
@@ -827,7 +830,6 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                   if (!isDarkMode) {
                     toggleTheme()
                   }
-                  setThemeMenuOpen(false)
                 }}
                 style={{
                   flex: 1,
@@ -873,7 +875,6 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                       e.preventDefault()
                       e.stopPropagation()
                       setThemeVariant(option.value)
-                      setThemeMenuOpen(false)
                     }}
                     style={{
                       display: 'flex',
