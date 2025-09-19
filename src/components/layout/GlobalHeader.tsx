@@ -761,26 +761,43 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
 
       {/* Mobile Theme Dropdown - Outside container for full width */}
       {(themeMenuOpen || themeMenuClosing) && (
-        <div
-          className="marketing-hidden-desktop"
-          onClick={closeThemeMenu}
-          style={{
-            borderTop: `1px solid ${muiTheme.palette.divider}`,
-            paddingBottom: 'var(--marketing-spacing-6)',
-            background: muiTheme.palette.background.paper,
-            position: 'fixed',
-            top: 'var(--header-height, 80px)',
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 1301, // Above all page content but below header bar
-            animation: themeMenuClosing
-              ? 'slideUpToBehindHeader 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-              : 'slideDownFromBehindHeader 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            transformOrigin: 'top',
-            paddingTop: 'var(--marketing-spacing-4)'
-          }}
-        >
+        <>
+          {/* Backdrop - lower z-index than header and footer */}
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              zIndex: 900, // Below header (1300+) and footer toolbar (1000)
+            }}
+            onClick={closeThemeMenu}
+          />
+          {/* Theme menu content */}
+          <div
+            className="marketing-hidden-desktop"
+            style={{
+              borderTop: `1px solid ${muiTheme.palette.divider}`,
+              borderBottomLeftRadius: '16px',
+              borderBottomRightRadius: '16px',
+              paddingBottom: 'var(--marketing-spacing-6)',
+              background: muiTheme.palette.background.paper,
+              position: 'fixed',
+              top: 'var(--header-height, 80px)',
+              left: 0,
+              right: 0,
+              height: 'auto',
+              zIndex: 950, // Above backdrop (900) but below header (1300+) and footer (1000)
+              animation: themeMenuClosing
+                ? 'slideUpToBehindHeader 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                : 'slideDownFromBehindHeader 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              transformOrigin: 'top',
+              paddingTop: 'var(--marketing-spacing-4)',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+            }}
+          >
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
@@ -919,31 +936,49 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
             </div>
           )}
           </div>
-        </div>
+          </div>
+        </>
       )}
 
       {/* Mobile Navigation - Outside container for full width */}
       {(mobileMenuOpen || mobileMenuClosing) && (
-        <div
-          className="marketing-hidden-desktop"
-          onClick={closeMobileMenu}
-          style={{
-            borderTop: `1px solid ${muiTheme.palette.divider}`,
-            paddingBottom: 'var(--marketing-spacing-6)',
-            background: muiTheme.palette.background.paper,
-            position: 'fixed',
-            top: 'var(--header-height, 80px)',
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 1301, // Above all page content but below header bar
-            animation: mobileMenuClosing
-              ? 'slideUpToBehindHeader 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-              : 'slideDownFromBehindHeader 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            transformOrigin: 'top',
-            paddingTop: 'var(--marketing-spacing-4)'
-          }}
-        >
+        <>
+          {/* Backdrop - lower z-index than header and footer */}
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              zIndex: 900, // Below header (1300+) and footer toolbar (1000)
+            }}
+            onClick={closeMobileMenu}
+          />
+          {/* Mobile menu content */}
+          <div
+            className="marketing-hidden-desktop"
+            style={{
+              borderTop: `1px solid ${muiTheme.palette.divider}`,
+              borderBottomLeftRadius: '16px',
+              borderBottomRightRadius: '16px',
+              paddingBottom: 'var(--marketing-spacing-6)',
+              background: muiTheme.palette.background.paper,
+              position: 'fixed',
+              top: 'var(--header-height, 80px)',
+              left: 0,
+              right: 0,
+              height: 'auto',
+              zIndex: 950, // Above backdrop (900) but below header (1300+) and footer (1000)
+              animation: mobileMenuClosing
+                ? 'slideUpToBehindHeader 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                : 'slideDownFromBehindHeader 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              transformOrigin: 'top',
+              paddingTop: 'var(--marketing-spacing-4)',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+            }}
+          >
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
@@ -1092,7 +1127,8 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
               </div>
             )}
           </div>
-        </div>
+          </div>
+        </>
       )}
 
       {/* Click outside to close menus */}
