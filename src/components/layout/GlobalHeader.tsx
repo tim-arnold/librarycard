@@ -117,7 +117,9 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
   }
 
   const handleNavClick = (href: string) => {
-    closeMobileMenu()
+    if (mobileMenuOpen) {
+      closeMobileMenu()
+    }
     router.push(href)
   }
 
@@ -174,10 +176,14 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
           style={{ padding: 'var(--marketing-spacing-4) 0' }}
         >
           {/* Logo */}
-          <div 
+          <div
             className="marketing-flex marketing-items-center marketing-gap-2"
             style={{ cursor: 'pointer' }}
-            onClick={() => handleNavClick(session ? '/library' : '/')}
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              handleNavClick(session ? '/library' : '/')
+            }}
           >
             <CreditCard 
               style={{ 
