@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Drawer,
   Box,
@@ -8,6 +8,7 @@ import {
   IconButton,
   Typography,
   InputAdornment,
+  Button,
   Slide,
 } from '@mui/material'
 import {
@@ -33,6 +34,9 @@ export default function MobileSearchPanel({
   const { isMobile } = useMobileBreakpoints()
   const searchInputRef = useRef<HTMLInputElement>(null)
 
+  // Local search term for the panel that gets cleared after search
+  const [localSearchTerm, setLocalSearchTerm] = useState('')
+
   // Auto-focus search input when panel opens
   useEffect(() => {
     if (open && searchInputRef.current) {
@@ -41,6 +45,22 @@ export default function MobileSearchPanel({
       }, 100)
     }
   }, [open])
+
+  // Handle search button click
+  const handleSearch = () => {
+    if (localSearchTerm.trim()) {
+      setSearchTerm(localSearchTerm.trim())
+      setLocalSearchTerm('') // Clear the local field
+      onClose() // Close the panel
+    }
+  }
+
+  // Handle enter key press
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch()
+    }
+  }
 
 
   // Only show on mobile devices
@@ -67,16 +87,16 @@ export default function MobileSearchPanel({
         '& .MuiDrawer-paper': {
           borderTopLeftRadius: 20,
           borderTopRightRadius: 20,
-          minHeight: 140,
-          maxHeight: 'calc(100vh - 80px)',
+          height: 'calc(100vh - 64px)', // Full height minus bottom nav
           bottom: 64,
-          height: 'auto',
           zIndex: 950, // Same as drawer, below toolbar
           boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.15)',
+          display: 'flex',
+          flexDirection: 'column',
         },
       }}
     >
-      <Box sx={{ p: 3 }}>
+      <Box sx={{ p: 3, flex: 1, display: 'flex', flexDirection: 'column' }}>
         {/* Handle bar for visual cue */}
         <Box sx={{
           width: 40,
@@ -111,70 +131,92 @@ export default function MobileSearchPanel({
           </IconButton>
         </Box>
 
-        <TextField
-          inputRef={searchInputRef}
-          fullWidth
-          placeholder="Search by title, author, ISBN, or genre..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          variant="outlined"
-          size="medium"
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Search sx={{ color: 'primary.main' }} />
-              </InputAdornment>
-            ),
-            endAdornment: searchTerm && (
-              <InputAdornment position="end">
-                <IconButton
-                  size="small"
-                  onClick={() => setSearchTerm('')}
-                  edge="end"
-                  sx={{
-                    backgroundColor: 'action.hover',
-                    '&:hover': {
-                      backgroundColor: 'action.selected',
-                    }
-                  }}
-                >
-                  <Clear />
-                </IconButton>
-              </InputAdornment>
-            ),
-          }}
-          sx={{
-            '& .MuiOutlinedInput-root': {
-              borderRadius: 3,
-              backgroundColor: 'background.default',
-              '&:hover': {
-                backgroundColor: 'background.paper',
+        {/* Main content area */}
+        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <TextField
+            inputRef={searchInputRef}
+            fullWidth
+            placeholder="Search by title, author, ISBN, or genre..."
+            value={localSearchTerm}
+            onChange={(e) => setLocalSearchTerm(e.target.value)}
+            onKeyPress={handleKeyPress}
+            variant="outlined"
+            size="medium"
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search sx={{ color: 'primary.main' }} />
+                </InputAdornment>
+              ),
+              endAdornment: localSearchTerm && (
+                <InputAdornment position="end">
+                  <IconButton
+                    size="small"
+                    onClick={() => setLocalSearchTerm('')}
+                    edge="end"
+                    sx={{
+                      backgroundColor: 'action.hover',
+                      '&:hover': {
+                        backgroundColor: 'action.selected',
+                      }
+                    }}
+                  >
+                    <Clear />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 3,
+                backgroundColor: 'background.default',
+                '&:hover': {
+                  backgroundColor: 'background.paper',
+                },
+                '&.Mui-focused': {
+                  backgroundColor: 'background.paper',
+                }
               },
-              '&.Mui-focused': {
-                backgroundColor: 'background.paper',
-              }
-            },
-          }}
-        />
+            }}
+          />
 
-        {searchTerm && (
-          <Box sx={{
-            mt: 2,
-            p: 2,
-            backgroundColor: 'primary.50',
-            borderRadius: 2,
-            border: '1px solid',
-            borderColor: 'primary.200'
-          }}>
-            <Typography
-              variant="body2"
-              color="primary.main"
-              sx={{ fontWeight: 500 }}
-            >
-              Searching for "{searchTerm}"
-            </Typography>
-          </Box>
-        )}
+          {searchTerm && (
+            <Box sx={{
+              p: 2,
+              backgroundColor: 'primary.50',
+              borderRadius: 2,
+              border: '1px solid',
+              borderColor: 'primary.200'
+            }}>
+              <Typography
+                variant="body2"
+                color="primary.main"
+                sx={{ fontWeight: 500 }}
+              >
+                Current search: "{searchTerm}"
+              </Typography>
+            </Box>
+          )}
+        </Box>
+
+        {/* Search button at bottom */}
+        <Box sx={{ mt: 3 }}>
+          <Button
+            variant="contained"
+            fullWidth
+            size="large"
+            onClick={handleSearch}
+            disabled={!localSearchTerm.trim()}
+            startIcon={<Search />}
+            sx={{
+              minHeight: 56,
+              fontSize: '1.1rem',
+              textTransform: 'none',
+            }}
+          >
+            Search Books
+          </Button>
+        </Box>
       </Box>
     </Drawer>
   )

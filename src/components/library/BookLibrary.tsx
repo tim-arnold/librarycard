@@ -621,8 +621,6 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
         <MobileFilterDrawer
           open={mobileFiltersOpen}
           onClose={() => setMobileFiltersOpen(false)}
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
           shelfFilter={shelfFilter}
           setShelfFilter={setShelfFilter}
           categoryFilter={categoryFilter}
