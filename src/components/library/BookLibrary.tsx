@@ -6,6 +6,7 @@ import { LibraryBooks, MenuBook } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
 import { useModal } from '@/hooks/useModal'
 import useMobileBreakpoints from '@/hooks/useMobileBreakpoints'
+import useScrollLock from '@/hooks/useScrollLock'
 import { useBookLibraryEnhanced as useBookLibrary } from '@/hooks/useBookLibraryEnhanced'
 import { useBookActions } from '@/hooks/useBookActions'
 import { useBookFilters } from '@/hooks/useBookFilters'
@@ -154,6 +155,9 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
+
+  // Lock scroll when any mobile panel is open
+  useScrollLock(mobileSidebarOpen || mobileFiltersOpen || mobileSearchOpen)
 
 
   // Calculate active filters count for mobile bottom nav

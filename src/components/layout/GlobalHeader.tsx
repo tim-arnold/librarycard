@@ -26,6 +26,7 @@ import { isAdmin } from '@/lib/permissions'
 import { useUnreadNotificationCount } from '@/hooks/useNotifications'
 import { useRejectedReviewNotifications } from '@/hooks/useRejectedReviewNotifications'
 import { useAdminPendingCounts } from '@/hooks/useAdminPendingCounts'
+import useScrollLock from '@/hooks/useScrollLock'
 import { themeVariants, type ThemeVariant } from '@/lib/theme'
 import { TourContext } from '@/components/tour/TourProvider'
 
@@ -46,6 +47,9 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
   const [themeMenuOpen, setThemeMenuOpen] = useState(false)
   const [themeMenuClosing, setThemeMenuClosing] = useState(false)
   const { unreadCount } = useUnreadNotificationCount()
+
+  // Lock scroll when mobile menus are open
+  useScrollLock(mobileMenuOpen || themeMenuOpen)
   const { unreadRejectedCount } = useRejectedReviewNotifications()
   const { counts: adminCounts } = useAdminPendingCounts()
   // Safe tour usage - might not be available on marketing pages

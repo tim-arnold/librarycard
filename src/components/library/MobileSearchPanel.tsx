@@ -18,6 +18,7 @@ import {
   Search,
 } from '@mui/icons-material'
 import useMobileBreakpoints from '@/hooks/useMobileBreakpoints'
+import useScrollLock from '@/hooks/useScrollLock'
 
 interface MobileSearchPanelProps {
   open: boolean
@@ -37,6 +38,9 @@ export default function MobileSearchPanel({
 
   // Local search term for the panel that gets cleared after search
   const [localSearchTerm, setLocalSearchTerm] = useState('')
+
+  // Lock scroll when panel is open
+  useScrollLock(open)
 
   // Auto-focus search input when panel opens
   useEffect(() => {
