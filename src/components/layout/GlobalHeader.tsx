@@ -329,18 +329,14 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                 }}
                 title="Theme options"
               >
-                {themeMenuOpen ? (
-                  <Close />
-                ) : (
-                  <>
-                    <Palette style={{ fontSize: '1.71429rem' }} />
-                    {muiTheme.palette.mode === 'dark' ? (
-                      <DarkMode style={{ fontSize: '1.71429rem' }} />
-                    ) : (
-                      <LightMode style={{ fontSize: '1.71429rem' }} />
-                    )}
-                  </>
-                )}
+                <>
+                  <Palette style={{ fontSize: '1.71429rem' }} />
+                  {muiTheme.palette.mode === 'dark' ? (
+                    <DarkMode style={{ fontSize: '1.71429rem' }} />
+                  ) : (
+                    <LightMode style={{ fontSize: '1.71429rem' }} />
+                  )}
+                </>
               </button>
 
               {/* Theme Dropdown Menu */}
@@ -521,7 +517,16 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                       cursor: 'pointer',
                       padding: 'var(--marketing-spacing-2)',
                       borderRadius: 'var(--marketing-radius-base)',
-                      position: 'relative'
+                      position: 'relative',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseOver={(e) => {
+                      const icon = e.currentTarget.querySelector('svg')
+                      if (icon) icon.style.color = 'var(--marketing-primary)'
+                    }}
+                    onMouseOut={(e) => {
+                      const icon = e.currentTarget.querySelector('svg')
+                      if (icon) icon.style.color = 'var(--marketing-gray-600)'
                     }}
                     title="Account menu"
                   >
