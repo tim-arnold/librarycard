@@ -53,7 +53,7 @@ export default function PopularBooks({
   }
 
   return (
-    <Box sx={{ maxHeight: 400, overflow: 'auto' }}>
+    <Box sx={{ height: '100%', overflow: 'auto' }}>
       {items.map((item, index) => {
         const { book, popularity_score, rating_count, average_rating, recent_activity_count } = item.data
         const popularityInfo = getPopularityLevel(popularity_score || 0)

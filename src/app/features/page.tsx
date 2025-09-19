@@ -1,9 +1,9 @@
 import React from 'react'
 import type { Metadata } from 'next'
-import { 
-  Groups, 
-  Smartphone, 
-  QrCodeScanner, 
+import {
+  Groups,
+  Smartphone,
+  QrCodeScanner,
   LocationOn,
   Security,
   Cloud,
@@ -13,7 +13,7 @@ import {
   Api,
   School,
   Home
-} from '@mui/icons-material'
+} from '@/components/marketing/ui/Icons'
 import MarketingLayout from '@/components/marketing/layout/MarketingLayout'
 import Container, { Section, Grid } from '@/components/marketing/ui/Container'
 import { FeatureCard, TestimonialCard } from '@/components/marketing/ui/Card'

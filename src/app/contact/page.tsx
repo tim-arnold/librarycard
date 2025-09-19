@@ -1,14 +1,14 @@
 import React from 'react'
 import type { Metadata } from 'next'
-import { 
-  Email, 
-  Phone, 
+import {
+  Email,
+  Phone,
   LocationOn,
   Send,
   Support,
   QuestionAnswer,
   Business
-} from '@mui/icons-material'
+} from '@/components/marketing/ui/Icons'
 import MarketingLayout from '@/components/marketing/layout/MarketingLayout'
 import Container, { Section, Grid } from '@/components/marketing/ui/Container'
 import { Heading, Text, Highlight } from '@/components/marketing/ui/Typography'

@@ -71,6 +71,13 @@ export default function ProfileSettingsMobileBottomNav({
   const handleChange = (event: React.SyntheticEvent, newValue: string) => {
     setValue(newValue)
 
+    // Add visual feedback
+    const target = event.currentTarget as HTMLElement
+    target.style.transform = 'scale(0.95)'
+    setTimeout(() => {
+      target.style.transform = 'scale(1)'
+    }, 100)
+
     switch (newValue) {
       case 'library':
         onLibraryClick()
@@ -128,11 +135,25 @@ export default function ProfileSettingsMobileBottomNav({
             paddingBottom: 1,
             minHeight: 44, // Minimum touch target size
             flex: '0 0 auto', // Don't shrink, maintain size
+            transition: 'all 0.2s ease-in-out',
+            borderRadius: 2,
+            margin: '2px 1px',
+            '&.Mui-selected': {
+              backgroundColor: 'primary.50',
+              '& .MuiBottomNavigationAction-label': {
+                color: 'primary.main',
+                fontWeight: 600,
+              }
+            },
+            '&:active': {
+              transform: 'scale(0.95)',
+            }
           },
           '& .MuiBottomNavigationAction-label': {
             fontSize: '0.65rem', // Slightly smaller for more items
             lineHeight: 1.1,
             whiteSpace: 'nowrap', // Prevent label wrapping
+            transition: 'all 0.2s ease-in-out',
           },
           // Hide scrollbar for cleaner look
           '&::-webkit-scrollbar': {
