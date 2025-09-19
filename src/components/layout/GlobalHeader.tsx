@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useContext } from 'react'
+import React, { useState, useContext } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useTheme } from '@/lib/ThemeContext'
@@ -948,11 +948,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                 {navigationItems.map((item) => (
                   <li key={item.key} style={{ marginBottom: 'var(--marketing-spacing-2)' }}>
                     <button
-                      onClick={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        handleNavClick(item.href)
-                      }}
+                      onClick={() => handleNavClick(item.href)}
                       style={{
                         width: '100%',
                         textAlign: 'left',
