@@ -187,6 +187,7 @@ export default function MobileFilterDrawer({
     setCategoryFilter([])
   }
 
+
   // Only show on mobile devices
   if (!isMobile) return null
 
@@ -195,12 +196,25 @@ export default function MobileFilterDrawer({
       anchor="bottom"
       open={open}
       onClose={onClose}
-      PaperProps={{
-        sx: {
+      variant="temporary"
+      ModalProps={{
+        // Restore backdrop for proper click-outside behavior
+        BackdropProps: {
+          sx: {
+            zIndex: 900, // Below toolbar (1000) but above content
+          }
+        }
+      }}
+      sx={{
+        zIndex: 950, // Below toolbar (1000) but above backdrop (900)
+        '& .MuiDrawer-paper': {
           borderTopLeftRadius: 16,
           borderTopRightRadius: 16,
-          maxHeight: '85vh',
+          maxHeight: 'calc(100vh - 80px)',
           minHeight: '50vh',
+          bottom: 64,
+          height: 'auto',
+          zIndex: 950, // Same as drawer, below toolbar
         }
       }}
     >

@@ -29,6 +29,7 @@ import LibrarySidebar from './sidebar/LibrarySidebar'
 import PageContainer from '../layout/PageContainer'
 import MobileBottomNav from '../layout/MobileBottomNav'
 import MobileFilterDrawer from '../layout/MobileFilterDrawer'
+import MobileSearchPanel from './MobileSearchPanel'
 
 interface BookLibraryProps {
   initialFilters?: {
@@ -152,6 +153,8 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
   // Mobile sidebar state
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
+
 
   // Calculate active filters count for mobile bottom nav
   const activeFiltersCount = [
@@ -557,28 +560,51 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
 
         {/* Mobile Bottom Navigation */}
         <MobileBottomNav
-          onFilterToggle={() => setMobileFiltersOpen(!mobileFiltersOpen)}
-          onSidebarToggle={() => setMobileSidebarOpen(true)}
+          onFilterToggle={() => {
+            setMobileFiltersOpen(!mobileFiltersOpen)
+            setMobileSearchOpen(false)
+            setMobileSidebarOpen(false)
+          }}
+          onSidebarToggle={() => {
+            setMobileSidebarOpen(!mobileSidebarOpen)
+            setMobileFiltersOpen(false)
+            setMobileSearchOpen(false)
+          }}
           onAddBookClick={() => window.location.href = '/add-books'}
+          onSearchToggle={() => {
+            setMobileSearchOpen(!mobileSearchOpen)
+            setMobileFiltersOpen(false)
+            setMobileSidebarOpen(false)
+          }}
           activeFiltersCount={activeFiltersCount}
           searchTerm={searchTerm}
-          onSearchFocus={() => {
-            // Focus search field in BookFilters
-            const searchInput = document.querySelector('input[placeholder="Search books..."]') as HTMLInputElement
-            searchInput?.focus()
-          }}
         />
 
         {/* Mobile Sidebar Drawer */}
         {isMobile && (
           <Drawer
-            anchor="right"
+            anchor="bottom"
             open={mobileSidebarOpen}
             onClose={() => setMobileSidebarOpen(false)}
-            PaperProps={{
-              sx: {
-                width: '85vw',
-                maxWidth: 400,
+            ModalProps={{
+              keepMounted: false,
+              // Restore backdrop for proper click-outside behavior
+              BackdropProps: {
+                sx: {
+                  zIndex: 900, // Below toolbar (1000) but above content
+                }
+              }
+            }}
+            sx={{
+              zIndex: 950, // Below toolbar (1000) but above backdrop (900)
+              '& .MuiDrawer-paper': {
+                borderTopLeftRadius: 16,
+                borderTopRightRadius: 16,
+                maxHeight: 'calc(100vh - 80px)',
+                minHeight: '60vh',
+                bottom: 64,
+                height: 'auto',
+                zIndex: 950, // Same as drawer, below toolbar
               }
             }}
           >
@@ -617,6 +643,14 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
           currentLocation={currentLocation}
           onLocationSwitch={switchToLocation}
           allCategories={allCategories}
+        />
+
+        {/* Mobile Search Panel */}
+        <MobileSearchPanel
+          open={mobileSearchOpen}
+          onClose={() => setMobileSearchOpen(false)}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
         />
         
         {/* Modal Components */}

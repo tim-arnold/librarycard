@@ -81,7 +81,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
 
       // Add account and support items
       items.push(
-        { name: 'Account', href: '/profile', key: 'account' },
+        { name: 'Account & Settings', href: '/profile', key: 'account' },
         { name: 'Support', href: '/contact', key: 'support' }
       )
 
@@ -757,10 +757,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                   </div>
                   <div className="marketing-flex marketing-flex-col marketing-gap-2">
                     {[
-                      { label: 'Profile', action: () => router.push('/profile') },
-                      { label: 'Notifications', action: () => router.push('/notifications'), badge: totalNotifications },
-                      { label: 'Locations', action: () => router.push('/locations') },
-                      { label: 'Security', action: () => router.push('/security') },
+                      // Removed Profile, Notifications, Locations, Security - now available in mobile toolbar
                     ].map((item, index) => (
                       <button
                         key={index}

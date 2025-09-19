@@ -109,7 +109,14 @@ export default function SettingsPage() {
         onLibraryClick={() => router.push('/library')}
         onAccountClick={() => router.push('/profile')}
         onLocationsClick={() => router.push('/locations')}
-        onSettingsClick={() => router.push('/settings')}
+        onSecurityClick={() => router.push('/security')}
+        onNotificationsClick={() => router.push('/notifications')}
+        onCheckoutHistoryClick={() => router.push('/checkout-history')}
+        onHelpClick={() => {
+          // TODO: Implement help modal or page
+          console.log('Help clicked')
+        }}
+        notificationCount={0} // TODO: Get actual notification count
       />
     </Container>
   )

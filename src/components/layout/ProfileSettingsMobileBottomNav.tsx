@@ -5,21 +5,30 @@ import {
   BottomNavigation,
   BottomNavigationAction,
   Paper,
+  Box,
 } from '@mui/material'
+import HelpModal from '@/components/modals/HelpModal'
 import {
   LibraryBooks,
   Person,
   LocationOn,
-  Settings,
+  Security,
+  Notifications,
+  History,
+  Help,
 } from '@mui/icons-material'
 import useMobileBreakpoints from '@/hooks/useMobileBreakpoints'
 
 interface ProfileSettingsMobileBottomNavProps {
-  currentPage: 'profile' | 'settings' | 'locations' | string
+  currentPage: 'profile' | 'settings' | 'locations' | 'notifications' | 'checkout-history' | 'help' | string
   onLibraryClick: () => void
   onAccountClick: () => void
   onLocationsClick: () => void
-  onSettingsClick: () => void
+  onSecurityClick: () => void
+  onNotificationsClick: () => void
+  onCheckoutHistoryClick: () => void
+  onHelpClick: () => void
+  notificationCount?: number
 }
 
 export default function ProfileSettingsMobileBottomNav({
@@ -27,9 +36,14 @@ export default function ProfileSettingsMobileBottomNav({
   onLibraryClick,
   onAccountClick,
   onLocationsClick,
-  onSettingsClick,
+  onSecurityClick,
+  onNotificationsClick,
+  onCheckoutHistoryClick,
+  onHelpClick,
+  notificationCount = 0,
 }: ProfileSettingsMobileBottomNavProps) {
   const { isMobile } = useMobileBreakpoints()
+  const [helpModalOpen, setHelpModalOpen] = useState(false)
 
   // Set default based on current page
   const [value, setValue] = useState(() => {
@@ -37,9 +51,15 @@ export default function ProfileSettingsMobileBottomNav({
       case 'profile':
         return 'account'
       case 'settings':
-        return 'settings'
+        return 'security'
       case 'locations':
         return 'locations'
+      case 'notifications':
+        return 'notifications'
+      case 'checkout-history':
+        return 'checkout-history'
+      case 'help':
+        return 'help'
       default:
         return 'account'
     }
@@ -61,8 +81,17 @@ export default function ProfileSettingsMobileBottomNav({
       case 'locations':
         onLocationsClick()
         break
-      case 'settings':
-        onSettingsClick()
+      case 'security':
+        onSecurityClick()
+        break
+      case 'notifications':
+        onNotificationsClick()
+        break
+      case 'checkout-history':
+        onCheckoutHistoryClick()
+        break
+      case 'help':
+        setHelpModalOpen(true)
         break
       default:
         break
@@ -88,16 +117,28 @@ export default function ProfileSettingsMobileBottomNav({
         showLabels
         sx={{
           height: 64, // Ensure minimum touch target height
+          overflowX: 'auto', // Enable horizontal scrolling
+          '& .MuiBottomNavigation-root': {
+            minWidth: 'max-content', // Allow content to expand beyond container
+          },
           '& .MuiBottomNavigationAction-root': {
-            minWidth: 0,
+            minWidth: 80, // Fixed minimum width for each action
+            maxWidth: 100, // Maximum width to prevent overcrowding
             paddingTop: 1,
             paddingBottom: 1,
             minHeight: 44, // Minimum touch target size
+            flex: '0 0 auto', // Don't shrink, maintain size
           },
           '& .MuiBottomNavigationAction-label': {
-            fontSize: '0.75rem',
-            lineHeight: 1.2,
-          }
+            fontSize: '0.65rem', // Slightly smaller for more items
+            lineHeight: 1.1,
+            whiteSpace: 'nowrap', // Prevent label wrapping
+          },
+          // Hide scrollbar for cleaner look
+          '&::-webkit-scrollbar': {
+            display: 'none',
+          },
+          scrollbarWidth: 'none', // Firefox
         }}
       >
         <BottomNavigationAction
@@ -119,11 +160,61 @@ export default function ProfileSettingsMobileBottomNav({
         />
 
         <BottomNavigationAction
-          label="Settings"
-          value="settings"
-          icon={<Settings color={currentPage === 'settings' ? 'primary' : 'inherit'} />}
+          label="Security"
+          value="security"
+          icon={<Security color={currentPage === 'settings' ? 'primary' : 'inherit'} />}
         />
+
+        <BottomNavigationAction
+          label="Notifications"
+          value="notifications"
+          icon={
+            <Box sx={{ position: 'relative' }}>
+              <Notifications color={currentPage === 'notifications' ? 'primary' : 'inherit'} />
+              {notificationCount > 0 && (
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: -4,
+                    right: -4,
+                    backgroundColor: 'error.main',
+                    color: 'error.contrastText',
+                    borderRadius: '50%',
+                    minWidth: 16,
+                    height: 16,
+                    fontSize: '0.6rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 'bold',
+                  }}
+                >
+                  {notificationCount > 99 ? '99+' : notificationCount}
+                </Box>
+              )}
+            </Box>
+          }
+        />
+
+        <BottomNavigationAction
+          label="History"
+          value="checkout-history"
+          icon={<History color={currentPage === 'checkout-history' ? 'primary' : 'inherit'} />}
+        />
+
+        <BottomNavigationAction
+          label="Help"
+          value="help"
+          icon={<Help color={currentPage === 'help' ? 'primary' : 'inherit'} />}
+        />
+
       </BottomNavigation>
+
+      {/* Help Modal */}
+      <HelpModal
+        open={helpModalOpen}
+        onClose={() => setHelpModalOpen(false)}
+      />
     </Paper>
   )
 }

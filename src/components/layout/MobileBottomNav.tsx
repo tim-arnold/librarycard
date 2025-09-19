@@ -19,18 +19,18 @@ interface MobileBottomNavProps {
   onFilterToggle: () => void
   onSidebarToggle: () => void
   onAddBookClick: () => void
+  onSearchToggle: () => void
   activeFiltersCount?: number
   searchTerm?: string
-  onSearchFocus?: () => void
 }
 
 export default function MobileBottomNav({
   onFilterToggle,
   onSidebarToggle,
   onAddBookClick,
+  onSearchToggle,
   activeFiltersCount = 0,
   searchTerm = '',
-  onSearchFocus,
 }: MobileBottomNavProps) {
   const { isMobile } = useMobileBreakpoints()
   const [value, setValue] = useState('search')
@@ -52,7 +52,7 @@ export default function MobileBottomNav({
         onSidebarToggle()
         break
       case 'search':
-        onSearchFocus?.()
+        onSearchToggle()
         break
       default:
         break

@@ -11,6 +11,7 @@ import {
   Divider,
   CircularProgress,
   Alert,
+  useTheme,
 } from '@mui/material'
 import {
   ChevronLeft,
@@ -43,7 +44,8 @@ export default function LibrarySidebar({
 }: LibrarySidebarProps) {
   const { data: session } = useSession()
   const { isMobile } = useMobileBreakpoints()
-  
+  const theme = useTheme()
+
   // State
   const [preferences, setPreferences] = useState<SidebarPreferences>({
     collapsed: false, // Always start expanded on mobile since it's in a drawer
