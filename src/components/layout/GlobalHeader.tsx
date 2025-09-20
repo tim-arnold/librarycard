@@ -29,6 +29,7 @@ import { useAdminPendingCounts } from '@/hooks/useAdminPendingCounts'
 import useScrollLock from '@/hooks/useScrollLock'
 import { themeVariants, type ThemeVariant } from '@/lib/theme'
 import { TourContext } from '@/components/tour/TourProvider'
+import { SkipLinks } from '@/components/ui/SkipLink'
 
 interface GlobalHeaderProps {
   userRole?: string | null
@@ -154,17 +155,19 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
   }
 
   return (
-    <header
-      style={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 1300, // Higher than Material-UI modal (1300) and all page content
-        // Fallback to CSS variables for compatibility
-        '--marketing-white': muiTheme.palette.background.paper,
-        '--marketing-gray-200': muiTheme.palette.divider,
-        '--header-height': '80px'
-      } as React.CSSProperties}
-    >
+    <>
+      <SkipLinks />
+      <header
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 1300, // Higher than Material-UI modal (1300) and all page content
+          // Fallback to CSS variables for compatibility
+          '--marketing-white': muiTheme.palette.background.paper,
+          '--marketing-gray-200': muiTheme.palette.divider,
+          '--header-height': '80px'
+        } as React.CSSProperties}
+      >
       <div
         style={{
           backgroundColor: muiTheme.palette.background.paper,
@@ -212,7 +215,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="marketing-hidden-mobile">
+          <nav className="marketing-hidden-mobile" id="main-navigation">
             <ul 
               className="marketing-flex marketing-items-center marketing-gap-8"
               style={{ listStyle: 'none', margin: 0, padding: 0 }}
@@ -1188,5 +1191,6 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
         />
       )}
     </header>
+    </>
   )
 }
