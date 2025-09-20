@@ -188,7 +188,7 @@ const BookCard = React.memo<BookCardProps>(({
                   pointerEvents: 'none'
                 }}
               >
-                <Image sx={{ color: 'white', fontSize: 12 }} aria-hidden="true" />
+                <Image sx={{ color: 'white', fontSize: 12 }} titleAccess="Edit book cover" alt="Edit book cover" />
               </Box>
             )}
           </Box>
