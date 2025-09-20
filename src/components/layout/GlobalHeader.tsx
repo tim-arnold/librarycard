@@ -219,14 +219,13 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
             >
               {navigationItems.map((item) => (
                 <li key={item.key}>
-                  <button
-                    onClick={() => handleNavClick(item.href)}
+                  <a
+                    href={item.href}
                     {...(item.dataTour && { 'data-tour': item.dataTour })}
                     style={{
                       background: 'none',
-                      border: 'none',
                       cursor: 'pointer',
-                      color: isActivePath(item.href, item.key) 
+                      color: isActivePath(item.href, item.key)
                         ? muiTheme.palette.primary.main
                         : muiTheme.palette.text.secondary,
                       textDecoration: 'none',
@@ -294,7 +293,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                       }}
                     />
-                  </button>
+                  </a>
                 </li>
               ))}
             </ul>
@@ -658,18 +657,18 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
               </>
             ) : (
               <>
-                <button
-                  onClick={() => router.push('/auth/signin')}
+                <a
+                  href="/auth/signin"
                   style={{
                     background: 'none',
-                    border: 'none',
                     color: 'var(--marketing-gray-600)',
                     fontSize: 'var(--marketing-text-base)',
                     fontWeight: 'var(--marketing-font-medium)',
                     cursor: 'pointer',
                     padding: 'var(--marketing-spacing-2)',
                     borderRadius: 'var(--marketing-radius-base)',
-                    transition: 'color 0.2s ease'
+                    transition: 'color 0.2s ease',
+                    textDecoration: 'none'
                   }}
                   onMouseOver={(e) => {
                     e.currentTarget.style.color = 'var(--marketing-primary)'
@@ -679,13 +678,14 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                   }}
                 >
                   Sign In
-                </button>
-                <button
-                  onClick={() => router.push('/auth/signin')}
+                </a>
+                <a
+                  href="/auth/signin"
                   className="marketing-button marketing-button-primary marketing-button-md"
+                  style={{ textDecoration: 'none' }}
                 >
                   Get Started Free
-                </button>
+                </a>
               </>
             )}
           </div>
@@ -1015,8 +1015,8 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
               <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                 {navigationItems.map((item) => (
                   <li key={item.key} style={{ marginBottom: 'var(--marketing-spacing-2)' }}>
-                    <button
-                      onClick={() => handleNavClick(item.href)}
+                    <a
+                      href={item.href}
                       style={{
                         width: '100%',
                         textAlign: 'left',
@@ -1044,7 +1044,8 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                         minHeight: '56px',
                         boxShadow: isActivePath(item.href, item.key)
                           ? 'var(--marketing-shadow-sm)'
-                          : 'none'
+                          : 'none',
+                        textDecoration: 'none'
                       }}
                       onMouseOver={(e) => {
                         if (!isActivePath(item.href, item.key)) {
@@ -1081,7 +1082,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                           {totalAdminNotifications > 99 ? '99+' : totalAdminNotifications}
                         </span>
                       )}
-                    </button>
+                    </a>
                   </li>
                 ))}
               </ul>
@@ -1136,17 +1137,21 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                   padding: 'var(--marketing-spacing-4) var(--marketing-spacing-4) 0'
                 }}
               >
-                <button
-                  onClick={() => handleNavClick('/auth/signin')}
+                <a
+                  href="/auth/signin"
                   className="marketing-button marketing-button-primary marketing-button-md"
                   style={{
                     width: '100%',
                     borderRadius: 'var(--marketing-radius-lg)',
-                    minHeight: '48px'
+                    minHeight: '48px',
+                    textDecoration: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
                   }}
                 >
                   Get Started Free
-                </button>
+                </a>
               </div>
             )}
           </div>

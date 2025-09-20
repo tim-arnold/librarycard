@@ -129,10 +129,11 @@ const BookCard = React.memo<BookCardProps>(({
   }, [onCoverAnimationComplete, book.id])
 
   return (
-    <Card 
-      sx={{ 
-        height: '100%', 
-        display: 'flex', 
+    <Card
+      component="article"
+      sx={{
+        height: '100%',
+        display: 'flex',
         flexDirection: 'column',
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         position: 'relative',
@@ -144,6 +145,8 @@ const BookCard = React.memo<BookCardProps>(({
           },
         },
       }}
+      aria-labelledby={`book-title-${book.id}`}
+      role="article"
       {...(isFirstBook && { 'data-tour': 'book-item' })}
     >
       <CardContent sx={{ flex: 1 }}>
@@ -185,34 +188,55 @@ const BookCard = React.memo<BookCardProps>(({
                   pointerEvents: 'none'
                 }}
               >
-                <Image sx={{ color: 'white', fontSize: 12 }} />
+                <Image sx={{ color: 'white', fontSize: 12 }} aria-hidden="true" />
               </Box>
             )}
           </Box>
           <Box sx={{ flex: 1 }}>
-            <Typography 
-              variant="h6" 
+            <Typography
+              variant="h6"
               component="h3"
               gutterBottom
               sx={{
                 fontWeight: 700,
                 fontSize: { xs: '1.1rem', sm: '1.25rem' }
               }}
+              id={`book-title-${book.id}`}
             >
               {book.title}
             </Typography>
             <Typography variant="body2" color="text.secondary" gutterBottom>
               {book.authors.map((author, index) => (
                 <span key={index}>
-                  <Typography 
-                    component="span" 
-                    sx={{ 
-                      color: 'primary.main', 
+                  <Typography
+                    component="button"
+                    sx={{
+                      color: 'primary.main',
                       cursor: 'pointer',
                       textDecoration: 'underline',
-                      '&:hover': { textDecoration: 'none' }
+                      border: 'none',
+                      background: 'none',
+                      padding: 0,
+                      fontFamily: 'inherit',
+                      fontSize: 'inherit',
+                      lineHeight: 'inherit',
+                      '&:hover': { textDecoration: 'none' },
+                      '&:focus': {
+                        outline: '2px solid',
+                        outlineColor: 'primary.main',
+                        outlineOffset: '2px'
+                      }
                     }}
                     onClick={() => handleAuthorClick(author)}
+                    aria-label={`Filter books by author ${author}`}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        handleAuthorClick(author)
+                      }
+                    }}
                   >
                     {author}
                   </Typography>

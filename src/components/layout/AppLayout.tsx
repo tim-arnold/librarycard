@@ -20,6 +20,7 @@ import {
   Menu,
   MenuItem,
   Badge,
+  Link,
 } from '@mui/material'
 import {
   QrCodeScanner,
@@ -40,6 +41,7 @@ import HelpModal from '@/components/modals/HelpModal'
 import ThemeMenu from './ThemeMenu'
 import { useTheme } from '@/lib/ThemeContext'
 import AccessibleIcon from '@/components/ui/AccessibleIcon'
+import { SkipLinks } from '@/components/ui/SkipLink'
 import { useUnreadNotificationCount, useNotifications } from '@/hooks/useNotifications'
 import { useAdminPendingCounts } from '@/hooks/useAdminPendingCounts'
 import { useRejectedReviewNotifications } from '@/hooks/useRejectedReviewNotifications'
@@ -316,10 +318,11 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
 
   return (
     <Box sx={{ flexGrow: 1 }}>
-      <AppBar position="static" color="primary">
+      <SkipLinks />
+      <AppBar position="static" color="primary" component="header" role="banner">
         <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-            <CreditCard sx={{ mr: 1, verticalAlign: 'middle' }} /> LibraryCard
+          <Typography variant="h6" component="h1" sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <CreditCard sx={{ mr: 1, verticalAlign: 'middle' }} aria-hidden="true" /> LibraryCard
           </Typography>
           
           <Typography variant="body2" sx={{ mr: 2 }}>
@@ -351,6 +354,7 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
               onClick={handleMenuOpen}
               color="inherit"
               size="medium"
+              sx={{ '& button': { id: 'user-menu-button' } }}
             />
           </Badge>
           
@@ -366,6 +370,8 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
               vertical: 'top',
               horizontal: 'right',
             }}
+            aria-labelledby="user-menu-button"
+            role="menu"
           >
             <MenuItem onClick={handleProfileClick}>
               <AccountCircle sx={{ mr: 1 }} />
@@ -405,88 +411,167 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
         </Toolbar>
       </AppBar>
       
-      <Container maxWidth="xl" sx={{ pt: 2, pb: 0 }}>
-        <Box sx={{ 
-          borderRadius: 0, 
+      <Container maxWidth="xl" sx={{ pt: 2, pb: 0 }} component="nav" role="navigation" aria-label="Main navigation" id="main-navigation">
+        <Box sx={{
+          borderRadius: 0,
           backgroundColor: (theme) => theme.palette.background.default,
           boxShadow: 'none',
           paddingLeft: 2, // Match Paper component padding (24px)
           paddingRight: 2,
         }}>
-          <Tabs 
-            value={currentPage} 
-            variant="scrollable"
-            scrollButtons="auto"
-            TabIndicatorProps={{ style: { display: 'none' } }}
+          <Box
+            component="nav"
+            role="navigation"
+            aria-label="Primary navigation"
             sx={{
-              '& .MuiTab-root.Mui-selected': {
-                // Main navigation tabs need exact color match with content
-                backgroundColor: (theme) => {
-                  if (theme.palette.mode === 'dark') {
-                    // Use the exact content background color for each theme variant
-                    const primary = theme.palette.primary.main
-                    
-                    // Map primary colors to content backgrounds - use exact Paper component colors
-                    // Check primary[300] values (used in dark mode)
-                    if (primary.includes('d8b4fe')) return '#251a2d !important' // Purple (#d8b4fe)
-                    if (primary.includes('86efac')) return '#1a2e20 !important' // Green (#86efac)  
-                    if (primary.includes('fca5a5')) return '#2d1515 !important' // Red (#fca5a5)
-                    if (primary.includes('93c5fd')) return '#1a2332 !important' // Blue (#93c5fd)
-                    if (primary.includes('fcd34d')) return '#2d2415 !important' // Amber (#fcd34d)
-                    return '#1e293b !important' // Indigo (default - #a5b4fc)
-                  } else {
-                    return theme.palette.background.paper + ' !important'
-                  }
-                },
-              }
+              display: 'flex',
+              gap: 1,
+              alignItems: 'center',
+              flexWrap: 'wrap',
             }}
           >
-            <Tab 
-              value="library" 
-              label={!userDataLoaded ? "..." : (isAdmin(userRole) ? "Libraries" : (userLocation ? `${userLocation}` : "My Library"))}
-              icon={<LibraryBooks />}
-              iconPosition="start"
-              onClick={() => handleTabChange('/library')}
-            />
-            {(isAdmin(userRole) || canAddBooks) && (
-              <Tab 
-                value="add-books" 
-                label="Add Books"
-                icon={<QrCodeScanner />}
-                iconPosition="start"
-                onClick={() => handleTabChange('/add-books')}
-              />
-            )}
-            {isAdmin(userRole) && (
-              <Tab 
-                value="admin" 
-                label="Admin Dashboard"
-                icon={
-                  <Badge 
-                    badgeContent={isAdmin(userRole) ? (adminCounts.total > 0 ? adminCounts.total : undefined) : (unreadCount > 0 ? unreadCount : undefined)} 
-                    color="primary"
-                    max={99}
-                    sx={{
-                      '& .MuiBadge-badge': {
-                        fontSize: '0.75rem',
-                        height: '18px',
-                        minWidth: '18px',
-                        borderRadius: '9px',
-                      }
-                    }}
-                  >
-                    <Dashboard />
-                  </Badge>
+            <Link
+              href="/library"
+              underline="none"
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                px: 2,
+                py: 1.5,
+                borderRadius: 1,
+                color: 'text.primary',
+                backgroundColor: currentPage === 'library' ? (theme) => {
+                  if (theme.palette.mode === 'dark') {
+                    const primary = theme.palette.primary.main
+                    if (primary.includes('d8b4fe')) return '#251a2d' // Purple
+                    if (primary.includes('86efac')) return '#1a2e20' // Green
+                    if (primary.includes('fca5a5')) return '#2d1515' // Red
+                    if (primary.includes('93c5fd')) return '#1a2332' // Blue
+                    if (primary.includes('fcd34d')) return '#2d2415' // Amber
+                    return '#1e293b' // Indigo (default)
+                  } else {
+                    return theme.palette.background.paper
+                  }
+                } : 'transparent',
+                transition: 'all 0.2s ease',
+                fontWeight: currentPage === 'library' ? 600 : 400,
+                '&:hover': {
+                  backgroundColor: currentPage !== 'library' ? 'rgba(0, 0, 0, 0.04)' : undefined,
+                },
+                '&:focus': {
+                  outline: '2px solid',
+                  outlineColor: 'primary.main',
+                  outlineOffset: '2px'
                 }
-                iconPosition="start"
-                onClick={() => handleTabChange('/admin')}
-              />
+              }}
+            >
+              <LibraryBooks aria-hidden="true" />
+              {!userDataLoaded ? "..." : (isAdmin(userRole) ? "Libraries" : (userLocation ? `${userLocation}` : "My Library"))}
+            </Link>
+
+            {(isAdmin(userRole) || canAddBooks) && (
+              <Link
+                href="/add-books"
+                underline="none"
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  px: 2,
+                  py: 1.5,
+                  borderRadius: 1,
+                  color: 'text.primary',
+                  backgroundColor: currentPage === 'add-books' ? (theme) => {
+                    if (theme.palette.mode === 'dark') {
+                      const primary = theme.palette.primary.main
+                      if (primary.includes('d8b4fe')) return '#251a2d' // Purple
+                      if (primary.includes('86efac')) return '#1a2e20' // Green
+                      if (primary.includes('fca5a5')) return '#2d1515' // Red
+                      if (primary.includes('93c5fd')) return '#1a2332' // Blue
+                      if (primary.includes('fcd34d')) return '#2d2415' // Amber
+                      return '#1e293b' // Indigo (default)
+                    } else {
+                      return theme.palette.background.paper
+                    }
+                  } : 'transparent',
+                  transition: 'all 0.2s ease',
+                  fontWeight: currentPage === 'add-books' ? 600 : 400,
+                  '&:hover': {
+                    backgroundColor: currentPage !== 'add-books' ? 'rgba(0, 0, 0, 0.04)' : undefined,
+                  },
+                  '&:focus': {
+                    outline: '2px solid',
+                    outlineColor: 'primary.main',
+                    outlineOffset: '2px'
+                  }
+                }}
+              >
+                <QrCodeScanner aria-hidden="true" />
+                Add Books
+              </Link>
             )}
-          </Tabs>
+
+            {isAdmin(userRole) && (
+              <Link
+                href="/admin"
+                underline="none"
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  px: 2,
+                  py: 1.5,
+                  borderRadius: 1,
+                  color: 'text.primary',
+                  backgroundColor: currentPage === 'admin' ? (theme) => {
+                    if (theme.palette.mode === 'dark') {
+                      const primary = theme.palette.primary.main
+                      if (primary.includes('d8b4fe')) return '#251a2d' // Purple
+                      if (primary.includes('86efac')) return '#1a2e20' // Green
+                      if (primary.includes('fca5a5')) return '#2d1515' // Red
+                      if (primary.includes('93c5fd')) return '#1a2332' // Blue
+                      if (primary.includes('fcd34d')) return '#2d2415' // Amber
+                      return '#1e293b' // Indigo (default)
+                    } else {
+                      return theme.palette.background.paper
+                    }
+                  } : 'transparent',
+                  transition: 'all 0.2s ease',
+                  fontWeight: currentPage === 'admin' ? 600 : 400,
+                  '&:hover': {
+                    backgroundColor: currentPage !== 'admin' ? 'rgba(0, 0, 0, 0.04)' : undefined,
+                  },
+                  '&:focus': {
+                    outline: '2px solid',
+                    outlineColor: 'primary.main',
+                    outlineOffset: '2px'
+                  }
+                }}
+              >
+                <Badge
+                  badgeContent={adminCounts.total > 0 ? adminCounts.total : undefined}
+                  color="primary"
+                  max={99}
+                  sx={{
+                    '& .MuiBadge-badge': {
+                      fontSize: '0.75rem',
+                      height: '18px',
+                      minWidth: '18px',
+                      borderRadius: '9px',
+                    }
+                  }}
+                >
+                  <Dashboard aria-hidden="true" />
+                </Badge>
+                Admin Dashboard
+              </Link>
+            )}
+          </Box>
         </Box>
       </Container>
 
-      <Container maxWidth="xl" sx={{ pt: 0, pb: 2 }}>
+      <Container maxWidth="xl" sx={{ pt: 0, pb: 2 }} component="main" role="main" id="main-content">
         {children}
       </Container>
       
