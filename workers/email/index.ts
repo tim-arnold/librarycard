@@ -1,4 +1,5 @@
 import { Env } from '../types';
+import { getWorkerFrontendUrl, getWorkerFromEmail } from '../utils/domainConfig';
 
 // Utility function used by signup approval
 function generateUUID(): string {
@@ -8,10 +9,7 @@ function generateUUID(): string {
 // Email and notification functions extracted from main worker
 
 export async function sendPasswordResetEmail(env: Env, email: string, firstName: string, resetToken: string) {
-  if (!env.APP_URL) {
-    throw new Error('APP_URL environment variable is required for password reset emails');
-  }
-  const appUrl = env.APP_URL;
+  const appUrl = getWorkerFrontendUrl(env);
   const resetUrl = `${appUrl.replace(/\/$/, '')}/auth/reset-password?token=${resetToken}`;
   
   // Use Resend for production email sending
@@ -24,7 +22,7 @@ export async function sendPasswordResetEmail(env: Env, email: string, firstName:
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          from: env.FROM_EMAIL || 'LibraryCard <noreply@tim52.io>',
+          from: getWorkerFromEmail(env),
           to: [email],
           subject: 'Reset Your LibraryCard Password',
           html: `
@@ -143,7 +141,7 @@ This is an automated message from LibraryCard.
           'X-Postmark-Server-Token': env.POSTMARK_API_TOKEN,
         },
         body: JSON.stringify({
-          From: env.FROM_EMAIL || 'LibraryCard <noreply@tim52.io>',
+          From: getWorkerFromEmail(env),
           To: email,
           Subject: 'Reset Your LibraryCard Password',
           HtmlBody: `
@@ -224,20 +222,7 @@ This is an automated message from LibraryCard.
 }
 
 export async function sendInvitationEmail(env: Env, email: string, locationName: string, token: string, invitedBy: string, customMessage?: string) {
-  // Removed sensitive debug logging
-  if (!env.APP_URL) {
-    throw new Error('APP_URL environment variable is required for invitation emails');
-  }
-  const appUrl = env.APP_URL;
-  // Debug logging only in local environment
-  if (env.ENVIRONMENT === 'local') {
-    console.log('DEBUG: appUrl =', appUrl);
-  }
-  
-  // Extra defensive check
-  if (!appUrl || typeof appUrl !== 'string') {
-    throw new Error(`Invalid APP_URL: ${appUrl} (type: ${typeof appUrl})`);
-  }
+  const appUrl = getWorkerFrontendUrl(env);
   
   const invitationUrl = `${appUrl.replace(/\/$/, '')}/auth/signin?invitation=${token}`;
   
@@ -264,7 +249,7 @@ export async function sendInvitationEmail(env: Env, email: string, locationName:
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          from: env.FROM_EMAIL || 'LibraryCard <noreply@tim52.io>',
+          from: getWorkerFromEmail(env),
           to: [email],
           subject: `You're invited to join ${locationName} on LibraryCard`,
           html: `
@@ -330,10 +315,7 @@ export async function sendInvitationEmail(env: Env, email: string, locationName:
 }
 
 export async function sendVerificationEmail(env: Env, email: string, firstName: string, token: string) {
-  if (!env.APP_URL) {
-    throw new Error('APP_URL environment variable is required for verification emails');
-  }
-  const appUrl = env.APP_URL;
+  const appUrl = getWorkerFrontendUrl(env);
   const verificationUrl = `${appUrl.replace(/\/$/, '')}/api/auth/verify-email?token=${token}`;
   
   // Use Resend for production email sending
@@ -346,7 +328,7 @@ export async function sendVerificationEmail(env: Env, email: string, firstName: 
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          from: env.FROM_EMAIL || 'LibraryCard <noreply@tim52.io>',
+          from: getWorkerFromEmail(env),
           to: [email],
           subject: 'Verify your LibraryCard account',
           html: `
@@ -429,7 +411,7 @@ export async function notifyAdminsOfSignupRequest(env: Env, email: string, first
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            from: env.FROM_EMAIL || 'LibraryCard <noreply@tim52.io>',
+            from: getWorkerFromEmail(env),
             to: [adminEmail],
             subject: 'LibraryCard: New Signup Request Pending Approval',
             html: `
@@ -470,7 +452,7 @@ export async function notifyAdminsOfSignupRequest(env: Env, email: string, first
                     </p>
                     
                     <div style="text-align: center; margin: 30px 0;">
-                      <a href="${env.APP_URL}" 
+                      <a href="${getWorkerFrontendUrl(env)}" 
                          style="display: inline-block; background-color: #673ab7; color: white; padding: 15px 30px; 
                                 text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px;
                                 transition: background-color 0.3s ease;">
@@ -506,7 +488,7 @@ Requested At: ${new Date().toLocaleString()}
 
 Please log in to the LibraryCard admin panel to review and approve or deny this signup request.
 
-Visit: ${env.APP_URL}
+Visit: ${getWorkerFrontendUrl(env)}
 
 This is an automated message from LibraryCard. This user cannot access the system until approved by an admin.
             `
@@ -537,10 +519,7 @@ export async function sendSignupApprovalEmail(env: Env, email: string, firstName
   try {
     if (env.RESEND_API_KEY) {
       const isProduction = env.ENVIRONMENT === 'production';
-      if (!env.APP_URL) {
-        throw new Error('APP_URL environment variable is required for admin notifications');
-      }
-      const baseUrl = env.APP_URL;
+      const baseUrl = getWorkerFrontendUrl(env);
       
       let subject: string;
       let htmlBody: string;
@@ -651,7 +630,7 @@ This is an automated message from LibraryCard.
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          from: env.FROM_EMAIL || 'LibraryCard <noreply@tim52.io>',
+          from: getWorkerFromEmail(env),
           to: [email],
           subject: subject,
           html: htmlBody,
@@ -712,7 +691,7 @@ export async function sendContactEmail(request: Request, env: Env, corsHeaders: 
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            from: env.FROM_EMAIL || 'LibraryCard <noreply@tim52.io>',
+            from: getWorkerFromEmail(env),
             to: ['contact@tim52.io'],
             reply_to: [email],
             subject: `LibraryCard Contact: Message from ${name}`,
@@ -834,7 +813,7 @@ export async function sendLocationAccessNotification(
             : `<p style="font-size: 16px; margin-bottom: 25px;">You no longer have access to this library. Any books you may have checked out should be returned.</p>`
           }
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${env.APP_URL}" 
+            <a href="${getWorkerFrontendUrl(env)}" 
                style="display: inline-block; background-color: #673ab7; color: white; padding: 15px 30px; 
                       text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px;">
               View LibraryCard
@@ -867,7 +846,7 @@ ${granted
   : 'You no longer have access to this library. Any books you may have checked out should be returned.'
 }
 
-Visit: ${env.APP_URL}
+Visit: ${getWorkerFrontendUrl(env)}
 
 This is an automated message from LibraryCard.
   `;
@@ -935,7 +914,7 @@ export async function sendPermissionChangeNotification(
             }
           </p>
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${env.APP_URL}" 
+            <a href="${getWorkerFrontendUrl(env)}" 
                style="display: inline-block; background-color: #673ab7; color: white; padding: 15px 30px; 
                       text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px;">
               View LibraryCard
@@ -969,7 +948,7 @@ ${granted
   : `You can no longer use the ${permissionDisplay} feature in ${locationName}.`
 }
 
-Visit: ${env.APP_URL}
+Visit: ${getWorkerFrontendUrl(env)}
 
 This is an automated message from LibraryCard.
   `;
@@ -1017,7 +996,7 @@ export async function sendBookActionNotification(
             <p style="margin: 10px 0 0 0; font-size: 14px; color: #666;"><strong>🕒 ${action === 'added' ? 'Added' : 'Removed'} at:</strong> ${new Date().toLocaleString()}</p>
           </div>
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${env.APP_URL}" 
+            <a href="${getWorkerFrontendUrl(env)}" 
                style="display: inline-block; background-color: #673ab7; color: white; padding: 15px 30px; 
                       text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px;">
               View LibraryCard
@@ -1047,7 +1026,7 @@ Location: ${locationName}
 ${action === 'added' ? 'Added' : 'Removed'} by: ${actionBy}
 ${action === 'added' ? 'Added' : 'Removed'} at: ${new Date().toLocaleString()}
 
-Visit: ${env.APP_URL}
+Visit: ${getWorkerFrontendUrl(env)}
 
 This is an automated message from LibraryCard.
   `;
@@ -1180,7 +1159,7 @@ ${action === 'submitted'
   : 'If you have questions about this decision, please contact an administrator.'
 }
 
-Visit: ${env.APP_URL}${action === 'submitted' ? '/admin/reviews' : `/library?search=${encodeURIComponent(bookTitle)}`}
+Visit: ${getWorkerFrontendUrl(env)}${action === 'submitted' ? '/admin/reviews' : `/library?search=${encodeURIComponent(bookTitle)}`}
 
 This is an automated message from LibraryCard.
   `;
@@ -1256,7 +1235,7 @@ export async function sendGenreSuggestionNotification(
             : '<p style="font-size: 16px; margin-bottom: 25px;">This genre suggestion was not approved at this time.</p>'
           }
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${env.APP_URL}" 
+            <a href="${getWorkerFrontendUrl(env)}" 
                style="display: inline-block; background-color: #673ab7; color: white; padding: 15px 30px; 
                       text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px;">
               View LibraryCard
@@ -1296,7 +1275,7 @@ ${action === 'suggested'
   : 'This genre suggestion was not approved at this time.'
 }
 
-Visit: ${env.APP_URL}
+Visit: ${getWorkerFrontendUrl(env)}
 
 This is an automated message from LibraryCard.
   `;
@@ -1320,7 +1299,7 @@ async function sendEmailWithFallback(
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          from: env.FROM_EMAIL || 'LibraryCard <noreply@tim52.io>',
+          from: getWorkerFromEmail(env),
           to: [email],
           subject: subject,
           html: htmlBody,

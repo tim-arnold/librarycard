@@ -3,6 +3,7 @@ import { isUserAdmin, isUserSuperAdmin } from '../auth';
 import { hasUserPermission, hasGlobalPermission, getLocationIdFromShelfId, getLocationIdFromBookId } from '../permissions';
 import { invalidateAllAdminAnalytics } from '../admin/cached';
 import { sendBookReviewUpdate } from '../notifications/index';
+import { getWorkerFromEmail } from '../utils/domainConfig';
 
 // Core Book Management Functions
 export async function getUserBooks(userId: string, env: Env, corsHeaders: Record<string, string>) {
@@ -1558,7 +1559,7 @@ export async function emailOverdueUser(bookId: number, userId: string, env: Env,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          from: env.FROM_EMAIL || 'LibraryCard <noreply@resend.dev>',
+          from: getWorkerFromEmail(env),
           to: [bookData.checked_out_user_email],
           subject: `LibraryCard: Overdue Book Reminder - "${bookData.title}"`,
           html: `
