@@ -9,6 +9,7 @@ import { getUserFromRequest } from './auth';
 import { RateLimiter } from './auth/rate-limiter';
 import { withGlobalErrorHandling, ErrorCategory, createSecureErrorResponse } from './errors';
 import { getCachedGenreService } from './cache/genres';
+import { getWorkerFrontendUrl } from './utils/domainConfig';
 
 /**
  * Main Router - Orchestration layer for all endpoint routers
@@ -51,7 +52,7 @@ export class MainRouter {
       return frontendUrl;
     };
 
-    const frontendUrl = env.APP_URL;
+    const frontendUrl = getWorkerFrontendUrl(env);
     const origin = request.headers.get('Origin');
     const allowedOrigin = getAllowedOrigin(origin, frontendUrl);
 

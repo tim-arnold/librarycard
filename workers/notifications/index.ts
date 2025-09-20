@@ -1,11 +1,12 @@
 import { Env } from '../types';
-import { 
-  sendLocationAccessNotification, 
+import {
+  sendLocationAccessNotification,
   sendPermissionChangeNotification,
   sendBookActionNotification,
   sendGenreSuggestionNotification,
   sendBookReviewNotification
 } from '../email/index';
+import { getWorkerFromEmail } from '../utils/domainConfig';
 
 export type NotificationType = 
   | 'user_registration'
@@ -820,7 +821,7 @@ export async function processNotificationQueue(env: Env, batchSize = 10) {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            from: env.FROM_EMAIL || 'LibraryCard <noreply@tim52.io>',
+            from: getWorkerFromEmail(env),
             to: [notif.recipient_email],
             subject: notif.subject,
             html: notif.html_body,
