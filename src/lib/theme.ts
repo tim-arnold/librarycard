@@ -654,8 +654,8 @@ const enhancedColors = {
     comic: '#f59e0b',           // Amber
     graphic: '#d97706',         // Dark Amber
     manga: '#dc2626',           // Red
-    humor: '#fbbf24',           // Yellow
-    satire: '#f59e0b',          // Amber
+    humor: '#b45309',           // Darker amber for WCAG AA compliance
+    satire: '#92400e',          // Even darker amber for better contrast
     
     // Additional common genres
     true: '#10b981',            // Emerald (true crime, true story)
@@ -728,10 +728,10 @@ export const themeVariants: Record<ThemeVariant, ThemeVariantConfig> = {
       300: '#86efac',
       400: '#4ade80',
       500: '#22c55e',
-      600: '#16a34a',
-      700: '#15803d',
-      800: '#166534',
-      900: '#14532d',
+      600: '#15803d', // Darker for better contrast: was #16a34a (3.3:1) → now ~4.6:1
+      700: '#166534', // Promoted darker shade
+      800: '#14532d', // Promoted darker shade
+      900: '#0f3f23', // New darker shade
     },
     secondary: {
       50: '#fefce8',
@@ -855,11 +855,11 @@ export const themeVariants: Record<ThemeVariant, ThemeVariantConfig> = {
       200: '#fde68a',
       300: '#fcd34d',
       400: '#fbbf24',
-      500: '#f59e0b',
-      600: '#d97706',
-      700: '#b45309',
-      800: '#92400e',
-      900: '#78350f',
+      500: '#b45309', // Even darker for WCAG AA compliance: ~4.6:1 contrast ratio
+      600: '#92400e', // Promoted darker shade
+      700: '#78350f', // Promoted darker shade
+      800: '#5a2a0a', // New darker shade
+      900: '#4a1f08', // Very dark shade
     },
     secondary: {
       50: '#fefce8',
@@ -906,9 +906,9 @@ function createThemeOptions(isDark: boolean, variant: ThemeVariant): ThemeOption
       contrastText: '#ffffff',
     },
     warning: {
-      main: '#f59e0b',        // Warm amber
-      light: '#fbbf24', 
-      dark: '#d97706',
+      main: '#d97706',        // Darker amber for better contrast
+      light: '#f59e0b',       // Moved lighter shade to light variant
+      dark: '#b45309',        // Darker variant
       contrastText: '#ffffff',
     },
     info: {
@@ -1015,14 +1015,14 @@ function createThemeOptions(isDark: boolean, variant: ThemeVariant): ThemeOption
     MuiRating: {
       styleOverrides: {
         iconFilled: {
-          color: '#f59e0b',
-          filter: 'drop-shadow(0 1px 2px rgba(245, 158, 11, 0.3))',
+          color: '#d97706', // Better contrast amber
+          filter: 'drop-shadow(0 1px 2px rgba(217, 119, 6, 0.3))',
         },
         iconEmpty: {
           color: '#d1d5db',
         },
         iconHover: {
-          color: '#fbbf24',
+          color: '#f59e0b', // Slightly lighter for hover
           transform: 'scale(1.05)',
         },
       },
@@ -1052,9 +1052,9 @@ function createThemeOptions(isDark: boolean, variant: ThemeVariant): ThemeOption
       contrastText: '#000000',
     },
     warning: {
-      main: '#fbbf24',        // Lighter amber for dark mode
-      light: '#fde047',
-      dark: '#f59e0b',
+      main: '#f59e0b',        // Better contrast amber for dark mode
+      light: '#fbbf24',       // Keep lighter for accents
+      dark: '#d97706',        // Darker variant
       contrastText: '#000000',
     },
     info: {
@@ -1137,14 +1137,14 @@ function createThemeOptions(isDark: boolean, variant: ThemeVariant): ThemeOption
     MuiRating: {
       styleOverrides: {
         iconFilled: {
-          color: '#fbbf24',
-          filter: 'drop-shadow(0 1px 2px rgba(251, 191, 36, 0.4))',
+          color: '#f59e0b', // Better contrast for dark mode
+          filter: 'drop-shadow(0 1px 2px rgba(245, 158, 11, 0.4))',
         },
         iconEmpty: {
           color: '#6b7280',
         },
         iconHover: {
-          color: '#fde047',
+          color: '#fbbf24', // Lighter for hover
           transform: 'scale(1.05)',
         },
       },
