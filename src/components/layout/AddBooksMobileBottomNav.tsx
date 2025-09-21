@@ -62,7 +62,7 @@ export default function AddBooksMobileBottomNav({
     <Paper
       sx={{
         position: 'fixed',
-        bottom: 0,
+        bottom: 'env(safe-area-inset-bottom)',
         left: 0,
         right: 0,
         zIndex: 1000,
@@ -96,7 +96,7 @@ export default function AddBooksMobileBottomNav({
         />
 
         <BottomNavigationAction
-          label="Search"
+          label="Text"
           value="manual"
           icon={<Search color={activeTab === 0 ? 'primary' : 'inherit'} />}
         />
