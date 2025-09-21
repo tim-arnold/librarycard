@@ -49,12 +49,12 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
   const [themeMenuOpen, setThemeMenuOpen] = useState(false)
   const [themeMenuClosing, setThemeMenuClosing] = useState(false)
   const { unreadCount } = useUnreadNotificationCount()
+  const { isMobile } = useMobileBreakpoints()
 
-  // Lock scroll when mobile menus are open
-  useScrollLock(mobileMenuOpen || themeMenuOpen)
+  // Lock scroll when mobile menus are open, or theme menu on mobile
+  useScrollLock(mobileMenuOpen || (themeMenuOpen && isMobile))
   const { unreadRejectedCount } = useRejectedReviewNotifications()
   const { counts: adminCounts } = useAdminPendingCounts()
-  const { isMobile } = useMobileBreakpoints()
 
   // Enhanced keyboard navigation for theme menu
   useEffect(() => {
