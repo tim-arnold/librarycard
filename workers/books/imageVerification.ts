@@ -90,7 +90,12 @@ export async function verifyBookCoverImage(
       'earring',
       'watch',
       'clothing',
-      'apparel'
+      'apparel',
+      'lab coat',
+      'coat',
+      'jacket',
+      'sweater',
+      'hoodie'
     ];
 
     let maxBookConfidence = 0;
@@ -128,7 +133,7 @@ export async function verifyBookCoverImage(
     let rejectionReason: string | undefined;
     let finalConfidence = 0;
 
-    if (hasInappropriateContent && maxInappropriateConfidence > 0.3) {
+    if (hasInappropriateContent && maxInappropriateConfidence > 0.2) {
       // High confidence inappropriate content - reject
       isBookCover = false;
       rejectionReason = 'Image appears to contain inappropriate content (people, faces, etc.)';
