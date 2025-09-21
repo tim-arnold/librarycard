@@ -202,7 +202,7 @@ export default {
       return frontendUrl;
     };
 
-    const frontendUrl = env.APP_URL;
+    const frontendUrl = env.NEXTAUTH_URL || 'https://localhost:3000';
     const origin = request.headers.get('Origin');
     const allowedOrigin = getAllowedOrigin(origin, frontendUrl);
 
