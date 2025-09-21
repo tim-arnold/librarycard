@@ -460,7 +460,13 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
             {/* Theme Options Menu */}
             <div style={{ position: 'relative' }}>
               <button
-                onClick={() => setThemeMenuOpen(!themeMenuOpen)}
+                onClick={() => {
+                  setThemeMenuOpen(!themeMenuOpen)
+                  // Close account menu if it's open
+                  if (accountMenuOpen) {
+                    setAccountMenuOpen(false)
+                  }
+                }}
                 style={{
                   background: 'none',
                   border: '1px solid var(--marketing-gray-300)',
@@ -665,7 +671,13 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                 <div style={{ position: 'relative' }}>
                   <button
                     data-tour="user-menu"
-                    onClick={() => setAccountMenuOpen(!accountMenuOpen)}
+                    onClick={() => {
+                      setAccountMenuOpen(!accountMenuOpen)
+                      // Close theme menu if it's open
+                      if (themeMenuOpen) {
+                        setThemeMenuOpen(false)
+                      }
+                    }}
                     style={{
                       background: 'none',
                       border: 'none',
@@ -857,6 +869,10 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                   closeThemeMenu()
                 } else {
                   setThemeMenuOpen(true)
+                  // Close account menu if it's open
+                  if (accountMenuOpen) {
+                    setAccountMenuOpen(false)
+                  }
                   if (mobileMenuOpen) closeMobileMenu()
                 }
               }}
