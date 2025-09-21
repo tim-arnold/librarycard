@@ -166,7 +166,7 @@ const BookCard = React.memo<BookCardProps>(({
             >
               {book.title}
             </Typography>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
+            <Typography variant="body2" color="text.secondary" gutterBottom sx={{ fontSize: '1rem' }}>
               {book.authors.map((author, index) => (
                 <span key={index}>
                   <Typography
@@ -211,7 +211,7 @@ const BookCard = React.memo<BookCardProps>(({
               )}
             </Typography>
             {book.series && (
-              <Typography variant="body2" color="text.secondary" gutterBottom>
+              <Typography variant="body2" color="text.secondary" gutterBottom sx={{ fontSize: '1rem' }}>
                 <Typography 
                   component="span" 
                   sx={{ 
@@ -228,12 +228,12 @@ const BookCard = React.memo<BookCardProps>(({
               </Typography>
             )}
             {book.current_series && book.current_series.length > 0 && (
-              <Typography 
-                component="p" 
-                variant="caption" 
-                color="text.secondary" 
-                gutterBottom 
-                sx={{ fontWeight: 600, lineHeight: 1.2, margin: 0 }}
+              <Typography
+                component="p"
+                variant="caption"
+                color="text.secondary"
+                gutterBottom
+                sx={{ fontWeight: 600, lineHeight: 1.2, margin: 0, fontSize: '1rem' }}
               >
                 Part of series:{' '}
                 {book.current_series.map((series, index) => (
@@ -241,11 +241,12 @@ const BookCard = React.memo<BookCardProps>(({
                     key={series.id}
                     component="span"
                     variant="caption"
-                    sx={{ 
-                      color: 'primary.main', 
+                    sx={{
+                      color: 'primary.main',
                       cursor: 'pointer',
                       textDecoration: 'underline',
                       fontWeight: 600,
+                      fontSize: '1rem',
                       '&:hover': { textDecoration: 'none' }
                     }}
                     onClick={() => handleSeriesClick(series.name)}
@@ -351,7 +352,7 @@ const BookCard = React.memo<BookCardProps>(({
             
             {/* Show shelf info for all users */}
             <Box sx={{ mt: 2 }}>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '1rem' }}>
                 <strong>Shelf:</strong> {book.shelf_name || 'No shelf assigned'}
               </Typography>
             </Box>
@@ -360,7 +361,7 @@ const BookCard = React.memo<BookCardProps>(({
         
         {book.tags && book.tags.length > 0 && (
           <Box sx={{ mt: 1 }}>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: '1rem' }}>
               <strong>Tags:</strong> {book.tags.join(', ')}
             </Typography>
           </Box>
