@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { Alert, Typography, Box, CircularProgress, Fab, Drawer } from '@mui/material'
 import { LibraryBooks, MenuBook } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
@@ -188,24 +188,24 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
     categoryFilter.length > 0 ? 'genre' : '',
   ].filter(Boolean).length
 
-  // Modal handlers
-  const handleMoreDetailsClick = (book: EnhancedBook) => {
+  // Modal handlers - memoized for performance
+  const handleMoreDetailsClick = useCallback((book: EnhancedBook) => {
     // Find the current book data from the books array to ensure we have the latest data
     const currentBook = books.find(b => b.id === book.id) || book
     setSelectedBookForDetails(currentBook)
-  }
+  }, [books])
 
-  const handleRelocateClick = (book: EnhancedBook) => {
+  const handleRelocateClick = useCallback((book: EnhancedBook) => {
     setSelectedBookForRelocate(book)
-  }
+  }, [])
 
-  const handleRateBook = (book: EnhancedBook) => {
+  const handleRateBook = useCallback((book: EnhancedBook) => {
     // Find the current book data from the books array to ensure we have the latest data
     const currentBook = books.find(b => b.id === book.id) || book
     setSelectedBookForRating(currentBook)
-  }
+  }, [books])
 
-  const handleGenreEdit = (book: EnhancedBook) => {
+  const handleGenreEdit = useCallback((book: EnhancedBook) => {
     if (!userPermissions.includes('can_edit_genres')) {
       alert({
         title: 'Permission Required',
@@ -215,7 +215,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
       return
     }
     setSelectedBookForGenreEdit(book)
-  }
+  }, [userPermissions, alert])
 
   const handleCoverEdit = (book: EnhancedBook) => {
     if (!userPermissions.includes('can_add_books')) {
@@ -229,10 +229,10 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
     setSelectedBookForCoverEdit(book)
   }
 
-  const handleSeriesClick = (seriesName: string) => {
+  const handleSeriesClick = useCallback((seriesName: string) => {
     // Use the dedicated series filter for precise filtering
     setSeriesFilter(seriesName)
-  }
+  }, [setSeriesFilter])
 
   // Sidebar handlers
   const handleSidebarBookClick = (bookId: string) => {
