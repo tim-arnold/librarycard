@@ -170,13 +170,25 @@ export default function CoverSelectionModal({
       });
 
       if (!response.ok) {
-        throw new Error('Failed to upload image');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to upload image');
       }
 
       const uploadResult = await response.json();
 
       if (!uploadResult.success) {
-        throw new Error(uploadResult.error || 'Image upload failed');
+        // LCWEB-188: Handle image verification errors with user-friendly messages
+        const errorMessage = uploadResult.error || 'Image upload failed';
+
+        // Check if this is a verification error and provide specific guidance
+        if (errorMessage.includes('does not appear to be a book cover') ||
+            errorMessage.includes('inappropriate content')) {
+          throw new Error(
+            'The image doesn\'t appear to be a book cover. Please ensure you\'re photographing the front cover of a book, with the title and author clearly visible.'
+          );
+        }
+
+        throw new Error(errorMessage);
       }
 
       // Create a cover option from the uploaded image
