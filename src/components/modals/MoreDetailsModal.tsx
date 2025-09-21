@@ -33,6 +33,7 @@ import { useSeries } from '@/hooks/useSeries'
 import SeriesModal from './SeriesModal'
 import CoverAttribution from '@/components/common/CoverAttribution'
 import useMobileBreakpoints from '@/hooks/useMobileBreakpoints'
+import { getDisplayGenres } from '@/lib/genreUtils'
 
 interface CheckoutHistoryItem {
   id: number
@@ -689,25 +690,35 @@ export default function MoreDetailsModal({
               {/* Current Genre */}
               <Box>
                 <Typography variant="subtitle2" color="primary" gutterBottom>
-                  Assigned Genre
+                  Genre
                 </Typography>
-                {localBook.assignedGenres && localBook.assignedGenres.length > 0 ? (
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    {localBook.assignedGenres.map((genre, index) => (
-                      <Chip
-                        key={index}
-                        label={genre.name}
-                        size="small"
-                        color="success"
-                        variant="filled"
-                      />
-                    ))}
-                  </Box>
-                ) : (
-                  <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                    No genre assigned
-                  </Typography>
-                )}
+                {(() => {
+                  const { genres, source } = getDisplayGenres(localBook)
+                  if (genres.length === 0) {
+                    return (
+                      <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                        No genre assigned
+                      </Typography>
+                    )
+                  }
+
+                  return (
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, alignItems: 'center' }}>
+                      {genres.map((genre, index) => (
+                        <Chip
+                          key={index}
+                          label={genre}
+                          size="small"
+                          color={source === 'assigned' ? 'success' : source === 'enhanced' ? 'info' : 'default'}
+                          variant={source === 'assigned' ? 'filled' : 'outlined'}
+                        />
+                      ))}
+                      <Typography variant="caption" color="text.secondary" sx={{ ml: 1, fontSize: '0.7rem' }}>
+                        ({source === 'assigned' ? 'Curated' : source === 'enhanced' ? 'Auto-classified' : 'Original'})
+                      </Typography>
+                    </Box>
+                  )
+                })()}
               </Box>
 
               {/* Book Status */}
