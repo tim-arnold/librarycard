@@ -39,10 +39,22 @@ export default function SkipLink({ href, children }: SkipLinkProps) {
   )
 }
 
-export function SkipLinks() {
+interface SkipLinksProps {
+  additionalLinks?: Array<{
+    href: string
+    label: string
+  }>
+}
+
+export function SkipLinks({ additionalLinks = [] }: SkipLinksProps) {
   return (
     <Box component="nav" aria-label="Skip navigation links">
       <SkipLink href="#main-content">Skip to main content</SkipLink>
+      {additionalLinks.map((link) => (
+        <SkipLink key={link.href} href={link.href}>
+          {link.label}
+        </SkipLink>
+      ))}
       <SkipLink href="#main-navigation">Skip to navigation</SkipLink>
     </Box>
   )

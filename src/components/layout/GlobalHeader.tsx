@@ -307,9 +307,14 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
     return false
   }
 
+  // Define additional skip links based on current page
+  const additionalSkipLinks = pathname.startsWith('/library') ? [
+    { href: '#search-filters', label: 'Skip to search and filters' }
+  ] : []
+
   return (
     <>
-      <SkipLinks />
+      <SkipLinks additionalLinks={additionalSkipLinks} />
       <header
         style={{
           position: 'sticky',
