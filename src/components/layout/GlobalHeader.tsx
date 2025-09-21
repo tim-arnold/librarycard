@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useContext } from 'react'
+import React, { useState, useContext, useEffect } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useTheme } from '@/lib/ThemeContext'
@@ -53,6 +53,140 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
   useScrollLock(mobileMenuOpen || themeMenuOpen)
   const { unreadRejectedCount } = useRejectedReviewNotifications()
   const { counts: adminCounts } = useAdminPendingCounts()
+
+  // Enhanced keyboard navigation for theme menu
+  useEffect(() => {
+    if (!themeMenuOpen) return
+
+    const handleThemeMenuKeyDown = (e: KeyboardEvent) => {
+      const activeElement = document.activeElement as HTMLElement
+
+      // Check if we're focused on any theme menu button (Light/Dark or theme colors)
+      const isThemeMenuButton = activeElement?.tagName === 'BUTTON' && (
+        // Light/Dark mode buttons
+        (activeElement?.textContent?.includes('Light') || activeElement?.textContent?.includes('Dark')) ||
+        // Theme color buttons
+        (activeElement?.style?.color === 'var(--marketing-gray-700)' &&
+         ['Indigo', 'Forest Green', 'Crimson Red', 'Ocean Blue', 'Purple', 'Amber'].some(color =>
+           activeElement?.textContent?.includes(color)))
+      )
+
+      if (isThemeMenuButton && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'Enter', ' ', 'Escape'].includes(e.key)) {
+        e.preventDefault()
+        e.stopPropagation()
+
+        // Find all theme menu buttons in order: Light, Dark, then theme colors
+        const lightButton = Array.from(document.querySelectorAll('button')).find(btn =>
+          btn.textContent?.trim() === 'Light')
+        const darkButton = Array.from(document.querySelectorAll('button')).find(btn =>
+          btn.textContent?.trim() === 'Dark')
+        const themeColorButtons = Array.from(document.querySelectorAll('button')).filter(btn =>
+          btn.style.color === 'var(--marketing-gray-700)' &&
+          btn.textContent &&
+          ['Indigo', 'Forest Green', 'Crimson Red', 'Ocean Blue', 'Purple', 'Amber'].some(color =>
+            btn.textContent?.includes(color))
+        )
+
+        const allButtons = [lightButton, darkButton, ...themeColorButtons].filter(Boolean) as HTMLButtonElement[]
+        const currentIndex = allButtons.indexOf(activeElement as HTMLButtonElement)
+
+        if (currentIndex >= 0) {
+          let nextIndex = currentIndex
+
+          // Grid layout: [Light, Dark] (row 0), then 2-column grid for theme colors (rows 1+)
+          const isInModeRow = currentIndex < 2 // Light/Dark buttons
+          const currentRow = isInModeRow ? 0 : Math.floor((currentIndex - 2) / 2) + 1
+          const currentCol = isInModeRow ? currentIndex : (currentIndex - 2) % 2
+
+          switch (e.key) {
+            case 'ArrowRight':
+              if (isInModeRow && currentIndex === 0) {
+                // Light -> Dark
+                nextIndex = 1
+              } else if (isInModeRow && currentIndex === 1) {
+                // Dark -> first theme color
+                nextIndex = 2
+              } else {
+                // Move right in theme color grid, wrap to next row
+                nextIndex = currentIndex + 1
+                if (nextIndex >= allButtons.length) {
+                  nextIndex = 2 // Wrap to first theme color
+                }
+              }
+              break
+
+            case 'ArrowLeft':
+              if (currentIndex === 2) {
+                // First theme color -> Dark
+                nextIndex = 1
+              } else if (currentIndex === 1) {
+                // Dark -> Light
+                nextIndex = 0
+              } else if (currentIndex === 0) {
+                // Light -> last theme color
+                nextIndex = allButtons.length - 1
+              } else {
+                // Move left in theme color grid
+                nextIndex = currentIndex - 1
+              }
+              break
+
+            case 'ArrowDown':
+              if (isInModeRow) {
+                // From Light/Dark -> corresponding column in theme colors
+                nextIndex = 2 + currentCol // First row of theme colors
+              } else {
+                // Move down in theme color grid
+                const nextRowIndex = currentIndex + 2
+                nextIndex = nextRowIndex < allButtons.length ? nextRowIndex : currentIndex
+              }
+              break
+
+            case 'ArrowUp':
+              if (currentRow === 1) {
+                // From first row of theme colors -> Light/Dark
+                nextIndex = currentCol < 2 ? currentCol : 1
+              } else if (currentRow > 1) {
+                // Move up in theme color grid
+                nextIndex = currentIndex - 2
+              }
+              // Stay in same position if already at top
+              break
+
+            case 'Home':
+              nextIndex = 0 // Light button
+              break
+
+            case 'End':
+              nextIndex = allButtons.length - 1 // Last theme color
+              break
+
+            case 'Enter':
+            case ' ':
+              ;(activeElement as HTMLButtonElement).click()
+              return
+
+            case 'Escape':
+              setThemeMenuOpen(false)
+              return
+          }
+
+          if (nextIndex !== currentIndex && allButtons[nextIndex]) {
+            allButtons[nextIndex].focus()
+          }
+        }
+      } else if (e.key === 'Escape') {
+        setThemeMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('keydown', handleThemeMenuKeyDown, true)
+
+    return () => {
+      document.removeEventListener('keydown', handleThemeMenuKeyDown, true)
+    }
+  }, [themeMenuOpen])
+
   // Safe tour usage - might not be available on marketing pages
   const tourContext = useContext(TourContext)
   const startTour = tourContext?.startTour || (() => {
