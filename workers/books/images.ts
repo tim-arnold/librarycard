@@ -1,5 +1,6 @@
 import { Env } from '../types';
 import { getWorkerFrontendUrl, detectWorkerEnvironment } from '../utils/domainConfig';
+import { verifyBookCoverImage, dataUrlToBuffer, ImageVerificationResult } from './imageVerification';
 
 /**
  * Image Storage and Management for Book Covers
@@ -27,6 +28,7 @@ export interface ImageUploadResponse {
     width: number;
     height: number;
   };
+  verification?: ImageVerificationResult;
   error?: string;
 }
 
@@ -54,6 +56,21 @@ export async function uploadBookCoverImage(
         });
       }
 
+      // LCWEB-188: Verify image even in fallback mode
+      const imageBuffer = dataUrlToBuffer(body.image);
+      const verificationResult = await verifyBookCoverImage(imageBuffer, env);
+
+      if (!verificationResult.isBookCover) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: verificationResult.rejectionReason || 'The uploaded image does not appear to be a book cover. Please upload a clear photo of a book cover.',
+          verification: verificationResult
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
       // For staging without R2, return the original data URL
       return new Response(JSON.stringify({
         success: true,
@@ -65,6 +82,7 @@ export async function uploadBookCoverImage(
           width: body.metadata?.width || 0,
           height: body.metadata?.height || 0,
         },
+        verification: verificationResult,
         fallback: true,
         message: 'Using data URL fallback - R2 storage not available'
       }), {
@@ -119,6 +137,20 @@ export async function uploadBookCoverImage(
       return new Response(JSON.stringify({
         success: false,
         error: `Image too large. Maximum size: ${maxSize / (1024 * 1024)}MB`
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // LCWEB-188: Verify that the image is actually a book cover
+    const verificationResult = await verifyBookCoverImage(imageBuffer, env);
+
+    if (!verificationResult.isBookCover) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: verificationResult.rejectionReason || 'The uploaded image does not appear to be a book cover. Please upload a clear photo of a book cover.',
+        verification: verificationResult
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -261,6 +293,7 @@ export async function uploadBookCoverImage(
         width: body.metadata?.width || 0,
         height: body.metadata?.height || 0,
       },
+      verification: verificationResult,
     };
 
     return new Response(JSON.stringify(response), {

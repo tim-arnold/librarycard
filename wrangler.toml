@@ -76,6 +76,9 @@ id = "a7451e32dc8740efb83e3c0751ea3c08"
 binding = "R2_BUCKET"
 bucket_name = "librarycard-images-staging"
 
+[[env.staging.ai]]
+binding = "AI"
+
 # Production environment  
 # Use: npx wrangler deploy --env=production
 [env.production]
@@ -100,3 +103,6 @@ id = "8f5a86fc82a64b10ba946d749f2dc8f4"
 [[env.production.r2_buckets]]
 binding = "R2_BUCKET"
 bucket_name = "librarycard-images-production"
+
+[[env.production.ai]]
+binding = "AI"

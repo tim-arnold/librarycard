@@ -29,6 +29,8 @@ export interface Env {
   CACHE?: KVNamespace;
   // Cloudflare R2 for image storage
   R2_BUCKET?: R2Bucket;
+  // Cloudflare AI for image verification
+  AI?: any;
 }
 
 export interface User {
