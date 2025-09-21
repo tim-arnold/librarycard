@@ -543,6 +543,8 @@ export default function MoreDetailsModal({
                 <Box
                   sx={{
                     position: 'relative',
+                    width: '120px',
+                    height: '180px',
                     cursor: onCoverEdit && userPermissions.includes('can_add_books') ? 'pointer' : 'default',
                     '&:hover': onCoverEdit && userPermissions.includes('can_add_books') ? {
                       transform: 'scale(1.02)',
@@ -558,13 +560,14 @@ export default function MoreDetailsModal({
                     alt={`Cover of ${localBook.title}`}
                     key={localBook.thumbnail} // Force re-render when thumbnail URL changes
                     style={{
-                      width: '120px',
-                      height: 'auto',
-                      maxHeight: '180px',
+                      width: '100%',
+                      height: '100%',
                       objectFit: 'cover',
+                      objectPosition: 'center',
                       borderRadius: '8px',
                       boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
-                      transition: 'all 0.3s ease-in-out'
+                      transition: 'all 0.3s ease-in-out',
+                      display: 'block'
                     }}
                   />
                   {/* Hover overlay for cover editing */}
@@ -575,8 +578,8 @@ export default function MoreDetailsModal({
                         position: 'absolute',
                         top: 0,
                         left: 0,
-                        right: 0,
-                        bottom: 0,
+                        width: '100%',
+                        height: '100%',
                         backgroundColor: 'rgba(0, 0, 0, 0.6)',
                         borderRadius: '8px',
                         display: 'flex',
