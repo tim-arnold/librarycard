@@ -74,7 +74,28 @@ export async function verifyBookCoverImage(
       'adult',
       'nude',
       'body',
-      'skin'
+      'skin',
+      // Clothing/accessories that indicate a person in the photo
+      'sunglasses',
+      'bow tie',
+      'windsor tie',
+      'neck brace',
+      'suit',
+      'shirt',
+      'dress',
+      'hat',
+      'cap',
+      'glasses',
+      'necklace',
+      'earring',
+      'watch',
+      'clothing',
+      'apparel',
+      'lab coat',
+      'coat',
+      'jacket',
+      'sweater',
+      'hoodie'
     ];
 
     let maxBookConfidence = 0;
@@ -112,7 +133,7 @@ export async function verifyBookCoverImage(
     let rejectionReason: string | undefined;
     let finalConfidence = 0;
 
-    if (hasInappropriateContent && maxInappropriateConfidence > 0.3) {
+    if (hasInappropriateContent && maxInappropriateConfidence > 0.2) {
       // High confidence inappropriate content - reject
       isBookCover = false;
       rejectionReason = 'Image appears to contain inappropriate content (people, faces, etc.)';
@@ -121,16 +142,12 @@ export async function verifyBookCoverImage(
       // Detected book content with reasonable confidence - accept
       isBookCover = true;
       finalConfidence = maxBookConfidence;
-    } else if (!hasInappropriateContent && !hasBookContent) {
-      // No clear inappropriate content, but also no book content
-      // Could be objects, landscapes, etc. - be lenient for now
-      isBookCover = true;
-      finalConfidence = 0.5;
-      rejectionReason = undefined;
     } else {
-      // Unclear or low confidence - reject to be safe
+      // No book content detected or low confidence - reject
       isBookCover = false;
-      rejectionReason = 'Image does not appear to be a book cover';
+      rejectionReason = hasInappropriateContent
+        ? 'Image appears to contain inappropriate content (people, faces, etc.)'
+        : 'Image does not appear to be a book cover';
       finalConfidence = Math.max(maxBookConfidence, maxInappropriateConfidence);
     }
 

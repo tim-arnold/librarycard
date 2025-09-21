@@ -517,14 +517,23 @@ export default function CoverSelectionModal({
 
         {/* Camera Tab Content */}
         {currentTab === 1 && (
-          <Box sx={{ height: 350 }}>
-            <BookCoverCapture
-              title={title}
-              author={author}
-              onCoverCapture={handleCameraCapture}
-              onCancel={() => setCurrentTab(0)}
-            />
-          </Box>
+          <>
+            {/* Error Display for Camera Tab */}
+            {error && (
+              <Alert severity="warning" sx={{ mb: 2 }}>
+                {error}
+              </Alert>
+            )}
+
+            <Box sx={{ height: 350 }}>
+              <BookCoverCapture
+                title={title}
+                author={author}
+                onCoverCapture={handleCameraCapture}
+                onCancel={() => setCurrentTab(0)}
+              />
+            </Box>
+          </>
         )}
       </DialogContent>
 
