@@ -211,7 +211,7 @@ const VirtualizedBookCard = React.memo<VirtualizedBookCardProps>(({
                   pointerEvents: 'none'
                 }}
               >
-                <Image sx={{ color: 'white', fontSize: 12 }} titleAccess="Edit book cover" aria-label="Edit book cover" alt="" />
+                <Image sx={{ color: 'white', fontSize: 12 }} titleAccess="Edit book cover" aria-label="Edit book cover" {...({ alt: "" } as any)} />
               </Box>
             )}
           </Box>

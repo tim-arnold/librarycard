@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import {
   BottomNavigation,
   BottomNavigationAction,
@@ -34,6 +34,50 @@ export default function MobileBottomNav({
 }: MobileBottomNavProps) {
   const { isMobile } = useMobileBreakpoints()
   const [value, setValue] = useState('search')
+  const [focusedIndex, setFocusedIndex] = useState(0)
+  const actionRefs = useRef<(HTMLButtonElement | null)[]>([])
+
+  const navigationItems = [
+    { value: 'add-books', action: onAddBookClick },
+    { value: 'search', action: onSearchToggle },
+    { value: 'filters', action: onFilterToggle },
+    { value: 'activity', action: onSidebarToggle }
+  ]
+
+  // Enhanced keyboard navigation for mobile bottom navigation
+  const handleKeyDown = useCallback((event: React.KeyboardEvent, index: number) => {
+    switch (event.key) {
+      case 'ArrowLeft':
+        event.preventDefault()
+        const prevIndex = (index - 1 + navigationItems.length) % navigationItems.length
+        setFocusedIndex(prevIndex)
+        actionRefs.current[prevIndex]?.focus()
+        break
+      case 'ArrowRight':
+        event.preventDefault()
+        const nextIndex = (index + 1) % navigationItems.length
+        setFocusedIndex(nextIndex)
+        actionRefs.current[nextIndex]?.focus()
+        break
+      case 'Home':
+        event.preventDefault()
+        setFocusedIndex(0)
+        actionRefs.current[0]?.focus()
+        break
+      case 'End':
+        event.preventDefault()
+        const lastIndex = navigationItems.length - 1
+        setFocusedIndex(lastIndex)
+        actionRefs.current[lastIndex]?.focus()
+        break
+      case 'Enter':
+      case ' ':
+        event.preventDefault()
+        navigationItems[index].action()
+        setValue(navigationItems[index].value)
+        break
+    }
+  }, [navigationItems])
 
   // Only show on mobile devices
   if (!isMobile) return null
@@ -85,6 +129,7 @@ export default function MobileBottomNav({
         showLabels
         role="navigation"
         aria-label="Mobile navigation"
+        aria-describedby="mobile-nav-help"
         sx={{
           height: 64, // Ensure minimum touch target height
           '& .MuiBottomNavigationAction-root': {
@@ -104,6 +149,11 @@ export default function MobileBottomNav({
             },
             '&:active': {
               transform: 'scale(0.95)',
+            },
+            '&:focus': {
+              outline: '2px solid',
+              outlineColor: 'primary.main',
+              outlineOffset: '2px',
             }
           },
           '& .MuiBottomNavigationAction-label': {
@@ -117,14 +167,26 @@ export default function MobileBottomNav({
           label="Add Books"
           value="add-books"
           icon={<Add />}
-          aria-label="Add new books to library"
+          aria-label="Add new books to library. Use left/right arrows to navigate."
+          onKeyDown={(e) => handleKeyDown(e, 0)}
+          ref={(el) => {
+            if (actionRefs.current) {
+              actionRefs.current[0] = el as HTMLButtonElement
+            }
+          }}
         />
 
         <BottomNavigationAction
           label={searchTerm ? 'Searching' : 'Search'}
           value="search"
           icon={<Search color={searchTerm ? 'primary' : 'inherit'} />}
-          aria-label={searchTerm ? `Currently searching for: ${searchTerm}` : 'Search books'}
+          aria-label={searchTerm ? `Currently searching for: ${searchTerm}. Use left/right arrows to navigate.` : 'Search books. Use left/right arrows to navigate.'}
+          onKeyDown={(e) => handleKeyDown(e, 1)}
+          ref={(el) => {
+            if (actionRefs.current) {
+              actionRefs.current[1] = el as HTMLButtonElement
+            }
+          }}
         />
 
         <BottomNavigationAction
@@ -157,16 +219,36 @@ export default function MobileBottomNav({
               )}
             </Box>
           }
-          aria-label={activeFiltersCount > 0 ? `Book filters (${activeFiltersCount} active)` : 'Book filters'}
+          aria-label={activeFiltersCount > 0 ? `Book filters (${activeFiltersCount} active). Use left/right arrows to navigate.` : 'Book filters. Use left/right arrows to navigate.'}
+          onKeyDown={(e) => handleKeyDown(e, 2)}
+          ref={(el) => {
+            if (actionRefs.current) {
+              actionRefs.current[2] = el as HTMLButtonElement
+            }
+          }}
         />
 
         <BottomNavigationAction
           label="Activity"
           value="activity"
           icon={<MenuBook />}
-          aria-label="View library activity and recent books"
+          aria-label="View library activity and recent books. Use left/right arrows to navigate."
+          onKeyDown={(e) => handleKeyDown(e, 3)}
+          ref={(el) => {
+            if (actionRefs.current) {
+              actionRefs.current[3] = el as HTMLButtonElement
+            }
+          }}
         />
       </BottomNavigation>
+
+      {/* Screen reader navigation help */}
+      <Box
+        id="mobile-nav-help"
+        sx={{ position: 'absolute', left: '-9999px' }}
+      >
+        Use left and right arrow keys to navigate between options, Enter or Space to activate
+      </Box>
     </Paper>
   )
 }

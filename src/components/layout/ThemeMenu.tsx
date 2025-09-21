@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import {
   IconButton,
   Menu,
@@ -28,13 +28,22 @@ export default function ThemeMenu() {
   const { isDarkMode, themeVariant, toggleTheme, setThemeVariant } = useTheme()
   const muiTheme = useMuiTheme()
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+  const [focusedVariantIndex, setFocusedVariantIndex] = useState(0)
+  const variantRefs = useRef<(HTMLButtonElement | null)[]>([])
+  const darkModeToggleRef = useRef<HTMLInputElement>(null)
+
+  const variantKeys = Object.keys(themeVariants) as ThemeVariant[]
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget)
+    // Set initial focus to current theme variant
+    const currentIndex = variantKeys.indexOf(themeVariant)
+    setFocusedVariantIndex(currentIndex >= 0 ? currentIndex : 0)
   }
 
   const handleMenuClose = () => {
     setAnchorEl(null)
+    setFocusedVariantIndex(0)
   }
 
   const handleThemeVariantChange = (variant: ThemeVariant) => {
@@ -42,7 +51,84 @@ export default function ThemeMenu() {
     // Keep menu open so user can continue making changes
   }
 
+  // Enhanced keyboard navigation for theme variants
+  const handleVariantKeyDown = useCallback((event: React.KeyboardEvent, index: number) => {
+    switch (event.key) {
+      case 'ArrowRight':
+      case 'ArrowDown':
+        event.preventDefault()
+        const nextIndex = (index + 1) % variantKeys.length
+        setFocusedVariantIndex(nextIndex)
+        variantRefs.current[nextIndex]?.focus()
+        break
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        event.preventDefault()
+        const prevIndex = (index - 1 + variantKeys.length) % variantKeys.length
+        setFocusedVariantIndex(prevIndex)
+        variantRefs.current[prevIndex]?.focus()
+        break
+      case 'Home':
+        event.preventDefault()
+        setFocusedVariantIndex(0)
+        variantRefs.current[0]?.focus()
+        break
+      case 'End':
+        event.preventDefault()
+        const lastIndex = variantKeys.length - 1
+        setFocusedVariantIndex(lastIndex)
+        variantRefs.current[lastIndex]?.focus()
+        break
+      case 'Enter':
+      case ' ':
+        event.preventDefault()
+        handleThemeVariantChange(variantKeys[index])
+        break
+      case 'Escape':
+        event.preventDefault()
+        handleMenuClose()
+        break
+    }
+  }, [variantKeys])
+
+  // Handle dark mode toggle keyboard navigation
+  const handleDarkModeKeyDown = useCallback((event: React.KeyboardEvent) => {
+    switch (event.key) {
+      case 'ArrowDown':
+      case 'Tab':
+        if (!event.shiftKey) {
+          event.preventDefault()
+          // Move focus to first theme variant
+          setFocusedVariantIndex(0)
+          variantRefs.current[0]?.focus()
+        }
+        break
+      case 'Escape':
+        event.preventDefault()
+        handleMenuClose()
+        break
+    }
+  }, [])
+
+  // Handle reverse tab navigation from theme variants back to dark mode toggle
+  const handleFirstVariantShiftTab = useCallback((event: React.KeyboardEvent) => {
+    if (event.key === 'Tab' && event.shiftKey) {
+      event.preventDefault()
+      darkModeToggleRef.current?.focus()
+    }
+  }, [])
+
   const isOpen = Boolean(anchorEl)
+
+  // Auto-focus management when menu opens
+  useEffect(() => {
+    if (isOpen && darkModeToggleRef.current) {
+      // Small delay to ensure menu is rendered
+      setTimeout(() => {
+        darkModeToggleRef.current?.focus()
+      }, 100)
+    }
+  }, [isOpen])
 
   return (
     <>
@@ -93,11 +179,24 @@ export default function ThemeMenu() {
                   checked={isDarkMode}
                   onChange={toggleTheme}
                   size="small"
+                  inputRef={darkModeToggleRef}
+                  onKeyDown={handleDarkModeKeyDown}
+                  inputProps={{
+                    'aria-label': 'Toggle dark mode theme',
+                    'aria-describedby': 'dark-mode-description'
+                  }}
                 />
               }
               label=""
               sx={{ m: 0 }}
             />
+            <Typography
+              id="dark-mode-description"
+              variant="caption"
+              sx={{ position: 'absolute', left: '-9999px' }}
+            >
+              Use arrow keys or tab to navigate to theme colors
+            </Typography>
           </Box>
         </MenuItem>
 
@@ -118,34 +217,60 @@ export default function ThemeMenu() {
               sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}
               role="group"
               aria-label="Theme color variants"
+              aria-describedby="variant-navigation-help"
             >
-              {Object.entries(themeVariants).map(([key, variant]) => (
+              {Object.entries(themeVariants).map(([key, variant], index) => (
                 <Chip
                   key={key}
                   label={variant.name}
                   onClick={() => handleThemeVariantChange(key as ThemeVariant)}
+                  onKeyDown={(e) => {
+                    handleVariantKeyDown(e, index)
+                    // Handle shift+tab for first variant to go back to dark mode toggle
+                    if (index === 0) {
+                      handleFirstVariantShiftTab(e)
+                    }
+                  }}
                   variant={themeVariant === key ? 'filled' : 'outlined'}
                   size="small"
                   role="button"
+                  tabIndex={0}
+                  ref={(el) => {
+                    if (variantRefs.current) {
+                      variantRefs.current[index] = el as unknown as HTMLButtonElement
+                    }
+                  }}
                   aria-pressed={themeVariant === key}
-                  aria-label={`Select ${variant.name} theme color${themeVariant === key ? ' (currently selected)' : ''}`}
+                  aria-label={`Select ${variant.name} theme color${themeVariant === key ? ' (currently selected)' : ''}. Use arrow keys to navigate, Enter to select.`}
                   sx={{
-                    backgroundColor: themeVariant === key 
+                    backgroundColor: themeVariant === key
                       ? variant.primary[isDarkMode ? 300 : 600]
                       : 'transparent',
                     borderColor: variant.primary[isDarkMode ? 300 : 600],
-                    color: themeVariant === key 
+                    color: themeVariant === key
                       ? (isDarkMode ? '#000000' : '#ffffff')
                       : variant.primary[isDarkMode ? 300 : 600],
                     '&:hover': {
                       backgroundColor: variant.primary[isDarkMode ? 400 : 500],
                       color: isDarkMode ? '#000000' : '#ffffff',
                     },
+                    '&:focus': {
+                      outline: '2px solid',
+                      outlineColor: 'primary.main',
+                      outlineOffset: '2px',
+                    },
                     cursor: 'pointer',
                   }}
                 />
               ))}
             </Box>
+            <Typography
+              id="variant-navigation-help"
+              variant="caption"
+              sx={{ position: 'absolute', left: '-9999px' }}
+            >
+              Use arrow keys to navigate between theme colors, Enter or Space to select, Escape to close menu
+            </Typography>
           </Box>
         </MenuItem>
       </Menu>
