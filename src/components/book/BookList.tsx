@@ -378,6 +378,7 @@ export default function BookText({
               onRelocate={onRelocate}
               onRequestRemoval={onRequestRemoval}
               onCancelRemovalRequest={onCancelRemovalRequest}
+              onMoreDetailsClick={onMoreDetailsClick}
             />
           </Box>
         </ListItem>

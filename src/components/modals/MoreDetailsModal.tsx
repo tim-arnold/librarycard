@@ -157,7 +157,24 @@ export default function MoreDetailsModal({
       console.log('✅ Checkin completed, waiting for parent update')
     }
   }, [onCheckin])
-  
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.position = 'fixed'
+      document.body.style.width = '100%'
+    } else {
+      document.body.style.position = ''
+      document.body.style.width = ''
+    }
+
+    // Cleanup on unmount
+    return () => {
+      document.body.style.position = ''
+      document.body.style.width = ''
+    }
+  }, [isOpen])
+
   // Fetch book's location_id immediately when modal opens
   useEffect(() => {
     const fetchBookLocation = async () => {
@@ -425,41 +442,42 @@ export default function MoreDetailsModal({
     onClose()
   }
 
-  // Mobile navigation action handlers
+  // Mobile navigation action handlers - repurposed to match Quick Actions
   const handleLibraryAction = () => {
-    handleClose()
-    // The user will naturally return to the library view when modal closes
+    // Library button becomes "Update Rating"
+    if (onRateBook && localBook) {
+      handleRateBookWithUpdate(localBook)
+    }
   }
 
   const handleEditAction = () => {
-    // This would trigger edit mode - for now, just expand the series section which has edit functionality
-    if (!showSeries) {
-      setShowSeries(true)
+    // Edit button becomes "Edit Genre"
+    if (onGenreEdit && localBook) {
+      handleGenreEditWithUpdate(localBook)
     }
   }
 
   const handleRateAction = () => {
-    // This would trigger rating modal - for now, just expand the reviews section
-    if (!showReviews) {
-      setShowReviews(true)
+    // Rate button becomes "Change Cover"
+    if (onCoverEdit && localBook) {
+      handleCoverEditWithUpdate(localBook)
     }
   }
 
   const handleShareAction = () => {
-    // Share the book details
-    if (navigator.share && book) {
-      navigator.share({
-        title: `${book.title} by ${book.authors.join(', ')}`,
-        text: `Check out "${book.title}" by ${book.authors.join(', ')} in our library!`,
-        url: window.location.href
-      }).catch(console.error)
-    } else if (book) {
-      // Fallback to copy to clipboard
-      const shareText = `Check out "${book.title}" by ${book.authors.join(', ')} in our library!`
-      navigator.clipboard.writeText(shareText).then(() => {
-        // Could show a toast notification here
-        console.log('Book details copied to clipboard')
-      }).catch(console.error)
+    // Share button becomes "Check Out" or "Check In"
+    if (localBook) {
+      if (localBook.checked_out_by) {
+        // Book is checked out - show check in
+        if (onCheckin && (localBook.checked_out_by === currentUserId || userPermissions.includes('can_manage_books'))) {
+          handleCheckinWithUpdate(localBook.id, localBook.title)
+        }
+      } else {
+        // Book is available - show check out
+        if (onCheckout) {
+          handleCheckoutWithUpdate(localBook.id, localBook.title)
+        }
+      }
     }
   }
 
@@ -491,10 +509,10 @@ export default function MoreDetailsModal({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        borderBottom: isMobile ? '1px solid' : 'none',
+        borderBottom: '1px solid',
         borderColor: 'divider',
-        bgcolor: isMobile ? 'background.default' : 'transparent',
-        position: isMobile ? 'sticky' : 'relative',
+        bgcolor: 'background.default',
+        position: 'sticky',
         top: 0,
         zIndex: 1
       }}>
@@ -513,15 +531,13 @@ export default function MoreDetailsModal({
 {localBook.title}
           </Typography>
         </Box>
-        {isMobile && (
-          <IconButton
-            onClick={handleClose}
-            sx={{ ml: 1, flexShrink: 0 }}
-            aria-label="Close"
-          >
-            <Close />
-          </IconButton>
-        )}
+        <IconButton
+          onClick={handleClose}
+          sx={{ ml: 1, flexShrink: 0 }}
+          aria-label="Close"
+        >
+          <Close />
+        </IconButton>
       </DialogTitle>
       <DialogContent>
         <Box sx={{ py: 1 }}>
@@ -532,17 +548,19 @@ export default function MoreDetailsModal({
             gap: 3, 
             mb: 3 
           }}>
-            {/* Cover Image - Shows first on mobile, right on desktop */}
+            {/* Cover Image - Shows first on mobile, left on desktop */}
             {localBook.thumbnail && (
               <Box sx={{
                 flexShrink: 0,
-                order: { xs: 1, sm: 2 },
+                order: { xs: 1, sm: 1 },
                 alignSelf: { xs: 'center', sm: 'flex-start' },
                 position: 'relative'
               }}>
                 <Box
                   sx={{
                     position: 'relative',
+                    width: '120px',
+                    height: '180px',
                     cursor: onCoverEdit && userPermissions.includes('can_add_books') ? 'pointer' : 'default',
                     '&:hover': onCoverEdit && userPermissions.includes('can_add_books') ? {
                       transform: 'scale(1.02)',
@@ -558,13 +576,14 @@ export default function MoreDetailsModal({
                     alt={`Cover of ${localBook.title}`}
                     key={localBook.thumbnail} // Force re-render when thumbnail URL changes
                     style={{
-                      width: '120px',
-                      height: 'auto',
-                      maxHeight: '180px',
+                      width: '100%',
+                      height: '100%',
                       objectFit: 'cover',
+                      objectPosition: 'center',
                       borderRadius: '8px',
                       boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
-                      transition: 'all 0.3s ease-in-out'
+                      transition: 'all 0.3s ease-in-out',
+                      display: 'block'
                     }}
                   />
                   {/* Hover overlay for cover editing */}
@@ -575,8 +594,8 @@ export default function MoreDetailsModal({
                         position: 'absolute',
                         top: 0,
                         left: 0,
-                        right: 0,
-                        bottom: 0,
+                        width: '100%',
+                        height: '100%',
                         backgroundColor: 'rgba(0, 0, 0, 0.6)',
                         borderRadius: '8px',
                         display: 'flex',
@@ -610,10 +629,10 @@ export default function MoreDetailsModal({
               </Box>
             )}
             
-            {/* Main content area - Shows second on mobile, left on desktop */}
-            <Box sx={{ 
+            {/* Main content area - Shows second on mobile, right on desktop */}
+            <Box sx={{
               flex: 1,
-              order: { xs: 2, sm: 1 }
+              order: { xs: 2, sm: 2 }
             }}>
               {/* Basic Description */}
               {localBook.description && (
@@ -768,34 +787,35 @@ export default function MoreDetailsModal({
             </Box>
           </Box>
 
-          {/* Quick Actions Section */}
-          <Box sx={{ mt: 3, mb: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Quick Actions
-            </Typography>
+          {/* Quick Actions Section - Hidden since toolbar is now shown on all screen sizes */}
+          {false && (
+            <Box sx={{ mt: 3, mb: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Quick Actions
+              </Typography>
             <Box sx={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
               gap: 2
             }}>
               {/* Rate Book */}
-              {onRateBook && (
+              {onRateBook && localBook && (
                 <Button
                   variant="outlined"
                   startIcon={<Star />}
-                  onClick={() => handleRateBookWithUpdate(localBook)}
+                  onClick={() => handleRateBookWithUpdate(localBook!)}
                   sx={{ justifyContent: 'flex-start' }}
                 >
-                  {localBook.userRating ? 'Update Rating' : 'Rate Book'}
+                  {localBook?.userRating ? 'Update Rating' : 'Rate Book'}
                 </Button>
               )}
 
               {/* Edit Genre */}
-              {onGenreEdit && (
+              {onGenreEdit && localBook && (
                 <Button
                   variant="outlined"
                   startIcon={<EditOutlined />}
-                  onClick={() => handleGenreEditWithUpdate(localBook)}
+                  onClick={() => handleGenreEditWithUpdate(localBook!)}
                   sx={{ justifyContent: 'flex-start' }}
                 >
                   Edit Genre
@@ -803,11 +823,11 @@ export default function MoreDetailsModal({
               )}
 
               {/* Change Cover */}
-              {onCoverEdit && (
+              {onCoverEdit && localBook && (
                 <Button
                   variant="outlined"
                   startIcon={<Image />}
-                  onClick={() => handleCoverEditWithUpdate(localBook)}
+                  onClick={() => handleCoverEditWithUpdate(localBook!)}
                   sx={{ justifyContent: 'flex-start' }}
                 >
                   Change Cover
@@ -815,12 +835,12 @@ export default function MoreDetailsModal({
               )}
 
               {/* Checkout/Checkin */}
-              {localBook.checked_out_by ? (
-                onCheckin && (localBook.checked_out_by === currentUserId || userPermissions.includes('can_manage_books')) ? (
+              {localBook && (localBook!.checked_out_by ? (
+                onCheckin && (localBook!.checked_out_by === currentUserId || userPermissions.includes('can_manage_books')) ? (
                   <Button
                     variant="outlined"
                     startIcon={<Undo />}
-                    onClick={() => handleCheckinWithUpdate(localBook.id, localBook.title)}
+                    onClick={() => handleCheckinWithUpdate(localBook!.id, localBook!.title)}
                     color="success"
                     sx={{ justifyContent: 'flex-start' }}
                   >
@@ -832,16 +852,17 @@ export default function MoreDetailsModal({
                   <Button
                     variant="outlined"
                     startIcon={<CheckCircle />}
-                    onClick={() => handleCheckoutWithUpdate(localBook.id, localBook.title)}
+                    onClick={() => handleCheckoutWithUpdate(localBook!.id, localBook!.title)}
                     color="primary"
                     sx={{ justifyContent: 'flex-start' }}
                   >
                     Check Out
                   </Button>
                 )
-              )}
+              ))}
             </Box>
           </Box>
+          )}
 
           {/* Management Actions Section */}
           {(onRelocate || onDelete) && (
@@ -866,16 +887,26 @@ export default function MoreDetailsModal({
                   </Button>
                 )}
 
-                {/* Delete */}
-                {onDelete && userPermissions.includes('can_manage_books') && (
+                {/* Remove */}
+                {onDelete && (isAdmin(userRole) || userPermissions.includes('can_delete_books')) && (
                   <Button
                     variant="outlined"
                     startIcon={<Delete />}
-                    onClick={() => onDelete(localBook.id, localBook.title)}
+                    onClick={async () => {
+                      try {
+                        // Wait for the delete function to complete (including confirmation)
+                        await onDelete(localBook.id, localBook.title)
+                        // Only close modal if deletion was actually completed
+                        onClose()
+                      } catch (error) {
+                        // If user cancelled or deletion failed, keep modal open
+                        console.log('Deletion cancelled or failed')
+                      }
+                    }}
                     color="error"
                     sx={{ justifyContent: 'flex-start' }}
                   >
-                    Delete Book
+                    Remove
                   </Button>
                 )}
               </Box>
@@ -1495,17 +1526,18 @@ export default function MoreDetailsModal({
         </Box>
       </DialogContent>
       <DialogActions sx={{
-        flexDirection: { xs: 'column', sm: 'row' },
+        flexDirection: 'column',
         gap: 1,
-        p: isMobile ? 2 : 2,
-        bgcolor: isMobile ? 'background.default' : 'transparent',
-        borderTop: isMobile ? '1px solid' : 'none',
+        p: 2,
+        bgcolor: 'background.default',
+        borderTop: '1px solid',
         borderColor: 'divider',
-        position: isMobile ? 'sticky' : 'relative',
+        position: 'sticky',
         bottom: 0,
         zIndex: 1
       }}>
-        {isMobile && (
+        {/* Action Toolbar - now shown on all screen sizes */}
+        {(
           <Box sx={{
             display: 'grid',
             gridTemplateColumns: 'repeat(4, 1fr)',
@@ -1516,44 +1548,8 @@ export default function MoreDetailsModal({
             <Button
               variant="outlined"
               size="small"
-              startIcon={<LibraryBooks />}
-              onClick={handleLibraryAction}
-              sx={{
-                minWidth: 0,
-                flexDirection: 'column',
-                gap: 0.5,
-                py: 1.5,
-                borderRadius: 2,
-                '&:active': {
-                  transform: 'scale(0.95)',
-                }
-              }}
-            >
-              Library
-            </Button>
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<Edit />}
-              onClick={handleEditAction}
-              sx={{
-                minWidth: 0,
-                flexDirection: 'column',
-                gap: 0.5,
-                py: 1.5,
-                borderRadius: 2,
-                '&:active': {
-                  transform: 'scale(0.95)',
-                }
-              }}
-            >
-              Edit
-            </Button>
-            <Button
-              variant="outlined"
-              size="small"
               startIcon={<Star />}
-              onClick={handleRateAction}
+              onClick={handleLibraryAction}
               sx={{
                 minWidth: 0,
                 flexDirection: 'column',
@@ -1570,7 +1566,43 @@ export default function MoreDetailsModal({
             <Button
               variant="outlined"
               size="small"
-              startIcon={<Share />}
+              startIcon={<EditOutlined />}
+              onClick={handleEditAction}
+              sx={{
+                minWidth: 0,
+                flexDirection: 'column',
+                gap: 0.5,
+                py: 1.5,
+                borderRadius: 2,
+                '&:active': {
+                  transform: 'scale(0.95)',
+                }
+              }}
+            >
+              Genre
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<Image />}
+              onClick={handleRateAction}
+              sx={{
+                minWidth: 0,
+                flexDirection: 'column',
+                gap: 0.5,
+                py: 1.5,
+                borderRadius: 2,
+                '&:active': {
+                  transform: 'scale(0.95)',
+                }
+              }}
+            >
+              Cover
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={localBook?.checked_out_by ? <Undo /> : <CheckCircle />}
               onClick={handleShareAction}
               sx={{
                 minWidth: 0,
@@ -1583,17 +1615,9 @@ export default function MoreDetailsModal({
                 }
               }}
             >
-              Share
+              {localBook?.checked_out_by ? 'Check In' : 'Check Out'}
             </Button>
           </Box>
-        )}
-        {!isMobile && (
-          <Button
-            onClick={handleClose}
-            variant="outlined"
-          >
-            Close
-          </Button>
         )}
       </DialogActions>
 

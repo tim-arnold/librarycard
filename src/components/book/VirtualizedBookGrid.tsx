@@ -423,6 +423,7 @@ const VirtualizedBookCard = React.memo<VirtualizedBookCardProps>(({
           onRelocate={onRelocate}
           onRequestRemoval={onRequestRemoval}
           onCancelRemovalRequest={onCancelRemovalRequest}
+          onMoreDetailsClick={onMoreDetailsClick}
         />
       </CardActions>
     </Card>

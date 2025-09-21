@@ -13,11 +13,11 @@ import {
 import {
   MoreVert,
   SwapHoriz,
-  Delete,
   ReportProblem,
   Cancel,
   CheckCircle,
   Undo,
+  Info,
 } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
 
@@ -41,9 +41,9 @@ interface SecondaryActionsMenuProps {
   onCheckout?: (bookId: string, bookTitle: string) => Promise<void>
   onCheckin?: (bookId: string, bookTitle: string) => Promise<void>
   onRelocate: (book: EnhancedBook) => void
-  onDelete: (bookId: string, bookTitle: string) => Promise<void>
   onRequestRemoval: (bookId: string, bookTitle: string) => Promise<void>
   onCancelRemovalRequest: (bookId: string, bookTitle: string) => Promise<void>
+  onMoreDetailsClick: (book: EnhancedBook) => void
 }
 
 export default function SecondaryActionsMenu({
@@ -60,9 +60,9 @@ export default function SecondaryActionsMenu({
   onCheckout,
   onCheckin,
   onRelocate,
-  onDelete,
   onRequestRemoval,
   onCancelRemovalRequest,
+  onMoreDetailsClick,
 }: SecondaryActionsMenuProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const open = Boolean(anchorEl)
@@ -165,6 +165,15 @@ export default function SecondaryActionsMenu({
         )}
 
         {/* Secondary actions */}
+        <MenuItem
+          onClick={() => handleAction(() => onMoreDetailsClick(book))}
+        >
+          <ListItemIcon>
+            <Info fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>View/edit details</ListItemText>
+        </MenuItem>
+
         {showRelocate && (
           <MenuItem 
             onClick={() => handleAction(() => onRelocate(book))}
@@ -179,22 +188,10 @@ export default function SecondaryActionsMenu({
             </ListItemText>
           </MenuItem>
         )}
-        
-        {canDelete && (
-          <MenuItem 
-            onClick={() => handleAction(() => onDelete(book.id, book.title))}
-            sx={{ color: 'error.main' }}
-          >
-            <ListItemIcon>
-              <Delete fontSize="small" color="error" />
-            </ListItemIcon>
-            <ListItemText>Remove</ListItemText>
-          </MenuItem>
-        )}
-        
+
         {/* Notify librarian / removal request actions */}
         {!hasPendingRemovalRequest ? (
-          <MenuItem 
+          <MenuItem
             onClick={() => handleAction(() => onRequestRemoval(book.id, book.title))}
             sx={{ color: 'warning.main' }}
           >
@@ -204,7 +201,7 @@ export default function SecondaryActionsMenu({
             <ListItemText>Notify Librarian</ListItemText>
           </MenuItem>
         ) : (
-          <MenuItem 
+          <MenuItem
             onClick={() => handleAction(() => onCancelRemovalRequest(book.id, book.title))}
             sx={{ color: 'info.main' }}
           >

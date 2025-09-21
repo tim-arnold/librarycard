@@ -79,37 +79,33 @@ export function useBookActions({
   // Animation states
   const [animatingCovers, setAnimatingCovers] = useState<Set<string>>(new Set())
 
-  const deleteBook = async (bookId: string, bookTitle: string) => {
-    const confirmed = await confirmAsync(
-      {
-        title: 'Remove Book',
-        message: `Are you sure you want to remove "${bookTitle}" from your library? This action cannot be undone.`,
-        confirmText: 'Remove Book',
-        variant: 'error'
-      },
-      async () => {
-        const success = await deleteBookAPI(bookId)
-        if (success) {
-          const updatedBooks = books.filter(book => book.id !== bookId)
-          setBooks(updatedBooks)
-          await alert({
-            title: 'Book Removed',
-            message: `"${bookTitle}" has been successfully removed from your library.`,
-            variant: 'success'
-          })
-        } else {
-          throw new Error('Failed to remove book')
+  const deleteBook = async (bookId: string, bookTitle: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      confirmAsync(
+        {
+          title: 'Remove Book',
+          message: `Are you sure you want to remove "${bookTitle}" from your library? This action cannot be undone.`,
+          confirmText: 'Remove Book',
+          variant: 'error'
+        },
+        async () => {
+          const success = await deleteBookAPI(bookId)
+          if (success) {
+            const updatedBooks = books.filter(book => book.id !== bookId)
+            setBooks(updatedBooks)
+            // Don't show success dialog when called from modal - let modal handle closing
+            resolve()
+          } else {
+            reject(new Error('Failed to remove book'))
+          }
         }
-      }
-    )
-
-    if (!confirmed) {
-      await alert({
-        title: 'Remove Failed',
-        message: 'Failed to remove the book. Please try again.',
-        variant: 'error'
-      })
-    }
+      ).then((confirmed) => {
+        if (!confirmed) {
+          // User cancelled - reject the promise so modal knows not to close
+          reject(new Error('User cancelled deletion'))
+        }
+      }).catch(reject)
+    })
   }
 
   const cancelRemovalRequest = async (bookId: string, bookTitle: string) => {
