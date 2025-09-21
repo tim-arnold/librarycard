@@ -96,7 +96,7 @@ export default function AddBooksMobileBottomNav({
         />
 
         <BottomNavigationAction
-          label="Text"
+          label="Type"
           value="manual"
           icon={<Search color={activeTab === 0 ? 'primary' : 'inherit'} />}
         />
