@@ -1,4 +1,5 @@
 import { Env } from './types';
+import { getWorkerFrontendUrl } from './utils/domainConfig';
 
 export function getEnvironment(env: Env): string {
   return env.ENVIRONMENT || 'production';
@@ -30,11 +31,11 @@ export function requireConfirmationForDestructiveAction(env: Env, action: string
 
 export function logEnvironmentInfo(env: Env): void {
   const environment = getEnvironment(env);
-  const appUrl = env.APP_URL || 'unknown';
-  
+  const appUrl = getWorkerFrontendUrl(env);
+
   console.log(`🌍 Environment: ${environment}`);
   console.log(`🔗 App URL: ${appUrl}`);
-  
+
   if (isDevelopmentEnvironment(env)) {
     console.log(`🛠️  Development mode: Enhanced logging and safeguards enabled`);
   }

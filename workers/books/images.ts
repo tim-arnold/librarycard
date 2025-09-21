@@ -1,4 +1,5 @@
 import { Env } from '../types';
+import { getWorkerFrontendUrl, detectWorkerEnvironment } from '../utils/domainConfig';
 
 /**
  * Image Storage and Management for Book Covers
@@ -169,8 +170,10 @@ export async function uploadBookCoverImage(
       // Staging uses Cloudflare public URL
       imageUrl = `https://pub-d1960ed90aca4c518d42d3f1cdeafac2.r2.dev/${key}`;
     } else {
-      // Production - configure custom domain when ready
-      imageUrl = `https://images.librarycard.tim52.io/${key}`;
+      // Production - use images subdomain based on current domain
+      const frontendUrl = getWorkerFrontendUrl(env);
+      const domain = new URL(frontendUrl).hostname;
+      imageUrl = `https://images.${domain}/${key}`;
     }
 
     // If bookId is provided, save image reference to database

@@ -1,19 +1,32 @@
 // Centralized API configuration
 // This ensures consistent API URL handling across all routes
+//
+// LCWEB-184: Enhanced with centralized domain configuration
+
+import { getApiBaseUrl as getDomainApiBaseUrl, validateDomainConfig } from './domainConfig'
 
 export const getApiBaseUrl = (): string => {
-  // In production, require the environment variable to be set
-  if (process.env.NODE_ENV === 'production') {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL
-    if (!apiUrl) {
-      throw new Error('NEXT_PUBLIC_API_URL environment variable is required in production')
-    }
-    return apiUrl
-  }
-  
-  // In development, fallback to localhost if not set
-  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8787'
+  // Use centralized domain configuration
+  return getDomainApiBaseUrl()
 }
 
 // Export function wrapper to avoid build-time evaluation issues
 export const API_BASE_URL = () => getApiBaseUrl()
+
+// Legacy compatibility export
+export { getApiBaseUrl as getDomainApiBaseUrl } from './domainConfig'
+
+/**
+ * Validate API configuration for debugging
+ * Usage: console.log(validateApiConfig())
+ */
+export const validateApiConfig = () => {
+  const validation = validateDomainConfig()
+  return {
+    ...validation,
+    apiUrl: getApiBaseUrl(),
+    message: validation.isValid
+      ? 'API configuration is valid'
+      : `API configuration issues: ${validation.warnings.join(', ')}`
+  }
+}

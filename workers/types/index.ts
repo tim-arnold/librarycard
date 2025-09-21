@@ -15,6 +15,10 @@ export interface Env {
   FROM_EMAIL: string;
   APP_URL: string;
   ENVIRONMENT?: string;
+  // LCWEB-184: Centralized Domain Configuration
+  DOMAIN?: string;
+  EMAIL_DOMAIN?: string;
+  API_SUBDOMAIN?: string;
   RESEND_API_KEY?: string;
   POSTMARK_API_TOKEN?: string;
   FRONTEND_URL?: string;
