@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -24,7 +24,7 @@ import {
   InputLabel,
   IconButton,
 } from '@mui/material'
-import { ExpandMore, History, Email, Star, MenuBook, CollectionsBookmark, Add, Close, LibraryBooks, Edit, Share } from '@mui/icons-material'
+import { ExpandMore, History, Email, Star, MenuBook, CollectionsBookmark, Add, Close, LibraryBooks, Edit, Share, Image, EditOutlined, SwapHoriz, Delete, CheckCircle, Undo } from '@mui/icons-material'
 import type { EnhancedBook, BookRating, Series } from '@/lib/types'
 import { isAdmin, canManageSeriesBooks } from '@/lib/permissions'
 import { useSession } from 'next-auth/react'
@@ -53,11 +53,43 @@ interface MoreDetailsModalProps {
   userRole: string | null
   userPermissions: string[]
   onBookUpdate?: (bookId: string, updatedBookData: Partial<EnhancedBook>) => void
+  // Action handlers
+  onRateBook?: (book: EnhancedBook) => void
+  onGenreEdit?: (book: EnhancedBook) => void
+  onCoverEdit?: (book: EnhancedBook) => void
+  onRelocate?: (book: EnhancedBook) => void
+  onDelete?: (bookId: string, bookTitle: string) => Promise<void>
+  onCheckout?: (bookId: string, bookTitle: string) => Promise<void>
+  onCheckin?: (bookId: string, bookTitle: string) => Promise<void>
+  // Additional data needed for actions
+  shelves?: Array<{ id: number; name: string; location_id: number; created_at: string }>
+  currentUserId?: string | null
+  pendingRemovalRequests?: Record<string, number>
 }
 
-export default function MoreDetailsModal({ book, isOpen, onClose, userRole, userPermissions, onBookUpdate }: MoreDetailsModalProps) {
+export default function MoreDetailsModal({
+  book,
+  isOpen,
+  onClose,
+  userRole,
+  userPermissions,
+  onBookUpdate,
+  onRateBook,
+  onGenreEdit,
+  onCoverEdit,
+  onRelocate,
+  onDelete,
+  onCheckout,
+  onCheckin,
+  shelves,
+  currentUserId,
+  pendingRemovalRequests
+}: MoreDetailsModalProps) {
   const { data: session } = useSession()
   const { isMobile } = useMobileBreakpoints()
+
+  // Local state for real-time updates
+  const [localBook, setLocalBook] = useState<EnhancedBook | null>(book)
   const [checkoutHistory, setCheckoutHistory] = useState<CheckoutHistoryItem[]>([])
   const [showCheckoutHistory, setShowCheckoutHistory] = useState(false)
   const [loadingHistory, setLoadingHistory] = useState(false)
@@ -71,7 +103,7 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole, user
   const dialogRef = useRef<HTMLDivElement>(null)
   const [startY, setStartY] = useState<number | null>(null)
   const [isDragging, setIsDragging] = useState(false)
-  
+
   // Series management state
   const { series, addBooksToSeries, removeBookFromSeries, createSeries, refreshSeries } = useSeries(bookLocationId)
   const [showSeries, setShowSeries] = useState(false)
@@ -81,6 +113,49 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole, user
   const [currentSeries, setCurrentSeries] = useState<Series[]>(book?.current_series || [])
   // Track if series have been modified for parent update on close
   const [seriesModified, setSeriesModified] = useState(false)
+
+  // Enhanced action handlers that update local state for real-time feedback
+  const handleRateBookWithUpdate = useCallback((book: EnhancedBook) => {
+    console.log('🌟 Rating book:', book.id, book.title)
+    if (onRateBook) {
+      onRateBook(book)
+      // Note: The actual rating update will come through the parent onBookUpdate callback
+    }
+  }, [onRateBook])
+
+  const handleGenreEditWithUpdate = useCallback((book: EnhancedBook) => {
+    console.log('🏷️ Editing genre for book:', book.id, book.title)
+    if (onGenreEdit) {
+      onGenreEdit(book)
+      // Note: The actual genre update will come through the parent onBookUpdate callback
+    }
+  }, [onGenreEdit])
+
+  const handleCoverEditWithUpdate = useCallback((book: EnhancedBook) => {
+    console.log('🖼️ Editing cover for book:', book.id, book.title)
+    if (onCoverEdit) {
+      onCoverEdit(book)
+      // Note: The actual cover update will come through the parent onBookUpdate callback
+    }
+  }, [onCoverEdit])
+
+  const handleCheckoutWithUpdate = useCallback(async (bookId: string, bookTitle: string) => {
+    console.log('📚 Checking out book:', bookId, bookTitle)
+    if (onCheckout) {
+      await onCheckout(bookId, bookTitle)
+      // The parent should handle updating the book state, which will sync back to localBook
+      console.log('✅ Checkout completed, waiting for parent update')
+    }
+  }, [onCheckout])
+
+  const handleCheckinWithUpdate = useCallback(async (bookId: string, bookTitle: string) => {
+    console.log('🔄 Checking in book:', bookId, bookTitle)
+    if (onCheckin) {
+      await onCheckin(bookId, bookTitle)
+      // The parent should handle updating the book state, which will sync back to localBook
+      console.log('✅ Checkin completed, waiting for parent update')
+    }
+  }, [onCheckin])
   
   // Fetch book's location_id immediately when modal opens
   useEffect(() => {
@@ -119,6 +194,14 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole, user
     return hasAddBooksPermission || userOwnsBook || userOwnsSeries
   }
 
+  // Initialize local book state when book prop changes
+  useEffect(() => {
+    if (book?.id) {
+      console.log('📖 Initializing localBook with:', book.id, book.title)
+      setLocalBook(book)
+    }
+  }, [book?.id])
+
   // Clear state when book changes to prevent cross-contamination of reviews
   useEffect(() => {
     if (book?.id) {
@@ -136,6 +219,18 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole, user
   useEffect(() => {
     setCurrentSeries(book?.current_series || [])
   }, [book?.current_series])
+
+  // Handle real-time updates from parent - sync localBook with book prop changes
+  useEffect(() => {
+    if (book?.id) {
+      console.log('🔄 Syncing localBook with book prop changes:', book.id, {
+        oldThumbnail: localBook?.thumbnail,
+        newThumbnail: book.thumbnail,
+        changed: localBook?.thumbnail !== book.thumbnail
+      })
+      setLocalBook(book)
+    }
+  }, [book, localBook?.thumbnail])
 
   // Mobile swipe gesture handlers
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -180,14 +275,27 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole, user
     setIsDragging(false)
   }
 
-  if (!book) return null
+  if (!book || !localBook) return null
   
   // Debug: Log current_series data after any changes
-  console.log('MoreDetailsModal render - book data:', { 
-    id: book.id, 
-    title: book.title, 
+  console.log('MoreDetailsModal render - book data:', {
+    id: book.id,
+    title: book.title,
     current_series: book.current_series,
-    series: book.series 
+    series: book.series,
+    userRating: book.userRating,
+    assignedGenres: book.assignedGenres,
+    checked_out_by: book.checked_out_by,
+    thumbnail: book.thumbnail
+  })
+
+  console.log('MoreDetailsModal render - localBook data:', {
+    id: localBook?.id,
+    title: localBook?.title,
+    userRating: localBook?.userRating,
+    assignedGenres: localBook?.assignedGenres,
+    checked_out_by: localBook?.checked_out_by,
+    thumbnail: localBook?.thumbnail
   })
 
   const fetchCheckoutHistory = async () => {
@@ -401,7 +509,7 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole, user
               fontSize: isMobile ? '1.1rem' : '1.25rem'
             }}
           >
-            {book.title}
+{localBook.title}
           </Typography>
         </Box>
         {isMobile && (
@@ -424,25 +532,80 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole, user
             mb: 3 
           }}>
             {/* Cover Image - Shows first on mobile, right on desktop */}
-            {book.thumbnail && (
-              <Box sx={{ 
+            {localBook.thumbnail && (
+              <Box sx={{
                 flexShrink: 0,
                 order: { xs: 1, sm: 2 },
-                alignSelf: { xs: 'center', sm: 'flex-start' }
+                alignSelf: { xs: 'center', sm: 'flex-start' },
+                position: 'relative'
               }}>
-                <img
-                  src={book.thumbnail}
-                  alt={`Cover of ${book.title}`}
-                  style={{
-                    width: '120px',
-                    height: 'auto',
-                    maxHeight: '180px',
-                    objectFit: 'cover',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                <Box
+                  sx={{
+                    position: 'relative',
+                    cursor: onCoverEdit && userPermissions.includes('can_add_books') ? 'pointer' : 'default',
+                    '&:hover': onCoverEdit && userPermissions.includes('can_add_books') ? {
+                      transform: 'scale(1.02)',
+                      '& .cover-overlay': {
+                        opacity: 1
+                      }
+                    } : {}
                   }}
+                  onClick={onCoverEdit && userPermissions.includes('can_add_books') ? () => handleCoverEditWithUpdate(localBook) : undefined}
+                >
+                  <img
+                    src={localBook.thumbnail}
+                    alt={`Cover of ${localBook.title}`}
+                    key={localBook.thumbnail} // Force re-render when thumbnail URL changes
+                    style={{
+                      width: '120px',
+                      height: 'auto',
+                      maxHeight: '180px',
+                      objectFit: 'cover',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+                      transition: 'all 0.3s ease-in-out'
+                    }}
+                  />
+                  {/* Hover overlay for cover editing */}
+                  {onCoverEdit && userPermissions.includes('can_add_books') && (
+                    <Box
+                      className="cover-overlay"
+                      sx={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        opacity: 0,
+                        transition: 'opacity 0.3s ease-in-out',
+                        pointerEvents: 'none'
+                      }}
+                    >
+                      <Box sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: 0.5,
+                        color: 'white'
+                      }}>
+                        <Image sx={{ fontSize: 24 }} />
+                        <Typography variant="caption" sx={{ fontSize: '0.7rem', textAlign: 'center' }}>
+                          Change Cover
+                        </Typography>
+                      </Box>
+                    </Box>
+                  )}
+                </Box>
+                <CoverAttribution
+                  coverUrl={localBook.thumbnail}
+                  variant="small"
+                  key={`attribution-${localBook.thumbnail}`}
                 />
-                <CoverAttribution coverUrl={book.thumbnail} variant="small" />
               </Box>
             )}
             
@@ -452,30 +615,262 @@ export default function MoreDetailsModal({ book, isOpen, onClose, userRole, user
               order: { xs: 2, sm: 1 }
             }}>
               {/* Basic Description */}
-              {book.description && (
+              {localBook.description && (
                 <Box sx={{ mb: 3 }}>
                   <Typography variant="h6" gutterBottom>
                     Description
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {book.description}
+                    {localBook.description}
                   </Typography>
                 </Box>
               )}
-              
-              {book.extendedDescription && (
+
+              {localBook.extendedDescription && (
                 <Box sx={{ mb: 3 }}>
                   <Typography variant="h6" gutterBottom>
                     Extended Description
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {book.extendedDescription}
+                    {localBook.extendedDescription}
                   </Typography>
                 </Box>
               )}
             </Box>
           </Box>
-          
+
+          {/* Current Book Information Section */}
+          <Box sx={{ mt: 3, mb: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Current Information
+            </Typography>
+            <Box sx={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: 2,
+              p: 2,
+              bgcolor: 'action.hover',
+              borderRadius: 1
+            }}>
+              {/* Current Rating */}
+              <Box>
+                <Typography variant="subtitle2" color="primary" gutterBottom>
+                  Your Rating
+                </Typography>
+                {localBook.userRating ? (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box sx={{ display: 'flex' }}>
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          sx={{
+                            fontSize: 16,
+                            color: star <= (localBook.userRating || 0) ? 'warning.main' : 'action.disabled'
+                          }}
+                        />
+                      ))}
+                    </Box>
+                    <Typography variant="body2" color="text.secondary">
+                      ({localBook.userRating}/5)
+                    </Typography>
+                  </Box>
+                ) : (
+                  <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                    Not rated yet
+                  </Typography>
+                )}
+                {localBook.userReview && (
+                  <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic' }}>
+                    "{localBook.userReview}"
+                  </Typography>
+                )}
+              </Box>
+
+              {/* Current Genre */}
+              <Box>
+                <Typography variant="subtitle2" color="primary" gutterBottom>
+                  Assigned Genre
+                </Typography>
+                {localBook.assignedGenres && localBook.assignedGenres.length > 0 ? (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                    {localBook.assignedGenres.map((genre, index) => (
+                      <Chip
+                        key={index}
+                        label={genre.name}
+                        size="small"
+                        color="success"
+                        variant="filled"
+                      />
+                    ))}
+                  </Box>
+                ) : (
+                  <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                    No genre assigned
+                  </Typography>
+                )}
+              </Box>
+
+              {/* Book Status */}
+              <Box>
+                <Typography variant="subtitle2" color="primary" gutterBottom>
+                  Status
+                </Typography>
+                {localBook.checked_out_by ? (
+                  <Chip
+                    label={localBook.checked_out_by === currentUserId ? "Checked out by you" : "Checked out"}
+                    color="warning"
+                    size="small"
+                  />
+                ) : (
+                  <Chip
+                    label="Available"
+                    color="success"
+                    size="small"
+                  />
+                )}
+              </Box>
+
+              {/* Average Rating */}
+              {localBook.averageRating && (localBook.ratingCount || 0) > 0 && (
+                <Box>
+                  <Typography variant="subtitle2" color="primary" gutterBottom>
+                    Community Rating
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box sx={{ display: 'flex' }}>
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          sx={{
+                            fontSize: 16,
+                            color: star <= Math.round(localBook.averageRating || 0) ? 'warning.main' : 'action.disabled'
+                          }}
+                        />
+                      ))}
+                    </Box>
+                    <Typography variant="body2" color="text.secondary">
+                      {(localBook.averageRating || 0).toFixed(1)}/5 ({localBook.ratingCount || 0} {(localBook.ratingCount || 0) === 1 ? 'rating' : 'ratings'})
+                    </Typography>
+                  </Box>
+                </Box>
+              )}
+            </Box>
+          </Box>
+
+          {/* Quick Actions Section */}
+          <Box sx={{ mt: 3, mb: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Quick Actions
+            </Typography>
+            <Box sx={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+              gap: 2
+            }}>
+              {/* Rate Book */}
+              {onRateBook && (
+                <Button
+                  variant="outlined"
+                  startIcon={<Star />}
+                  onClick={() => handleRateBookWithUpdate(localBook)}
+                  sx={{ justifyContent: 'flex-start' }}
+                >
+                  {localBook.userRating ? 'Update Rating' : 'Rate Book'}
+                </Button>
+              )}
+
+              {/* Edit Genre */}
+              {onGenreEdit && (
+                <Button
+                  variant="outlined"
+                  startIcon={<EditOutlined />}
+                  onClick={() => handleGenreEditWithUpdate(localBook)}
+                  sx={{ justifyContent: 'flex-start' }}
+                >
+                  Edit Genre
+                </Button>
+              )}
+
+              {/* Change Cover */}
+              {onCoverEdit && (
+                <Button
+                  variant="outlined"
+                  startIcon={<Image />}
+                  onClick={() => handleCoverEditWithUpdate(localBook)}
+                  sx={{ justifyContent: 'flex-start' }}
+                >
+                  Change Cover
+                </Button>
+              )}
+
+              {/* Checkout/Checkin */}
+              {localBook.checked_out_by ? (
+                onCheckin && (localBook.checked_out_by === currentUserId || userPermissions.includes('can_manage_books')) ? (
+                  <Button
+                    variant="outlined"
+                    startIcon={<Undo />}
+                    onClick={() => handleCheckinWithUpdate(localBook.id, localBook.title)}
+                    color="success"
+                    sx={{ justifyContent: 'flex-start' }}
+                  >
+                    Check In
+                  </Button>
+                ) : null
+              ) : (
+                onCheckout && (
+                  <Button
+                    variant="outlined"
+                    startIcon={<CheckCircle />}
+                    onClick={() => handleCheckoutWithUpdate(localBook.id, localBook.title)}
+                    color="primary"
+                    sx={{ justifyContent: 'flex-start' }}
+                  >
+                    Check Out
+                  </Button>
+                )
+              )}
+            </Box>
+          </Box>
+
+          {/* Management Actions Section */}
+          {(onRelocate || onDelete) && (
+            <Box sx={{ mt: 3, mb: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Management
+              </Typography>
+              <Box sx={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                gap: 2
+              }}>
+                {/* Relocate */}
+                {onRelocate && (
+                  <Button
+                    variant="outlined"
+                    startIcon={<SwapHoriz />}
+                    onClick={() => onRelocate(localBook)}
+                    sx={{ justifyContent: 'flex-start' }}
+                  >
+                    Relocate
+                  </Button>
+                )}
+
+                {/* Delete */}
+                {onDelete && userPermissions.includes('can_manage_books') && (
+                  <Button
+                    variant="outlined"
+                    startIcon={<Delete />}
+                    onClick={() => onDelete(localBook.id, localBook.title)}
+                    color="error"
+                    sx={{ justifyContent: 'flex-start' }}
+                  >
+                    Delete Book
+                  </Button>
+                )}
+              </Box>
+            </Box>
+          )}
+
           {/* Series Management Section */}
           <Box sx={{ mt: 3 }}>
             <Accordion expanded={showSeries} onChange={handleToggleSeries}>

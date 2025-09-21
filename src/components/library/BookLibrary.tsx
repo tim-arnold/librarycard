@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { Alert, Typography, Box, CircularProgress, Fab, Drawer } from '@mui/material'
 import { LibraryBooks, MenuBook } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
@@ -98,8 +98,8 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
     cancelRemovalRequest,
     requestBookRemoval,
     updateBookShelf,
-    checkoutBook,
-    checkinBook,
+    checkoutBook: originalCheckoutBook,
+    checkinBook: originalCheckinBook,
     handleRatingSubmit,
     handleGenreUpdate,
     handleCoverSelect,
@@ -120,6 +120,15 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
     confirmAsync,
     alert
   })
+
+  // Enhanced checkout/checkin handlers that update the modal
+  const checkoutBook = useCallback(async (bookId: string, bookTitle: string) => {
+    await originalCheckoutBook(bookId, bookTitle)
+  }, [originalCheckoutBook])
+
+  const checkinBook = useCallback(async (bookId: string, bookTitle: string) => {
+    await originalCheckinBook(bookId, bookTitle)
+  }, [originalCheckinBook])
 
   // Filtering and display logic
   const {
@@ -178,6 +187,17 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
 
   // Lock scroll when any mobile panel is open
   useScrollLock(mobileSidebarOpen || mobileFiltersOpen || mobileSearchOpen)
+
+  // Sync selectedBookForDetails when books array changes
+  useEffect(() => {
+    if (selectedBookForDetails?.id) {
+      const updatedBook = books.find(b => b.id === selectedBookForDetails.id)
+      if (updatedBook && updatedBook !== selectedBookForDetails) {
+        console.log('🔄 Syncing selectedBookForDetails with updated book data:', updatedBook.id)
+        setSelectedBookForDetails(updatedBook)
+      }
+    }
+  }, [books, selectedBookForDetails])
 
 
   // Calculate active filters count for mobile bottom nav
@@ -572,9 +592,6 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
             onMoreDetailsClick={handleMoreDetailsClick}
             onAuthorClick={handleAuthorClick}
             onSeriesClick={handleSeriesClick}
-            onRateBook={handleRateBook}
-            onGenreEdit={userPermissions.includes('can_edit_genres') ? handleGenreEdit : undefined}
-            onCoverEdit={userPermissions.includes('can_add_books') ? handleCoverEdit : undefined}
             animatingCovers={animatingCovers}
             onCoverAnimationComplete={handleCoverAnimationComplete}
             onPageChange={handlePageChange}
@@ -711,24 +728,36 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
           userPermissions={userPermissions}
           onBookUpdate={(bookId: string, updatedBookData: Partial<EnhancedBook>) => {
             console.log('📞 onBookUpdate called with targeted update for book:', bookId, updatedBookData)
-            
+
             // Update the main books array so the card in the library view gets updated
-            const updatedBooks = books.map(book => 
-              book.id === bookId 
+            const updatedBooks = books.map(book =>
+              book.id === bookId
                 ? { ...book, ...updatedBookData }
                 : book
             )
             setBooks(updatedBooks)
             console.log('🔄 Updated main books array with fresh series data')
-            
+
             // Also update the selectedBookForDetails if it matches
             if (selectedBookForDetails?.id === bookId) {
               console.log('🔄 Updating selectedBookForDetails with fresh data')
               setSelectedBookForDetails({ ...selectedBookForDetails, ...updatedBookData })
             }
-            
+
             console.log('✅ Book updated successfully in both main library and modal')
           }}
+          // Action handlers for consolidated modal actions
+          onRateBook={handleRateBook}
+          onGenreEdit={userPermissions.includes('can_edit_genres') ? handleGenreEdit : undefined}
+          onCoverEdit={userPermissions.includes('can_add_books') ? handleCoverEdit : undefined}
+          onRelocate={handleRelocateClick}
+          onDelete={deleteBook}
+          onCheckout={checkoutBook}
+          onCheckin={checkinBook}
+          // Additional data needed for actions
+          shelves={shelves}
+          currentUserId={currentUserId}
+          pendingRemovalRequests={pendingRemovalRequests}
         />
 
         <BookRelocateModal
