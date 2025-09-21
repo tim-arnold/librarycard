@@ -24,10 +24,14 @@ export default function TourProvider({ children }: TourProviderProps) {
   const [isActive, setIsActive] = useState(false)
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
 
-  // Check if tour should auto-start for new users
+  // Check if tour should auto-start for new users (desktop only)
   useEffect(() => {
     const checkShouldAutoStart = () => {
       if (typeof window === 'undefined') return
+
+      // Skip tour completely on mobile devices
+      const isMobile = window.innerWidth < 768
+      if (isMobile) return
 
       try {
         const tourState = localStorage.getItem(TOUR_STORAGE_KEY)
@@ -50,6 +54,15 @@ export default function TourProvider({ children }: TourProviderProps) {
   }, [])
 
   const startTour = useCallback(() => {
+    // Prevent tour on mobile devices
+    if (typeof window !== 'undefined') {
+      const isMobile = window.innerWidth < 768
+      if (isMobile) {
+        console.log('Tour disabled on mobile devices')
+        return
+      }
+    }
+
     setCurrentStepIndex(0)
     setIsActive(true)
   }, [])

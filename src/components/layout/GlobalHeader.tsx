@@ -27,6 +27,7 @@ import { useUnreadNotificationCount } from '@/hooks/useNotifications'
 import { useRejectedReviewNotifications } from '@/hooks/useRejectedReviewNotifications'
 import { useAdminPendingCounts } from '@/hooks/useAdminPendingCounts'
 import useScrollLock from '@/hooks/useScrollLock'
+import useMobileBreakpoints from '@/hooks/useMobileBreakpoints'
 import { themeVariants, type ThemeVariant } from '@/lib/theme'
 import { TourContext } from '@/components/tour/TourProvider'
 import { SkipLinks } from '@/components/ui/SkipLink'
@@ -53,6 +54,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
   useScrollLock(mobileMenuOpen || themeMenuOpen)
   const { unreadRejectedCount } = useRejectedReviewNotifications()
   const { counts: adminCounts } = useAdminPendingCounts()
+  const { isMobile } = useMobileBreakpoints()
 
   // Enhanced keyboard navigation for theme menu
   useEffect(() => {
@@ -787,7 +789,8 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                         { icon: <History />, label: 'Checkout History', action: () => router.push('/checkout-history') },
                         { icon: <Lock />, label: 'Security', action: () => router.push('/security') },
                         { icon: <Help />, label: 'Help', action: () => {} }, // TODO: Implement help modal
-                        { icon: <Tour />, label: 'Start Tour', action: () => startTour() },
+                        // Only show Start Tour on desktop devices
+                        ...(isMobile ? [] : [{ icon: <Tour />, label: 'Start Tour', action: () => startTour() }]),
                         { icon: <ExitToApp />, label: 'Sign Out', action: handleSignOut },
                       ].map((item, index) => (
                         <button
