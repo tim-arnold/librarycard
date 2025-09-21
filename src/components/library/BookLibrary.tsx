@@ -12,25 +12,45 @@ import { useBookActions } from '@/hooks/useBookActions'
 import { useBookFilters } from '@/hooks/useBookFilters'
 import { isAdmin } from '@/lib/permissions'
 import { featureFlags } from '@/lib/featureFlags'
-import PerformanceMonitor from '../dev/PerformanceMonitor'
-import ConfirmationModal from '../modals/ConfirmationModal'
-import AlertModal from '../modals/AlertModal'
+import dynamic from 'next/dynamic'
 import BookFilters from './BookFilters'
-import RemovalReasonModal from '../modals/RemovalReasonModal'
-import RatingModal from '../modals/RatingModal'
-import GenreEditModal from '../modals/GenreEditModal'
-import CoverSelectionModal from '../modals/CoverSelectionModal'
-import MoreDetailsModal from '../modals/MoreDetailsModal'
-import BookRelocateModal from '../modals/BookRelocateModal'
+
+// Lazy load modals - only load when needed
+const ConfirmationModal = dynamic(() => import('../modals/ConfirmationModal'))
+const AlertModal = dynamic(() => import('../modals/AlertModal'))
+const RemovalReasonModal = dynamic(() => import('../modals/RemovalReasonModal'))
+const RatingModal = dynamic(() => import('../modals/RatingModal'))
+const GenreEditModal = dynamic(() => import('../modals/GenreEditModal'))
+const CoverSelectionModal = dynamic(() => import('../modals/CoverSelectionModal'))
+const MoreDetailsModal = dynamic(() => import('../modals/MoreDetailsModal'))
+const BookRelocateModal = dynamic(() => import('../modals/BookRelocateModal'))
+
+// Conditionally load performance monitor only in development
+const PerformanceMonitor = dynamic(() => import('../dev/PerformanceMonitor'), {
+  ssr: false,
+  loading: () => null
+})
+
+// Performance monitoring wrapper - only render in development
+const ConditionalPerformanceMonitor: React.FC<{ children: React.ReactNode; componentName: string }> = ({ children, componentName }) => {
+  if (featureFlags.showPerformanceMetrics) {
+    return <PerformanceMonitor componentName={componentName}>{children}</PerformanceMonitor>
+  }
+  return <>{children}</>
+}
 import LibraryHeader from './LibraryHeader'
 import ActiveFilters from './ActiveFilters'
 import ViewModeControls from './ViewModeControls'
 import BookViews from './BookViews'
-import LibrarySidebar from './sidebar/LibrarySidebar'
 import PageContainer from '../layout/PageContainer'
 import MobileBottomNav from '../layout/MobileBottomNav'
 import MobileFilterDrawer from '../layout/MobileFilterDrawer'
 import MobileSearchPanel from './MobileSearchPanel'
+
+// Lazy load sidebar - only load when needed on desktop or when mobile drawer opens
+const LibrarySidebar = dynamic(() => import('./sidebar/LibrarySidebar'), {
+  loading: () => null
+})
 
 interface BookLibraryProps {
   initialFilters?: {
@@ -406,7 +426,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
   }
 
   return (
-    <PerformanceMonitor componentName="BookLibrary">
+    <ConditionalPerformanceMonitor componentName="BookLibrary">
       <PageContainer>
         <LibraryHeader
           userRole={userRole}
@@ -762,6 +782,6 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
           />
         )}
       </PageContainer>
-    </PerformanceMonitor>
+    </ConditionalPerformanceMonitor>
   )
 }
