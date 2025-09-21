@@ -348,11 +348,6 @@ const BookCard = React.memo<BookCardProps>(({
                 )
               })()}
             </Box>
-            {book.description && (
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                {book.description.substring(0, 200)}...
-              </Typography>
-            )}
             <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
               {(book.extendedDescription || book.subjects || book.pageCount || book.averageRating || book.publisherInfo || book.openLibraryKey) && (
                 <Button

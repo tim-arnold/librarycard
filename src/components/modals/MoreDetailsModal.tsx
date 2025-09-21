@@ -866,16 +866,26 @@ export default function MoreDetailsModal({
                   </Button>
                 )}
 
-                {/* Delete */}
-                {onDelete && userPermissions.includes('can_manage_books') && (
+                {/* Remove */}
+                {onDelete && (isAdmin(userRole) || userPermissions.includes('can_delete_books')) && (
                   <Button
                     variant="outlined"
                     startIcon={<Delete />}
-                    onClick={() => onDelete(localBook.id, localBook.title)}
+                    onClick={async () => {
+                      try {
+                        // Wait for the delete function to complete (including confirmation)
+                        await onDelete(localBook.id, localBook.title)
+                        // Only close modal if deletion was actually completed
+                        onClose()
+                      } catch (error) {
+                        // If user cancelled or deletion failed, keep modal open
+                        console.log('Deletion cancelled or failed')
+                      }
+                    }}
                     color="error"
                     sx={{ justifyContent: 'flex-start' }}
                   >
-                    Delete Book
+                    Remove
                   </Button>
                 )}
               </Box>

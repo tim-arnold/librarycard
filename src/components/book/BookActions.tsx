@@ -92,7 +92,6 @@ export default function BookActions({
         onCheckout={canCheckout ? onCheckout : undefined}
         onCheckin={canReturn ? onCheckin : undefined}
         onRelocate={onRelocate}
-        onDelete={onDelete}
         onRequestRemoval={onRequestRemoval}
         onCancelRemovalRequest={onCancelRemovalRequest}
       />
@@ -140,7 +139,6 @@ export default function BookActions({
         isCheckedOutByCurrentUser={isCheckedOutByCurrentUser}
         hasPendingRemovalRequest={hasPendingRemovalRequest}
         onRelocate={onRelocate}
-        onDelete={onDelete}
         onRequestRemoval={onRequestRemoval}
         onCancelRemovalRequest={onCancelRemovalRequest}
       />
