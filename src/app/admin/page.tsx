@@ -5,8 +5,20 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getApiBaseUrl } from '@/lib/apiConfig'
 import { Container, CircularProgress, Typography, Box } from '@mui/material'
-import AdminDashboard from '@/components/admin/AdminDashboard'
+import dynamic from 'next/dynamic'
 import { isAdmin } from '@/lib/permissions'
+
+// Lazy load admin dashboard - only for admin users
+const AdminDashboard = dynamic(() => import('@/components/admin/AdminDashboard'), {
+  loading: () => (
+    <Container maxWidth="lg" sx={{ py: 4, textAlign: 'center' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2 }}>
+        <CircularProgress />
+        <Typography>Loading Admin Dashboard...</Typography>
+      </Box>
+    </Container>
+  )
+})
 
 export default function AdminPage() {
   const { data: session, status } = useSession()
