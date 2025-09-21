@@ -494,7 +494,8 @@ export default function MoreDetailsModal({
           ...(isMobile && {
             margin: 0,
             borderRadius: 0,
-            height: '100vh',
+            height: '100dvh', // Use dynamic viewport height for mobile
+            maxHeight: '100dvh',
             transition: 'transform 0.2s ease-out, opacity 0.2s ease-out',
           })
         }
@@ -514,7 +515,10 @@ export default function MoreDetailsModal({
         bgcolor: 'background.default',
         position: 'sticky',
         top: 0,
-        zIndex: 1
+        zIndex: 1,
+        ...(isMobile && {
+          paddingTop: 'calc(16px + env(safe-area-inset-top))',
+        })
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
           <MenuBook sx={{ mr: 1, flexShrink: 0 }} />
@@ -1534,7 +1538,10 @@ export default function MoreDetailsModal({
         borderColor: 'divider',
         position: 'sticky',
         bottom: 0,
-        zIndex: 1
+        zIndex: 1,
+        ...(isMobile && {
+          paddingBottom: 'env(safe-area-inset-bottom)',
+        })
       }}>
         {/* Action Toolbar - now shown on all screen sizes */}
         {(
