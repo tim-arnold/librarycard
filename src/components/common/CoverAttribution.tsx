@@ -40,17 +40,25 @@ export default function CoverAttribution({ coverUrl, variant = 'default' }: Cove
 
   if (source === 'google') {
     return (
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: isSmall ? 0.5 : 1 }}>
-        <Book sx={{ fontSize: iconSize, color: 'text.secondary' }} />
-        <Typography 
-          variant="caption" 
+      <Box sx={{ mt: isSmall ? 0.5 : 1, maxWidth: '120px' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Book sx={{ fontSize: iconSize, color: 'text.secondary' }} />
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ fontSize, lineHeight: 1.2 }}
+          >
+            Cover from
+          </Typography>
+        </Box>
+        <Typography
+          variant="caption"
           color="text.secondary"
-          sx={{ fontSize }}
+          sx={{ fontSize, lineHeight: 1.2, ml: isSmall ? 1.5 : 1.75 }}
         >
-          Cover from{' '}
-          <Link 
-            href="https://books.google.com" 
-            target="_blank" 
+          <Link
+            href="https://books.google.com"
+            target="_blank"
             rel="noopener noreferrer"
             color="primary"
             sx={{ textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
@@ -64,17 +72,25 @@ export default function CoverAttribution({ coverUrl, variant = 'default' }: Cove
 
   if (source === 'openlibrary') {
     return (
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: isSmall ? 0.5 : 1 }}>
-        <Public sx={{ fontSize: iconSize, color: 'text.secondary' }} />
-        <Typography 
-          variant="caption" 
+      <Box sx={{ mt: isSmall ? 0.5 : 1, maxWidth: '120px' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Public sx={{ fontSize: iconSize, color: 'text.secondary' }} />
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ fontSize, lineHeight: 1.2 }}
+          >
+            Cover from
+          </Typography>
+        </Box>
+        <Typography
+          variant="caption"
           color="text.secondary"
-          sx={{ fontSize }}
+          sx={{ fontSize, lineHeight: 1.2, ml: isSmall ? 1.5 : 1.75 }}
         >
-          Cover from{' '}
-          <Link 
-            href="https://openlibrary.org" 
-            target="_blank" 
+          <Link
+            href="https://openlibrary.org"
+            target="_blank"
             rel="noopener noreferrer"
             color="secondary"
             sx={{ textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
