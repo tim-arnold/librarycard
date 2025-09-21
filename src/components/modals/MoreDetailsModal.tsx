@@ -260,6 +260,13 @@ export default function MoreDetailsModal({
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!isMobile || startY === null) return
 
+    // Check if we're at the top of the scrollable content
+    const dialogContent = dialogRef.current?.querySelector('.MuiDialogContent-root')
+    const isAtTop = !dialogContent || dialogContent.scrollTop <= 0
+
+    // Only allow swipe-to-close if we're at the top of the content
+    if (!isAtTop) return
+
     const currentY = e.touches[0].clientY
     const diffY = currentY - startY
 
