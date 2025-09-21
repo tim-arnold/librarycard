@@ -17,6 +17,7 @@ import {
   Cancel,
   CheckCircle,
   Undo,
+  Info,
 } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
 
@@ -42,6 +43,7 @@ interface SecondaryActionsMenuProps {
   onRelocate: (book: EnhancedBook) => void
   onRequestRemoval: (bookId: string, bookTitle: string) => Promise<void>
   onCancelRemovalRequest: (bookId: string, bookTitle: string) => Promise<void>
+  onMoreDetailsClick: (book: EnhancedBook) => void
 }
 
 export default function SecondaryActionsMenu({
@@ -60,6 +62,7 @@ export default function SecondaryActionsMenu({
   onRelocate,
   onRequestRemoval,
   onCancelRemovalRequest,
+  onMoreDetailsClick,
 }: SecondaryActionsMenuProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const open = Boolean(anchorEl)
@@ -162,6 +165,15 @@ export default function SecondaryActionsMenu({
         )}
 
         {/* Secondary actions */}
+        <MenuItem
+          onClick={() => handleAction(() => onMoreDetailsClick(book))}
+        >
+          <ListItemIcon>
+            <Info fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>View/edit details</ListItemText>
+        </MenuItem>
+
         {showRelocate && (
           <MenuItem 
             onClick={() => handleAction(() => onRelocate(book))}

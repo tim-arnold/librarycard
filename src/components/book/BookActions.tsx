@@ -25,6 +25,7 @@ export interface BookActionsProps {
   onRelocate: (book: EnhancedBook) => void
   onRequestRemoval: (bookId: string, bookTitle: string) => Promise<void>
   onCancelRemovalRequest: (bookId: string, bookTitle: string) => Promise<void>
+  onMoreDetailsClick: (book: EnhancedBook) => void
 }
 
 export default function BookActions({
@@ -43,6 +44,7 @@ export default function BookActions({
   onRelocate,
   onRequestRemoval,
   onCancelRemovalRequest,
+  onMoreDetailsClick,
 }: BookActionsProps) {
   const isCheckedOut = book.status === 'checked_out'
   const isCheckedOutByCurrentUser = book.checked_out_by === currentUserId
@@ -94,6 +96,7 @@ export default function BookActions({
         onRelocate={onRelocate}
         onRequestRemoval={onRequestRemoval}
         onCancelRemovalRequest={onCancelRemovalRequest}
+        onMoreDetailsClick={onMoreDetailsClick}
       />
     )
   }
@@ -141,6 +144,7 @@ export default function BookActions({
         onRelocate={onRelocate}
         onRequestRemoval={onRequestRemoval}
         onCancelRemovalRequest={onCancelRemovalRequest}
+        onMoreDetailsClick={onMoreDetailsClick}
       />
     </Box>
   )

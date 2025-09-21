@@ -799,23 +799,23 @@ export default function MoreDetailsModal({
               gap: 2
             }}>
               {/* Rate Book */}
-              {onRateBook && (
+              {onRateBook && localBook && (
                 <Button
                   variant="outlined"
                   startIcon={<Star />}
-                  onClick={() => handleRateBookWithUpdate(localBook)}
+                  onClick={() => handleRateBookWithUpdate(localBook!)}
                   sx={{ justifyContent: 'flex-start' }}
                 >
-                  {localBook.userRating ? 'Update Rating' : 'Rate Book'}
+                  {localBook?.userRating ? 'Update Rating' : 'Rate Book'}
                 </Button>
               )}
 
               {/* Edit Genre */}
-              {onGenreEdit && (
+              {onGenreEdit && localBook && (
                 <Button
                   variant="outlined"
                   startIcon={<EditOutlined />}
-                  onClick={() => handleGenreEditWithUpdate(localBook)}
+                  onClick={() => handleGenreEditWithUpdate(localBook!)}
                   sx={{ justifyContent: 'flex-start' }}
                 >
                   Edit Genre
@@ -823,11 +823,11 @@ export default function MoreDetailsModal({
               )}
 
               {/* Change Cover */}
-              {onCoverEdit && (
+              {onCoverEdit && localBook && (
                 <Button
                   variant="outlined"
                   startIcon={<Image />}
-                  onClick={() => handleCoverEditWithUpdate(localBook)}
+                  onClick={() => handleCoverEditWithUpdate(localBook!)}
                   sx={{ justifyContent: 'flex-start' }}
                 >
                   Change Cover
@@ -835,12 +835,12 @@ export default function MoreDetailsModal({
               )}
 
               {/* Checkout/Checkin */}
-              {localBook.checked_out_by ? (
-                onCheckin && (localBook.checked_out_by === currentUserId || userPermissions.includes('can_manage_books')) ? (
+              {localBook && (localBook!.checked_out_by ? (
+                onCheckin && (localBook!.checked_out_by === currentUserId || userPermissions.includes('can_manage_books')) ? (
                   <Button
                     variant="outlined"
                     startIcon={<Undo />}
-                    onClick={() => handleCheckinWithUpdate(localBook.id, localBook.title)}
+                    onClick={() => handleCheckinWithUpdate(localBook!.id, localBook!.title)}
                     color="success"
                     sx={{ justifyContent: 'flex-start' }}
                   >
@@ -852,14 +852,14 @@ export default function MoreDetailsModal({
                   <Button
                     variant="outlined"
                     startIcon={<CheckCircle />}
-                    onClick={() => handleCheckoutWithUpdate(localBook.id, localBook.title)}
+                    onClick={() => handleCheckoutWithUpdate(localBook!.id, localBook!.title)}
                     color="primary"
                     sx={{ justifyContent: 'flex-start' }}
                   >
                     Check Out
                   </Button>
                 )
-              )}
+              ))}
             </Box>
           </Box>
           )}

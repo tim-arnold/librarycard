@@ -348,18 +348,6 @@ const BookCard = React.memo<BookCardProps>(({
                 )
               })()}
             </Box>
-            <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-              {(book.extendedDescription || book.subjects || book.pageCount || book.averageRating || book.publisherInfo || book.openLibraryKey) && (
-                <Button
-                  size="small"
-                  startIcon={<Info />}
-                  onClick={handleMoreDetailsClick}
-                  sx={{ textTransform: 'none' }}
-                >
-                  View/edit details
-                </Button>
-              )}
-            </Box>
             
             {/* Show shelf info for all users */}
             <Box sx={{ mt: 2 }}>
@@ -399,6 +387,7 @@ const BookCard = React.memo<BookCardProps>(({
           onRelocate={onRelocate}
           onRequestRemoval={onRequestRemoval}
           onCancelRemovalRequest={onCancelRemovalRequest}
+          onMoreDetailsClick={onMoreDetailsClick}
         />
       </CardActions>
     </Card>
