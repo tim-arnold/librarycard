@@ -12,7 +12,6 @@ import {
 } from '@mui/material'
 import {
   MoreVert,
-  SwapHoriz,
   ReportProblem,
   Cancel,
   CheckCircle,
@@ -28,8 +27,6 @@ interface SecondaryActionsMenuProps {
   
   // Permission flags
   canDelete: boolean
-  canRelocate: boolean
-  showRelocate: boolean
   allowCheckoutOverride: boolean
   
   // State flags
@@ -40,7 +37,6 @@ interface SecondaryActionsMenuProps {
   // Actions
   onCheckout?: (bookId: string, bookTitle: string) => Promise<void>
   onCheckin?: (bookId: string, bookTitle: string) => Promise<void>
-  onRelocate: (book: EnhancedBook) => void
   onRequestRemoval: (bookId: string, bookTitle: string) => Promise<void>
   onCancelRemovalRequest: (bookId: string, bookTitle: string) => Promise<void>
   onMoreDetailsClick: (book: EnhancedBook) => void
@@ -51,15 +47,12 @@ export default function SecondaryActionsMenu({
   viewMode,
   currentUserId,
   canDelete,
-  canRelocate,
-  showRelocate,
   allowCheckoutOverride,
   isCheckedOut,
   isCheckedOutByCurrentUser,
   hasPendingRemovalRequest,
   onCheckout,
   onCheckin,
-  onRelocate,
   onRequestRemoval,
   onCancelRemovalRequest,
   onMoreDetailsClick,
@@ -158,7 +151,7 @@ export default function SecondaryActionsMenu({
               </MenuItem>
             )}
             
-            {(canCheckout || canReturn) && (showRelocate || canDelete || !hasPendingRemovalRequest) && (
+            {(canCheckout || canReturn) && (
               <Divider />
             )}
           </>
@@ -174,20 +167,6 @@ export default function SecondaryActionsMenu({
           <ListItemText>View/edit details</ListItemText>
         </MenuItem>
 
-        {showRelocate && (
-          <MenuItem 
-            onClick={() => handleAction(() => onRelocate(book))}
-            disabled={!canRelocate}
-          >
-            <ListItemIcon>
-              <SwapHoriz fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>
-              Relocate
-              {!canRelocate && " (book checked out)"}
-            </ListItemText>
-          </MenuItem>
-        )}
 
         {/* Notify librarian / removal request actions */}
         {!hasPendingRemovalRequest ? (
