@@ -1113,7 +1113,7 @@ export async function sendBookReviewNotification(
             : '<p style="font-size: 16px; margin-bottom: 25px;">If you have questions about this decision, please contact an administrator.</p>'
           }
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${env.APP_URL}${action === 'submitted' ? '/admin/reviews' : `/library?search=${encodeURIComponent(bookTitle)}`}" 
+            <a href="${getWorkerFrontendUrl(env)}${action === 'submitted' ? '/admin/reviews' : `/library?search=${encodeURIComponent(bookTitle)}`}" 
                style="display: inline-block; background-color: #673ab7; color: white; padding: 15px 30px; 
                       text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px;">
               ${action === 'submitted' ? 'Review Submissions' : 'View Book'}

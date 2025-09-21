@@ -21,7 +21,6 @@ account_id = "18394f148930f0f3933fee06ecef99d0"
 
 [vars]
 ENVIRONMENT = "staging"
-APP_URL = "https://librarycard-staging.tim52.io"
 FROM_EMAIL = "LibraryCard <librarian@tim52.io>"
 
 # Staging Database - NEW ACCOUNT
@@ -46,7 +45,6 @@ name = "librarycard-api-staging"
 
 [env.staging.vars]
 ENVIRONMENT = "staging"
-APP_URL = "https://librarycard-staging.tim52.io"
 FROM_EMAIL = "LibraryCard <librarian@tim52.io>"
 
 [[env.staging.d1_databases]]
