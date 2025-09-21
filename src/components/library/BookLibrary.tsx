@@ -438,7 +438,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
 
         {/* Desktop Filters - Hidden on mobile (mobile uses bottom nav + filter drawer) */}
         {!isMobile && (
-          <div data-tour="search-filters">
+          <div id="search-filters" data-tour="search-filters" tabIndex={-1}>
             <BookFilters
               searchTerm={searchTerm}
               setSearchTerm={setSearchTerm}
@@ -522,7 +522,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
           
           {/* Main Book Content */}
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <div data-tour="book-grid">
+            <div id="main-content" data-tour="book-grid" tabIndex={-1}>
               <BookViews
             viewMode={viewMode}
             userRole={userRole}

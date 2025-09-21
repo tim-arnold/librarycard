@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useContext } from 'react'
+import React, { useState, useContext, useEffect } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useTheme } from '@/lib/ThemeContext'
@@ -27,8 +27,10 @@ import { useUnreadNotificationCount } from '@/hooks/useNotifications'
 import { useRejectedReviewNotifications } from '@/hooks/useRejectedReviewNotifications'
 import { useAdminPendingCounts } from '@/hooks/useAdminPendingCounts'
 import useScrollLock from '@/hooks/useScrollLock'
+import useMobileBreakpoints from '@/hooks/useMobileBreakpoints'
 import { themeVariants, type ThemeVariant } from '@/lib/theme'
 import { TourContext } from '@/components/tour/TourProvider'
+import { SkipLinks } from '@/components/ui/SkipLink'
 
 interface GlobalHeaderProps {
   userRole?: string | null
@@ -52,6 +54,160 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
   useScrollLock(mobileMenuOpen || themeMenuOpen)
   const { unreadRejectedCount } = useRejectedReviewNotifications()
   const { counts: adminCounts } = useAdminPendingCounts()
+  const { isMobile } = useMobileBreakpoints()
+
+  // Enhanced keyboard navigation for theme menu
+  useEffect(() => {
+    if (!themeMenuOpen) return
+
+    const handleThemeMenuKeyDown = (e: KeyboardEvent) => {
+      const activeElement = document.activeElement as HTMLElement
+
+      // Check if we're focused on any theme menu button (Light/Dark or theme colors)
+      const isThemeMenuButton = activeElement?.tagName === 'BUTTON' && (
+        // Light/Dark mode buttons
+        (activeElement?.textContent?.includes('Light') || activeElement?.textContent?.includes('Dark')) ||
+        // Theme color buttons
+        (activeElement?.style?.color === 'var(--marketing-gray-700)' &&
+         ['Indigo', 'Forest Green', 'Crimson Red', 'Ocean Blue', 'Purple', 'Amber'].some(color =>
+           activeElement?.textContent?.includes(color)))
+      )
+
+      if (isThemeMenuButton && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'Enter', ' ', 'Escape'].includes(e.key)) {
+        e.preventDefault()
+        e.stopPropagation()
+
+        // Find all theme menu buttons in order: Light, Dark, then theme colors
+        const lightButton = Array.from(document.querySelectorAll('button')).find(btn =>
+          btn.textContent?.trim() === 'Light')
+        const darkButton = Array.from(document.querySelectorAll('button')).find(btn =>
+          btn.textContent?.trim() === 'Dark')
+        const themeColorButtons = Array.from(document.querySelectorAll('button')).filter(btn =>
+          btn.style.color === 'var(--marketing-gray-700)' &&
+          btn.textContent &&
+          ['Indigo', 'Forest Green', 'Crimson Red', 'Ocean Blue', 'Purple', 'Amber'].some(color =>
+            btn.textContent?.includes(color))
+        )
+
+        const allButtons = [lightButton, darkButton, ...themeColorButtons].filter(Boolean) as HTMLButtonElement[]
+        const currentIndex = allButtons.indexOf(activeElement as HTMLButtonElement)
+
+        if (currentIndex >= 0) {
+          let nextIndex = currentIndex
+
+          // Grid layout: [Light, Dark] (row 0), then 2-column grid for theme colors (rows 1+)
+          const isInModeRow = currentIndex < 2 // Light/Dark buttons
+          const currentRow = isInModeRow ? 0 : Math.floor((currentIndex - 2) / 2) + 1
+          const currentCol = isInModeRow ? currentIndex : (currentIndex - 2) % 2
+
+          switch (e.key) {
+            case 'ArrowRight':
+              if (isInModeRow && currentIndex === 0) {
+                // Light -> Dark
+                nextIndex = 1
+              } else if (isInModeRow && currentIndex === 1) {
+                // Dark -> first theme color
+                nextIndex = 2
+              } else {
+                // Move right in theme color grid, wrap to next row
+                nextIndex = currentIndex + 1
+                if (nextIndex >= allButtons.length) {
+                  nextIndex = 2 // Wrap to first theme color
+                }
+              }
+              break
+
+            case 'ArrowLeft':
+              if (currentIndex === 2) {
+                // First theme color -> Dark
+                nextIndex = 1
+              } else if (currentIndex === 1) {
+                // Dark -> Light
+                nextIndex = 0
+              } else if (currentIndex === 0) {
+                // Light -> last theme color
+                nextIndex = allButtons.length - 1
+              } else {
+                // Move left in theme color grid
+                nextIndex = currentIndex - 1
+              }
+              break
+
+            case 'ArrowDown':
+              if (isInModeRow) {
+                // From Light/Dark -> corresponding column in theme colors
+                nextIndex = 2 + currentCol // First row of theme colors
+              } else {
+                // Move down in theme color grid
+                const nextRowIndex = currentIndex + 2
+                nextIndex = nextRowIndex < allButtons.length ? nextRowIndex : currentIndex
+              }
+              break
+
+            case 'ArrowUp':
+              if (currentRow === 1) {
+                // From first row of theme colors -> Light/Dark
+                nextIndex = currentCol < 2 ? currentCol : 1
+              } else if (currentRow > 1) {
+                // Move up in theme color grid
+                nextIndex = currentIndex - 2
+              }
+              // Stay in same position if already at top
+              break
+
+            case 'Home':
+              nextIndex = 0 // Light button
+              break
+
+            case 'End':
+              nextIndex = allButtons.length - 1 // Last theme color
+              break
+
+            case 'Enter':
+            case ' ':
+              ;(activeElement as HTMLButtonElement).click()
+              return
+
+            case 'Escape':
+              setThemeMenuOpen(false)
+              return
+          }
+
+          if (nextIndex !== currentIndex && allButtons[nextIndex]) {
+            allButtons[nextIndex].focus()
+          }
+        }
+      } else if (e.key === 'Escape') {
+        setThemeMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('keydown', handleThemeMenuKeyDown, true)
+
+    return () => {
+      document.removeEventListener('keydown', handleThemeMenuKeyDown, true)
+    }
+  }, [themeMenuOpen])
+
+  // Simple keyboard navigation for account menu - escape to close
+  useEffect(() => {
+    if (!accountMenuOpen) return
+
+    const handleAccountMenuKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        e.stopPropagation()
+        setAccountMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('keydown', handleAccountMenuKeyDown, true)
+
+    return () => {
+      document.removeEventListener('keydown', handleAccountMenuKeyDown, true)
+    }
+  }, [accountMenuOpen])
+
   // Safe tour usage - might not be available on marketing pages
   const tourContext = useContext(TourContext)
   const startTour = tourContext?.startTour || (() => {
@@ -153,18 +309,25 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
     return false
   }
 
+  // Define additional skip links based on current page
+  const additionalSkipLinks = pathname.startsWith('/library') ? [
+    { href: '#search-filters', label: 'Skip to search and filters' }
+  ] : []
+
   return (
-    <header
-      style={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 1300, // Higher than Material-UI modal (1300) and all page content
-        // Fallback to CSS variables for compatibility
-        '--marketing-white': muiTheme.palette.background.paper,
-        '--marketing-gray-200': muiTheme.palette.divider,
-        '--header-height': '80px'
-      } as React.CSSProperties}
-    >
+    <>
+      <SkipLinks additionalLinks={additionalSkipLinks} />
+      <header
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 1300, // Higher than Material-UI modal (1300) and all page content
+          // Fallback to CSS variables for compatibility
+          '--marketing-white': muiTheme.palette.background.paper,
+          '--marketing-gray-200': muiTheme.palette.divider,
+          '--header-height': '80px'
+        } as React.CSSProperties}
+      >
       <div
         style={{
           backgroundColor: muiTheme.palette.background.paper,
@@ -212,21 +375,20 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="marketing-hidden-mobile">
+          <nav className="marketing-hidden-mobile" id="main-navigation" tabIndex={-1}>
             <ul 
               className="marketing-flex marketing-items-center marketing-gap-8"
               style={{ listStyle: 'none', margin: 0, padding: 0 }}
             >
               {navigationItems.map((item) => (
                 <li key={item.key}>
-                  <button
-                    onClick={() => handleNavClick(item.href)}
+                  <a
+                    href={item.href}
                     {...(item.dataTour && { 'data-tour': item.dataTour })}
                     style={{
                       background: 'none',
-                      border: 'none',
                       cursor: 'pointer',
-                      color: isActivePath(item.href, item.key) 
+                      color: isActivePath(item.href, item.key)
                         ? muiTheme.palette.primary.main
                         : muiTheme.palette.text.secondary,
                       textDecoration: 'none',
@@ -294,7 +456,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                       }}
                     />
-                  </button>
+                  </a>
                 </li>
               ))}
             </ul>
@@ -305,7 +467,13 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
             {/* Theme Options Menu */}
             <div style={{ position: 'relative' }}>
               <button
-                onClick={() => setThemeMenuOpen(!themeMenuOpen)}
+                onClick={() => {
+                  setThemeMenuOpen(!themeMenuOpen)
+                  // Close account menu if it's open
+                  if (accountMenuOpen) {
+                    setAccountMenuOpen(false)
+                  }
+                }}
                 style={{
                   background: 'none',
                   border: '1px solid var(--marketing-gray-300)',
@@ -510,7 +678,13 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                 <div style={{ position: 'relative' }}>
                   <button
                     data-tour="user-menu"
-                    onClick={() => setAccountMenuOpen(!accountMenuOpen)}
+                    onClick={() => {
+                      setAccountMenuOpen(!accountMenuOpen)
+                      // Close theme menu if it's open
+                      if (themeMenuOpen) {
+                        setThemeMenuOpen(false)
+                      }
+                    }}
                     style={{
                       background: 'none',
                       border: 'none',
@@ -615,7 +789,8 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                         { icon: <History />, label: 'Checkout History', action: () => router.push('/checkout-history') },
                         { icon: <Lock />, label: 'Security', action: () => router.push('/security') },
                         { icon: <Help />, label: 'Help', action: () => {} }, // TODO: Implement help modal
-                        { icon: <Tour />, label: 'Start Tour', action: () => startTour() },
+                        // Only show Start Tour on desktop devices
+                        ...(isMobile ? [] : [{ icon: <Tour />, label: 'Start Tour', action: () => startTour() }]),
                         { icon: <ExitToApp />, label: 'Sign Out', action: handleSignOut },
                       ].map((item, index) => (
                         <button
@@ -658,18 +833,18 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
               </>
             ) : (
               <>
-                <button
-                  onClick={() => router.push('/auth/signin')}
+                <a
+                  href="/auth/signin"
                   style={{
                     background: 'none',
-                    border: 'none',
                     color: 'var(--marketing-gray-600)',
                     fontSize: 'var(--marketing-text-base)',
                     fontWeight: 'var(--marketing-font-medium)',
                     cursor: 'pointer',
                     padding: 'var(--marketing-spacing-2)',
                     borderRadius: 'var(--marketing-radius-base)',
-                    transition: 'color 0.2s ease'
+                    transition: 'color 0.2s ease',
+                    textDecoration: 'none'
                   }}
                   onMouseOver={(e) => {
                     e.currentTarget.style.color = 'var(--marketing-primary)'
@@ -679,13 +854,14 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                   }}
                 >
                   Sign In
-                </button>
-                <button
-                  onClick={() => router.push('/auth/signin')}
+                </a>
+                <a
+                  href="/auth/signin"
                   className="marketing-button marketing-button-primary marketing-button-md"
+                  style={{ textDecoration: 'none' }}
                 >
                   Get Started Free
-                </button>
+                </a>
               </>
             )}
           </div>
@@ -701,6 +877,10 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                   closeThemeMenu()
                 } else {
                   setThemeMenuOpen(true)
+                  // Close account menu if it's open
+                  if (accountMenuOpen) {
+                    setAccountMenuOpen(false)
+                  }
                   if (mobileMenuOpen) closeMobileMenu()
                 }
               }}
@@ -1015,8 +1195,8 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
               <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                 {navigationItems.map((item) => (
                   <li key={item.key} style={{ marginBottom: 'var(--marketing-spacing-2)' }}>
-                    <button
-                      onClick={() => handleNavClick(item.href)}
+                    <a
+                      href={item.href}
                       style={{
                         width: '100%',
                         textAlign: 'left',
@@ -1044,7 +1224,8 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                         minHeight: '56px',
                         boxShadow: isActivePath(item.href, item.key)
                           ? 'var(--marketing-shadow-sm)'
-                          : 'none'
+                          : 'none',
+                        textDecoration: 'none'
                       }}
                       onMouseOver={(e) => {
                         if (!isActivePath(item.href, item.key)) {
@@ -1081,7 +1262,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                           {totalAdminNotifications > 99 ? '99+' : totalAdminNotifications}
                         </span>
                       )}
-                    </button>
+                    </a>
                   </li>
                 ))}
               </ul>
@@ -1136,17 +1317,21 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                   padding: 'var(--marketing-spacing-4) var(--marketing-spacing-4) 0'
                 }}
               >
-                <button
-                  onClick={() => handleNavClick('/auth/signin')}
+                <a
+                  href="/auth/signin"
                   className="marketing-button marketing-button-primary marketing-button-md"
                   style={{
                     width: '100%',
                     borderRadius: 'var(--marketing-radius-lg)',
-                    minHeight: '48px'
+                    minHeight: '48px',
+                    textDecoration: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
                   }}
                 >
                   Get Started Free
-                </button>
+                </a>
               </div>
             )}
           </div>
@@ -1183,5 +1368,6 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
         />
       )}
     </header>
+    </>
   )
 }
