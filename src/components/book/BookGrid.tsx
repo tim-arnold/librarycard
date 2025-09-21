@@ -256,9 +256,8 @@ const BookCard = React.memo<BookCardProps>(({
                 ))}
               </Typography>
             )}
-            {/* Rating and Genre area - space-efficient layout */}
-            <Box sx={{ mt: 1, mb: 1, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-              {/* Star rating - displays user rating or average rating */}
+            {/* Star rating */}
+            <Box sx={{ mt: 1, mb: 1 }}>
               <StarRating
                 userRating={book.userRating}
                 averageRating={book.averageRating}
@@ -271,30 +270,31 @@ const BookCard = React.memo<BookCardProps>(({
                 userReviewStatus={book.userReviewStatus}
                 userReviewRejectionReason={book.userReviewRejectionReason}
               />
-              
-              
-              {/* Genre chip */}
+            </Box>
+
+            {/* Genre chip - separate line */}
+            <Box sx={{ mb: 1 }}>
               {(() => {
                 const { genres, source } = getDisplayGenres(book)
                 if (genres.length === 0) return null
-                
+
                 const genreColor = getCategoryColor(genres[0])
                 const isAssigned = source === 'assigned'
-                
+
                 return (
                   <Grow in={true} timeout={isAssigned ? 800 : 0}>
-                    <Chip 
-                      label={genres[0]} 
-                      size="small" 
+                    <Chip
+                      label={genres[0]}
+                      size="small"
                       onClick={undefined}
                       deleteIcon={undefined}
                       onDelete={undefined}
-                      sx={(theme) => ({ 
-                        fontSize: '0.7rem', 
+                      sx={(theme) => ({
+                        fontSize: '0.7rem',
                         height: 20,
                         maxWidth: '120px',
                         // Dark mode: stronger background opacity and lighter text for better contrast
-                        backgroundColor: theme.palette.mode === 'dark' 
+                        backgroundColor: theme.palette.mode === 'dark'
                           ? `${genreColor}40` // Stronger background in dark mode
                           : `${genreColor}20`, // Lighter background in light mode
                         color: theme.palette.mode === 'dark' 
