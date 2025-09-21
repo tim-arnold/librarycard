@@ -22,7 +22,7 @@ export class GenreService {
       SELECT id, name, description, created_by as createdBy, 
              created_at as createdAt, updated_at as updatedAt, is_active as isActive
       FROM curated_genres 
-      WHERE is_active = TRUE 
+      WHERE is_active = 1 
       ORDER BY name
     `)
     
@@ -46,8 +46,8 @@ export class GenreService {
     const stmt = this.db.prepare(`
       SELECT id, name, description, created_by as createdBy, 
              created_at as createdAt, updated_at as updatedAt, is_active as isActive
-      FROM curated_genres 
-      WHERE id = ? AND is_active = TRUE
+      FROM curated_genres
+      WHERE id = ? AND is_active = 1
     `)
     
     const result = await stmt.bind(id).first()
@@ -73,7 +73,7 @@ export class GenreService {
     const stmt = this.db.prepare(`
       UPDATE curated_genres 
       SET name = ?, description = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ? AND is_active = TRUE
+      WHERE id = ? AND is_active = 1
       RETURNING id, name, description, created_by as createdBy, 
                 created_at as createdAt, updated_at as updatedAt, is_active as isActive
     `)
@@ -304,7 +304,7 @@ export class GenreService {
       SELECT id, name, description, created_by as createdBy, 
              created_at as createdAt, updated_at as updatedAt, is_active as isActive
       FROM curated_genres 
-      WHERE is_active = TRUE AND (name LIKE ? OR description LIKE ?)
+      WHERE is_active = 1 AND (name LIKE ? OR description LIKE ?)
       ORDER BY 
         CASE WHEN name LIKE ? THEN 1 ELSE 2 END,
         name

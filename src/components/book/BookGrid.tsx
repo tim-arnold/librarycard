@@ -11,7 +11,7 @@ import {
   Button,
   Grow,
 } from '@mui/material'
-import { Info, Star, Edit, Image, MenuBook, EditOutlined } from '@mui/icons-material'
+import { Info, MenuBook } from '@mui/icons-material'
 import type { EnhancedBook } from '@/lib/types'
 import { getDisplayGenres } from '@/lib/genreUtils'
 import BookActions from './BookActions'
@@ -38,9 +38,6 @@ interface BookCardProps {
   onMoreDetailsClick: (book: EnhancedBook) => void
   onAuthorClick: (authorName: string) => void
   onSeriesClick: (seriesName: string) => void
-  onRateBook?: (book: EnhancedBook) => void
-  onGenreEdit?: (book: EnhancedBook) => void
-  onCoverEdit?: (book: EnhancedBook) => void
   isAnimating: boolean
   onCoverAnimationComplete?: (bookId: string) => void
   isFirstBook?: boolean
@@ -64,9 +61,6 @@ interface BookGridProps {
   onMoreDetailsClick: (book: EnhancedBook) => void
   onAuthorClick: (authorName: string) => void
   onSeriesClick: (seriesName: string) => void
-  onRateBook?: (book: EnhancedBook) => void
-  onGenreEdit?: (book: EnhancedBook) => void
-  onCoverEdit?: (book: EnhancedBook) => void
   animatingCovers?: Set<string>
   onCoverAnimationComplete?: (bookId: string) => void
 }
@@ -90,9 +84,6 @@ const BookCard = React.memo<BookCardProps>(({
   onMoreDetailsClick,
   onAuthorClick,
   onSeriesClick,
-  onRateBook,
-  onGenreEdit,
-  onCoverEdit,
   isAnimating,
   onCoverAnimationComplete,
   isFirstBook,
@@ -110,19 +101,6 @@ const BookCard = React.memo<BookCardProps>(({
     onMoreDetailsClick(book)
   }, [onMoreDetailsClick, book])
 
-  const handleRateBookClick = useCallback(() => {
-    onRateBook?.(book)
-  }, [onRateBook, book])
-
-  const handleGenreEditClick = useCallback(() => {
-    onGenreEdit?.(book)
-  }, [onGenreEdit, book])
-
-  const handleCoverEditClick = useCallback(() => {
-    if (onCoverEdit && userPermissions.includes('can_add_books')) {
-      onCoverEdit(book)
-    }
-  }, [onCoverEdit, book, userPermissions])
 
   const handleCoverAnimationComplete = useCallback(() => {
     onCoverAnimationComplete?.(book.id)
@@ -159,38 +137,21 @@ const BookCard = React.memo<BookCardProps>(({
               height={165}
               borderRadius={1}
               objectFit="cover"
-              cursor={onCoverEdit && userPermissions.includes('can_add_books') ? 'pointer' : 'default'}
-              onClick={handleCoverEditClick}
+              cursor="pointer"
               bookId={book.id}
               isAnimating={isAnimating}
               onAnimationComplete={handleCoverAnimationComplete}
-              sx={{ 
+              onClick={handleMoreDetailsClick}
+              sx={{
                 flexShrink: 0,
                 transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                '&:hover': {
+                  transform: 'scale(1.05)',
+                  boxShadow: '0 6px 16px rgba(0,0,0,0.15)',
+                }
               }}
               className="book-cover"
             />
-            {onCoverEdit && userPermissions.includes('can_add_books') && (
-              <Box
-                sx={{
-                  position: 'absolute',
-                  top: 2,
-                  right: 2,
-                  bgcolor: 'primary.main',
-                  borderRadius: '50%',
-                  width: 20,
-                  height: 20,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  opacity: 0.8,
-                  '&:hover': { opacity: 1 },
-                  pointerEvents: 'none'
-                }}
-              >
-                <Image sx={{ color: 'white', fontSize: 12 }} titleAccess="Edit book cover" aria-label="Edit book cover" />
-              </Box>
-            )}
           </Box>
           <Box sx={{ flex: 1 }}>
             <Typography
@@ -305,35 +266,12 @@ const BookCard = React.memo<BookCardProps>(({
                 size="small"
                 variant="display"
                 showCount={true}
-                onClick={onRateBook ? handleRateBookClick : undefined}
+                onClick={undefined}
                 userReview={book.userReview}
                 userReviewStatus={book.userReviewStatus}
                 userReviewRejectionReason={book.userReviewRejectionReason}
               />
               
-              {/* Rate this book button - only show when user hasn't rated yet */}
-              {!book.userRating && onRateBook && (
-                <Button
-                  size="small"
-                  startIcon={<Star />}
-                  onClick={handleRateBookClick}
-                  sx={{ 
-                    textTransform: 'none',
-                    fontSize: '0.75rem',
-                    color: (theme) => theme.palette.mode === 'dark' 
-                      ? theme.palette.primary.light 
-                      : theme.palette.primary.main,
-                    minHeight: 20,
-                    '&:hover': {
-                      backgroundColor: (theme) => theme.palette.mode === 'dark' 
-                        ? `${theme.palette.primary.light}15` 
-                        : `${theme.palette.primary.main}15`
-                    }
-                  }}
-                >
-                  Rate this book
-                </Button>
-              )}
               
               {/* Genre chip */}
               {(() => {
@@ -348,13 +286,13 @@ const BookCard = React.memo<BookCardProps>(({
                     <Chip 
                       label={genres[0]} 
                       size="small" 
-                      onClick={onGenreEdit ? handleGenreEditClick : undefined}
-                      deleteIcon={onGenreEdit ? <EditOutlined sx={{ fontSize: '14px !important' }} /> : undefined}
-                      onDelete={onGenreEdit ? handleGenreEditClick : undefined}
+                      onClick={undefined}
+                      deleteIcon={undefined}
+                      onDelete={undefined}
                       sx={(theme) => ({ 
                         fontSize: '0.7rem', 
                         height: 20,
-                        maxWidth: onGenreEdit ? '140px' : '120px', // Slightly wider when edit icon present
+                        maxWidth: '120px',
                         // Dark mode: stronger background opacity and lighter text for better contrast
                         backgroundColor: theme.palette.mode === 'dark' 
                           ? `${genreColor}40` // Stronger background in dark mode
@@ -366,33 +304,18 @@ const BookCard = React.memo<BookCardProps>(({
                           ? `1px solid ${genreColor}60` // Stronger border in dark mode
                           : `1px solid ${genreColor}40`, // Lighter border in light mode
                         fontWeight: 500,
-                        cursor: onGenreEdit ? 'pointer' : 'default',
+                        cursor: 'default',
                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                         animation: isAssigned ? 'genrePulse 2s ease-in-out' : undefined,
-                        '&:hover': onGenreEdit ? {
-                          backgroundColor: theme.palette.mode === 'dark' 
-                            ? `${genreColor}50` 
+                        '&:hover': {
+                          backgroundColor: theme.palette.mode === 'dark'
+                            ? `${genreColor}50`
                             : `${genreColor}30`,
-                          border: theme.palette.mode === 'dark' 
-                            ? `1px solid ${genreColor}80` 
-                            : `1px solid ${genreColor}60`,
-                          transform: 'scale(1.05)',
-                          '& .MuiChip-deleteIcon': {
-                            color: theme.palette.mode === 'dark' ? '#ffffff' : genreColor,
-                            transform: 'scale(1.1)',
-                          },
-                        } : {
-                          backgroundColor: theme.palette.mode === 'dark' 
-                            ? `${genreColor}50` 
-                            : `${genreColor}30`,
-                          border: theme.palette.mode === 'dark' 
-                            ? `1px solid ${genreColor}80` 
+                          border: theme.palette.mode === 'dark'
+                            ? `1px solid ${genreColor}80`
                             : `1px solid ${genreColor}60`,
                           transform: 'scale(1.05)',
                         },
-                        '&:active': onGenreEdit ? {
-                          transform: 'scale(1.02)',
-                        } : {},
                         '& .MuiChip-deleteIcon': {
                           color: theme.palette.mode === 'dark' 
                             ? '#ffffff90' // Semi-transparent white in dark mode
@@ -509,9 +432,6 @@ const BookGrid = React.memo<BookGridProps>(({
   onMoreDetailsClick,
   onAuthorClick,
   onSeriesClick,
-  onRateBook,
-  onGenreEdit,
-  onCoverEdit,
   animatingCovers = new Set(),
   onCoverAnimationComplete,
 }) => {
@@ -560,9 +480,6 @@ const BookGrid = React.memo<BookGridProps>(({
           onMoreDetailsClick={onMoreDetailsClick}
           onAuthorClick={onAuthorClick}
           onSeriesClick={onSeriesClick}
-          onRateBook={onRateBook}
-          onGenreEdit={onGenreEdit}
-          onCoverEdit={onCoverEdit}
           isAnimating={animatingCovers.has(book.id)}
           onCoverAnimationComplete={onCoverAnimationComplete}
           isFirstBook={index === 0}

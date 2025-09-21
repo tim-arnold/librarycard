@@ -52,9 +52,6 @@ interface BookViewsProps {
   onMoreDetailsClick: (book: EnhancedBook) => void
   onAuthorClick: (authorName: string) => void
   onSeriesClick: (seriesName: string) => void
-  onRateBook: (book: EnhancedBook) => void
-  onGenreEdit?: (book: EnhancedBook) => void
-  onCoverEdit?: (book: EnhancedBook) => void
   animatingCovers?: Set<string>
   onCoverAnimationComplete?: (bookId: string) => void
   onPageChange: (event: React.ChangeEvent<unknown>, page: number) => void
@@ -92,9 +89,6 @@ export default function BookViews({
   onMoreDetailsClick,
   onAuthorClick,
   onSeriesClick,
-  onRateBook,
-  onGenreEdit,
-  onCoverEdit,
   animatingCovers,
   onCoverAnimationComplete,
   onPageChange,
@@ -124,9 +118,6 @@ export default function BookViews({
     onMoreDetailsClick,
     onAuthorClick,
     onSeriesClick,
-    onRateBook,
-    onGenreEdit,
-    onCoverEdit,
     animatingCovers,
     onCoverAnimationComplete
   }
@@ -201,8 +192,6 @@ export default function BookViews({
                     onMoreDetailsClick={onMoreDetailsClick}
                     onAuthorClick={onAuthorClick}
                     onSeriesClick={onSeriesClick}
-                    onRateBook={onRateBook}
-                    onGenreEdit={onGenreEdit}
                   />
                 </div>
               ))}
@@ -236,8 +225,6 @@ export default function BookViews({
                 onMoreDetailsClick={onMoreDetailsClick}
                 onAuthorClick={onAuthorClick}
                 onSeriesClick={onSeriesClick}
-                onRateBook={onRateBook}
-                onGenreEdit={onGenreEdit}
               />
             </Box>
           </Fade>
