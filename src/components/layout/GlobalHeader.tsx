@@ -373,7 +373,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="marketing-hidden-mobile" id="main-navigation">
+          <nav className="marketing-hidden-mobile" id="main-navigation" tabIndex={-1}>
             <ul 
               className="marketing-flex marketing-items-center marketing-gap-8"
               style={{ listStyle: 'none', margin: 0, padding: 0 }}

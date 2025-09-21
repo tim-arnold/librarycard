@@ -7,9 +7,43 @@ interface SkipLinkProps {
 }
 
 export default function SkipLink({ href, children }: SkipLinkProps) {
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault()
+
+    // Get the target element
+    const targetId = href.replace('#', '')
+    const targetElement = document.getElementById(targetId)
+
+    if (targetElement) {
+      // Get header height from CSS variable or fallback to 80px
+      const headerHeight = parseInt(getComputedStyle(document.documentElement)
+        .getPropertyValue('--header-height') || '80px')
+
+      // Calculate scroll position accounting for header height + small padding
+      const elementPosition = targetElement.offsetTop
+      const offsetPosition = elementPosition - headerHeight - 16 // 16px additional padding
+
+      // Smooth scroll to target with offset
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      })
+
+      // Focus the target element for screen readers after scroll completes
+      setTimeout(() => {
+        // Make element focusable if it isn't already
+        if (!targetElement.hasAttribute('tabindex')) {
+          targetElement.setAttribute('tabindex', '-1')
+        }
+        targetElement.focus({ preventScroll: true })
+      }, 300) // Small delay to allow smooth scroll to complete
+    }
+  }
+
   return (
     <Link
       href={href}
+      onClick={handleClick}
       sx={{
         position: 'absolute',
         left: '-9999px',
