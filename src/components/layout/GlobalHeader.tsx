@@ -187,6 +187,25 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
     }
   }, [themeMenuOpen])
 
+  // Simple keyboard navigation for account menu - escape to close
+  useEffect(() => {
+    if (!accountMenuOpen) return
+
+    const handleAccountMenuKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        e.stopPropagation()
+        setAccountMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('keydown', handleAccountMenuKeyDown, true)
+
+    return () => {
+      document.removeEventListener('keydown', handleAccountMenuKeyDown, true)
+    }
+  }, [accountMenuOpen])
+
   // Safe tour usage - might not be available on marketing pages
   const tourContext = useContext(TourContext)
   const startTour = tourContext?.startTour || (() => {
