@@ -263,7 +263,7 @@ const BookCard = React.memo<BookCardProps>(({
                 userRating={book.userRating}
                 averageRating={book.averageRating}
                 ratingCount={book.ratingCount}
-                size="small"
+                size="medium"
                 variant="display"
                 showCount={true}
                 onClick={undefined}
@@ -286,13 +286,13 @@ const BookCard = React.memo<BookCardProps>(({
                   <Grow in={true} timeout={isAssigned ? 800 : 0}>
                     <Chip
                       label={genres[0]}
-                      size="small"
+                      size="medium"
                       onClick={undefined}
                       deleteIcon={undefined}
                       onDelete={undefined}
                       sx={(theme) => ({
-                        fontSize: '0.7rem',
-                        height: 20,
+                        fontSize: '1rem',
+                        height: 32,
                         maxWidth: '120px',
                         // Dark mode: stronger background opacity and lighter text for better contrast
                         backgroundColor: theme.palette.mode === 'dark'
