@@ -74,7 +74,23 @@ export async function verifyBookCoverImage(
       'adult',
       'nude',
       'body',
-      'skin'
+      'skin',
+      // Clothing/accessories that indicate a person in the photo
+      'sunglasses',
+      'bow tie',
+      'windsor tie',
+      'neck brace',
+      'suit',
+      'shirt',
+      'dress',
+      'hat',
+      'cap',
+      'glasses',
+      'necklace',
+      'earring',
+      'watch',
+      'clothing',
+      'apparel'
     ];
 
     let maxBookConfidence = 0;
