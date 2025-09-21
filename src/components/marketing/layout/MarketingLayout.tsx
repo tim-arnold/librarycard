@@ -20,7 +20,7 @@ export default function MarketingLayout({ children }: MarketingLayoutProps) {
       />
       <div className="marketing-page">
         <div className="marketing-content">
-          <main>
+          <main id="main-content">
             {children}
           </main>
           <MarketingFooter />

@@ -33,6 +33,8 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
       onClose={onClose}
       maxWidth={sizeMap[size]}
       fullWidth
+      aria-labelledby="modal-title"
+      aria-describedby="modal-content"
       slotProps={{
         paper: {
           sx: {
@@ -49,7 +51,7 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
           pb: 1,
         }}
       >
-        <Typography variant="h6" component="div">
+        <Typography variant="h6" component="h2" id="modal-title">
           {title}
         </Typography>
         <AccessibleIcon
@@ -62,7 +64,7 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
           }}
         />
       </DialogTitle>
-      <DialogContent sx={{ pt: 1 }}>
+      <DialogContent sx={{ pt: 1 }} id="modal-content">
         {children}
       </DialogContent>
     </Dialog>
