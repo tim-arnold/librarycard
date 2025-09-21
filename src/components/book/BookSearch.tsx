@@ -533,6 +533,9 @@ export default function BookSearch({
             variant="outlined"
             disabled={isSearching || disabled}
             inputRef={searchInputRef}
+            label="Book search"
+            aria-label="Search for books by title, author, or keywords"
+            role="searchbox"
             InputProps={{
               endAdornment: searchQuery && (
                 <InputAdornment position="end">
@@ -565,7 +568,19 @@ export default function BookSearch({
             {isSearching ? 'Searching...' : 'Search'}
           </Button>
         </Box>
-        
+
+        {/* Screen reader status updates */}
+        <div
+          aria-live="polite"
+          aria-atomic="true"
+          className="sr-only"
+          style={{ position: 'absolute', left: '-9999px' }}
+        >
+          {isSearching && 'Searching for books...'}
+          {!isSearching && searchResults.length > 0 && `Found ${searchResults.length} book results`}
+          {!isSearching && searchQuery && searchResults.length === 0 && 'No books found for your search'}
+        </div>
+
         {/* Mobile scanning tip for desktop users */}
         {!isMobile && (
           <Alert severity="info" sx={{ mt: 2 }}>

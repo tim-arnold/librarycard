@@ -249,7 +249,7 @@ export default function CoverSelectionModal({
     >
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Image sx={{ color: 'primary.main' }} alt="" />
+          <Image sx={{ color: 'primary.main' }} titleAccess="" aria-hidden="true" alt="" />
           <Typography variant="h6">
             Choose Book Cover
           </Typography>
@@ -438,7 +438,7 @@ export default function CoverSelectionModal({
                           bgcolor: 'grey.100'
                         }}
                       >
-                        <Image fontSize="large" alt="" />
+                        <Image fontSize="large" titleAccess="" aria-hidden="true" alt="" />
                         <Typography variant="caption" color="text.secondary">
                           No Cover
                         </Typography>
@@ -494,7 +494,7 @@ export default function CoverSelectionModal({
             {/* No Results */}
             {!isLoading && editions.length === 0 && !error && (
               <Box sx={{ textAlign: 'center', py: 4 }}>
-                <Image sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} alt="" />
+                <Image sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} titleAccess="" aria-hidden="true" alt="" />
                 <Typography variant="body1" color="text.secondary">
                   No editions found. Try adjusting your search terms.
                 </Typography>

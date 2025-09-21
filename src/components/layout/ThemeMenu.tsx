@@ -75,6 +75,8 @@ export default function ThemeMenu() {
             mt: 1,
           }
         }}
+        aria-labelledby="theme-menu-button"
+        aria-label="Theme customization menu"
       >
         {/* Dark Mode Toggle */}
         <MenuItem onClick={(e) => e.stopPropagation()} disableRipple>
@@ -112,7 +114,11 @@ export default function ThemeMenu() {
               Choose your preferred color scheme
             </Typography>
             
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+            <Box
+              sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}
+              role="group"
+              aria-label="Theme color variants"
+            >
               {Object.entries(themeVariants).map(([key, variant]) => (
                 <Chip
                   key={key}
@@ -120,6 +126,9 @@ export default function ThemeMenu() {
                   onClick={() => handleThemeVariantChange(key as ThemeVariant)}
                   variant={themeVariant === key ? 'filled' : 'outlined'}
                   size="small"
+                  role="button"
+                  aria-pressed={themeVariant === key}
+                  aria-label={`Select ${variant.name} theme color${themeVariant === key ? ' (currently selected)' : ''}`}
                   sx={{
                     backgroundColor: themeVariant === key 
                       ? variant.primary[isDarkMode ? 300 : 600]

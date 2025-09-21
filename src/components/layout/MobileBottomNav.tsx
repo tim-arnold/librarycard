@@ -83,6 +83,8 @@ export default function MobileBottomNav({
         value={value}
         onChange={handleChange}
         showLabels
+        role="navigation"
+        aria-label="Mobile navigation"
         sx={{
           height: 64, // Ensure minimum touch target height
           '& .MuiBottomNavigationAction-root': {
