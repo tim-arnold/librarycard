@@ -33,16 +33,9 @@ const PerformanceTracker: React.FC<PerformanceTrackerProps> = ({
     }
   }, [])
 
-  // Log performance status in development
+  // Performance tracking active in development
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development' && isTracking) {
-      console.log('🚀 LibraryCard Performance Tracking initialized')
-      
-      // Log current performance data when it updates
-      if (Object.keys(performanceData).length > 0) {
-        console.log('📈 Performance data updated:', performanceData)
-      }
-    }
+    // Performance tracking running in background
   }, [isTracking, performanceData])
 
   // Component doesn't render anything - it's just for side effects

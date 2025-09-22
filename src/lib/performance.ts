@@ -94,16 +94,16 @@ class PerformanceTracker {
         this.handleMetric('TTFB', metric)
       })
 
-      console.log('✅ Core Web Vitals tracking initialized')
+      // Core Web Vitals tracking initialized
     } catch (error) {
-      console.warn('⚠️ Failed to initialize Core Web Vitals tracking:', error)
+      // Failed to initialize Core Web Vitals tracking
     }
   }
 
   private handleMetric(name: string, metric: PerformanceMetric) {
     const rating = this.getRating(name, metric.value)
     
-    console.log(`📊 ${name}: ${metric.value.toFixed(2)}${this.getUnit(name)} (${rating})`)
+    // Performance metric collected: ${name}
 
     // Send to analytics if all core metrics are collected
     if (this.vitalsData.lcp && this.vitalsData.fid && this.vitalsData.cls) {
