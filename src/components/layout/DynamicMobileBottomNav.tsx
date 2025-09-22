@@ -70,16 +70,15 @@ export default function DynamicMobileBottomNav({
 
           // Update the toolbar position to stick to the visual viewport bottom
           if (toolbarRef.current) {
-            // When visual viewport is smaller than window (keyboard/browser UI visible),
-            // we want the toolbar to stay at the bottom of the visual viewport,
-            // which means it should be positioned at 0 from the visual viewport bottom
-            if (vh < windowHeight) {
-              // Browser UI is visible, position toolbar at visual viewport bottom
-              toolbarRef.current.style.bottom = '0px'
-              toolbarRef.current.style.transform = `translateY(-${windowHeight - vh}px)`
+            // The diff represents how much space the browser UI takes up
+            // When browser UI disappears (user scrolls), we want the toolbar to move DOWN
+            // to stick to the actual bottom of the screen
+            if (diff > 0) {
+              // Browser UI is taking up space, move toolbar down by that amount
+              // to stick to the visual viewport bottom
+              toolbarRef.current.style.transform = `translateY(${diff}px)`
             } else {
-              // No browser UI, use normal positioning
-              toolbarRef.current.style.bottom = '0px'
+              // No browser UI interference, normal positioning
               toolbarRef.current.style.transform = 'translateY(0px)'
             }
           }
