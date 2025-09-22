@@ -182,10 +182,9 @@ export default function CoverSelectionModal({
 
         // Check if this is a verification error and provide specific guidance
         if (errorMessage.includes('does not appear to be a book cover') ||
-            errorMessage.includes('inappropriate content')) {
-          throw new Error(
-            'The image doesn\'t appear to be a book cover. Please ensure you\'re photographing the front cover of a book, with the title and author clearly visible.'
-          );
+            errorMessage.includes('inappropriate content') ||
+            errorMessage.includes('appears to contain people or faces')) {
+          throw new Error(errorMessage);
         }
 
         throw new Error(errorMessage);
@@ -209,7 +208,7 @@ export default function CoverSelectionModal({
       handleCoverSelect(cameraCover)
     } catch (error) {
       console.error('Error uploading camera capture:', error);
-      setError('Failed to upload captured image. Please try again.');
+      setError(error instanceof Error ? error.message : 'Failed to upload captured image. Please try again.');
     }
   }
 
@@ -256,7 +255,12 @@ export default function CoverSelectionModal({
       maxWidth="lg"
       fullWidth
       PaperProps={{
-        sx: { maxHeight: '85vh', height: currentTab === 1 ? '600px' : 'auto' }
+        sx: {
+          maxHeight: '90vh',
+          height: currentTab === 1 ? 'auto' : 'auto',
+          display: 'flex',
+          flexDirection: 'column'
+        }
       }}
     >
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
@@ -274,7 +278,13 @@ export default function CoverSelectionModal({
         </Button>
       </DialogTitle>
 
-      <DialogContent sx={{ pb: 1 }}>
+      <DialogContent sx={{
+        pb: 1,
+        flex: 1,
+        overflow: 'auto',
+        display: 'flex',
+        flexDirection: 'column'
+      }}>
         {/* Tabs */}
         <Tabs
           value={currentTab}
@@ -525,7 +535,12 @@ export default function CoverSelectionModal({
               </Alert>
             )}
 
-            <Box sx={{ height: 350 }}>
+            <Box sx={{
+              flex: 1,
+              minHeight: 300,
+              maxHeight: 'calc(100vh - 280px)', // Account for header, tabs, error, and buttons
+              overflow: 'hidden'
+            }}>
               <BookCoverCapture
                 title={title}
                 author={author}

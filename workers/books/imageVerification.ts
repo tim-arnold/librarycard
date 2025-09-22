@@ -41,11 +41,12 @@ export async function verifyBookCoverImage(
 
     console.log('AI Classification Response:', response);
 
-    // Extract classification results
-    const predictions = response?.predictions || [];
+    // Extract classification results - the response IS the predictions array
+    const predictions = Array.isArray(response) ? response : (response?.predictions || []);
 
-    // Look for book-related classifications
-    const bookRelatedLabels = [
+    // Allowlist approach: what we explicitly allow
+    const allowedLabels = [
+      // Books and book-related items
       'book',
       'book jacket',
       'notebook',
@@ -61,11 +62,14 @@ export async function verifyBookCoverImage(
       'publication',
       'cover',
       'jacket',
-      'spine'
+      'spine',
+      // Common misclassifications that are actually fine
+      'doormat',
+      'door mat'
     ];
 
-    // Look for inappropriate content that we want to reject
-    const inappropriateLabels = [
+    // Only reject obvious human/person indicators
+    const personIndicators = [
       'person',
       'face',
       'human',
@@ -76,37 +80,30 @@ export async function verifyBookCoverImage(
       'woman',
       'child',
       'adult',
-      'nude',
-      'body',
-      'skin',
-      // Clothing/accessories that indicate a person in the photo
+      // Strong clothing indicators that almost always mean a person is present
       'sunglasses',
+      'lab coat',
       'bow tie',
       'windsor tie',
       'neck brace',
-      'suit',
-      'shirt',
-      'dress',
-      'hat',
-      'cap',
-      'glasses',
-      'necklace',
-      'earring',
-      'watch',
-      'clothing',
-      'apparel',
-      'lab coat',
-      'coat',
-      'jacket',
-      'sweater',
-      'hoodie'
+      'seat belt',
+      // Body parts that clearly indicate a person
+      'nipple',
+      'breast',
+      'torso',
+      'chest',
+      'arm',
+      'hand',
+      'finger',
+      'leg',
+      'foot'
     ];
 
-    let maxBookConfidence = 0;
-    let maxInappropriateConfidence = 0;
+    let maxAllowedConfidence = 0;
+    let maxPersonConfidence = 0;
     let detectedLabels: string[] = [];
-    let hasBookContent = false;
-    let hasInappropriateContent = false;
+    let hasAllowedContent = false;
+    let hasPersonContent = false;
 
     // Analyze predictions
     for (const prediction of predictions) {
@@ -115,47 +112,37 @@ export async function verifyBookCoverImage(
 
       detectedLabels.push(`${label}:${confidence.toFixed(2)}`);
 
-      // Check for book-related content
-      for (const bookLabel of bookRelatedLabels) {
-        if (label.includes(bookLabel)) {
-          hasBookContent = true;
-          maxBookConfidence = Math.max(maxBookConfidence, confidence);
+      // Check for explicitly allowed content
+      for (const allowedLabel of allowedLabels) {
+        if (label.includes(allowedLabel)) {
+          hasAllowedContent = true;
+          maxAllowedConfidence = Math.max(maxAllowedConfidence, confidence);
         }
       }
 
-      // Check for inappropriate content
-      for (const inappropriateLabel of inappropriateLabels) {
-        if (label.includes(inappropriateLabel)) {
-          hasInappropriateContent = true;
-          maxInappropriateConfidence = Math.max(maxInappropriateConfidence, confidence);
+      // Check for person indicators
+      for (const personLabel of personIndicators) {
+        if (label.includes(personLabel)) {
+          hasPersonContent = true;
+          maxPersonConfidence = Math.max(maxPersonConfidence, confidence);
         }
       }
     }
 
-    // Decision logic
+    // Decision logic: ONLY allow if we detect book-related content
     let isBookCover = false;
     let rejectionReason: string | undefined;
     let finalConfidence = 0;
 
-    if (hasInappropriateContent && maxInappropriateConfidence > 0.2) {
-      // High confidence inappropriate content - reject
-      isBookCover = false;
-      rejectionReason = 'Image appears to contain inappropriate content (people, faces, etc.)';
-      finalConfidence = maxInappropriateConfidence;
-    } else if (hasBookContent && maxBookConfidence > 0.2) {
-      // Detected book content with reasonable confidence - accept
+    if (hasAllowedContent && maxAllowedConfidence > 0.2) {
+      // Detected book-related content - accept
       isBookCover = true;
-      finalConfidence = maxBookConfidence;
-    } else if (!hasInappropriateContent) {
-      // No inappropriate content detected - be permissive and allow
-      // (could be doormat, random objects, etc. - no harm in allowing these)
-      isBookCover = true;
-      finalConfidence = 0.5;
+      finalConfidence = maxAllowedConfidence;
     } else {
-      // Has inappropriate content but low confidence - reject to be safe
+      // No book-related content detected - reject everything else
       isBookCover = false;
-      rejectionReason = 'Image appears to contain inappropriate content (people, faces, etc.)';
-      finalConfidence = maxInappropriateConfidence;
+      rejectionReason = 'Image does not appear to be a book cover. Please upload a clear photo of a book cover with the title and author visible.';
+      finalConfidence = 0;
     }
 
     return {
