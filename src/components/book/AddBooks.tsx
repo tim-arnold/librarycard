@@ -177,34 +177,28 @@ function AddBooksInternal({ initialTab }: AddBooksInternalProps) {
   
   const [activeTab, setActiveTab] = useState(() => {
     // If initialTab is provided (from URL), use that
-    if (initialTab) return initialTab === 'search' ? 0 : 1
-    
+    if (initialTab) {
+      return initialTab === 'search' ? 0 : 1
+    }
+
     // Otherwise, remember user's preferred tab choice
     const savedTab = getStorageItem('addBooks_preferredTab', 'functional') as 'scan' | 'search'
     return (savedTab === 'scan') ? 1 : 0
   })
 
   useEffect(() => {
-    // Only run on initial mount to set tab from URL/prop
-    let tabName = 'search' // default
-    
+    // Only run when initialTab is provided (from URL/props)
+    // If no initialTab, useState initializer already handled localStorage
     if (initialTab) {
-      tabName = initialTab
+      const tabName = initialTab
+      const newTabIndex = tabName === 'scan' ? 1 : 0
+      setActiveTab(newTabIndex)
     }
-    // Note: We don't read pathname here to avoid re-renders on URL changes
-    // The initial tab is set via initialTab prop or localStorage
-    
-    const newTabIndex = tabName === 'scan' ? 1 : 0
-    setActiveTab(newTabIndex)
     setFadeIn(true)
   }, [initialTab]) // Only depend on initialTab
 
-  // Handle responsive tab changes - switch to search tab if on desktop and scan tab is selected
-  useEffect(() => {
-    if (!isMobile && activeTab === 1) {
-      setActiveTab(0) // Switch to search tab on desktop
-    }
-  }, [isMobile, activeTab])
+  // Note: Removed automatic desktop->search switching to allow desktop tab persistence
+  // Desktop users can now manually choose between search and scan tabs
   
   // Search state
   const [searchQuery, setSearchQuery] = useState('')
@@ -656,13 +650,13 @@ try {
     // If switching to a different tab, trigger fade out
     if (newValue !== activeTab) {
       setFadeIn(false)
-      
+
       setTimeout(() => {
         setActiveTab(newValue)
-        
+
         // Convert number to string for URL and storage
         const tabName = newValue === 0 ? 'search' : 'scan'
-        
+
         // Save user's preferred tab choice
         setStorageItem('addBooks_preferredTab', tabName, 'functional')
         
