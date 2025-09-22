@@ -1550,86 +1550,134 @@ export default function MoreDetailsModal({
           paddingBottom: 'env(safe-area-inset-bottom)',
         })
       }}>
-        {/* Action Toolbar - now shown on all screen sizes */}
+        {/* Action Toolbar - styled to match mobile bottom navigation */}
         {(
           <Box sx={{
             display: 'grid',
             gridTemplateColumns: 'repeat(4, 1fr)',
             width: '100%',
-            gap: 1,
-            mb: 2
+            gap: 0.5, // Reduced gap to match mobile nav spacing
+            mb: 2,
+            backgroundColor: 'background.paper', // Theme-aware background
+            borderTop: 1,
+            borderColor: 'divider', // Theme-aware border like mobile nav
+            pt: 1 // Add top padding for border
           }}>
             <Button
-              variant="outlined"
-              size="small"
-              startIcon={<Star />}
+              variant="text"
               onClick={handleLibraryAction}
               sx={{
                 minWidth: 0,
+                minHeight: 64, // Match mobile nav height
+                display: 'flex',
                 flexDirection: 'column',
+                alignItems: 'center',
                 gap: 0.5,
-                py: 1.5,
+                py: 1,
+                px: 1,
                 borderRadius: 2,
+                margin: '4px 2px', // Match mobile nav margin
+                transition: 'all 0.2s ease-in-out', // Match mobile nav transition
+                color: 'text.secondary',
+                '&:hover': {
+                  backgroundColor: 'action.hover',
+                },
                 '&:active': {
                   transform: 'scale(0.95)',
                 }
               }}
             >
-              Rate
+              <Star />
+              <Typography variant="caption" sx={{ fontSize: '0.75rem', lineHeight: 1.2 }}>
+                Rate
+              </Typography>
             </Button>
             <Button
-              variant="outlined"
-              size="small"
-              startIcon={<EditOutlined />}
+              variant="text"
               onClick={handleEditAction}
               sx={{
                 minWidth: 0,
+                minHeight: 64, // Match mobile nav height
+                display: 'flex',
                 flexDirection: 'column',
+                alignItems: 'center',
                 gap: 0.5,
-                py: 1.5,
+                py: 1,
+                px: 1,
                 borderRadius: 2,
+                margin: '4px 2px', // Match mobile nav margin
+                transition: 'all 0.2s ease-in-out', // Match mobile nav transition
+                color: 'text.secondary',
+                '&:hover': {
+                  backgroundColor: 'action.hover',
+                },
                 '&:active': {
                   transform: 'scale(0.95)',
                 }
               }}
             >
-              Genre
+              <EditOutlined />
+              <Typography variant="caption" sx={{ fontSize: '0.75rem', lineHeight: 1.2 }}>
+                Genre
+              </Typography>
             </Button>
             <Button
-              variant="outlined"
-              size="small"
-              startIcon={<Image />}
+              variant="text"
               onClick={handleRateAction}
               sx={{
                 minWidth: 0,
+                minHeight: 64, // Match mobile nav height
+                display: 'flex',
                 flexDirection: 'column',
+                alignItems: 'center',
                 gap: 0.5,
-                py: 1.5,
+                py: 1,
+                px: 1,
                 borderRadius: 2,
+                margin: '4px 2px', // Match mobile nav margin
+                transition: 'all 0.2s ease-in-out', // Match mobile nav transition
+                color: 'text.secondary',
+                '&:hover': {
+                  backgroundColor: 'action.hover',
+                },
                 '&:active': {
                   transform: 'scale(0.95)',
                 }
               }}
             >
-              Cover
+              <Image />
+              <Typography variant="caption" sx={{ fontSize: '0.75rem', lineHeight: 1.2 }}>
+                Cover
+              </Typography>
             </Button>
             <Button
-              variant="outlined"
-              size="small"
-              startIcon={localBook?.checked_out_by ? <Undo /> : <CheckCircle />}
+              variant="text"
               onClick={handleShareAction}
               sx={{
                 minWidth: 0,
+                minHeight: 64, // Match mobile nav height
+                display: 'flex',
                 flexDirection: 'column',
+                alignItems: 'center',
                 gap: 0.5,
-                py: 1.5,
+                py: 1,
+                px: 1,
                 borderRadius: 2,
+                margin: '4px 2px', // Match mobile nav margin
+                transition: 'all 0.2s ease-in-out', // Match mobile nav transition
+                color: 'text.secondary',
+                '&:hover': {
+                  backgroundColor: 'action.hover',
+                },
                 '&:active': {
                   transform: 'scale(0.95)',
                 }
               }}
             >
-              {localBook?.checked_out_by ? 'Check In' : 'Check Out'}
+              {localBook?.checked_out_by ? <Undo /> : <CheckCircle />}
+              <Typography variant="caption" sx={{ fontSize: '0.75rem', lineHeight: 1.2 }}>
+                {localBook?.checked_out_by ? 'Check In' : 'Check Out'}
+              </Typography>
             </Button>
           </Box>
         )}
