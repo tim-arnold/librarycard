@@ -58,7 +58,7 @@ export default function AddBooksPage() {
 
   return (
     <Suspense fallback={<AddBooksLoader />}>
-      <AddBooks initialTab="search" />
+      <AddBooks />
     </Suspense>
   )
 }

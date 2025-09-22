@@ -42,10 +42,8 @@ export function useRejectedReviewNotifications(): UseRejectedReviewNotifications
 
       if (response.ok) {
         const data = await response.json();
-        console.log('📋 Rejected reviews data:', data);
         setRejectedReviews(data.rejectedReviews || []);
         setUnreadRejectedCount(data.unreadCount || 0);
-        console.log('📊 Set unreadRejectedCount to:', data.unreadCount || 0);
       } else {
         const errorData = await response.json();
         setError(errorData.error || 'Failed to fetch rejected reviews');

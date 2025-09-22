@@ -9,17 +9,8 @@ import { UserDataProvider } from '@/contexts/UserDataContext'
 import { useState, useEffect } from 'react'
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  // Initialize input event debugging in development
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      // Auto-enable debugging to help identify input issues
-      inputEventDebug.enable()
-      
-      return () => {
-        inputEventDebug.disable()
-      }
-    }
-  }, [])
+  // Input event debugging available in console as window.inputEventDebug
+  // Call inputEventDebug.enable() in console to activate debugging if needed
 
   // Create a stable query client instance with aligned TTLs to prevent corruption
   const [queryClient] = useState(() => new QueryClient({
