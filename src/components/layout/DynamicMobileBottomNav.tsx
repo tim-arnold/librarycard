@@ -70,8 +70,18 @@ export default function DynamicMobileBottomNav({
 
           // Update the toolbar position to stick to the visual viewport bottom
           if (toolbarRef.current) {
-            const transform = diff > 0 ? `translateY(-${diff}px)` : 'translateY(0)'
-            toolbarRef.current.style.transform = transform
+            // When visual viewport is smaller than window (keyboard/browser UI visible),
+            // we want the toolbar to stay at the bottom of the visual viewport,
+            // which means it should be positioned at 0 from the visual viewport bottom
+            if (vh < windowHeight) {
+              // Browser UI is visible, position toolbar at visual viewport bottom
+              toolbarRef.current.style.bottom = '0px'
+              toolbarRef.current.style.transform = `translateY(-${windowHeight - vh}px)`
+            } else {
+              // No browser UI, use normal positioning
+              toolbarRef.current.style.bottom = '0px'
+              toolbarRef.current.style.transform = 'translateY(0px)'
+            }
           }
         }
       }, 16) // ~60fps debounce
@@ -168,7 +178,6 @@ export default function DynamicMobileBottomNav({
     borderTop: 1,
     borderColor: 'divider',
     paddingBottom: 'env(safe-area-inset-bottom)',
-    transform: 'translateY(0)',
     transition: 'transform 0.3s ease-out',
     ...sx,
   }
