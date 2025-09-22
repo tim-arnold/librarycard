@@ -47,6 +47,7 @@ export async function verifyBookCoverImage(
     // Look for book-related classifications
     const bookRelatedLabels = [
       'book',
+      'book jacket',
       'notebook',
       'magazine',
       'comic book',
@@ -57,7 +58,10 @@ export async function verifyBookCoverImage(
       'manual',
       'dictionary',
       'encyclopedia',
-      'publication'
+      'publication',
+      'cover',
+      'jacket',
+      'spine'
     ];
 
     // Look for inappropriate content that we want to reject
