@@ -170,13 +170,24 @@ export default function CoverSelectionModal({
       });
 
       if (!response.ok) {
-        throw new Error('Failed to upload image');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to upload image');
       }
 
       const uploadResult = await response.json();
 
       if (!uploadResult.success) {
-        throw new Error(uploadResult.error || 'Image upload failed');
+        // LCWEB-188: Handle image verification errors with user-friendly messages
+        const errorMessage = uploadResult.error || 'Image upload failed';
+
+        // Check if this is a verification error and provide specific guidance
+        if (errorMessage.includes('does not appear to be a book cover') ||
+            errorMessage.includes('inappropriate content') ||
+            errorMessage.includes('appears to contain people or faces')) {
+          throw new Error(errorMessage);
+        }
+
+        throw new Error(errorMessage);
       }
 
       // Create a cover option from the uploaded image
@@ -197,7 +208,7 @@ export default function CoverSelectionModal({
       handleCoverSelect(cameraCover)
     } catch (error) {
       console.error('Error uploading camera capture:', error);
-      setError('Failed to upload captured image. Please try again.');
+      setError(error instanceof Error ? error.message : 'Failed to upload captured image. Please try again.');
     }
   }
 
@@ -244,7 +255,12 @@ export default function CoverSelectionModal({
       maxWidth="lg"
       fullWidth
       PaperProps={{
-        sx: { maxHeight: '85vh', height: currentTab === 1 ? '600px' : 'auto' }
+        sx: {
+          maxHeight: '90vh',
+          height: currentTab === 1 ? 'auto' : 'auto',
+          display: 'flex',
+          flexDirection: 'column'
+        }
       }}
     >
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
@@ -262,7 +278,13 @@ export default function CoverSelectionModal({
         </Button>
       </DialogTitle>
 
-      <DialogContent sx={{ pb: 1 }}>
+      <DialogContent sx={{
+        pb: 1,
+        flex: 1,
+        overflow: 'auto',
+        display: 'flex',
+        flexDirection: 'column'
+      }}>
         {/* Tabs */}
         <Tabs
           value={currentTab}
@@ -505,14 +527,28 @@ export default function CoverSelectionModal({
 
         {/* Camera Tab Content */}
         {currentTab === 1 && (
-          <Box sx={{ height: 350 }}>
-            <BookCoverCapture
-              title={title}
-              author={author}
-              onCoverCapture={handleCameraCapture}
-              onCancel={() => setCurrentTab(0)}
-            />
-          </Box>
+          <>
+            {/* Error Display for Camera Tab */}
+            {error && (
+              <Alert severity="warning" sx={{ mb: 2 }}>
+                {error}
+              </Alert>
+            )}
+
+            <Box sx={{
+              flex: 1,
+              minHeight: 300,
+              maxHeight: 'calc(100vh - 280px)', // Account for header, tabs, error, and buttons
+              overflow: 'hidden'
+            }}>
+              <BookCoverCapture
+                title={title}
+                author={author}
+                onCoverCapture={handleCameraCapture}
+                onCancel={() => setCurrentTab(0)}
+              />
+            </Box>
+          </>
         )}
       </DialogContent>
 

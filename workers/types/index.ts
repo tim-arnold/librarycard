@@ -7,13 +7,13 @@ export interface Env {
   DB: D1Database;
   DATABASE: D1Database; // Alias for DB
   NEXTAUTH_SECRET: string;
+  NEXTAUTH_URL?: string;
   JWT_SECRET: string;
   SMTP_HOST: string;
   SMTP_PORT: string;
   SMTP_USER: string;
   SMTP_PASS: string;
   FROM_EMAIL: string;
-  APP_URL: string;
   ENVIRONMENT?: string;
   // LCWEB-184: Centralized Domain Configuration
   DOMAIN?: string;
@@ -29,6 +29,8 @@ export interface Env {
   CACHE?: KVNamespace;
   // Cloudflare R2 for image storage
   R2_BUCKET?: R2Bucket;
+  // Cloudflare AI for image verification
+  AI?: any;
 }
 
 export interface User {

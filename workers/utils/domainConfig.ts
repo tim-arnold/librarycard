@@ -28,8 +28,8 @@ export function detectWorkerEnvironment(env: Env): Environment {
     return explicitEnv as Environment
   }
 
-  // Fallback detection based on APP_URL
-  const appUrl = env.APP_URL || ''
+  // Fallback detection based on NEXTAUTH_URL
+  const appUrl = env.NEXTAUTH_URL || ''
 
   if (appUrl.includes('localhost')) {
     return 'local'
@@ -47,13 +47,13 @@ export function detectWorkerEnvironment(env: Env): Environment {
 export function getWorkerDomainUrls(env: Env): WorkerDomainUrls {
   const environment = detectWorkerEnvironment(env)
 
-  // If we have explicit configuration, use it
-  if (env.APP_URL && env.FROM_EMAIL) {
+  // If we have NEXTAUTH_URL set, use it for frontend URL
+  if (env.NEXTAUTH_URL) {
     return {
-      frontendUrl: env.APP_URL,
-      fromEmail: env.FROM_EMAIL,
-      supportEmail: env.FROM_EMAIL.replace('librarian@', 'support@'),
-      adminEmail: env.FROM_EMAIL.replace('librarian@', 'admin@')
+      frontendUrl: env.NEXTAUTH_URL,
+      fromEmail: env.FROM_EMAIL || getWorkerFromEmail(env),
+      supportEmail: (env.FROM_EMAIL || getWorkerFromEmail(env)).replace('librarian@', 'support@'),
+      adminEmail: (env.FROM_EMAIL || getWorkerFromEmail(env)).replace('librarian@', 'admin@')
     }
   }
 
@@ -68,7 +68,7 @@ export function getWorkerDomainUrls(env: Env): WorkerDomainUrls {
       }
 
     case 'staging':
-      const stagingDomain = env.DOMAIN || 'staging--libarycard.netlify.app'
+      const stagingDomain = env.DOMAIN || 'librarycard-staging.tim52.io'
       const stagingEmailDomain = env.EMAIL_DOMAIN || 'tim52.io'
 
       return {
@@ -134,8 +134,8 @@ export function validateWorkerDomainConfig(env: Env): {
 
   // Check for required variables in production
   if (environment === 'production') {
-    if (!env.APP_URL && !env.DOMAIN) {
-      warnings.push('Production environment should have APP_URL or DOMAIN set')
+    if (!env.NEXTAUTH_URL && !env.DOMAIN) {
+      warnings.push('Production environment should have NEXTAUTH_URL or DOMAIN set')
     }
     if (!env.FROM_EMAIL && !env.EMAIL_DOMAIN) {
       warnings.push('Production environment should have FROM_EMAIL or EMAIL_DOMAIN set')
@@ -162,10 +162,10 @@ export function validateWorkerDomainConfig(env: Env): {
 
 /**
  * Legacy compatibility function
- * Provides fallback to existing env.APP_URL pattern
+ * Provides fallback to existing env.NEXTAUTH_URL pattern
  */
 export function getAppUrl(env: Env): string {
-  return env.APP_URL || getWorkerFrontendUrl(env)
+  return env.NEXTAUTH_URL || getWorkerFrontendUrl(env)
 }
 
 /**

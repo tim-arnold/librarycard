@@ -21,7 +21,6 @@ account_id = "18394f148930f0f3933fee06ecef99d0"
 
 [vars]
 ENVIRONMENT = "staging"
-APP_URL = "https://staging--libarycard.netlify.app"
 FROM_EMAIL = "LibraryCard <librarian@tim52.io>"
 
 # Staging Database - NEW ACCOUNT
@@ -40,13 +39,16 @@ id = "a7451e32dc8740efb83e3c0751ea3c08"
 binding = "R2_BUCKET"
 bucket_name = "librarycard-images-staging"
 
+# Staging AI - NEW ACCOUNT
+[ai]
+binding = "AI"
+
 # ONLY staging environment - isolated account
 [env.staging]
 name = "librarycard-api-staging"
 
 [env.staging.vars]
 ENVIRONMENT = "staging"
-APP_URL = "https://staging--libarycard.netlify.app"
 FROM_EMAIL = "LibraryCard <librarian@tim52.io>"
 
 [[env.staging.d1_databases]]
@@ -61,3 +63,6 @@ id = "a7451e32dc8740efb83e3c0751ea3c08"
 [[env.staging.r2_buckets]]
 binding = "R2_BUCKET"
 bucket_name = "librarycard-images-staging"
+
+[env.staging.ai]
+binding = "AI"

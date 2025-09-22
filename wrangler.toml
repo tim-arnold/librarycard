@@ -8,7 +8,6 @@ account_id = "4bef1453ad78da6e3bb7e83b421e26df"
 
 [vars]
 ENVIRONMENT = "local"
-APP_URL = "http://localhost:3000"
 FROM_EMAIL = "LibraryCard <noreply@localhost>"
 JWT_SECRET = "dev-jwt-secret-change-in-production-environments"
 
@@ -33,7 +32,6 @@ name = "librarycard-api-local"
 
 [env.local.vars]
 ENVIRONMENT = "local"
-APP_URL = "http://localhost:3000"
 FROM_EMAIL = "LibraryCard <noreply@localhost>"
 JWT_SECRET = "dev-jwt-secret-change-in-production-environments"
 
@@ -59,7 +57,6 @@ account_id = "18394f148930f0f3933fee06ecef99d0"
 
 [env.staging.vars]
 ENVIRONMENT = "staging"
-APP_URL = "https://staging--libarycard.netlify.app"
 FROM_EMAIL = "LibraryCard <librarian@tim52.io>"
 JWT_SECRET = "dev-jwt-secret-change-in-production-environments"
 
@@ -76,6 +73,9 @@ id = "a7451e32dc8740efb83e3c0751ea3c08"
 binding = "R2_BUCKET"
 bucket_name = "librarycard-images-staging"
 
+[env.staging.ai]
+binding = "AI"
+
 # Production environment  
 # Use: npx wrangler deploy --env=production
 [env.production]
@@ -84,7 +84,6 @@ compatibility_flags = ["nodejs_compat"]
 
 [env.production.vars]
 ENVIRONMENT = "production"
-APP_URL = "https://librarycard.tim52.io"
 FROM_EMAIL = "LibraryCard <librarian@tim52.io>"
 # JWT_SECRET should be set as a secure environment variable for production
 
@@ -100,3 +99,6 @@ id = "8f5a86fc82a64b10ba946d749f2dc8f4"
 [[env.production.r2_buckets]]
 binding = "R2_BUCKET"
 bucket_name = "librarycard-images-production"
+
+[env.production.ai]
+binding = "AI"
