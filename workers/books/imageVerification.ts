@@ -146,13 +146,16 @@ export async function verifyBookCoverImage(
       // Detected book content with reasonable confidence - accept
       isBookCover = true;
       finalConfidence = maxBookConfidence;
+    } else if (!hasInappropriateContent) {
+      // No inappropriate content detected - be permissive and allow
+      // (could be doormat, random objects, etc. - no harm in allowing these)
+      isBookCover = true;
+      finalConfidence = 0.5;
     } else {
-      // No book content detected or low confidence - reject
+      // Has inappropriate content but low confidence - reject to be safe
       isBookCover = false;
-      rejectionReason = hasInappropriateContent
-        ? 'Image appears to contain inappropriate content (people, faces, etc.)'
-        : 'Image does not appear to be a book cover';
-      finalConfidence = Math.max(maxBookConfidence, maxInappropriateConfidence);
+      rejectionReason = 'Image appears to contain inappropriate content (people, faces, etc.)';
+      finalConfidence = maxInappropriateConfidence;
     }
 
     return {
