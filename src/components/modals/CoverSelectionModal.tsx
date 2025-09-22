@@ -17,13 +17,9 @@ import {
   CardMedia,
   Chip,
   TextField,
-  FormControlLabel,
-  Switch,
   Tooltip,
-  Tabs,
-  Tab,
 } from '@mui/material'
-import { Close, Image, Search, AutoAwesome, Book, Public, CameraAlt } from '@mui/icons-material'
+import { Close, Image, Search, Book, Public, CameraAlt } from '@mui/icons-material'
 import BookCoverCapture from '../library/BookCoverCapture'
 
 interface CoverOption {
@@ -74,7 +70,7 @@ export default function CoverSelectionModal({
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string>('')
   const [searchQuery, setSearchQuery] = useState(`${title} ${author}`.trim())
-  const [enhancedMode, setEnhancedMode] = useState(true) // Default to enhanced mode
+  const enhancedMode = true // Always use enhanced mode for better results
   const [currentTab, setCurrentTab] = useState(0) // 0 = Search, 1 = Camera
   const { data: session } = useSession()
 
@@ -285,96 +281,126 @@ export default function CoverSelectionModal({
         display: 'flex',
         flexDirection: 'column'
       }}>
-        {/* Tabs */}
-        <Tabs
-          value={currentTab}
-          onChange={handleTabChange}
-          sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}
-        >
-          <Tab
-            icon={<Search />}
-            label="Search Online"
-            iconPosition="start"
-          />
-          <Tab
-            icon={<CameraAlt />}
-            label="Camera Capture"
-            iconPosition="start"
-          />
-        </Tabs>
+        {/* Custom Navigation - styled like mobile bottom nav */}
+        <Box sx={{
+          display: 'flex',
+          borderBottom: 1,
+          borderColor: 'divider',
+          mb: 2,
+          backgroundColor: 'background.paper',
+          borderRadius: '8px 8px 0 0'
+        }}>
+          <Button
+            onClick={() => setCurrentTab(0)}
+            sx={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 0.5,
+              py: 2,
+              px: 1,
+              minHeight: 64,
+              borderRadius: 0,
+              color: currentTab === 0 ? 'primary.main' : 'text.secondary',
+              backgroundColor: currentTab === 0 ? 'primary.50' : 'transparent',
+              '&:hover': {
+                backgroundColor: currentTab === 0 ? 'primary.50' : 'action.hover',
+              }
+            }}
+          >
+            <Search />
+            <Typography variant="caption" sx={{ fontSize: '0.75rem', lineHeight: 1.2 }}>
+              Search Online
+            </Typography>
+          </Button>
+          <Button
+            onClick={() => setCurrentTab(1)}
+            sx={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 0.5,
+              py: 2,
+              px: 1,
+              minHeight: 64,
+              borderRadius: 0,
+              color: currentTab === 1 ? 'primary.main' : 'text.secondary',
+              backgroundColor: currentTab === 1 ? 'primary.50' : 'transparent',
+              '&:hover': {
+                backgroundColor: currentTab === 1 ? 'primary.50' : 'action.hover',
+              }
+            }}
+          >
+            <CameraAlt />
+            <Typography variant="caption" sx={{ fontSize: '0.75rem', lineHeight: 1.2 }}>
+              Camera Capture
+            </Typography>
+          </Button>
+        </Box>
 
         {/* Search Tab Content */}
         {currentTab === 0 && (
           <>
             {/* Search Controls */}
-            <Box sx={{ mb: 3, p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="subtitle2">
-              Search Settings
-            </Typography>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={enhancedMode}
-                  onChange={(e) => setEnhancedMode(e.target.checked)}
-                  disabled={isLoading}
-                />
-              }
-              label={
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <AutoAwesome fontSize="small" />
-                  <Typography variant="body2">
-                    Enhanced (2 sources)
-                  </Typography>
-                </Box>
-              }
-            />
-          </Box>
-          
-          {enhancedMode && (
-            <Box sx={{ mb: 2, p: 1.5, bgcolor: 'action.hover', borderRadius: 1 }}>
-              <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-                Enhanced mode searches across multiple sources:
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                <Chip
-                  icon={<Book />}
-                  label="Google Books"
-                  size="small"
-                  variant="outlined"
-                  color="primary"
-                />
-                <Chip
-                  icon={<Public />}
-                  label="Open Library"
-                  size="small"
-                  variant="outlined"
-                  color="success"
-                />
-              </Box>
+            <Box sx={{
+              mb: 2,
+              display: 'flex',
+              gap: { xs: 1, sm: 2 },
+              flexDirection: { xs: 'column', sm: 'row' },
+              alignItems: { xs: 'stretch', sm: 'end' }
+            }}>
+              <TextField
+                label="Search Query"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                disabled={isLoading}
+                placeholder="Enter title, author, or keywords..."
+                size="small"
+                sx={{ flex: 1 }}
+              />
+              <Button
+                variant="contained"
+                onClick={handleSearch}
+                disabled={isLoading || !searchQuery.trim()}
+                startIcon={isLoading ? <CircularProgress size={16} /> : <Search />}
+                sx={{
+                  minWidth: { xs: 'auto', sm: 100 },
+                  py: { xs: 1, sm: 'auto' }
+                }}
+              >
+                Search
+              </Button>
             </Box>
-          )}
-          
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'end' }}>
-            <TextField
-              label="Search Query"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              disabled={isLoading}
-              placeholder="Enter title, author, or keywords..."
-              sx={{ flex: 1 }}
-            />
-            <Button
-              variant="outlined"
-              onClick={handleSearch}
-              disabled={isLoading || !searchQuery.trim()}
-              startIcon={isLoading ? <CircularProgress size={16} /> : <Search />}
-              sx={{ minWidth: 100 }}
-            >
-              Search
-            </Button>
-          </Box>
-        </Box>
+
+            {/* Sources Info - Compact */}
+            <Box sx={{
+              mb: 2,
+              display: 'flex',
+              gap: 1,
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexWrap: 'wrap'
+            }}>
+              <Typography variant="caption" color="text.secondary">
+                Searching:
+              </Typography>
+              <Chip
+                icon={<Book />}
+                label="Google Books"
+                size="small"
+                variant="outlined"
+                color="primary"
+              />
+              <Chip
+                icon={<Public />}
+                label="Open Library"
+                size="small"
+                variant="outlined"
+                color="success"
+              />
+            </Box>
 
             {/* Error Display */}
             {error && (
