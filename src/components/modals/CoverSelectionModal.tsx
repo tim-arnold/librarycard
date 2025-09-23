@@ -21,6 +21,7 @@ import {
 } from '@mui/material'
 import { Close, Image, Search, Book, Public, CameraAlt } from '@mui/icons-material'
 import BookCoverCapture from '../library/BookCoverCapture'
+import AppealModal from './AppealModal'
 
 interface CoverOption {
   id: string
@@ -72,6 +73,12 @@ export default function CoverSelectionModal({
   const [searchQuery, setSearchQuery] = useState(`${title} ${author}`.trim())
   const enhancedMode = true // Always use enhanced mode for better results
   const [currentTab, setCurrentTab] = useState(0) // 0 = Search, 1 = Camera
+  const [appealModalOpen, setAppealModalOpen] = useState(false)
+  const [appealData, setAppealData] = useState<{
+    imageDataUrl: string
+    rejectionReason: string
+    aiClassificationResults?: any
+  } | null>(null)
   const { data: session } = useSession()
 
   const fetchEditions = async (queryParam?: string) => {
@@ -173,13 +180,21 @@ export default function CoverSelectionModal({
       const uploadResult = await response.json();
 
       if (!uploadResult.success) {
-        // LCWEB-188: Handle image verification errors with user-friendly messages
+        // LCWEB-190: Handle image verification errors with appeal option
         const errorMessage = uploadResult.error || 'Image upload failed';
 
-        // Check if this is a verification error and provide specific guidance
+        // Check if this is a verification error and provide appeal option
         if (errorMessage.includes('does not appear to be a book cover') ||
             errorMessage.includes('inappropriate content') ||
             errorMessage.includes('appears to contain people or faces')) {
+
+          // Store appeal data for potential appeal submission
+          setAppealData({
+            imageDataUrl,
+            rejectionReason: errorMessage,
+            aiClassificationResults: uploadResult.verification
+          });
+
           throw new Error(errorMessage);
         }
 
@@ -556,8 +571,38 @@ export default function CoverSelectionModal({
           <>
             {/* Error Display for Camera Tab */}
             {error && (
-              <Alert severity="warning" sx={{ mb: 2 }}>
+              <Alert
+                severity="warning"
+                sx={{ mb: 2 }}
+                action={
+                  // LCWEB-190: Show appeal button for AI verification errors
+                  appealData && (
+                    error.includes('does not appear to be a book cover') ||
+                    error.includes('inappropriate content') ||
+                    error.includes('appears to contain people or faces')
+                  ) ? (
+                    <Button
+                      color="inherit"
+                      size="small"
+                      onClick={() => setAppealModalOpen(true)}
+                      sx={{ ml: 1 }}
+                    >
+                      Report Issue
+                    </Button>
+                  ) : null
+                }
+              >
                 {error}
+                {/* LCWEB-190: Additional appeal info for verification errors */}
+                {appealData && (
+                  error.includes('does not appear to be a book cover') ||
+                  error.includes('inappropriate content') ||
+                  error.includes('appears to contain people or faces')
+                ) && (
+                  <Typography variant="body2" sx={{ mt: 1, fontSize: '0.875rem' }}>
+                    If you believe this is a legitimate book cover, you can report this issue to help us improve our AI verification system.
+                  </Typography>
+                )}
               </Alert>
             )}
 
@@ -579,13 +624,31 @@ export default function CoverSelectionModal({
       </DialogContent>
 
       <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button 
-          onClick={handleClose} 
+        <Button
+          onClick={handleClose}
           color="inherit"
         >
           Cancel
         </Button>
       </DialogActions>
+
+      {/* LCWEB-190: Appeal Modal for AI Verification Issues */}
+      {appealData && (
+        <AppealModal
+          open={appealModalOpen}
+          onClose={() => setAppealModalOpen(false)}
+          bookTitle={title}
+          bookAuthor={author}
+          rejectedImageDataUrl={appealData.imageDataUrl}
+          rejectionReason={appealData.rejectionReason}
+          aiClassificationResults={appealData.aiClassificationResults}
+          onAppealSubmitted={() => {
+            setAppealModalOpen(false)
+            setAppealData(null)
+            setError('') // Clear the error once appeal is submitted
+          }}
+        />
+      )}
     </Dialog>
   )
 }

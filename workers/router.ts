@@ -5,6 +5,7 @@ import { AdminRouter } from './admin/router';
 import { LocationsRouter } from './locations/router';
 import { ProfileRouter } from './profile/router';
 import { SeriesRouter } from './series/router';
+import { handleAppealsRequest } from './appeals';
 import { getUserFromRequest } from './auth';
 import { RateLimiter } from './auth/rate-limiter';
 import { withGlobalErrorHandling, ErrorCategory, createSecureErrorResponse } from './errors';
@@ -201,6 +202,12 @@ export class MainRouter {
         if (seriesResponse) {
           return seriesResponse;
         }
+      }
+
+      // Appeals endpoints (LCWEB-190)
+      if (path.startsWith('/api/appeals')) {
+        const pathSegments = path.replace('/api/appeals', '').split('/').filter(Boolean);
+        return await handleAppealsRequest(request, env, pathSegments);
       }
 
       // === FALLBACK: No router handled the request ===
