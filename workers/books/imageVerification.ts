@@ -1,6 +1,81 @@
 import { Env } from '../types';
 
 /**
+ * Get allowed AI classification labels from database
+ * Includes caching for performance
+ */
+async function getAllowedLabels(env: Env): Promise<{ labels: string[], confidence_thresholds: Map<string, number> }> {
+  try {
+    // Try to get from cache first
+    const cacheKey = 'ai_allowlist_v1';
+    let allowlistData = null;
+
+    if (env.CACHE) {
+      const cached = await env.CACHE.get(cacheKey);
+      if (cached) {
+        allowlistData = JSON.parse(cached);
+      }
+    }
+
+    // If not in cache, fetch from database
+    if (!allowlistData) {
+      const stmt = env.DB.prepare(`
+        SELECT label, confidence_threshold
+        FROM ai_classification_allowlist
+        WHERE is_active = TRUE
+      `);
+
+      const result = await stmt.all();
+      const labels: string[] = [];
+      const confidence_thresholds = new Map<string, number>();
+
+      if (result.results) {
+        for (const row of result.results as any[]) {
+          labels.push(row.label.toLowerCase());
+          confidence_thresholds.set(row.label.toLowerCase(), row.confidence_threshold || 0.2);
+        }
+      }
+
+      allowlistData = {
+        labels,
+        confidence_thresholds: Array.from(confidence_thresholds.entries())
+      };
+
+      // Cache for 1 hour
+      if (env.CACHE) {
+        await env.CACHE.put(cacheKey, JSON.stringify(allowlistData), { expirationTtl: 3600 });
+      }
+    }
+
+    // Convert confidence_thresholds back to Map if it was serialized
+    const confidence_thresholds = new Map(allowlistData.confidence_thresholds);
+
+    return {
+      labels: allowlistData.labels,
+      confidence_thresholds
+    };
+  } catch (error) {
+    console.error('Error fetching allowed labels from database:', error);
+
+    // Fallback to static list if database fails
+    const fallbackLabels = [
+      'book', 'book jacket', 'notebook', 'magazine', 'comic book',
+      'paperback', 'hardcover', 'novel', 'textbook', 'manual',
+      'dictionary', 'encyclopedia', 'publication', 'cover', 'jacket', 'spine',
+      'doormat', 'door mat'
+    ];
+
+    const fallbackThresholds = new Map<string, number>();
+    fallbackLabels.forEach(label => fallbackThresholds.set(label, 0.2));
+
+    return {
+      labels: fallbackLabels,
+      confidence_thresholds: fallbackThresholds
+    };
+  }
+}
+
+/**
  * Image Verification for Book Covers
  * Uses Cloudflare AI to verify that uploaded images are actually book covers
  * and not inappropriate content like selfies or other non-book images
@@ -44,29 +119,8 @@ export async function verifyBookCoverImage(
     // Extract classification results - the response IS the predictions array
     const predictions = Array.isArray(response) ? response : (response?.predictions || []);
 
-    // Allowlist approach: what we explicitly allow
-    const allowedLabels = [
-      // Books and book-related items
-      'book',
-      'book jacket',
-      'notebook',
-      'magazine',
-      'comic book',
-      'paperback',
-      'hardcover',
-      'novel',
-      'textbook',
-      'manual',
-      'dictionary',
-      'encyclopedia',
-      'publication',
-      'cover',
-      'jacket',
-      'spine',
-      // Common misclassifications that are actually fine
-      'doormat',
-      'door mat'
-    ];
+    // Get dynamic allowlist from database
+    const { labels: allowedLabels, confidence_thresholds } = await getAllowedLabels(env);
 
     // Only reject obvious human/person indicators
     const personIndicators = [
@@ -112,11 +166,14 @@ export async function verifyBookCoverImage(
 
       detectedLabels.push(`${label}:${confidence.toFixed(2)}`);
 
-      // Check for explicitly allowed content
+      // Check for explicitly allowed content with dynamic thresholds
       for (const allowedLabel of allowedLabels) {
         if (label.includes(allowedLabel)) {
-          hasAllowedContent = true;
-          maxAllowedConfidence = Math.max(maxAllowedConfidence, confidence);
+          const threshold = confidence_thresholds.get(allowedLabel) || 0.2;
+          if (confidence >= threshold) {
+            hasAllowedContent = true;
+            maxAllowedConfidence = Math.max(maxAllowedConfidence, confidence);
+          }
         }
       }
 
@@ -134,8 +191,8 @@ export async function verifyBookCoverImage(
     let rejectionReason: string | undefined;
     let finalConfidence = 0;
 
-    if (hasAllowedContent && maxAllowedConfidence > 0.2) {
-      // Detected book-related content - accept
+    if (hasAllowedContent) {
+      // Detected book-related content above dynamic thresholds - accept
       isBookCover = true;
       finalConfidence = maxAllowedConfidence;
     } else {

@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS ai_classification_allowlist (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   label TEXT NOT NULL UNIQUE, -- AI classification label to allow
   confidence_threshold REAL DEFAULT 0.2, -- Minimum confidence to accept this label
-  added_by TEXT NOT NULL, -- Admin who added this label
+  added_by TEXT, -- Admin who added this label (NULL for system-seeded entries)
   added_from_appeal_id INTEGER, -- Reference to the appeal that triggered this addition
   reason TEXT, -- Why this label was added to allowlist
   is_active BOOLEAN DEFAULT TRUE,
@@ -86,3 +86,29 @@ CREATE TRIGGER IF NOT EXISTS update_ai_allowlist_updated_at
 BEGIN
   UPDATE ai_classification_allowlist SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;
+
+-- Seed the allowlist with existing static terms from imageVerification.ts
+-- This moves the hardcoded allowlist to the database for dynamic management
+
+-- Book and book-related items (using NULL for added_by since 'system' user doesn't exist)
+INSERT INTO ai_classification_allowlist (label, confidence_threshold, added_by, reason, is_active) VALUES
+('book', 0.2, NULL, 'Core book classification - migrated from static allowlist', TRUE),
+('book jacket', 0.2, NULL, 'Book cover identification - migrated from static allowlist', TRUE),
+('notebook', 0.2, NULL, 'Book-related item - migrated from static allowlist', TRUE),
+('magazine', 0.2, NULL, 'Publication type - migrated from static allowlist', TRUE),
+('comic book', 0.2, NULL, 'Book type - migrated from static allowlist', TRUE),
+('paperback', 0.2, NULL, 'Book format - migrated from static allowlist', TRUE),
+('hardcover', 0.2, NULL, 'Book format - migrated from static allowlist', TRUE),
+('novel', 0.2, NULL, 'Book type - migrated from static allowlist', TRUE),
+('textbook', 0.2, NULL, 'Book type - migrated from static allowlist', TRUE),
+('manual', 0.2, NULL, 'Book type - migrated from static allowlist', TRUE),
+('dictionary', 0.2, NULL, 'Book type - migrated from static allowlist', TRUE),
+('encyclopedia', 0.2, NULL, 'Book type - migrated from static allowlist', TRUE),
+('publication', 0.2, NULL, 'General publication - migrated from static allowlist', TRUE),
+('cover', 0.2, NULL, 'Book cover element - migrated from static allowlist', TRUE),
+('jacket', 0.2, NULL, 'Book cover element - migrated from static allowlist', TRUE),
+('spine', 0.2, NULL, 'Book element - migrated from static allowlist', TRUE),
+
+-- Common misclassifications that are actually fine
+('doormat', 0.2, NULL, 'Common AI misclassification of book covers - migrated from static allowlist', TRUE),
+('door mat', 0.2, NULL, 'Common AI misclassification of book covers - migrated from static allowlist', TRUE);
