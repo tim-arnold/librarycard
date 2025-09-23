@@ -51,6 +51,8 @@ LibraryCard is built as a modern, serverless web application using a hybrid arch
 - **CDN**: Netlify Edge Network
 - **SSL**: Automatic HTTPS via Netlify
 - **Email**: Resend for verification emails
+- **Image Storage**: Cloudflare R2 buckets for custom book cover storage
+- **AI Services**: Cloudflare AI for image verification and content validation
 
 ### External Services
 - **Book Data**: Enhanced multi-source search (Google Books + OpenLibrary)
@@ -58,6 +60,8 @@ LibraryCard is built as a modern, serverless web application using a hybrid arch
 - **Barcode Scanning**: ZXing library (@zxing/library)
 - **Email Service**: Resend for user verification
 - **Authentication**: NextAuth.js with Google OAuth and email/password
+- **Image Storage**: Cloudflare R2 for custom book cover storage
+- **AI Image Verification**: Cloudflare AI (@cf/microsoft/resnet-50) for book cover validation
 
 ### Component Design Philosophy
 
@@ -176,297 +180,351 @@ User can filter/search locally
 ### Frontend Components
 ```
 src/
-├── app/
-│   ├── layout.tsx          # Root layout with metadata
-│   ├── page.tsx            # Main app with tab navigation
-│   └── globals.css         # Global styles
+├── app/                    # Next.js App Router pages
+│   ├── layout.tsx              # Root layout with metadata
+│   ├── page.tsx                # Main app entry point
+│   ├── admin/                  # Admin-only pages
+│   │   ├── analytics/          # Performance analytics dashboard
+│   │   ├── locations/          # Location management interface
+│   │   ├── notifications/      # Admin notification center
+│   │   ├── reviews/            # Review moderation interface
+│   │   ├── signup-requests/    # User approval workflow
+│   │   └── users/              # User management dashboard
+│   ├── auth/                   # Authentication pages
+│   │   ├── signin/             # Sign-in page
+│   │   └── reset-password/     # Password reset flow
+│   ├── contact/                # Contact and support pages
+│   │   ├── enterprise/         # Enterprise contact form
+│   │   ├── success/            # Form submission success
+│   │   └── support/            # General support contact
+│   ├── library/                # Library browsing and filtering
+│   │   └── [...filters]/       # Dynamic filter-based routing
+│   ├── add-books/              # Book addition workflows
+│   │   └── scan/               # OCR shelf scanning page
+│   └── api/                    # Next.js API routes (auth only)
+│       ├── auth/               # NextAuth.js authentication
+│       ├── contact/            # Contact form processing
+│       └── health/             # Health check endpoint
 ├── components/
-│   ├── book/
-│   │   ├── AddBooks.tsx        # Main book addition coordinator
-│   │   ├── ISBNScanner.tsx     # Camera scanning + manual ISBN entry
-│   │   ├── BookSearch.tsx      # Google Books API search interface
-│   │   ├── BookPreview.tsx     # Selected book display + editing
-│   │   ├── BookLibrary.tsx     # Main library display coordinator (538 lines)
-│   │   ├── BookGrid.tsx        # Card view display component
-│   │   ├── BookList.tsx        # List view display component
-│   │   ├── BookActions.tsx     # Reusable action buttons
-│   │   ├── BookFilters.tsx     # Search and filter controls
-│   │   ├── ShelfSelector.tsx   # Shelf/location selection UI
-│   │   ├── StarRating.tsx      # Star rating display component
-│   │   ├── StarRatingInput.tsx # Interactive star rating input
-│   │   └── GenreSelector.tsx   # Genre management interface
-│   ├── library/
-│   │   ├── LibraryHeader.tsx   # Library header with search and actions
-│   │   ├── ActiveFilters.tsx   # Filter display and management
-│   │   ├── BookViews.tsx       # Different book view modes
-│   │   ├── ShelfTiles.tsx      # Shelf navigation tiles
-│   │   ├── ViewModeControls.tsx # View mode switching
-│   │   └── ISBNScanner.tsx     # ISBN scanning functionality
-│   ├── admin/
-│   │   ├── LocationManager.tsx # Admin location management
-│   │   ├── LocationPermissionManager.tsx # Permission management
-│   │   └── AdminUserManager.tsx # User management interface
-│   ├── modals/
-│   │   ├── MoreDetailsModal.tsx # Book details modal
-│   │   ├── BookRelocateModal.tsx # Book relocation modal
-│   │   ├── RatingModal.tsx     # Star rating modal
-│   │   ├── RemovalRequestManager.tsx # Admin removal requests
-│   │   └── ...                 # Other modal components
-│   └── layout/
-│       ├── AppLayout.tsx       # Main app layout
-│       └── CookieNotice.tsx    # Privacy compliance
-├── hooks/
-│   ├── useBookLibrary.ts       # Library state management
-│   ├── useBookActions.ts       # Book action handlers
-│   ├── useBookFilters.ts       # Filter state and logic
-│   └── useModal.ts            # Modal state management
-└── lib/
-    ├── bookApi.ts          # External book data fetching
-    ├── api.ts              # Backend API communication (direct worker calls)
-    ├── apiConfig.ts        # Centralized API URL configuration
-    ├── types.ts            # TypeScript interfaces
-    ├── theme.ts            # Material UI theme configuration
-    └── permissions.ts      # Permission utilities
+│   ├── admin/                  # Administrative interfaces
+│   │   ├── AdminAnalytics.tsx      # Performance metrics dashboard
+│   │   ├── AdminDashboard.tsx      # Main admin overview
+│   │   ├── AdminNotificationCenter.tsx # Admin notification management
+│   │   ├── AdminSeriesReview.tsx   # Series approval workflow
+│   │   ├── AdminSignupManager.tsx  # User signup approval interface
+│   │   ├── AdminUserManager.tsx    # User management and role assignment
+│   │   ├── GenreManager.tsx        # Genre CRUD operations
+│   │   ├── GenreRequestManager.tsx # User genre suggestion review
+│   │   ├── LocationManager.tsx     # Location and shelf management
+│   │   ├── LocationPermissionManager.tsx # Permission assignment interface
+│   │   ├── RemovalRequestManager.tsx # Book removal approval workflow
+│   │   └── ReviewModerationComponent.tsx # Review content moderation
+│   ├── auth/                   # Authentication components
+│   │   ├── PasskeyManager.tsx      # WebAuthn passkey management
+│   │   ├── PasskeySignIn.tsx       # Passkey authentication UI
+│   │   ├── TOTPInput.tsx           # TOTP code input component
+│   │   ├── TwoFactorSetup.tsx      # 2FA enrollment interface
+│   │   └── TwoFactorVerification.tsx # 2FA authentication UI
+│   ├── book/                   # Book management components
+│   │   ├── AddBooks.tsx            # Main book addition coordinator
+│   │   ├── AnimatedBookCover.tsx   # Animated cover transitions
+│   │   ├── AnimatedCheckoutStatus.tsx # Checkout status animations
+│   │   ├── BookActions.tsx         # Reusable action buttons
+│   │   ├── BookGrid.tsx            # Card view display component
+│   │   ├── BookList.tsx            # List view display component
+│   │   ├── BookPreview.tsx         # Selected book display + editing
+│   │   ├── BookSearch.tsx          # Google Books API search interface
+│   │   ├── GenreSelector.tsx       # Genre assignment interface
+│   │   ├── SecondaryActionsMenu.tsx # Context menu for book actions
+│   │   ├── StarRating.tsx          # Star rating display component
+│   │   ├── StarRatingInput.tsx     # Interactive star rating input
+│   │   └── VirtualizedBookGrid.tsx # Performance-optimized large library view
+│   ├── common/                 # Shared utility components
+│   │   └── CoverAttribution.tsx    # Book cover source attribution
+│   ├── dev/                    # Development and debugging components
+│   │   └── PerformanceMonitor.tsx  # Performance monitoring and debugging
+│   ├── layout/                 # Layout and navigation components
+│   │   ├── AddBooksMobileBottomNav.tsx # Add books mobile navigation
+│   │   ├── AppLayout.tsx           # Main application layout wrapper
+│   │   ├── AppLayoutWithGlobalHeader.tsx # Layout with global header
+│   │   ├── ConditionalAppLayout.tsx # Dynamic layout selection
+│   │   ├── CookieNotice.tsx        # Privacy compliance banner
+│   │   ├── DynamicMobileBottomNav.tsx # Viewport-aware mobile navigation
+│   │   ├── Footer.tsx              # Application footer
+│   │   ├── GlobalHeader.tsx        # Global navigation header
+│   │   ├── MobileBottomNav.tsx     # Mobile bottom navigation
+│   │   ├── MobileFilterDrawer.tsx  # Mobile filter sidebar
+│   │   ├── PageContainer.tsx       # Page content wrapper
+│   │   ├── ProfileSettingsMobileBottomNav.tsx # Profile mobile navigation
+│   │   └── ThemeMenu.tsx           # Theme selection interface
+│   ├── library/                # Library browsing and management
+│   │   ├── ActiveFilters.tsx       # Active filter display and management
+│   │   ├── BookCoverCapture.tsx    # Camera-based cover photo capture
+│   │   ├── BookFilters.tsx         # Search and filter controls
+│   │   ├── BookLibrary.tsx         # Main library display coordinator
+│   │   ├── BookViews.tsx           # Different book view modes
+│   │   ├── CartIndicator.tsx       # Selection cart indicator
+│   │   ├── ISBNScanner.tsx         # ISBN barcode scanning
+│   │   ├── LibraryHeader.tsx       # Library header with search and actions
+│   │   ├── MobileSearchPanel.tsx   # Mobile search interface
+│   │   ├── SelectionModeToggle.tsx # Bulk selection mode toggle
+│   │   ├── ShelfSelector.tsx       # Shelf/location selection UI
+│   │   ├── ViewModeControls.tsx    # View mode switching controls
+│   │   └── sidebar/                # Library sidebar components
+│   │       ├── LibrarySidebar.tsx      # Main sidebar container
+│   │       ├── NewlyAdded.tsx          # Recently added books widget
+│   │       ├── PopularBooks.tsx        # Popular books widget
+│   │       └── RecentReviews.tsx       # Recent reviews activity widget
+│   ├── marketing/              # Marketing and public pages
+│   │   ├── forms/
+│   │   │   └── ContactForm.tsx     # Contact form component
+│   │   ├── layout/
+│   │   │   ├── MarketingFooter.tsx # Marketing site footer
+│   │   │   ├── MarketingHeader.tsx # Marketing site header
+│   │   │   └── MarketingLayout.tsx # Marketing page layout
+│   │   ├── pages/
+│   │   │   └── HomePage.tsx        # Marketing homepage
+│   │   ├── sections/
+│   │   │   ├── FeatureGrid.tsx     # Feature showcase grid
+│   │   │   ├── HeroSection.tsx     # Hero section component
+│   │   │   └── PricingSection.tsx  # Pricing information section
+│   │   └── ui/                     # Marketing UI components
+│   │       ├── Button.tsx          # Marketing button component
+│   │       ├── Card.tsx            # Marketing card component
+│   │       ├── Container.tsx       # Marketing container component
+│   │       ├── Icons.tsx           # Marketing icon set
+│   │       └── Typography.tsx      # Marketing typography
+│   ├── modals/                 # Modal dialog components
+│   │   ├── AddBooksToSeriesModal.tsx # Series assignment modal
+│   │   ├── AlertModal.tsx          # General alert dialog
+│   │   ├── BookRelocateModal.tsx   # Book relocation interface
+│   │   ├── BulkReviewModal.tsx     # Bulk review assignment
+│   │   ├── ConfirmationModal.tsx   # Generic confirmation dialog
+│   │   ├── ContactModal.tsx        # Contact form modal
+│   │   ├── CoverSelectionModal.tsx # Book cover selection interface
+│   │   ├── GenreEditModal.tsx      # Genre editing interface
+│   │   ├── HelpModal.tsx           # Help and documentation modal
+│   │   ├── Modal.tsx               # Base modal component
+│   │   ├── MoreDetailsModal.tsx    # Book details and editing modal
+│   │   ├── RatingModal.tsx         # Star rating assignment modal
+│   │   ├── RemovalReasonModal.tsx  # Book removal reason selection
+│   │   └── SeriesModal.tsx         # Series creation and editing modal
+│   ├── performance/            # Performance monitoring components
+│   │   ├── PerformanceDashboard.tsx # Performance metrics dashboard
+│   │   └── PerformanceTracker.tsx  # Real-time performance tracking
+│   ├── series/                 # Book series management
+│   │   ├── SeriesBookView.tsx      # Series-specific book display
+│   │   └── SeriesManager.tsx       # Series CRUD interface
+│   ├── settings/               # User settings components
+│   │   └── SecuritySettings.tsx    # Security and privacy settings
+│   ├── tour/                   # User onboarding tour
+│   │   ├── TourOverlay.tsx         # Tour overlay component
+│   │   ├── TourProvider.tsx        # Tour context provider
+│   │   └── TourTooltip.tsx         # Tour tooltip component
+│   ├── ui/                     # Base UI components
+│   │   ├── AccessibleIcon.tsx      # Accessibility-focused icon wrapper
+│   │   └── SkipLink.tsx            # Keyboard navigation skip link
+│   └── user/                   # User-specific components
+│       └── UserNotificationCenter.tsx # User notification management
+├── contexts/                   # React context providers
+│   ├── BookSelectionContext.tsx    # Bulk selection state management
+│   └── UserDataContext.tsx         # User data and preferences context
+├── hooks/                      # Custom React hooks
+│   ├── useAdminPendingCounts.ts    # Admin pending item counts
+│   ├── useBookActions.ts           # Book action handlers
+│   ├── useBookFilters.ts           # Filter state and logic
+│   ├── useBookLibrary.ts           # Library state management
+│   ├── useBookLibraryEnhanced.ts   # Enhanced library operations
+│   ├── useBookLibraryOptimized.ts  # Performance-optimized library
+│   ├── useBookLibraryQuery.ts      # React Query integration
+│   ├── useMobileBreakpoints.ts     # Responsive breakpoint detection
+│   ├── useModal.ts                 # Modal state management
+│   ├── useNotifications.ts         # Notification system integration
+│   ├── usePerformanceTracking.ts   # Performance monitoring hooks
+│   ├── useRejectedReviewNotifications.ts # Review rejection handling
+│   ├── useScrollLock.ts            # Scroll behavior management
+│   └── useSeries.ts                # Series management hooks
+└── lib/                        # Utility libraries and configurations
+    ├── api.ts                      # Backend API communication (direct worker calls)
+    ├── apiAnalytics.ts             # API usage analytics tracking
+    ├── apiConfig.ts                # Centralized API URL configuration
+    ├── auth-utils.ts               # Authentication utility functions
+    ├── bookApi.ts                  # External book data fetching (Google Books/OpenLibrary)
+    ├── contrast-checker.ts         # Accessibility contrast validation
+    ├── contrastAnalysis.ts         # Color contrast analysis tools
+    ├── domainConfig.ts             # Domain and environment configuration
+    ├── featureFlags.ts             # Feature flag management
+    ├── fieldSelection.ts           # GraphQL-style field selection for APIs
+    ├── generateMarketingVariables.ts # Marketing theme variable generation
+    ├── genreClassifier.ts          # Automatic genre classification
+    ├── genreMatching.ts            # Genre matching algorithms
+    ├── genreUtils.ts               # Genre utility functions
+    ├── inputEventDebug.ts          # Input event debugging utilities
+    ├── libraryUrls.ts              # Library URL generation and routing
+    ├── pagination.ts               # Pagination utilities
+    ├── performance.ts              # Performance monitoring utilities
+    ├── permissions.ts              # Permission checking utilities
+    ├── storage.ts                  # Local storage management
+    ├── theme.ts                    # Material UI theme configuration
+    ├── twoFactorApi.ts             # Two-factor authentication API
+    ├── types.ts                    # TypeScript interfaces and types
+    ├── urlUtils.ts                 # URL manipulation utilities
+    └── webauthnApi.ts              # WebAuthn/Passkey API integration
 ```
 
 ### Backend Structure
 ```
 workers/
 ├── index.ts                # Main worker entry point and routing (366 lines)
+├── router.ts               # Main router configuration and middleware
+├── environment.ts          # Environment variable configuration and validation
+├── permissions-worker.ts   # Permission checking middleware
 ├── types/
-│   └── index.ts           # Shared TypeScript interfaces (77 lines)
-├── cache/
-│   ├── kv.ts              # KV cache manager and utilities
-│   └── genres.ts          # Cached genre service
-├── books/
-│   ├── cached.ts          # Cached book operations (Phase 2)
-│   └── google-cached.ts   # Cached Google Books API (Phase 2)
-├── email/
-│   └── index.ts           # Email and notification system (544 lines)
-├── admin/
+│   └── index.ts           # Shared TypeScript interfaces and type definitions
+├── admin/                  # Administrative operations
 │   ├── index.ts           # Admin operations and signup approval (373 lines)
-│   └── cached.ts          # Cached admin analytics and user management (Phase 3)
-├── auth-core/
-│   └── index.ts           # Core authentication functions (372 lines)
-├── auth/
-│   ├── index.ts           # Authentication utilities and permissions (37 lines)
-│   └── cached.ts          # Cached authentication functions
-├── invitations/
-│   └── index.ts           # Location invitation system (271 lines)
-├── admin-extended/
+│   ├── cached.ts          # Cached admin analytics and user management
+│   └── router.ts          # Admin route definitions and handlers
+├── admin-extended/         # Extended admin functionality
 │   └── index.ts           # Advanced admin analytics and user management (154 lines)
-├── profile/
-│   └── index.ts           # User profile management (75 lines)
-├── auth-utils/
+├── admin-migration/        # Admin data migration utilities
+│   └── index.ts           # Database migration tools and utilities
+├── analytics/              # Analytics and tracking
+│   └── openLibraryAnalytics.ts # OpenLibrary API usage analytics
+├── auth/                   # Authentication and authorization
+│   ├── index.ts           # Authentication utilities and permissions (37 lines)
+│   ├── cached.ts          # Cached authentication functions
+│   ├── jwt.ts             # JSON Web Token utilities
+│   ├── rate-limiter.ts    # Authentication rate limiting
+│   ├── router.ts          # Authentication route handlers
+│   ├── totp.ts            # Time-based One-Time Password (TOTP) implementation
+│   ├── two-factor.ts      # Two-factor authentication logic
+│   └── webauthn.ts        # WebAuthn/Passkey authentication
+├── auth-core/              # Core authentication functions
+│   └── index.ts           # Core authentication functions (372 lines)
+├── auth-utils/             # Authentication utility functions
 │   └── index.ts           # Additional auth helper functions (35 lines)
-├── locations/
-│   └── index.ts           # Location and shelf management (467 lines)
-├── books/
-│   └── index.ts           # Book CRUD, checkout system, removal requests (742 lines)
-└── tsconfig.json          # TypeScript configuration
+├── books/                  # Book management and operations
+│   ├── index.ts           # Book CRUD, checkout system, removal requests (742 lines)
+│   ├── cached.ts          # Cached book operations and performance optimization
+│   ├── google-cached.ts   # Cached Google Books API integration
+│   ├── loc-cached.ts      # Library of Congress cached operations
+│   ├── images.ts          # R2 image storage and management
+│   ├── imageVerification.ts # Cloudflare AI image verification
+│   └── router.ts          # Book-related route handlers
+├── cache/                  # Caching layer and utilities
+│   ├── kv.ts              # Cloudflare KV cache manager and utilities
+│   └── genres.ts          # Cached genre service and operations
+├── csrf/                   # Cross-Site Request Forgery protection
+│   └── index.ts           # CSRF token generation and validation
+├── email/                  # Email and notification services
+│   └── index.ts           # Email and notification system (544 lines)
+├── errors/                 # Error handling and reporting
+│   └── index.ts           # Centralized error handling and logging
+├── genres/                 # Genre management
+│   └── index.ts           # Genre CRUD operations and classification
+├── in-app-notifications/   # In-application notification system
+│   └── index.ts           # Real-time notification delivery and management
+├── invitations/            # User invitation system
+│   └── index.ts           # Location invitation system (271 lines)
+├── locations/              # Location and shelf management
+│   ├── index.ts           # Location and shelf management (467 lines)
+│   └── router.ts          # Location-related route handlers
+├── notification-preferences/ # User notification preferences
+│   └── index.ts           # Notification preference management
+├── notifications/          # Notification delivery system
+│   └── index.ts           # Notification processing and delivery
+├── permissions/            # Permission and access control
+│   └── index.ts           # Permission checking and role management
+├── privacy/                # Privacy and data protection
+│   └── index.ts           # Privacy settings and GDPR compliance
+├── profile/                # User profile management
+│   ├── index.ts           # User profile management (75 lines)
+│   └── router.ts          # Profile-related route handlers
+├── series/                 # Book series management
+│   ├── index.ts           # Series CRUD, approval workflow, book assignments (663 lines)
+│   └── router.ts          # Series-related route handlers
+├── user-privacy/           # User-specific privacy controls
+│   └── index.ts           # Individual user privacy management
+├── utils/                  # Utility functions and helpers
+│   └── domainConfig.ts    # Domain configuration and routing utilities
+└── validation/             # Input validation and sanitization
+    └── index.ts           # Request validation and data sanitization
 
-Schema:
-└── schema.sql              # Database table definitions
+Configuration:
+├── tsconfig.json          # TypeScript configuration
+└── wrangler.toml          # Cloudflare Workers configuration
+
+Database Schema:
+├── schema.sql             # Main database table definitions
+└── migrations/            # Database migration files (40+ migrations)
+    ├── 20250901_add_privacy_system.sql         # Privacy and user display system
+    ├── 20250902_add_complete_series_system.sql # Book series management system
+    ├── 20250903_add_can_create_series_permission.sql # Series permissions
+    ├── 20250813_add_notification_system.sql   # In-app notification system
+    ├── 20250805_webauthn_passkeys_implementation.sql # WebAuthn/Passkey support
+    ├── 20250801_security_authentication_upgrade.sql # Authentication security
+    ├── 20250816_add_book_notes_feature.sql     # Book notes and annotations
+    ├── add_custom_cover_support.sql            # Custom book cover support
+    ├── add_book_cover_selection.sql            # Book cover selection system
+    ├── add_book_checkout_system.sql            # Book checkout functionality
+    ├── add_book_rating_system.sql              # Star rating system
+    ├── add_book_removal_requests.sql           # Book removal workflow
+    ├── add_invitation_system.sql               # User invitation system
+    ├── add_signup_approval_system.sql          # Admin signup approval
+    ├── add_user_roles.sql                      # Role-based access control
+    ├── archive/                                # Historical migration archive
+    └── [30+ additional migration files]        # Performance, features, security
 ```
 
-## Database Design
+## Database Architecture
 
-### Multi-User Schema
-```sql
--- Users with authentication and roles
-users (
-  id                          TEXT PRIMARY KEY,
-  email                       TEXT UNIQUE NOT NULL,
-  first_name                  TEXT,
-  last_name                   TEXT,
-  password_hash               TEXT,
-  auth_provider               TEXT DEFAULT 'google',
-  email_verified              BOOLEAN DEFAULT FALSE,
-  user_role                   TEXT DEFAULT 'user',  -- 'admin' or 'user'
-  created_at                  DATETIME DEFAULT CURRENT_TIMESTAMP
-)
+LibraryCard uses **Cloudflare D1** (distributed SQLite) with a sophisticated multi-user schema supporting hierarchical organization, advanced authentication, and content management workflows.
 
--- Physical locations (homes, offices, etc.)
-locations (
-  id              INTEGER PRIMARY KEY AUTOINCREMENT,
-  name            TEXT NOT NULL,
-  description     TEXT,
-  owner_id        TEXT NOT NULL,
-  created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (owner_id) REFERENCES users(id)
-)
+### Core Design Principles
+- **Hierarchical Organization**: Users → Locations → Shelves → Books
+- **Multi-User Architecture**: Role-based access control with user isolation
+- **Content Moderation**: Admin approval workflows for user-generated content
+- **Advanced Authentication**: Multiple auth methods with 2FA and WebAuthn support
+- **Performance Optimization**: Strategic indexing and efficient query patterns
+- **Data Integrity**: Comprehensive foreign key relationships and constraints
 
--- Shelves within locations
-shelves (
-  id              INTEGER PRIMARY KEY AUTOINCREMENT,
-  name            TEXT NOT NULL,
-  location_id     INTEGER NOT NULL,
-  created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (location_id) REFERENCES locations(id)
-)
+### Key Schema Components
+- **User Management**: Authentication, roles, permissions, and privacy settings
+- **Content Organization**: Locations, shelves, books with metadata and custom covers
+- **Advanced Features**: Series management, checkout system, rating system
+- **Security Systems**: Two-factor auth, WebAuthn/passkeys, audit trails
+- **Communication**: In-app notifications, approval workflows, email integration
 
--- Books assigned to shelves
-books (
-  id              INTEGER PRIMARY KEY AUTOINCREMENT,
-  isbn            TEXT NOT NULL,
-  title           TEXT NOT NULL,
-  authors         TEXT NOT NULL,    -- JSON array
-  description     TEXT,
-  thumbnail       TEXT,
-  published_date  TEXT,
-  categories      TEXT,             -- JSON array
-  shelf_id        INTEGER,
-  tags            TEXT,             -- JSON array
-  added_by        TEXT NOT NULL,
-  created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (shelf_id) REFERENCES shelves(id),
-  FOREIGN KEY (added_by) REFERENCES users(id)
-)
+For detailed table definitions and relationships, see **[Database Schema Documentation](./database-schema.md)**
 
--- Dynamic Genre Management System
-curated_genres (
-  id              INTEGER PRIMARY KEY AUTOINCREMENT,
-  name            TEXT NOT NULL UNIQUE,
-  description     TEXT,
-  category        TEXT NOT NULL,    -- 'fiction' or 'non-fiction'
-  is_active       BOOLEAN DEFAULT TRUE,
-  created_at      DATETIME DEFAULT CURRENT_TIMESTAMP
-)
+## API Architecture
 
--- Many-to-many relationship between books and genres
-book_genres (
-  id              INTEGER PRIMARY KEY AUTOINCREMENT,
-  book_id         INTEGER NOT NULL,
-  genre_id        INTEGER NOT NULL,
-  is_auto_assigned BOOLEAN DEFAULT FALSE,
-  assigned_at     DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
-  FOREIGN KEY (genre_id) REFERENCES curated_genres(id) ON DELETE CASCADE,
-  UNIQUE(book_id, genre_id)
-)
+LibraryCard uses a **sophisticated Cloudflare Workers API** with modular routers, comprehensive authentication, and performance-optimized caching. The API serves a React frontend with direct worker calls for optimal performance.
 
--- User-suggested genres for admin review
-genre_suggestions (
-  id              INTEGER PRIMARY KEY AUTOINCREMENT,
-  name            TEXT NOT NULL,
-  description     TEXT,
-  category        TEXT NOT NULL,    -- 'fiction' or 'non-fiction'
-  suggested_by    TEXT NOT NULL,
-  status          TEXT DEFAULT 'pending',  -- 'pending', 'approved', 'rejected'
-  reviewed_by     TEXT,
-  reviewed_at     DATETIME,
-  review_comment  TEXT,
-  created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (suggested_by) REFERENCES users(id),
-  FOREIGN KEY (reviewed_by) REFERENCES users(id)
-)
+### Core API Principles
+- **Direct Worker Architecture**: Client-side calls bypass Next.js API routes and go directly to Cloudflare Workers
+- **Modular Router System**: Specialized routers for authentication, books, admin, locations, profiles, and series
+- **Advanced Security**: CSRF protection, rate limiting, JWT authentication, and secure error handling
+- **Performance Optimization**: Extensive KV caching with intelligent invalidation strategies
+- **Multi-Authentication**: Email/password, Google OAuth, 2FA/TOTP, and WebAuthn/Passkeys support
 
--- Signup approval requests for uninvited users
-signup_approval_requests (
-  id              INTEGER PRIMARY KEY AUTOINCREMENT,
-  email           TEXT UNIQUE NOT NULL,
-  first_name      TEXT NOT NULL,
-  last_name       TEXT,
-  password_hash   TEXT NOT NULL,
-  auth_provider   TEXT DEFAULT 'email',
-  status          TEXT DEFAULT 'pending',  -- 'pending', 'approved', 'denied'
-  requested_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
-  reviewed_by     TEXT,                    -- Admin who reviewed
-  reviewed_at     DATETIME,                -- When reviewed
-  review_comment  TEXT,                    -- Admin's comment
-  created_user_id TEXT,                    -- User ID after approval
-  FOREIGN KEY (reviewed_by) REFERENCES users(id)
-)
-```
+### API Features
+- **80+ Endpoints**: Comprehensive REST API covering all application functionality
+- **Role-Based Access**: Three-tier permission system (super admin → location admin → user)
+- **Content Moderation**: Admin approval workflows for user-generated content
+- **Real-Time Features**: In-app notification system with preference management
+- **Developer Tools**: Health checks, analytics, debug endpoints, and monitoring
 
-### Design Decisions
-- **Granular permission system**: Dual-tier hierarchical access control with super admin → location admin capabilities → user permissions
-- **Hierarchical structure**: Users → Locations → Shelves → Books
-- **Dynamic genre system**: Replaced static hardcoded genres with database-driven curated genres
-- **Many-to-many relationships**: Books can have multiple genres, genres can belong to multiple books
-- **Dual registration workflow**: Users with valid invitations proceed directly, uninvited users require admin approval
-- **JSON columns**: SQLite supports JSON for arrays (authors, categories, tags)
-- **Text storage**: ISBN as text to preserve leading zeros
-- **User isolation**: Foreign key relationships ensure data ownership
-- **Flexible authentication**: Supports both OAuth and email/password
+### Key Router Modules
+- **AuthRouter**: Authentication, 2FA, WebAuthn, password management
+- **BooksRouter**: Book CRUD, checkout system, ratings, image management
+- **AdminRouter**: Analytics, user management, content moderation
+- **LocationsRouter**: Location/shelf management, invitation system
+- **ProfileRouter**: User profiles, dashboard, notification preferences
+- **SeriesRouter**: Book series with approval workflows
 
-## API Design
-
-### Direct Worker Architecture
-
-**IMPORTANT**: As of July 2025, all client-side API calls go directly to the Cloudflare Worker, bypassing Next.js API routes entirely.
-
-- **Direct Client → Worker**: All book, profile, checkout, genre operations use `getApiBaseUrl()` and call the worker directly
-- **Authentication**: Uses `Authorization: Bearer ${session?.user?.email}` headers for worker calls  
-- **Environment**: Only `NEXT_PUBLIC_API_URL` is needed (removed server-side `API_URL` variable)
-- **Next.js API routes**: Only used for auth flows (`/api/auth/*`) and contact form
-- **Fallbacks**: localStorage fallbacks maintained for offline functionality
-
-### RESTful Endpoints
-
-#### Authentication
-- `POST /api/auth/register` - Register new user with email/password (supports dual workflow: invitation-based or approval-based)
-- `POST /api/auth/verify` - Verify user credentials
-- `GET /api/auth/verify-email` - Verify email address
-
-#### Signup Approval System (Admin Only)
-- `GET /api/signup-requests` - List pending signup approval requests
-- `POST /api/signup-requests/{id}/approve` - Approve signup request and create user account
-- `POST /api/signup-requests/{id}/deny` - Deny signup request with optional comment
-
-#### User Management
-- `POST /api/users` - Create/update user (OAuth and email/password)
-- `GET /api/users/check` - Check if user exists (used in invitation flow)
-- `GET /api/profile` - Get current user profile
-- `PUT /api/profile` - Update user profile
-
-#### Invitation System
-- `GET /api/invitations/details` - Get invitation details (public)
-- `POST /api/invitations/accept` - Accept location invitation
-- `POST /api/locations/{id}/invite` - Create location invitation (admin)
-- `GET /api/locations/{id}/invitations` - List location invitations (admin)
-- `DELETE /api/invitations/{id}/revoke` - Revoke invitation (admin)
-
-#### Location Management (Admin Only)
-- `GET /api/locations` - List accessible locations
-- `POST /api/locations` - Create new location
-- `PUT /api/locations/:id` - Update location details
-- `DELETE /api/locations/:id` - Delete location
-
-#### Shelf Management (Admin Only)
-- `GET /api/locations/:id/shelves` - List shelves in location
-- `POST /api/locations/:id/shelves` - Create new shelf
-- `PUT /api/shelves/:id` - Update shelf name
-- `DELETE /api/shelves/:id` - Delete shelf
-
-#### Book Management (All Users)
-- `GET /api/books` - List accessible books
-- `POST /api/books` - Add new book
-- `PUT /api/books/:id` - Update book location/tags
-- `DELETE /api/books/:id` - Remove book
-
-#### Genre Management (All Users)
-- `GET /api/genres` - List active curated genres
-- `POST /api/books/:id/genres` - Assign genre to book
-- `DELETE /api/books/:id/genres/:genreId` - Remove genre from book
-
-#### Permission Management (Super Admins & Location Admins)
-- `GET /api/admin/location-admin-capabilities` - View admin capabilities for location
-- `POST /api/admin/location-admin-capabilities` - Grant admin capability
-- `DELETE /api/admin/location-admin-capabilities` - Revoke admin capability
-- `GET /api/admin/location-user-permissions` - View user permissions for location
-- `POST /api/admin/location-user-permissions` - Grant user permission
-- `DELETE /api/admin/location-user-permissions` - Revoke user permission
-- `GET /api/permissions/can-manage` - Check permission management access
-- `GET /api/permissions/check` - Check specific permission
-- `GET /api/permissions/user` - Get all user permissions for location
-
-### Design Decisions
-- **Hierarchical permission system**: Three-tier access control (super admin → location admin capabilities → user permissions)
-- **Authentication**: NextAuth.js with Google OAuth and email/password
-- **CORS enabled**: Allows browser requests from any origin
-- **Error handling**: Consistent JSON error responses
-- **Multi-user support**: User isolation and location-based access control
+For complete endpoint documentation, authentication flows, and integration examples, see **[API Design Documentation](./api-design.md)**
 
 ## Security Considerations
 
@@ -556,90 +614,58 @@ Hybrid Architecture
 - **Caching**: Phase 3 KV caching implemented - comprehensive caching system complete
 - **CDN**: Already leveraging global edge network
 
-## Series System Architecture
+## Advanced Features
 
-### Overview
-The Series system allows users to organize books into custom groupings (e.g., "Science Fiction", "Book Club Picks", "To Read"). The implementation includes an approval workflow for content moderation and admin oversight.
+### Series Management System
+Allows users to organize books into custom collections with admin approval workflows. Features include:
+- **Custom Groupings**: "Science Fiction", "Book Club Picks", "To Read", etc.
+- **Approval Workflow**: Content moderation and admin oversight
+- **Visual Organization**: Color coding and clickable series filtering
+- **Hierarchical Access**: Admin approval required for public visibility
 
-### Database Schema
-```sql
--- Series table
-CREATE TABLE series (
-    id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL,
-    name TEXT NOT NULL,
-    description TEXT,
-    color TEXT,                      -- Hex color for visual distinction
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    sort_order INTEGER DEFAULT 0,
-    approval_status TEXT DEFAULT 'pending',  -- pending/approved/rejected
-    approved_by TEXT,                -- Admin user ID who approved/rejected
-    approved_at DATETIME,            -- Timestamp of approval/rejection
-    rejection_reason TEXT,           -- Optional reason for rejection
-    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
-);
+### Photo Book Cover System
+AI-powered custom book cover uploads with Cloudflare integration:
+- **Camera Integration**: Mobile-optimized photo capture with cropping tools
+- **AI Verification**: Cloudflare AI ensures uploaded images are book covers
+- **Cloud Storage**: R2 storage with global CDN distribution
+- **Smart Processing**: WebP/JPEG optimization and metadata extraction
 
--- Many-to-many relationship between books and series
-CREATE TABLE book_series (
-    book_id TEXT NOT NULL,          -- String to match CAST(books.id AS TEXT)
-    series_id TEXT NOT NULL,
-    added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (book_id, series_id),
-    FOREIGN KEY (book_id) REFERENCES books (id) ON DELETE CASCADE,
-    FOREIGN KEY (series_id) REFERENCES series (id) ON DELETE CASCADE
-);
-```
+### Advanced Authentication
+Multi-layered security system supporting:
+- **Traditional Auth**: Email/password with secure hashing
+- **OAuth Integration**: Google sign-in with seamless account linking
+- **Two-Factor Auth**: TOTP-based 2FA with backup recovery codes
+- **WebAuthn/Passkeys**: Modern passwordless authentication
 
-### API Endpoints
-- `GET /api/series` - List approved series for user
-- `POST /api/series` - Create new series (pending approval)
-- `PUT /api/series/:id` - Update series details
-- `DELETE /api/series/:id` - Delete series
-- `POST /api/series/:id/books` - Add books to series
-- `DELETE /api/series/:id/books/:bookId` - Remove book from series
-- `GET /api/series/:id/books` - Get paginated books in series
-- `GET /api/admin/series/pending` - Admin: list pending series
-- `POST /api/admin/series/:id/approve` - Admin: approve/reject series
+### Real-Time Features
+- **In-App Notifications**: Real-time notification system with user preferences
+- **Activity Feeds**: Privacy-aware user activity with display controls
+- **Content Moderation**: Admin approval workflows for user-generated content
 
-### Approval Workflow
-1. **User creates series** → Status: `pending`
-2. **Series invisible** to regular users until approved
-3. **Admin reviews** via `/api/admin/series/pending`
-4. **Admin approves/rejects** with optional reason
-5. **Approved series** become visible to all users
-6. **Rejected series** remain hidden with logged reason
 
-### Frontend Integration
-- **BookGrid/BookList/VirtualizedBookGrid**: Series names display under book titles
-- **MoreDetailsModal**: Series creation and management interface
-- **Clickable series names**: Filter library by series
-- **Color coding**: Visual distinction with custom hex colors
-- **Admin interface**: Pending series review (future enhancement)
+## Mobile Enhancement Architecture
 
-### Data Flow: Series Creation
-```
-User creates series
-       ↓
-POST /api/series (status: pending)
-       ↓  
-Series stored in database
-       ↓
-Admin reviews via /api/admin/series/pending
-       ↓
-Admin approves via /api/admin/series/:id/approve
-       ↓
-Series becomes visible to all users
-       ↓
-Books can be added to approved series
-```
+### Dynamic Viewport Management
+**DynamicMobileBottomNav Component**:
+- Real-time visual viewport height tracking
+- Automatic toolbar positioning adjustments
+- Support for dynamic browser UI changes (address bar hiding/showing)
+- Transform animations for smooth repositions
+- Safe area inset compliance for modern devices
 
-### Technical Considerations
-- **Data Type Casting**: Critical `CAST(b.id AS TEXT)` for book_series joins
-- **Permission Filtering**: Super admins see all series, users see only approved
-- **Cache Invalidation**: Series operations clear book cache for fresh data
-- **Performance**: Indexed queries for approval_status and user_id
-- **Security**: Only super admins can approve/reject series
+**Technical Implementation**:
+- Visual Viewport API integration with fallbacks
+- Debounced viewport change detection (60fps)
+- CSS transform-based positioning
+- Environment variable responsive breakpoints
+
+### Mobile Navigation Enhancements
+**Features**:
+- Touch-optimized button sizes (44px minimum)
+- Keyboard navigation support with arrow keys
+- Screen reader accessibility improvements
+- Haptic-like visual feedback with scale animations
+- Progressive enhancement for feature detection
 
 ## Future Architecture Enhancements
 

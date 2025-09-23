@@ -627,3 +627,203 @@ interface RemovalRequestValidation {
    - Reading challenges
    - Social ratings and reviews
    - Activity feeds
+
+## Recent Schema Additions
+
+### Series Management System
+
+Complete book series management with approval workflow:
+
+```sql
+-- Series table
+CREATE TABLE series (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    color TEXT,                      -- Hex color for visual distinction
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    sort_order INTEGER DEFAULT 0,
+    approval_status TEXT DEFAULT 'pending',  -- pending/approved/rejected
+    approved_by TEXT,                -- Admin user ID who approved/rejected
+    approved_at DATETIME,            -- Timestamp of approval/rejection
+    rejection_reason TEXT,           -- Optional reason for rejection
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
+-- Many-to-many relationship between books and series
+CREATE TABLE book_series (
+    book_id TEXT NOT NULL,          -- String to match CAST(books.id AS TEXT)
+    series_id TEXT NOT NULL,
+    added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (book_id, series_id),
+    FOREIGN KEY (book_id) REFERENCES books (id) ON DELETE CASCADE,
+    FOREIGN KEY (series_id) REFERENCES series (id) ON DELETE CASCADE
+);
+```
+
+### Custom Book Cover Support
+
+Support for user-uploaded custom book covers with R2 storage:
+
+```sql
+-- Enhanced books table with custom cover support
+ALTER TABLE books ADD COLUMN custom_cover_url TEXT;
+ALTER TABLE books ADD COLUMN custom_cover_metadata TEXT; -- JSON metadata
+
+-- Dedicated book images table for future expansion
+CREATE TABLE book_images (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  book_id INTEGER NOT NULL,
+  image_url TEXT NOT NULL,
+  image_type TEXT NOT NULL, -- 'cover', 'back_cover', 'spine', 'custom'
+  storage_provider TEXT DEFAULT 'r2', -- 'r2', 'local', etc.
+  storage_key TEXT, -- R2 object key for cleanup
+  file_size INTEGER, -- Size in bytes
+  image_format TEXT, -- 'webp', 'jpeg', 'png'
+  width INTEGER,
+  height INTEGER,
+  is_primary BOOLEAN DEFAULT FALSE, -- Primary cover for display
+  uploaded_by TEXT NOT NULL,
+  upload_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+  metadata TEXT, -- JSON for additional metadata
+  FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
+  FOREIGN KEY (uploaded_by) REFERENCES users(id)
+);
+```
+
+### Privacy and User Display System
+
+Comprehensive privacy controls for user activity and display:
+
+```sql
+-- User privacy settings
+CREATE TABLE user_privacy_settings (
+    user_id TEXT PRIMARY KEY,
+    display_name_preference TEXT DEFAULT 'first_name', -- 'first_name', 'full_name', 'email', 'username', 'anonymous'
+    custom_display_name TEXT, -- Custom username when display_name_preference is 'username'
+    show_activity BOOLEAN DEFAULT TRUE, -- Whether to show in activity feeds
+    show_reading_list BOOLEAN DEFAULT TRUE, -- Whether to show reading preferences
+    last_updated DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Location-level privacy settings
+CREATE TABLE location_privacy_settings (
+    location_id INTEGER PRIMARY KEY,
+    activity_visibility TEXT DEFAULT 'private', -- 'public', 'private'
+    set_by TEXT NOT NULL, -- Admin who set the privacy setting
+    last_updated DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (location_id) REFERENCES locations(id) ON DELETE CASCADE,
+    FOREIGN KEY (set_by) REFERENCES users(id)
+);
+```
+
+### In-App Notification System
+
+Real-time notification system with user preferences:
+
+```sql
+-- Notification types and templates
+CREATE TABLE notification_types (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    type TEXT UNIQUE NOT NULL, -- 'book_added', 'review_approved', 'series_approved', etc.
+    name TEXT NOT NULL,
+    description TEXT,
+    default_enabled BOOLEAN DEFAULT TRUE,
+    is_system BOOLEAN DEFAULT FALSE, -- System notifications (always enabled)
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- User notification preferences
+CREATE TABLE notification_preferences (
+    user_id TEXT NOT NULL,
+    notification_type_id INTEGER NOT NULL,
+    enabled BOOLEAN DEFAULT TRUE,
+    delivery_method TEXT DEFAULT 'in_app', -- 'in_app', 'email', 'both'
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, notification_type_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (notification_type_id) REFERENCES notification_types(id)
+);
+
+-- In-app notifications
+CREATE TABLE in_app_notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    notification_type TEXT NOT NULL,
+    title TEXT NOT NULL,
+    message TEXT NOT NULL,
+    metadata TEXT, -- JSON for additional data
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    read_at DATETIME,
+    expires_at DATETIME,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+```
+
+### Two-Factor Authentication
+
+TOTP-based two-factor authentication with backup codes:
+
+```sql
+-- Two-factor authentication settings
+CREATE TABLE user_two_factor (
+    user_id TEXT PRIMARY KEY,
+    secret TEXT NOT NULL, -- TOTP secret
+    backup_codes TEXT, -- JSON array of backup codes
+    is_enabled BOOLEAN DEFAULT FALSE,
+    enabled_at DATETIME,
+    last_used_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Two-factor authentication logs
+CREATE TABLE two_factor_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    method TEXT NOT NULL, -- 'totp', 'backup_code'
+    success BOOLEAN NOT NULL,
+    ip_address TEXT,
+    user_agent TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+```
+
+### WebAuthn/Passkey Support
+
+Modern passwordless authentication with device management:
+
+```sql
+-- WebAuthn credentials (passkeys)
+CREATE TABLE webauthn_credentials (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    credential_id TEXT UNIQUE NOT NULL, -- Base64URL encoded credential ID
+    public_key TEXT NOT NULL, -- Base64URL encoded public key
+    counter INTEGER DEFAULT 0, -- Sign counter for replay attack prevention
+    device_name TEXT, -- User-friendly device name
+    device_type TEXT, -- 'platform', 'cross-platform', 'unknown'
+    transports TEXT, -- JSON array of supported transports
+    backup_eligible BOOLEAN DEFAULT FALSE,
+    backup_state BOOLEAN DEFAULT FALSE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    last_used_at DATETIME,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- WebAuthn challenges (temporary storage)
+CREATE TABLE webauthn_challenges (
+    id TEXT PRIMARY KEY, -- Challenge ID
+    user_id TEXT, -- NULL for authentication, set for registration
+    challenge TEXT NOT NULL, -- Base64URL encoded challenge
+    type TEXT NOT NULL, -- 'registration', 'authentication'
+    expires_at DATETIME NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+```

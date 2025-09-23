@@ -79,7 +79,7 @@ export function getDomainConfig(): DomainConfig {
     case 'production':
       return {
         domain: process.env.DOMAIN || 'librarycard.tim52.io',
-        apiSubdomain: process.env.API_SUBDOMAIN || 'api',
+        apiSubdomain: process.env.API_SUBDOMAIN, // Only use if explicitly set
         emailDomain: process.env.EMAIL_DOMAIN || 'tim52.io',
         environment: 'production'
       }

@@ -13,18 +13,18 @@ We use a clean three-environment deployment strategy:
 - **Usage**: Development and testing
 
 ### Staging
-- **Frontend**: Automatic deployment on pushes to `staging` branch
-- **Worker**: `librarycard-api-staging` (isolated Cloudflare account) - Auto-deployed via GitHub Actions
+- **Frontend**: Manual deployment via GitHub Actions workflow
+- **Worker**: `librarycard-api-staging` (isolated Cloudflare account) - Manual deployment via GitHub Actions
 - **Database**: `librarycard-db-staging-new` - Manual migrations via GitHub Actions
 - **Usage**: Pre-production testing and validation
-- **Auto-deployment**: Frontend and Worker auto-deploy on staging branch push
+- **Deployment**: All staging deployments require manual GitHub Actions workflow triggers
 
 ### Production
-- **Frontend**: `https://librarycard.tim52.io/` - Automatic deployment on pushes to `main` branch
+- **Frontend**: `https://librarycard.tim52.io/` - Manual deployment via GitHub Actions workflow
 - **Worker**: `librarycard-api-production` - Manual GitHub Actions deployment ONLY
 - **Database**: `librarycard-db` - Manual migrations via GitHub Actions ONLY
 - **Usage**: Live production environment
-- **Frontend Deployment**: Automatic via Netlify, Worker/DB: Manual GitHub Actions ONLY
+- **Deployment**: All production deployments require manual GitHub Actions workflow triggers
 
 ## Deployment Commands
 
@@ -57,10 +57,11 @@ npx wrangler dev
 - 🔄 **Safe testing**: No impact on production environment
 
 #### Frontend Deployment
-```bash
-# Frontend deploys automatically via Netlify on staging branch push
-git push origin staging
-```
+**Manual Deployment via GitHub Actions:**
+1. **Go to**: GitHub Actions → "Deploy to Staging" workflow
+2. **Click**: "Run workflow"
+3. **Select deployment type**: Choose `frontend-only` or `full-deployment`
+4. **Execute**: Click "Run workflow"
 
 #### Health Check Verification
 ```bash
@@ -107,10 +108,14 @@ npx wrangler d1 execute librarycard-db-staging --file=migrations/your-migration.
 - ✅ **Multi-layer Confirmations**: Multiple safety confirmations for production operations
 
 #### Frontend Deployment
-```bash
-# Frontend deploys automatically via Netlify on main branch push
-git push origin main
-```
+**Manual Deployment via GitHub Actions:**
+1. **Go to**: GitHub Actions → "🚀 Production Deployment" workflow
+2. **Click**: "Run workflow"
+3. **Configure deployment**:
+   - **Deployment Type**: Select `frontend-only` or `full-deployment`
+   - **Reason**: Provide reason for audit trail
+   - **Confirmation**: Type `CONFIRM-PRODUCTION`
+4. **Execute**: Click "Run workflow"
 
 #### Health Check Verification
 ```bash
@@ -120,19 +125,20 @@ curl https://librarycard-api-production.tim-arnold.workers.dev/health
 
 ## Deployment Methods
 
-### Frontend (Netlify)
-- **Staging**: Automatic deployment on pushes to `staging` branch
-- **Production**: Automatic deployment on pushes to `main` branch
+### Frontend (Next.js)
+- **Staging**: Manual deployment via GitHub Actions workflow
+- **Production**: Manual deployment via GitHub Actions workflow
 - **Build command**: `npm run build`
 - **Output directory**: `.next`
+- **Hosting**: Netlify with GitHub Actions integration
 
 ### Backend (Cloudflare Workers)
-- **Staging**: Auto-deployment via "Auto-Deploy to Staging" GitHub Actions workflow (isolated staging account)
+- **Staging**: Manual deployment via GitHub Actions workflow (isolated staging account)
 - **Production**: ⚠️ **GITHUB ACTIONS ONLY** - Manual deployment required, local access blocked for security
-- **Local production access**: Permanently disabled in Phase 3 safety enhancements
+- **Local production access**: Permanently disabled for enhanced security
 
 ### Database Migrations
-- **Staging**: Manual execution via GitHub Actions workflow (workers auto-deploy, but migrations are manual)
+- **Staging**: Manual execution via GitHub Actions workflow
 - **Production**: ⚠️ **GITHUB ACTIONS ONLY** - Manual execution required via workflow dispatch
 - **Safety features**: Automatic backups, pre-migration validation, rollback procedures
 
@@ -214,10 +220,10 @@ npm run migrate:staging
    - **Emergency Reason**: Required for production operations
 3. **Execute**: Click "Run workflow"
 
-### Important Phase 3 Changes
-- ❌ **No automatic production worker/DB deployments**: All production worker and database changes require manual workflow triggers
-- ✅ **Automatic frontend deployments**: Both staging and production frontends auto-deploy on branch push
-- ✅ **Automatic staging worker deployment**: Staging workers auto-deploy via "Auto-Deploy to Staging" workflow
+### Current Deployment Architecture
+- ❌ **No automatic deployments**: All deployments require manual GitHub Actions workflow triggers
+- ✅ **Manual production workflow triggers**: All production worker and database changes require explicit workflow execution
+- ✅ **Manual staging workflow triggers**: All staging deployments require explicit workflow execution
 - ❌ **Local production access blocked**: `npm run deploy:prod` and `npm run migrate:prod` redirect to GitHub Actions
 - ✅ **Enhanced staging isolation**: Separate Cloudflare account for staging environment
 - ✅ **Multi-layer safety**: Confirmations, backups, validation, and rollback procedures
@@ -387,28 +393,33 @@ Each environment has its own configuration in `wrangler.toml`:
 ## Emergency Procedures
 
 ### Rollback Frontend
-```bash
-# Netlify: Use deploy history in dashboard to rollback
-# Or revert git commits and redeploy
-git revert <commit-hash>
-git push origin main
-```
+**Manual Rollback via GitHub Actions:**
+1. **Identify previous working commit**: Check git history or GitHub releases
+2. **Revert problematic commit**:
+   ```bash
+   git revert <commit-hash>
+   git push origin main
+   ```
+3. **Deploy via GitHub Actions**: Use "🚀 Production Deployment" workflow
+4. **Select deployment type**: Choose `frontend-only`
+5. **Provide required confirmations**: Type `CONFIRM-PRODUCTION`
 
 ### Rollback Worker
 
-⚠️ **PHASE 3 SAFETY**: Use GitHub Actions workflow for rollback:
+⚠️ **MANUAL WORKFLOW REQUIRED**: Use GitHub Actions workflow for rollback:
 
 1. **Identify previous working commit**: Check git history or GitHub releases
-2. **Go to**: GitHub Actions → "Deploy to Production (Enhanced Safety)"
+2. **Go to**: GitHub Actions → "🚀 Production Deployment"
 3. **Select**: `worker-only` deployment type
-4. **Confirm**: Type `CONFIRM-PRODUCTION`
-5. **Execute**: Workflow will deploy the current main branch version
+4. **Provide reason**: Explain rollback necessity
+5. **Confirm**: Type `CONFIRM-PRODUCTION`
+6. **Execute**: Workflow will deploy the current main branch version
 
 **Alternative**: Revert git commits and trigger workflow:
 ```bash
 git revert <problematic-commit-hash>
 git push origin main
-# Then use GitHub Actions workflow
+# Then use GitHub Actions workflow for deployment
 ```
 
 ### Database Issues
