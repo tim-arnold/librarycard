@@ -34,15 +34,6 @@ database_id = "4283d8af-c667-4673-8505-108f02b4609c"
 binding = "CACHE"
 id = "a7451e32dc8740efb83e3c0751ea3c08"
 
-# Staging R2 Storage - NEW ACCOUNT
-[[r2_buckets]]
-binding = "R2_BUCKET"
-bucket_name = "librarycard-images-staging"
-
-# Staging AI - NEW ACCOUNT
-[ai]
-binding = "AI"
-
 # ONLY staging environment - isolated account
 [env.staging]
 name = "librarycard-api-staging"

@@ -52,3 +52,10 @@ database_id = "368ab7bc-fb42-4607-a4cf-761dc7795284"
 [[env.production.kv_namespaces]]
 binding = "CACHE"
 id = "8f5a86fc82a64b10ba946d749f2dc8f4"
+
+[[env.production.r2_buckets]]
+binding = "R2_BUCKET"
+bucket_name = "librarycard-images-production"
+
+[env.production.ai]
+binding = "AI"
