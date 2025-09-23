@@ -5,8 +5,10 @@ A comprehensive overview of LibraryCard's capabilities and functionality.
 ## Recent Highlights
 
 ### ✅ Recently Completed (September 2025)
+- **📸 Photo Book Cover Feature**: AI-powered custom book cover uploads with R2 storage, cropping tools, and mobile optimization
 - **🎭 Privacy & User Display System**: Comprehensive privacy controls with 5 display name options and location-level activity visibility settings
 - **📱 Library Activity Sidebar**: Real-time activity feed with newly added books and recent reviews, featuring responsive 2-column layout
+- **📱 Mobile Bottom Navigation**: Dynamic viewport-aware toolbar with safe area support and touch optimization
 - **⭐ Enhanced Review System**: Fixed star rating re-approval workflow to preserve approved status when only ratings change
 - **🔍 Enhanced Filtering System**: Clickable author names and multi-genre selection with visual filter chips
 - **🔧 Admin Permission Fixes**: Regular admins can now invite users to locations they manage
@@ -23,6 +25,7 @@ A comprehensive overview of LibraryCard's capabilities and functionality.
 - **Book Removal Request System**: Admin approval workflows for book management
 
 ### 🔗 Quick Links to New Features
+- **[Photo Book Cover Feature Guide](./photo-book-cover-feature.md)** - Complete guide for taking custom book cover photos with AI verification
 - **[Library Activity Sidebar Guide](./library-activity-sidebar.md)** - Complete documentation for the activity sidebar feature
 - **[Privacy System Guide](./privacy-system.md)** - Comprehensive privacy and user display system documentation
 
@@ -52,6 +55,15 @@ A comprehensive overview of LibraryCard's capabilities and functionality.
 - **Multiple Sources**: Google Books API with OpenLibrary fallback
 - **Enhanced Metadata**: Automatic retrieval of title, authors, description, cover images, publication dates, and categories
 
+#### Photo Book Cover Feature
+- **Custom Cover Photos**: Replace default covers with photos of your actual books
+- **AI Verification**: Cloudflare AI ensures uploaded images are actual book covers
+- **Image Cropping**: Automatic cropping to proper book proportions (2:3 aspect ratio)
+- **Cloud Storage**: Cloudflare R2 storage with global CDN distribution
+- **Format Optimization**: Automatic WebP/JPEG selection for optimal file sizes
+- **Mobile Optimized**: Touch-friendly camera interface with safe area support
+
+#### OCR Shelf Scanning (Legacy)
 - **High Accuracy**: 80-90% success rate in production environments
 - **Batch Processing**: Scan entire bookshelves in a single photo
 - **Smart Recognition**: Identifies book spines and extracts titles/authors
