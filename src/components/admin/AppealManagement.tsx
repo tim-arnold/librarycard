@@ -12,7 +12,6 @@ import {
   Chip,
   Alert,
   CircularProgress,
-  Grid,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -202,10 +201,17 @@ export default function AppealManagement() {
           </CardContent>
         </Card>
       ) : (
-        <Grid container spacing={3}>
+        <Box sx={{
+          display: 'grid',
+          gridTemplateColumns: {
+            xs: '1fr',
+            md: 'repeat(2, 1fr)',
+            lg: 'repeat(3, 1fr)'
+          },
+          gap: 3
+        }}>
           {appeals.map((appeal) => (
-            <Grid item xs={12} md={6} lg={4} key={appeal.id}>
-              <Card>
+            <Card key={appeal.id}>
                 <CardContent>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
                     <Chip
@@ -294,10 +300,9 @@ export default function AppealManagement() {
                     </Button>
                   )}
                 </CardActions>
-              </Card>
-            </Grid>
+            </Card>
           ))}
-        </Grid>
+        </Box>
       )}
 
       {/* Resolution Modal */}
