@@ -207,7 +207,7 @@ export class MainRouter {
       // Appeals endpoints (LCWEB-190)
       if (path.startsWith('/api/appeals')) {
         const pathSegments = path.replace('/api/appeals', '').split('/').filter(Boolean);
-        return await handleAppealsRequest(request, env, pathSegments);
+        return await handleAppealsRequest(request, env, corsHeaders, pathSegments);
       }
 
       // === FALLBACK: No router handled the request ===

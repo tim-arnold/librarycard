@@ -5,11 +5,11 @@
 
 import { Env, BookCoverAppeal, AppealSubmissionRequest, AppealResolutionRequest, AIClassificationAllowlist } from '../types';
 import { getUserFromRequest } from '../auth-core';
-import { corsHeaders } from '../utils/cors';
 
 export async function handleAppealsRequest(
   request: Request,
   env: Env,
+  corsHeaders: Record<string, string>,
   pathSegments: string[]
 ): Promise<Response> {
   const method = request.method;
@@ -29,26 +29,26 @@ export async function handleAppealsRequest(
       case 'GET':
         if (endpoint === '') {
           // GET /api/appeals - List user's appeals (regular users) or all appeals (admins)
-          return await listAppeals(user, env);
+          return await listAppeals(user, env, corsHeaders);
         } else if (endpoint === 'admin') {
           // GET /api/appeals/admin - Admin-only appeals management
-          return await listAppealsForAdmin(user, env);
+          return await listAppealsForAdmin(user, env, corsHeaders);
         } else if (endpoint === 'allowlist') {
           // GET /api/appeals/allowlist - Get current AI allowlist (admin only)
-          return await getAIAllowlist(user, env);
+          return await getAIAllowlist(user, env, corsHeaders);
         }
         break;
 
       case 'POST':
         if (endpoint === '') {
           // POST /api/appeals - Submit new appeal
-          return await submitAppeal(request, user, env);
+          return await submitAppeal(request, user, env, corsHeaders);
         } else if (endpoint === 'resolve') {
           // POST /api/appeals/resolve - Resolve appeal (admin only)
-          return await resolveAppeal(request, user, env);
+          return await resolveAppeal(request, user, env, corsHeaders);
         } else if (endpoint === 'allowlist') {
           // POST /api/appeals/allowlist - Add to allowlist (admin only)
-          return await addToAllowlist(request, user, env);
+          return await addToAllowlist(request, user, env, corsHeaders);
         }
         break;
 
@@ -62,7 +62,7 @@ export async function handleAppealsRequest(
               headers: corsHeaders,
             });
           }
-          return await updateAppeal(request, user, env, appealId);
+          return await updateAppeal(request, user, env, corsHeaders, appealId);
         }
         break;
 
@@ -76,7 +76,7 @@ export async function handleAppealsRequest(
               headers: corsHeaders,
             });
           }
-          return await deleteAppeal(user, env, appealId);
+          return await deleteAppeal(user, env, corsHeaders, appealId);
         }
         break;
     }
@@ -101,7 +101,8 @@ export async function handleAppealsRequest(
 async function submitAppeal(
   request: Request,
   user: any,
-  env: Env
+  env: Env,
+  corsHeaders: Record<string, string>
 ): Promise<Response> {
   try {
     const body: AppealSubmissionRequest = await request.json();
@@ -203,7 +204,7 @@ async function submitAppeal(
 /**
  * List appeals for regular users (their own) or admins (all)
  */
-async function listAppeals(user: any, env: Env): Promise<Response> {
+async function listAppeals(user: any, env: Env, corsHeaders: Record<string, string>): Promise<Response> {
   try {
     let stmt;
     let params: any[] = [];
@@ -287,7 +288,7 @@ async function listAppeals(user: any, env: Env): Promise<Response> {
 /**
  * Admin-only endpoint for appeals management
  */
-async function listAppealsForAdmin(user: any, env: Env): Promise<Response> {
+async function listAppealsForAdmin(user: any, env: Env, corsHeaders: Record<string, string>): Promise<Response> {
   // Check admin permissions
   if (user.user_role !== 'admin' && user.user_role !== 'super_admin') {
     return new Response(JSON.stringify({ error: 'Admin access required' }), {
@@ -296,7 +297,7 @@ async function listAppealsForAdmin(user: any, env: Env): Promise<Response> {
     });
   }
 
-  return await listAppeals(user, env);
+  return await listAppeals(user, env, corsHeaders);
 }
 
 /**
@@ -305,7 +306,8 @@ async function listAppealsForAdmin(user: any, env: Env): Promise<Response> {
 async function resolveAppeal(
   request: Request,
   user: any,
-  env: Env
+  env: Env,
+  corsHeaders: Record<string, string>
 ): Promise<Response> {
   // Check admin permissions
   if (user.user_role !== 'admin' && user.user_role !== 'super_admin') {
@@ -358,7 +360,7 @@ async function resolveAppeal(
 
     // Start transaction for atomic operations
     const now = new Date().toISOString();
-    let newStatus: string;
+    let newStatus: string = 'pending'; // Initialize with default value
     let actions: string[] = [];
 
     if (body.action === 'approve') {
@@ -452,7 +454,7 @@ async function resolveAppeal(
 /**
  * Get current AI classification allowlist (admin only)
  */
-async function getAIAllowlist(user: any, env: Env): Promise<Response> {
+async function getAIAllowlist(user: any, env: Env, corsHeaders: Record<string, string>): Promise<Response> {
   // Check admin permissions
   if (user.user_role !== 'admin' && user.user_role !== 'super_admin') {
     return new Response(JSON.stringify({ error: 'Admin access required' }), {
@@ -498,7 +500,8 @@ async function getAIAllowlist(user: any, env: Env): Promise<Response> {
 async function addToAllowlist(
   request: Request,
   user: any,
-  env: Env
+  env: Env,
+  corsHeaders: Record<string, string>
 ): Promise<Response> {
   // Check admin permissions
   if (user.user_role !== 'admin' && user.user_role !== 'super_admin') {
@@ -509,7 +512,7 @@ async function addToAllowlist(
   }
 
   try {
-    const body = await request.json();
+    const body: any = await request.json();
 
     if (!body.labels || !Array.isArray(body.labels) || body.labels.length === 0) {
       return new Response(JSON.stringify({
@@ -573,6 +576,7 @@ async function updateAppeal(
   request: Request,
   user: any,
   env: Env,
+  corsHeaders: Record<string, string>,
   appealId: number
 ): Promise<Response> {
   // Check admin permissions
@@ -584,7 +588,7 @@ async function updateAppeal(
   }
 
   try {
-    const body = await request.json();
+    const body: any = await request.json();
 
     const stmt = env.DB.prepare(`
       UPDATE book_cover_appeals
@@ -625,6 +629,7 @@ async function updateAppeal(
 async function deleteAppeal(
   user: any,
   env: Env,
+  corsHeaders: Record<string, string>,
   appealId: number
 ): Promise<Response> {
   // Check admin permissions
