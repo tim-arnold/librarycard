@@ -18,12 +18,15 @@ import {
   DialogActions,
   TextField,
   FormControl,
+  FormControlLabel,
   InputLabel,
   Select,
   MenuItem,
+  Radio,
+  RadioGroup,
   Divider,
 } from '@mui/material'
-import { ReportProblem, CheckCircle, Cancel, Visibility } from '@mui/icons-material'
+import { ReportProblem, CheckCircle, Cancel, Visibility, Delete } from '@mui/icons-material'
 import { getApiBaseUrl } from '@/lib/apiConfig'
 
 interface BookCoverAppeal {
@@ -56,6 +59,7 @@ export default function AppealManagement() {
   const [adminNotes, setAdminNotes] = useState('')
   const [resolutionAction, setResolutionAction] = useState<'approve' | 'reject' | 'add_to_allowlist'>('approve')
   const [allowlistLabels, setAllowlistLabels] = useState<string>('')
+  const [allowlistImageAction, setAllowlistImageAction] = useState<'approve' | 'reject'>('approve')
   const [isResolving, setIsResolving] = useState(false)
   const { data: session } = useSession()
 
@@ -92,8 +96,31 @@ export default function AppealManagement() {
     fetchAppeals()
   }, [session])
 
+  // Add a manual refresh function for debugging
+  const forceRefresh = () => {
+    fetchAppeals()
+  }
+
   const handleResolveAppeal = async () => {
-    if (!selectedAppeal || !session?.user?.email) return
+    if (!selectedAppeal) {
+      setError('No appeal selected')
+      setResolutionModalOpen(false)
+      return
+    }
+
+    if (!session?.user?.email) {
+      setError('Authentication required')
+      setResolutionModalOpen(false)
+      return
+    }
+
+    if (!selectedAppeal.id) {
+      console.log('selectedAppeal:', selectedAppeal)
+      console.log('selectedAppeal.id:', selectedAppeal.id)
+      setError('Invalid appeal data')
+      setResolutionModalOpen(false)
+      return
+    }
 
     setIsResolving(true)
 
@@ -109,6 +136,7 @@ export default function AppealManagement() {
           .split(',')
           .map(label => label.trim())
           .filter(label => label.length > 0)
+        body.image_action = allowlistImageAction // Include whether to approve/reject the specific image
       }
 
       const response = await fetch(`${getApiBaseUrl()}/api/appeals/resolve`, {
@@ -116,6 +144,7 @@ export default function AppealManagement() {
         headers: {
           'Authorization': `Bearer ${session.user.email}`,
           'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
         },
         body: JSON.stringify(body)
       })
@@ -134,6 +163,7 @@ export default function AppealManagement() {
       setSelectedAppeal(null)
       setAdminNotes('')
       setAllowlistLabels('')
+      setAllowlistImageAction('approve')
       setResolutionAction('approve')
 
     } catch (err) {
@@ -141,6 +171,38 @@ export default function AppealManagement() {
       setError(err instanceof Error ? err.message : 'Failed to resolve appeal')
     } finally {
       setIsResolving(false)
+    }
+  }
+
+  const handleDeleteAppeal = async (appealId: number) => {
+    if (!session?.user?.email) return
+
+    if (!confirm('Are you sure you want to permanently delete this appeal? This action cannot be undone.')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`${getApiBaseUrl()}/api/appeals/${appealId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.user.email}`,
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete appeal')
+      }
+
+      // Refresh appeals list
+      await fetchAppeals()
+
+    } catch (err) {
+      console.error('Error deleting appeal:', err)
+      setError(err instanceof Error ? err.message : 'Failed to delete appeal')
     }
   }
 
@@ -155,11 +217,31 @@ export default function AppealManagement() {
   }
 
   const getAILabels = (results: any) => {
-    if (!results || !Array.isArray(results)) return []
-    return results.slice(0, 3).map(r => ({
-      label: r.label || 'Unknown',
-      score: Math.round((r.score || 0) * 100)
-    }))
+    if (!results) return []
+
+    // Handle the actual format: { detectedLabels: ["person:0.92", "face:0.88", ...] }
+    if (results.detectedLabels && Array.isArray(results.detectedLabels)) {
+      return results.detectedLabels.slice(0, 5).map((labelString: string) => {
+        // Each item is a string like "person:0.92"
+        const parts = labelString.split(':')
+        const label = parts[0] || 'Unknown'
+        const confidence = parseFloat(parts[1]) || 0
+        return {
+          label: label,
+          score: Math.round(confidence * 100)
+        }
+      })
+    }
+
+    // Fallback for old format: [{label: "...", score: 0.xx}, ...]
+    if (Array.isArray(results)) {
+      return results.slice(0, 5).map(r => ({
+        label: r.label || 'Unknown',
+        score: Math.round((r.score || 0) * 100)
+      }))
+    }
+
+    return []
   }
 
   if (isLoading) {
@@ -172,9 +254,14 @@ export default function AppealManagement() {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>
-        AI Verification Appeals
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h4">
+          AI Verification Appeals
+        </Typography>
+        <Button onClick={forceRefresh} variant="outlined" size="small">
+          Refresh Data
+        </Button>
+      </Box>
 
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
@@ -299,6 +386,17 @@ export default function AppealManagement() {
                       Resolve
                     </Button>
                   )}
+                  {appeal.status === 'rejected' && (
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      color="error"
+                      onClick={() => handleDeleteAppeal(appeal.id)}
+                      startIcon={<Delete />}
+                    >
+                      Delete
+                    </Button>
+                  )}
                 </CardActions>
             </Card>
           ))}
@@ -347,16 +445,72 @@ export default function AppealManagement() {
               </FormControl>
 
               {resolutionAction === 'add_to_allowlist' && (
-                <TextField
-                  fullWidth
-                  label="Labels to Add to Allowlist"
-                  placeholder="book, cover, text (comma-separated)"
-                  value={allowlistLabels}
-                  onChange={(e) => setAllowlistLabels(e.target.value)}
-                  disabled={isResolving}
-                  sx={{ mb: 2 }}
-                  helperText="Enter AI classification labels that should be allowed for future book covers"
-                />
+                <Box>
+                  {/* Image Action Selection */}
+                  <FormControl component="fieldset" sx={{ mb: 3 }}>
+                    <Typography variant="subtitle2" gutterBottom>
+                      What should happen to this specific image?
+                    </Typography>
+                    <RadioGroup
+                      row
+                      value={allowlistImageAction}
+                      onChange={(e) => setAllowlistImageAction(e.target.value as 'approve' | 'reject')}
+                    >
+                      <FormControlLabel value="approve" control={<Radio />} label="Approve this image" />
+                      <FormControlLabel value="reject" control={<Radio />} label="Still reject this image" />
+                    </RadioGroup>
+                  </FormControl>
+
+                  {/* Show AI Classification Results */}
+                  {selectedAppeal && selectedAppeal.ai_classification_results && getAILabels(selectedAppeal.ai_classification_results).length > 0 && (
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="subtitle2" gutterBottom>
+                        AI Detected Labels (click to add to allowlist):
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                        {getAILabels(selectedAppeal.ai_classification_results).map((item, index) => {
+                          const isSelected = allowlistLabels.split(',').map(l => l.trim().toLowerCase()).includes(item.label.toLowerCase());
+                          return (
+                            <Chip
+                              key={index}
+                              label={`${item.label} (${item.score}%)`}
+                              size="small"
+                              clickable
+                              color={isSelected ? 'primary' : 'default'}
+                              variant={isSelected ? 'filled' : 'outlined'}
+                              onClick={() => {
+                                const currentLabels = allowlistLabels.split(',').map(l => l.trim()).filter(l => l.length > 0);
+                                const labelToToggle = item.label.toLowerCase();
+
+                                if (isSelected) {
+                                  // Remove from allowlist
+                                  const newLabels = currentLabels.filter(l => l.toLowerCase() !== labelToToggle);
+                                  setAllowlistLabels(newLabels.join(', '));
+                                } else {
+                                  // Add to allowlist
+                                  const newLabels = [...currentLabels, labelToToggle];
+                                  setAllowlistLabels(newLabels.join(', '));
+                                }
+                              }}
+                              disabled={isResolving}
+                            />
+                          );
+                        })}
+                      </Box>
+                    </Box>
+                  )}
+
+                  <TextField
+                    fullWidth
+                    label="Labels to Add to Allowlist"
+                    placeholder="book, cover, text (comma-separated)"
+                    value={allowlistLabels}
+                    onChange={(e) => setAllowlistLabels(e.target.value)}
+                    disabled={isResolving}
+                    sx={{ mb: 2 }}
+                    helperText="Enter AI classification labels that should be allowed for future book covers, or click the detected labels above"
+                  />
+                </Box>
               )}
 
               <TextField

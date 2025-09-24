@@ -45,7 +45,10 @@ async function listLocalBackups() {
 
   const files = readdirSync(cloudflareDir);
   return files.filter(file =>
-    file.startsWith('prod-backup-') && file.endsWith('.json')
+    (file.startsWith('prod-backup-') ||
+     file.startsWith('staging-backup-') ||
+     file === 'staging-database-backup.json') &&
+    file.endsWith('.json')
   );
 }
 
@@ -78,7 +81,9 @@ async function promptForRemoteBackup() {
     console.log('💡 Available backup releases can be found at:');
     console.log('   https://github.com/tim-arnold/libarycard/releases');
     console.log('');
-    console.log('📝 Enter the backup release name (e.g., "cf-backup-101-20250923"):');
+    console.log('📝 Enter the backup release name:');
+    console.log('   Production: "cf-backup-101-20250923"');
+    console.log('   Staging:    "staging-backup-6-20250924-1710"');
 
     rl.question('Backup release: ', (answer) => {
       resolve(answer.trim());
@@ -106,15 +111,31 @@ function cleanupCloudflareDirectory() {
 
 async function downloadAndExtractBackup(backupName) {
   const cloudflareDir = path.join(__dirname, '../../cloudflare');
-  // Extract date from backup name (e.g., "cf-backup-101-20250923" -> "20250923")
-  // Release directory: cf-backup-101-20250923
-  // Actual filename: cloudflare-backup-20250923.tar.gz (no sequence number)
-  const dateMatch = backupName.match(/(\d{8})$/);
-  if (!dateMatch) {
-    throw new Error(`Invalid backup name format. Expected format: cf-backup-XXX-YYYYMMDD`);
+  // Extract date from backup name
+  // Production format: "cf-backup-101-20250923" -> "20250923"
+  // Staging format: "staging-backup-6-20250924-1710" -> "20250924"
+  let dateStr, filename;
+
+  if (backupName.startsWith('cf-backup-')) {
+    // Production backup format: cf-backup-XXX-YYYYMMDD
+    const dateMatch = backupName.match(/(\d{8})$/);
+    if (!dateMatch) {
+      throw new Error(`Invalid production backup name format. Expected: cf-backup-XXX-YYYYMMDD`);
+    }
+    dateStr = dateMatch[1];
+    filename = `cloudflare-backup-${dateStr}.tar.gz`;
+  } else if (backupName.startsWith('staging-backup-')) {
+    // Staging backup format: staging-backup-X-YYYYMMDD-HHMM
+    const dateMatch = backupName.match(/staging-backup-\d+-(\d{8})-(\d{4})$/);
+    if (!dateMatch) {
+      throw new Error(`Invalid staging backup name format. Expected: staging-backup-X-YYYYMMDD-HHMM`);
+    }
+    dateStr = dateMatch[1];
+    const timeStr = dateMatch[2];
+    filename = `staging-cloudflare-backup-${dateStr}-${timeStr}.tar.gz`;
+  } else {
+    throw new Error(`Unknown backup format. Expected: cf-backup-XXX-YYYYMMDD or staging-backup-X-YYYYMMDD-HHMM`);
   }
-  const dateStr = dateMatch[1];
-  const filename = `cloudflare-backup-${dateStr}.tar.gz`;
   const tarFile = `${cloudflareDir}/${filename}`;
   const downloadUrl = `https://github.com/tim-arnold/libarycard/releases/download/${backupName}/${filename}`;
 
@@ -160,34 +181,39 @@ async function downloadAndExtractBackup(backupName) {
 
     // Look for JSON backup file in the main directory first
     let backupJsonFile = extractedFiles.find(file =>
-      file.startsWith('prod-backup-') && file.endsWith('.json')
+      (file.startsWith('prod-backup-') || file.startsWith('staging-backup-') || file === 'staging-database-backup.json') && file.endsWith('.json')
     );
     let backupJsonPath;
 
     if (!backupJsonFile) {
-      // Check if there's a 'cloudflare' subdirectory with the JSON file
-      const cloudflareSubdir = path.join(cloudflareDir, 'cloudflare');
-      if (existsSync(cloudflareSubdir)) {
-        console.log('🔍 Checking cloudflare subdirectory...');
-        const subdirFiles = readdirSync(cloudflareSubdir);
-        console.log(`Files in cloudflare subdirectory:`, subdirFiles);
+      // Check subdirectories for the JSON file
+      const possibleSubdirs = ['cloudflare', 'staging-cloudflare'];
 
-        backupJsonFile = subdirFiles.find(file =>
-          file.startsWith('prod-backup-') && file.endsWith('.json')
-        );
+      for (const subdirName of possibleSubdirs) {
+        const subdir = path.join(cloudflareDir, subdirName);
+        if (existsSync(subdir)) {
+          console.log(`🔍 Checking ${subdirName} subdirectory...`);
+          const subdirFiles = readdirSync(subdir);
+          console.log(`Files in ${subdirName} subdirectory:`, subdirFiles);
 
-        if (backupJsonFile) {
-          // Move the JSON file to the main cloudflare directory
-          const srcPath = path.join(cloudflareSubdir, backupJsonFile);
-          const destPath = path.join(cloudflareDir, backupJsonFile);
-          console.log(`📁 Moving ${backupJsonFile} from subdirectory to main directory...`);
-          execSync(`mv "${srcPath}" "${destPath}"`);
+          backupJsonFile = subdirFiles.find(file =>
+            (file.startsWith('prod-backup-') || file.startsWith('staging-backup-') || file === 'staging-database-backup.json') && file.endsWith('.json')
+          );
 
-          // Remove the empty subdirectory
-          rmSync(cloudflareSubdir, { recursive: true, force: true });
-          console.log('🧹 Cleaned up cloudflare subdirectory');
+          if (backupJsonFile) {
+            // Move the JSON file to the main cloudflare directory
+            const srcPath = path.join(subdir, backupJsonFile);
+            const destPath = path.join(cloudflareDir, backupJsonFile);
+            console.log(`📁 Moving ${backupJsonFile} from ${subdirName} subdirectory to main directory...`);
+            execSync(`mv "${srcPath}" "${destPath}"`);
 
-          backupJsonPath = destPath;
+            // Remove the empty subdirectory
+            rmSync(subdir, { recursive: true, force: true });
+            console.log(`🧹 Cleaned up ${subdirName} subdirectory`);
+
+            backupJsonPath = destPath;
+            break;
+          }
         }
       }
     } else {

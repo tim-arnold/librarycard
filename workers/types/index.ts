@@ -502,4 +502,5 @@ export interface AppealResolutionRequest {
   action: 'approve' | 'reject' | 'add_to_allowlist';
   admin_notes?: string;
   allowlist_labels?: string[]; // Labels to add to allowlist if action is 'add_to_allowlist'
+  image_action?: 'approve' | 'reject'; // What to do with the specific image when adding to allowlist
 }

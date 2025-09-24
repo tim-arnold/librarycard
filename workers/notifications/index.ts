@@ -8,7 +8,7 @@ import {
 } from '../email/index';
 import { getWorkerFromEmail } from '../utils/domainConfig';
 
-export type NotificationType = 
+export type NotificationType =
   | 'user_registration'
   | 'location_access_granted'
   | 'location_access_revoked'
@@ -22,6 +22,7 @@ export type NotificationType =
   | 'genre_suggestion'
   | 'genre_approved'
   | 'genre_rejected'
+  | 'appeal_submitted'
   | 'system_maintenance';
 
 interface NotificationContext {

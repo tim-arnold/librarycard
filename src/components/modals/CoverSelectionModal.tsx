@@ -79,6 +79,8 @@ export default function CoverSelectionModal({
     rejectionReason: string
     aiClassificationResults?: any
   } | null>(null)
+  const [appealSubmitted, setAppealSubmitted] = useState(false)
+  const [appealBookTitle, setAppealBookTitle] = useState('')
   const { data: session } = useSession()
 
   const fetchEditions = async (queryParam?: string) => {
@@ -585,6 +587,34 @@ export default function CoverSelectionModal({
         {/* Camera Tab Content */}
         {currentTab === 1 && (
           <>
+            {/* Appeal Success Message */}
+            {appealSubmitted && (
+              <Alert
+                severity="success"
+                sx={{ mb: 2 }}
+                action={
+                  <Button
+                    color="inherit"
+                    size="small"
+                    onClick={() => {
+                      setAppealSubmitted(false)
+                      setAppealBookTitle('')
+                    }}
+                  >
+                    Dismiss
+                  </Button>
+                }
+              >
+                <Typography variant="body1" sx={{ fontWeight: 'bold', mb: 1 }}>
+                  ✅ Appeal Submitted Successfully!
+                </Typography>
+                <Typography variant="body2">
+                  Your appeal for "<strong>{appealBookTitle}</strong>" has been submitted and will be reviewed by an admin.
+                  You can check the status in the admin notifications or try taking a new photo.
+                </Typography>
+              </Alert>
+            )}
+
             {/* Error Display for Camera Tab */}
             {error && (
               <Alert
@@ -642,6 +672,7 @@ export default function CoverSelectionModal({
               overflow: 'hidden'
             }}>
               <BookCoverCapture
+                key={appealSubmitted ? 'appeal-submitted' : 'normal'} // Force re-render when appeal is submitted
                 title={title}
                 author={author}
                 onCoverCapture={handleCameraCapture}
@@ -665,7 +696,10 @@ export default function CoverSelectionModal({
       {appealData && (
         <AppealModal
           open={appealModalOpen}
-          onClose={() => setAppealModalOpen(false)}
+          onClose={() => {
+            setAppealModalOpen(false)
+            // Don't clear appeal success state here - let it show in camera tab
+          }}
           bookTitle={title}
           bookAuthor={author}
           rejectedImageDataUrl={appealData.imageDataUrl}
@@ -675,6 +709,9 @@ export default function CoverSelectionModal({
             setAppealModalOpen(false)
             setAppealData(null)
             setError('') // Clear the error once appeal is submitted
+            setAppealSubmitted(true)
+            setAppealBookTitle(`${title} by ${author}`)
+            setCurrentTab(1) // Switch to camera tab to show confirmation
           }}
         />
       )}

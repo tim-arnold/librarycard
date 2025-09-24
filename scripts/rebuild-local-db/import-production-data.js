@@ -55,6 +55,8 @@ const IMPORT_ORDER = [
   'notification_preferences',
   'in_app_notifications',
   'notification_read_status',
+  'book_cover_appeals', // Appeals system
+  'appeal_resolution_actions', // Appeals resolution tracking
   'ai_classification_allowlist' // Keep our seeded allowlist
 ];
 
@@ -62,8 +64,9 @@ const IMPORT_ORDER = [
 const SKIP_TABLES = [
   'migrations_applied',
   'migration_batches',
-  'sqlite_sequence',
-  'ai_classification_allowlist' // We already seeded this
+  'sqlite_sequence'
+  // Note: ai_classification_allowlist is imported if it exists in backup,
+  // otherwise it will be seeded by migrations
 ];
 
 class ProductionDataImporter {
@@ -145,8 +148,28 @@ class ProductionDataImporter {
       }
 
       const tableData = backupData.tables[tableName];
-      if (!tableData || tableData.error || !tableData.data || tableData.data.length === 0) {
-        console.log(`⏭️  Skipping ${tableName} (no data)`);
+      if (!tableData || tableData.error || !tableData.data) {
+        console.log(`⏭️  Skipping ${tableName} (no table data structure)`);
+        continue;
+      }
+
+      if (tableData.data.length === 0) {
+        console.log(`📝 Creating empty table ${tableName} (table exists in backup but no data)`);
+        // Create the table even if empty, so the structure exists
+        try {
+          // Try to clear the table (this will fail if table doesn't exist)
+          this.executeLocalD1Command(`DELETE FROM ${tableName}`);
+        } catch (error) {
+          if (error.message.includes('no such table')) {
+            // Table doesn't exist, create it from the backup schema if available
+            if (tableData.schema) {
+              console.log(`  🔧 Creating table from backup schema...`);
+              this.executeLocalD1Command(tableData.schema);
+            } else {
+              console.log(`  ⚠️  No schema available for ${tableName}, skipping empty table`);
+            }
+          }
+        }
         continue;
       }
 
