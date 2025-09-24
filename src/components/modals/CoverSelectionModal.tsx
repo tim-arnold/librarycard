@@ -575,6 +575,19 @@ export default function CoverSelectionModal({
                 severity="warning"
                 sx={{ mb: 2 }}
                 action={
+                  // Debug logging for appeal button visibility
+                  (() => {
+                    console.log('Appeal button debug:', {
+                      hasError: !!error,
+                      errorMessage: error,
+                      hasAppealData: !!appealData,
+                      appealData: appealData,
+                      includesBookCover: error?.includes('does not appear to be a book cover'),
+                      includesInappropriate: error?.includes('inappropriate content'),
+                      includesPeople: error?.includes('appears to contain people or faces')
+                    });
+                    return null;
+                  })() ||
                   // LCWEB-190: Show appeal button for AI verification errors
                   appealData && (
                     error.includes('does not appear to be a book cover') ||
