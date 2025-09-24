@@ -447,3 +447,59 @@ export interface UserDisplayInfo {
   isAnonymous: boolean;
   canViewRealName: boolean;
 }
+
+// AI Book Cover Appeals System Types (LCWEB-190)
+export interface BookCoverAppeal {
+  id: number;
+  user_id: string;
+  book_title: string;
+  book_author: string;
+  appeal_reason?: string;
+  image_data_url: string;
+  image_metadata?: string; // JSON string
+  ai_classification_results?: string; // JSON string
+  rejection_reason: string;
+  status: 'pending' | 'approved' | 'rejected' | 'resolved';
+  admin_notes?: string;
+  resolved_by?: string;
+  resolved_at?: string;
+  submitted_at: string;
+  updated_at: string;
+}
+
+export interface AIClassificationAllowlist {
+  id: number;
+  label: string;
+  confidence_threshold: number;
+  added_by: string;
+  added_from_appeal_id?: number;
+  reason?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AppealResolutionAction {
+  id: number;
+  appeal_id: number;
+  action_type: 'approved_image' | 'added_to_allowlist' | 'rejected_appeal' | 'admin_note';
+  action_details?: string; // JSON string
+  performed_by: string;
+  performed_at: string;
+}
+
+export interface AppealSubmissionRequest {
+  book_title: string;
+  book_author: string;
+  image_data_url: string;
+  appeal_reason?: string;
+  ai_classification_results?: any; // The original AI response
+  rejection_reason: string;
+}
+
+export interface AppealResolutionRequest {
+  appeal_id: number;
+  action: 'approve' | 'reject' | 'add_to_allowlist';
+  admin_notes?: string;
+  allowlist_labels?: string[]; // Labels to add to allowlist if action is 'add_to_allowlist'
+}
