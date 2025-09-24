@@ -18,11 +18,14 @@ import {
   Schedule,
   Refresh,
   Event,
+  ReportProblem,
 } from '@mui/icons-material'
 import RemovalRequestManager from './RemovalRequestManager'
 import GenreRequestManager from './GenreRequestManager'
 import AdminSignupManager from './AdminSignupManager'
 import { lazy, Suspense } from 'react'
+
+const AppealManagement = lazy(() => import('./AppealManagement'))
 import { getApiBaseUrl } from '@/lib/apiConfig'
 import { useAdminPendingCounts } from '@/hooks/useAdminPendingCounts'
 
@@ -38,6 +41,7 @@ interface NotificationCounts {
   pendingInvitations: number
   pendingGenreRequests: number
   pendingSeries: number
+  pendingAppeals: number
 }
 
 interface AdminNotificationCenterProps {
@@ -49,6 +53,7 @@ export default function AdminNotificationCenter({ onDataChange }: AdminNotificat
   const [activeTab, setActiveTab] = useState(0)
   const { counts: adminCounts, refreshCounts } = useAdminPendingCounts()
   const [genreRequests, setGenreRequests] = useState(0)
+  const [pendingAppeals, setPendingAppeals] = useState(0)
   const [dataLoaded, setDataLoaded] = useState(false)
   
   const loadNotificationCounts = useCallback(async () => {
@@ -72,6 +77,20 @@ export default function AdminNotificationCenter({ onDataChange }: AdminNotificat
         setGenreRequests(pendingCount)
       }
 
+      // Load appeals count
+      const appealsResponse = await fetch(`${getApiBaseUrl()}/api/appeals`, {
+        headers: {
+          'Authorization': `Bearer ${session.user.email}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (appealsResponse.ok) {
+        const appealsData = await appealsResponse.json()
+        const pendingAppealsCount = appealsData.appeals.filter((appeal: any) => appeal.status === 'pending').length
+        setPendingAppeals(pendingAppealsCount)
+      }
+
       // TODO: Implement other notification counts when features are added
       // - Overdue checkouts (books checked out > 30 days)
       // - Monthly reminders (books still checked out for monthly notification)
@@ -92,6 +111,7 @@ export default function AdminNotificationCenter({ onDataChange }: AdminNotificat
     pendingSignupRequests: adminCounts.pendingSignupRequests,
     pendingSeries: adminCounts.pendingSeries,
     pendingGenreRequests: genreRequests,
+    pendingAppeals: pendingAppeals,
     overdueCheckouts: 0,
     monthlyReminders: 0,
     pendingInvitations: 0
@@ -164,14 +184,21 @@ export default function AdminNotificationCenter({ onDataChange }: AdminNotificat
                 </Badge>
               }
             />
-            <Tab 
+            <Tab
               label={
                 <Badge badgeContent={counts.pendingSeries} color="secondary">
                   Series Reviews
                 </Badge>
               }
             />
-            <Tab 
+            <Tab
+              label={
+                <Badge badgeContent={counts.pendingAppeals} color="error">
+                  Appeals
+                </Badge>
+              }
+            />
+            <Tab
               label={
                 <Badge badgeContent={counts.overdueCheckouts} color="error">
                   Overdue Checkouts
@@ -231,6 +258,14 @@ export default function AdminNotificationCenter({ onDataChange }: AdminNotificat
           )}
 
           {activeTab === 5 && (
+            <Box sx={{ p: 3 }}>
+              <Suspense fallback={<Box sx={{ p: 3, textAlign: 'center' }}>Loading appeals...</Box>}>
+                <AppealManagement onCountChange={loadNotificationCounts} />
+              </Suspense>
+            </Box>
+          )}
+
+          {activeTab === 6 && (
             <Box sx={{ p: 3, textAlign: 'center' }}>
               <Schedule sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
               <Typography variant="h6" color="text.secondary" gutterBottom>
@@ -245,7 +280,7 @@ export default function AdminNotificationCenter({ onDataChange }: AdminNotificat
             </Box>
           )}
 
-          {activeTab === 6 && (
+          {activeTab === 7 && (
             <Box sx={{ p: 3, textAlign: 'center' }}>
               <Notifications sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
               <Typography variant="h6" color="text.secondary" gutterBottom>
@@ -260,7 +295,7 @@ export default function AdminNotificationCenter({ onDataChange }: AdminNotificat
             </Box>
           )}
 
-          {activeTab === 7 && (
+          {activeTab === 8 && (
             <Box sx={{ p: 3, textAlign: 'center' }}>
               <CheckCircle sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
               <Typography variant="h6" color="text.secondary" gutterBottom>

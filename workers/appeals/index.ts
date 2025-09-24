@@ -5,6 +5,7 @@
 
 import { Env, BookCoverAppeal, AppealSubmissionRequest, AppealResolutionRequest, AIClassificationAllowlist } from '../types';
 import { getUserFromRequest } from '../auth';
+import { createInAppNotification, getNotificationRecipients } from '../notifications';
 
 /**
  * Get user data from userId for role checking
@@ -200,6 +201,35 @@ async function submitAppeal(
       throw new Error('Failed to insert appeal into database');
     }
 
+    // Create notifications for admins
+    try {
+      const recipients = await getNotificationRecipients(env, 'appeal_submitted');
+
+      for (const recipient of recipients) {
+        await createInAppNotification(
+          env,
+          recipient.userId,
+          'appeal_submitted',
+          'New Appeal Submitted',
+          `A user has appealed an AI book cover rejection for "${body.book_title}" by ${body.book_author}`,
+          '/admin/appeals',
+          'Review Appeals',
+          userId,
+          undefined,
+          {
+            bookTitle: body.book_title,
+            bookAuthor: body.book_author,
+            appealReason: body.appeal_reason
+          }
+        );
+      }
+
+      console.log(`Created appeal notifications for ${recipients.length} admins`);
+    } catch (notificationError) {
+      console.error('Failed to create appeal notifications:', notificationError);
+      // Don't fail the appeal submission if notifications fail
+    }
+
     return new Response(JSON.stringify({
       success: true,
       appeal_id: result.meta.last_row_id,
@@ -289,8 +319,8 @@ async function listAppeals(userId: string, env: Env, corsHeaders: Record<string,
         ...appeal,
         image_metadata: imageMetadata,
         ai_classification_results: aiClassificationResults,
-        // Remove image data URL from list view for performance
-        image_data_url: undefined
+        // Only include image data URL for admin users - regular users don't need it for performance
+        image_data_url: (user.user_role === 'admin' || user.user_role === 'super_admin') ? appeal.image_data_url : undefined
       };
     }) || [];
 
@@ -415,8 +445,18 @@ async function resolveAppeal(
       newStatus = 'rejected';
       actions.push('rejected_appeal');
     } else if (body.action === 'add_to_allowlist') {
-      newStatus = 'resolved';
-      actions.push('added_to_allowlist');
+      // When adding to allowlist, also handle the specific image based on image_action
+      if (body.image_action === 'approve') {
+        newStatus = 'approved';
+        actions.push('approved_image', 'added_to_allowlist');
+      } else if (body.image_action === 'reject') {
+        newStatus = 'rejected';
+        actions.push('rejected_appeal', 'added_to_allowlist');
+      } else {
+        // Default to resolved if no image_action specified (backward compatibility)
+        newStatus = 'resolved';
+        actions.push('added_to_allowlist');
+      }
 
       // Add specified labels to allowlist
       if (body.allowlist_labels && body.allowlist_labels.length > 0) {
@@ -472,7 +512,7 @@ async function resolveAppeal(
         appeal.id,
         actionType,
         JSON.stringify(actionDetails),
-        userId
+        user.id
       ).run();
     }
 
@@ -690,11 +730,20 @@ async function updateAppeal(
  * Delete an appeal (admin only)
  */
 async function deleteAppeal(
-  user: any,
+  userId: string,
   env: Env,
   corsHeaders: Record<string, string>,
   appealId: number
 ): Promise<Response> {
+  // Get user data for role checking
+  const user = await getUserData(userId, env);
+  if (!user) {
+    return new Response(JSON.stringify({ error: 'User not found' }), {
+      status: 404,
+      headers: corsHeaders,
+    });
+  }
+
   // Check admin permissions
   if (user.user_role !== 'admin' && user.user_role !== 'super_admin') {
     return new Response(JSON.stringify({ error: 'Admin access required' }), {

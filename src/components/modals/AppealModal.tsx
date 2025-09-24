@@ -84,20 +84,16 @@ export default function AppealModal({
         throw new Error(data.error || 'Failed to submit appeal')
       }
 
-      setSubmitSuccess(true)
-
       // Clear form
       setAppealReason('')
 
-      // Notify parent component
+      // Notify parent component immediately and close
       if (onAppealSubmitted) {
         onAppealSubmitted()
       }
 
-      // Auto-close after success message
-      setTimeout(() => {
-        handleClose()
-      }, 3000)
+      // Close modal immediately - confirmation will show in camera tab
+      handleClose()
 
     } catch (error) {
       console.error('Error submitting appeal:', error)
@@ -138,18 +134,21 @@ export default function AppealModal({
         fullWidth
       >
         <DialogContent sx={{ textAlign: 'center', py: 4 }}>
-          <Alert severity="success" sx={{ mb: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Appeal Submitted Successfully
+          <Alert severity="success" sx={{ mb: 3, p: 3 }}>
+            <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>
+              ✅ Appeal Submitted Successfully!
+            </Typography>
+            <Typography variant="body1" sx={{ mb: 2 }}>
+              Your appeal for "<strong>{bookTitle}</strong>" has been submitted and will be reviewed by an admin.
             </Typography>
             <Typography variant="body2">
-              Your appeal has been submitted and will be reviewed by an admin.
               We'll work to improve our AI verification system based on your feedback.
+              You'll be able to see the status of your appeal in the admin notifications.
             </Typography>
           </Alert>
 
           <Typography variant="body2" color="text.secondary">
-            This dialog will close automatically in a few seconds...
+            This dialog will close automatically in 5 seconds...
           </Typography>
         </DialogContent>
 

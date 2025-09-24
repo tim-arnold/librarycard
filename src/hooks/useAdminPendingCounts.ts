@@ -7,6 +7,7 @@ interface AdminPendingCounts {
   pendingReviews: number;
   pendingSignupRequests: number;
   pendingSeries: number;
+  pendingAppeals: number;
   total: number;
 }
 
@@ -17,6 +18,7 @@ export function useAdminPendingCounts() {
     pendingReviews: 0,
     pendingSignupRequests: 0,
     pendingSeries: 0,
+    pendingAppeals: 0,
     total: 0,
   });
   const [loading, setLoading] = useState(false);
@@ -36,12 +38,32 @@ export function useAdminPendingCounts() {
       if (response.ok) {
         const data = await response.json();
         const overview = data.overview;
+
+        // Also fetch appeals count
+        let pendingAppeals = 0;
+        try {
+          const appealsResponse = await fetch(`${getApiBaseUrl()}/api/appeals`, {
+            headers: {
+              'Authorization': `Bearer ${session.user.email}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (appealsResponse.ok) {
+            const appealsData = await appealsResponse.json();
+            pendingAppeals = appealsData.appeals.filter((appeal: any) => appeal.status === 'pending').length;
+          }
+        } catch (error) {
+          console.error('Error fetching appeals count:', error);
+        }
+
         const newCounts = {
           pendingRequests: overview.pendingRequests || 0,
           pendingReviews: overview.pendingReviews || 0,
           pendingSignupRequests: overview.pendingSignupRequests || 0,
           pendingSeries: overview.pendingSeries || 0,
-          total: (overview.pendingRequests || 0) + (overview.pendingReviews || 0) + (overview.pendingSignupRequests || 0) + (overview.pendingSeries || 0),
+          pendingAppeals: pendingAppeals,
+          total: (overview.pendingRequests || 0) + (overview.pendingReviews || 0) + (overview.pendingSignupRequests || 0) + (overview.pendingSeries || 0) + pendingAppeals,
         };
         setCounts(newCounts);
       }
