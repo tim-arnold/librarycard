@@ -4,8 +4,6 @@
 -- Check if the table exists and has the incorrect schema
 -- We'll recreate it with the correct schema and preserve existing data
 
-BEGIN TRANSACTION;
-
 -- Create backup of existing data
 CREATE TABLE book_cover_appeals_backup AS SELECT * FROM book_cover_appeals;
 
@@ -59,5 +57,3 @@ CREATE TRIGGER IF NOT EXISTS update_book_cover_appeals_updated_at
 BEGIN
   UPDATE book_cover_appeals SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;
-
-COMMIT;
