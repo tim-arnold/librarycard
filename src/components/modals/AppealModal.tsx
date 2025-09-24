@@ -66,6 +66,7 @@ export default function AppealModal({
         headers: {
           'Authorization': `Bearer ${session.user.email}`,
           'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
         },
         body: JSON.stringify({
           book_title: bookTitle,
