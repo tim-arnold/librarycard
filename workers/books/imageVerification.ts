@@ -4,11 +4,16 @@ import { Env } from '../types';
  * Get allowed AI classification labels from database
  * Includes caching for performance
  */
+interface CachedAllowlistData {
+  labels: string[];
+  confidence_thresholds: [string, number][];
+}
+
 async function getAllowedLabels(env: Env): Promise<{ labels: string[], confidence_thresholds: Map<string, number> }> {
   try {
     // Try to get from cache first
     const cacheKey = 'ai_allowlist_v1';
-    let allowlistData = null;
+    let allowlistData: CachedAllowlistData | null = null;
 
     if (env.CACHE) {
       const cached = await env.CACHE.get(cacheKey);
@@ -27,18 +32,18 @@ async function getAllowedLabels(env: Env): Promise<{ labels: string[], confidenc
 
       const result = await stmt.all();
       const labels: string[] = [];
-      const confidence_thresholds = new Map<string, number>();
+      const thresholdsMap = new Map<string, number>();
 
       if (result.results) {
         for (const row of result.results as any[]) {
           labels.push(row.label.toLowerCase());
-          confidence_thresholds.set(row.label.toLowerCase(), row.confidence_threshold || 0.2);
+          thresholdsMap.set(row.label.toLowerCase(), row.confidence_threshold || 0.2);
         }
       }
 
       allowlistData = {
         labels,
-        confidence_thresholds: Array.from(confidence_thresholds.entries())
+        confidence_thresholds: Array.from(thresholdsMap.entries())
       };
 
       // Cache for 1 hour
