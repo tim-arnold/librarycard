@@ -50,7 +50,11 @@ interface BookCoverAppeal {
   user_last_name?: string
 }
 
-export default function AppealManagement() {
+interface AppealManagementProps {
+  onCountChange?: () => void | Promise<void>
+}
+
+export default function AppealManagement({ onCountChange }: AppealManagementProps) {
   const [appeals, setAppeals] = useState<BookCoverAppeal[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string>('')
@@ -158,6 +162,11 @@ export default function AppealManagement() {
       // Refresh appeals list
       await fetchAppeals()
 
+      // Notify parent component of count change
+      if (onCountChange) {
+        await onCountChange()
+      }
+
       // Close modal and reset state
       setResolutionModalOpen(false)
       setSelectedAppeal(null)
@@ -199,6 +208,11 @@ export default function AppealManagement() {
 
       // Refresh appeals list
       await fetchAppeals()
+
+      // Notify parent component of count change
+      if (onCountChange) {
+        await onCountChange()
+      }
 
     } catch (err) {
       console.error('Error deleting appeal:', err)
@@ -341,7 +355,7 @@ export default function AppealManagement() {
                         <strong>AI Detected:</strong>
                       </Typography>
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                        {getAILabels(appeal.ai_classification_results).map((item, index) => (
+                        {getAILabels(appeal.ai_classification_results).map((item: { label: string; score: number }, index: number) => (
                           <Chip
                             key={index}
                             label={`${item.label} (${item.score}%)`}
@@ -468,7 +482,7 @@ export default function AppealManagement() {
                         AI Detected Labels (click to add to allowlist):
                       </Typography>
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
-                        {getAILabels(selectedAppeal.ai_classification_results).map((item, index) => {
+                        {getAILabels(selectedAppeal.ai_classification_results).map((item: { label: string; score: number }, index: number) => {
                           const isSelected = allowlistLabels.split(',').map(l => l.trim().toLowerCase()).includes(item.label.toLowerCase());
                           return (
                             <Chip
