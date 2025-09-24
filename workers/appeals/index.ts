@@ -4,7 +4,7 @@
  */
 
 import { Env, BookCoverAppeal, AppealSubmissionRequest, AppealResolutionRequest, AIClassificationAllowlist } from '../types';
-import { getUserFromRequest } from '../auth-core';
+import { getUserFromRequest } from '../auth';
 
 export async function handleAppealsRequest(
   request: Request,
