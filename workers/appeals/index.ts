@@ -6,6 +6,24 @@
 import { Env, BookCoverAppeal, AppealSubmissionRequest, AppealResolutionRequest, AIClassificationAllowlist } from '../types';
 import { getUserFromRequest } from '../auth';
 
+/**
+ * Get user data from userId for role checking
+ */
+async function getUserData(userId: string, env: Env): Promise<{ id: string; email: string; user_role: string; first_name?: string; last_name?: string } | null> {
+  try {
+    const userStmt = env.DB.prepare(`
+      SELECT id, email, user_role, first_name, last_name
+      FROM users
+      WHERE id = ?
+    `);
+    const user = await userStmt.bind(userId).first() as any;
+    return user || null;
+  } catch (error) {
+    console.error('Error fetching user data:', error);
+    return null;
+  }
+}
+
 export async function handleAppealsRequest(
   request: Request,
   env: Env,
@@ -16,8 +34,8 @@ export async function handleAppealsRequest(
   const endpoint = pathSegments[0] || '';
 
   // Get user from request
-  const user = await getUserFromRequest(request, env);
-  if (!user) {
+  const userId = await getUserFromRequest(request, env);
+  if (!userId) {
     return new Response(JSON.stringify({ error: 'Authentication required' }), {
       status: 401,
       headers: corsHeaders,
@@ -29,26 +47,26 @@ export async function handleAppealsRequest(
       case 'GET':
         if (endpoint === '') {
           // GET /api/appeals - List user's appeals (regular users) or all appeals (admins)
-          return await listAppeals(user, env, corsHeaders);
+          return await listAppeals(userId, env, corsHeaders);
         } else if (endpoint === 'admin') {
           // GET /api/appeals/admin - Admin-only appeals management
-          return await listAppealsForAdmin(user, env, corsHeaders);
+          return await listAppealsForAdmin(userId, env, corsHeaders);
         } else if (endpoint === 'allowlist') {
           // GET /api/appeals/allowlist - Get current AI allowlist (admin only)
-          return await getAIAllowlist(user, env, corsHeaders);
+          return await getAIAllowlist(userId, env, corsHeaders);
         }
         break;
 
       case 'POST':
         if (endpoint === '') {
           // POST /api/appeals - Submit new appeal
-          return await submitAppeal(request, user, env, corsHeaders);
+          return await submitAppeal(request, userId, env, corsHeaders);
         } else if (endpoint === 'resolve') {
           // POST /api/appeals/resolve - Resolve appeal (admin only)
-          return await resolveAppeal(request, user, env, corsHeaders);
+          return await resolveAppeal(request, userId, env, corsHeaders);
         } else if (endpoint === 'allowlist') {
           // POST /api/appeals/allowlist - Add to allowlist (admin only)
-          return await addToAllowlist(request, user, env, corsHeaders);
+          return await addToAllowlist(request, userId, env, corsHeaders);
         }
         break;
 
@@ -62,7 +80,7 @@ export async function handleAppealsRequest(
               headers: corsHeaders,
             });
           }
-          return await updateAppeal(request, user, env, corsHeaders, appealId);
+          return await updateAppeal(request, userId, env, corsHeaders, appealId);
         }
         break;
 
@@ -76,7 +94,7 @@ export async function handleAppealsRequest(
               headers: corsHeaders,
             });
           }
-          return await deleteAppeal(user, env, corsHeaders, appealId);
+          return await deleteAppeal(userId, env, corsHeaders, appealId);
         }
         break;
     }
@@ -100,7 +118,7 @@ export async function handleAppealsRequest(
  */
 async function submitAppeal(
   request: Request,
-  user: any,
+  userId: string,
   env: Env,
   corsHeaders: Record<string, string>
 ): Promise<Response> {
@@ -137,7 +155,7 @@ async function submitAppeal(
     `);
 
     const recentAppeal = await recentAppealStmt.bind(
-      user.id,
+      userId,
       body.book_title.trim(),
       body.book_author.trim()
     ).first();
@@ -168,7 +186,7 @@ async function submitAppeal(
     `);
 
     const result = await insertStmt.bind(
-      user.id,
+      userId,
       body.book_title.trim(),
       body.book_author.trim(),
       body.appeal_reason?.trim() || null,
@@ -204,8 +222,17 @@ async function submitAppeal(
 /**
  * List appeals for regular users (their own) or admins (all)
  */
-async function listAppeals(user: any, env: Env, corsHeaders: Record<string, string>): Promise<Response> {
+async function listAppeals(userId: string, env: Env, corsHeaders: Record<string, string>): Promise<Response> {
   try {
+    // Get user data for role checking
+    const user = await getUserData(userId, env);
+    if (!user) {
+      return new Response(JSON.stringify({ error: 'User not found' }), {
+        status: 404,
+        headers: corsHeaders,
+      });
+    }
+
     let stmt;
     let params: any[] = [];
 
@@ -231,7 +258,7 @@ async function listAppeals(user: any, env: Env, corsHeaders: Record<string, stri
         WHERE user_id = ?
         ORDER BY submitted_at DESC
       `);
-      params = [user.id];
+      params = [userId];
     }
 
     const appeals = await stmt.bind(...params).all();
@@ -288,7 +315,16 @@ async function listAppeals(user: any, env: Env, corsHeaders: Record<string, stri
 /**
  * Admin-only endpoint for appeals management
  */
-async function listAppealsForAdmin(user: any, env: Env, corsHeaders: Record<string, string>): Promise<Response> {
+async function listAppealsForAdmin(userId: string, env: Env, corsHeaders: Record<string, string>): Promise<Response> {
+  // Get user data for role checking
+  const user = await getUserData(userId, env);
+  if (!user) {
+    return new Response(JSON.stringify({ error: 'User not found' }), {
+      status: 404,
+      headers: corsHeaders,
+    });
+  }
+
   // Check admin permissions
   if (user.user_role !== 'admin' && user.user_role !== 'super_admin') {
     return new Response(JSON.stringify({ error: 'Admin access required' }), {
@@ -297,7 +333,7 @@ async function listAppealsForAdmin(user: any, env: Env, corsHeaders: Record<stri
     });
   }
 
-  return await listAppeals(user, env, corsHeaders);
+  return await listAppeals(userId, env, corsHeaders);
 }
 
 /**
@@ -305,10 +341,19 @@ async function listAppealsForAdmin(user: any, env: Env, corsHeaders: Record<stri
  */
 async function resolveAppeal(
   request: Request,
-  user: any,
+  userId: string,
   env: Env,
   corsHeaders: Record<string, string>
 ): Promise<Response> {
+  // Get user data for role checking
+  const user = await getUserData(userId, env);
+  if (!user) {
+    return new Response(JSON.stringify({ error: 'User not found' }), {
+      status: 404,
+      headers: corsHeaders,
+    });
+  }
+
   // Check admin permissions
   if (user.user_role !== 'admin' && user.user_role !== 'super_admin') {
     return new Response(JSON.stringify({ error: 'Admin access required' }), {
@@ -385,7 +430,7 @@ async function resolveAppeal(
           await allowlistStmt.bind(
             label.toLowerCase().trim(),
             0.2, // Default threshold
-            user.id,
+            userId,
             appeal.id,
             `Added from appeal for "${appeal.book_title}" by ${appeal.book_author}`,
             true
@@ -404,7 +449,7 @@ async function resolveAppeal(
     await updateStmt.bind(
       newStatus,
       body.admin_notes || null,
-      user.id,
+      userId,
       now,
       appeal.id
     ).run();
@@ -427,7 +472,7 @@ async function resolveAppeal(
         appeal.id,
         actionType,
         JSON.stringify(actionDetails),
-        user.id
+        userId
       ).run();
     }
 
@@ -454,7 +499,16 @@ async function resolveAppeal(
 /**
  * Get current AI classification allowlist (admin only)
  */
-async function getAIAllowlist(user: any, env: Env, corsHeaders: Record<string, string>): Promise<Response> {
+async function getAIAllowlist(userId: string, env: Env, corsHeaders: Record<string, string>): Promise<Response> {
+  // Get user data for role checking
+  const user = await getUserData(userId, env);
+  if (!user) {
+    return new Response(JSON.stringify({ error: 'User not found' }), {
+      status: 404,
+      headers: corsHeaders,
+    });
+  }
+
   // Check admin permissions
   if (user.user_role !== 'admin' && user.user_role !== 'super_admin') {
     return new Response(JSON.stringify({ error: 'Admin access required' }), {
@@ -499,10 +553,19 @@ async function getAIAllowlist(user: any, env: Env, corsHeaders: Record<string, s
  */
 async function addToAllowlist(
   request: Request,
-  user: any,
+  userId: string,
   env: Env,
   corsHeaders: Record<string, string>
 ): Promise<Response> {
+  // Get user data for role checking
+  const user = await getUserData(userId, env);
+  if (!user) {
+    return new Response(JSON.stringify({ error: 'User not found' }), {
+      status: 404,
+      headers: corsHeaders,
+    });
+  }
+
   // Check admin permissions
   if (user.user_role !== 'admin' && user.user_role !== 'super_admin') {
     return new Response(JSON.stringify({ error: 'Admin access required' }), {
@@ -539,7 +602,7 @@ async function addToAllowlist(
       const result = await stmt.bind(
         label.toLowerCase().trim(),
         body.confidence_threshold || 0.2,
-        user.id,
+        userId,
         body.reason || 'Added via admin interface',
         true
       ).run();
