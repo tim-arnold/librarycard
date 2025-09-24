@@ -172,12 +172,30 @@ export default function CoverSelectionModal({
         })
       });
 
+      let uploadResult;
+
       if (!response.ok) {
+        // Handle HTTP error responses (like 400 Bad Request)
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to upload image');
+        const errorMessage = errorData.error || 'Failed to upload image';
+
+        // Check if this is a verification error and provide appeal option
+        if (errorMessage.includes('does not appear to be a book cover') ||
+            errorMessage.includes('inappropriate content') ||
+            errorMessage.includes('appears to contain people or faces')) {
+
+          // Store appeal data for potential appeal submission
+          setAppealData({
+            imageDataUrl,
+            rejectionReason: errorMessage,
+            aiClassificationResults: errorData.verification
+          });
+        }
+
+        throw new Error(errorMessage);
       }
 
-      const uploadResult = await response.json();
+      uploadResult = await response.json();
 
       if (!uploadResult.success) {
         // LCWEB-190: Handle image verification errors with appeal option
@@ -194,8 +212,6 @@ export default function CoverSelectionModal({
             rejectionReason: errorMessage,
             aiClassificationResults: uploadResult.verification
           });
-
-          throw new Error(errorMessage);
         }
 
         throw new Error(errorMessage);
