@@ -156,31 +156,52 @@ export default function AdminNotificationCenter({ onDataChange }: AdminNotificat
       <Card>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tabs value={activeTab} onChange={handleTabChange} variant="scrollable" scrollButtons="auto">
-            <Tab 
+            <Tab
+              label={
+                <Badge badgeContent={counts.pendingAppeals} color="primary">
+                  Appeals
+                </Badge>
+              }
+            />
+            <Tab
+              label={
+                <Badge badgeContent={counts.pendingGenreRequests} color="info">
+                  Genre Requests
+                </Badge>
+              }
+            />
+            <Tab
+              label={
+                <Badge badgeContent={counts.monthlyReminders} color="info">
+                  Monthly Reminders
+                </Badge>
+              }
+            />
+            <Tab
+              label={
+                <Badge badgeContent={counts.overdueCheckouts} color="error">
+                  Overdue Checkouts
+                </Badge>
+              }
+            />
+            <Tab
+              label={
+                <Badge badgeContent={counts.pendingInvitations} color="success">
+                  Pending Invitations
+                </Badge>
+              }
+            />
+            <Tab
               label={
                 <Badge badgeContent={counts.pendingRemovalRequests} color="warning">
                   Removal Requests
                 </Badge>
               }
             />
-            <Tab 
+            <Tab
               label={
                 <Badge badgeContent={counts.pendingReviews} color="primary">
                   Review Moderation
-                </Badge>
-              }
-            />
-            <Tab 
-              label={
-                <Badge badgeContent={counts.pendingSignupRequests} color="success">
-                  Signup Requests
-                </Badge>
-              }
-            />
-            <Tab 
-              label={
-                <Badge badgeContent={counts.pendingGenreRequests} color="info">
-                  Genre Requests
                 </Badge>
               }
             />
@@ -193,29 +214,8 @@ export default function AdminNotificationCenter({ onDataChange }: AdminNotificat
             />
             <Tab
               label={
-                <Badge badgeContent={counts.pendingAppeals} color="error">
-                  Appeals
-                </Badge>
-              }
-            />
-            <Tab
-              label={
-                <Badge badgeContent={counts.overdueCheckouts} color="error">
-                  Overdue Checkouts
-                </Badge>
-              }
-            />
-            <Tab 
-              label={
-                <Badge badgeContent={counts.monthlyReminders} color="info">
-                  Monthly Reminders
-                </Badge>
-              }
-            />
-            <Tab 
-              label={
-                <Badge badgeContent={counts.pendingInvitations} color="success">
-                  Pending Invitations
+                <Badge badgeContent={counts.pendingSignupRequests} color="success">
+                  Signup Requests
                 </Badge>
               }
             />
@@ -225,62 +225,19 @@ export default function AdminNotificationCenter({ onDataChange }: AdminNotificat
         <CardContent sx={{ p: 0 }}>
           {activeTab === 0 && (
             <Box sx={{ p: 3 }}>
-              <RemovalRequestManager onCountChange={loadNotificationCounts} />
-            </Box>
-          )}
-
-          {activeTab === 1 && (
-            <Box sx={{ p: 3 }}>
-              <Suspense fallback={<Box sx={{ p: 3, textAlign: 'center' }}>Loading review moderation...</Box>}>
-                <ReviewModeration onCountChange={loadNotificationCounts} />
-              </Suspense>
-            </Box>
-          )}
-
-          {activeTab === 2 && (
-            <Box sx={{ p: 3 }}>
-              <AdminSignupManager onCountChange={loadNotificationCounts} />
-            </Box>
-          )}
-
-          {activeTab === 3 && (
-            <Box sx={{ p: 3 }}>
-              <GenreRequestManager onCountChange={loadNotificationCounts} />
-            </Box>
-          )}
-
-          {activeTab === 4 && (
-            <Box sx={{ p: 3 }}>
-              <Suspense fallback={<Box sx={{ p: 3, textAlign: 'center' }}>Loading series reviews...</Box>}>
-                <AdminSeriesReview onCountChange={loadNotificationCounts} />
-              </Suspense>
-            </Box>
-          )}
-
-          {activeTab === 5 && (
-            <Box sx={{ p: 3 }}>
               <Suspense fallback={<Box sx={{ p: 3, textAlign: 'center' }}>Loading appeals...</Box>}>
                 <AppealManagement onCountChange={loadNotificationCounts} />
               </Suspense>
             </Box>
           )}
 
-          {activeTab === 6 && (
-            <Box sx={{ p: 3, textAlign: 'center' }}>
-              <Schedule sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
-              <Typography variant="h6" color="text.secondary" gutterBottom>
-                Overdue Checkout Tracking
-              </Typography>
-              <Typography variant="body1" color="text.secondary" paragraph>
-                This feature will track books that have been checked out for extended periods and require follow-up.
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                <Event sx={{ mr: 1, verticalAlign: 'middle' }} /> Coming soon: Automatic detection of books checked out for more than 30 days
-              </Typography>
+          {activeTab === 1 && (
+            <Box sx={{ p: 3 }}>
+              <GenreRequestManager onCountChange={loadNotificationCounts} />
             </Box>
           )}
 
-          {activeTab === 7 && (
+          {activeTab === 2 && (
             <Box sx={{ p: 3, textAlign: 'center' }}>
               <Notifications sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
               <Typography variant="h6" color="text.secondary" gutterBottom>
@@ -295,7 +252,22 @@ export default function AdminNotificationCenter({ onDataChange }: AdminNotificat
             </Box>
           )}
 
-          {activeTab === 8 && (
+          {activeTab === 3 && (
+            <Box sx={{ p: 3, textAlign: 'center' }}>
+              <Schedule sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                Overdue Checkout Tracking
+              </Typography>
+              <Typography variant="body1" color="text.secondary" paragraph>
+                This feature will track books that have been checked out for extended periods and require follow-up.
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                <Event sx={{ mr: 1, verticalAlign: 'middle' }} /> Coming soon: Automatic detection of books checked out for more than 30 days
+              </Typography>
+            </Box>
+          )}
+
+          {activeTab === 4 && (
             <Box sx={{ p: 3, textAlign: 'center' }}>
               <CheckCircle sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
               <Typography variant="h6" color="text.secondary" gutterBottom>
@@ -307,6 +279,34 @@ export default function AdminNotificationCenter({ onDataChange }: AdminNotificat
               <Typography variant="body2" color="text.secondary">
                 📨 Coming soon: Centralized view of all pending invitations from all locations
               </Typography>
+            </Box>
+          )}
+
+          {activeTab === 5 && (
+            <Box sx={{ p: 3 }}>
+              <RemovalRequestManager onCountChange={loadNotificationCounts} />
+            </Box>
+          )}
+
+          {activeTab === 6 && (
+            <Box sx={{ p: 3 }}>
+              <Suspense fallback={<Box sx={{ p: 3, textAlign: 'center' }}>Loading review moderation...</Box>}>
+                <ReviewModeration onCountChange={loadNotificationCounts} />
+              </Suspense>
+            </Box>
+          )}
+
+          {activeTab === 7 && (
+            <Box sx={{ p: 3 }}>
+              <Suspense fallback={<Box sx={{ p: 3, textAlign: 'center' }}>Loading series reviews...</Box>}>
+                <AdminSeriesReview onCountChange={loadNotificationCounts} />
+              </Suspense>
+            </Box>
+          )}
+
+          {activeTab === 8 && (
+            <Box sx={{ p: 3 }}>
+              <AdminSignupManager onCountChange={loadNotificationCounts} />
             </Box>
           )}
         </CardContent>
