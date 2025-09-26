@@ -52,13 +52,13 @@ const AdminComponentLoader = () => (
   </Box>
 )
 
-const TAB_NAMES = ['analytics', 'users', 'locations', 'genres', 'notifications']
+const TAB_NAMES = ['notifications', 'analytics', 'users', 'locations', 'genres']
 const TAB_INDEX_MAP: { [key: string]: number } = {
-  'analytics': 0,
-  'users': 1,
-  'locations': 2,
-  'genres': 3,
-  'notifications': 4,
+  'notifications': 0,
+  'analytics': 1,
+  'users': 2,
+  'locations': 3,
+  'genres': 4,
 }
 
 interface AdminOverview {
@@ -93,7 +93,7 @@ export default function AdminDashboard({ initialTab, onDataChange }: AdminDashbo
 
   useEffect(() => {
     // Only run on initial mount to set tab from URL/prop
-    let tabName = 'analytics' // default
+    let tabName = 'notifications' // default
     
     if (initialTab) {
       tabName = initialTab
@@ -251,26 +251,6 @@ export default function AdminDashboard({ initialTab, onDataChange }: AdminDashbo
             }
           }}
         >
-          <Tab 
-            icon={<Analytics />} 
-            label={`Analytics ${overview ? `(${overview.totalBooks} books)` : ''}`}
-            iconPosition="start"
-          />
-          <Tab 
-            icon={<People />} 
-            label={`Users ${overview ? `(${overview.totalUsers})` : ''}`}
-            iconPosition="start"
-          />
-          <Tab 
-            icon={<LocationOn />} 
-            label={`Locations ${overview ? `(${overview.totalLocations})` : ''}`}
-            iconPosition="start"
-          />
-          <Tab 
-            icon={<Category />} 
-            label="Genres"
-            iconPosition="start"
-          />
           <Tab
             icon={
               <Badge
@@ -290,6 +270,26 @@ export default function AdminDashboard({ initialTab, onDataChange }: AdminDashbo
               </Badge>
             }
             label="Notifications"
+            iconPosition="start"
+          />
+          <Tab
+            icon={<Analytics />}
+            label={`Analytics ${overview ? `(${overview.totalBooks} books)` : ''}`}
+            iconPosition="start"
+          />
+          <Tab
+            icon={<People />}
+            label={`Users ${overview ? `(${overview.totalUsers})` : ''}`}
+            iconPosition="start"
+          />
+          <Tab
+            icon={<LocationOn />}
+            label={`Locations ${overview ? `(${overview.totalLocations})` : ''}`}
+            iconPosition="start"
+          />
+          <Tab
+            icon={<Category />}
+            label="Genres"
             iconPosition="start"
           />
         </Tabs>
@@ -316,31 +316,31 @@ export default function AdminDashboard({ initialTab, onDataChange }: AdminDashbo
           <Box>
             {activeTab === 0 && (
               <Suspense fallback={<AdminComponentLoader />}>
-                <AdminAnalytics />
+                <AdminNotificationCenter onDataChange={onDataChange} />
               </Suspense>
             )}
 
             {activeTab === 1 && (
               <Suspense fallback={<AdminComponentLoader />}>
-                <AdminUserManager />
+                <AdminAnalytics />
               </Suspense>
             )}
 
             {activeTab === 2 && (
               <Suspense fallback={<AdminComponentLoader />}>
-                <LocationManager />
+                <AdminUserManager />
               </Suspense>
             )}
 
             {activeTab === 3 && (
               <Suspense fallback={<AdminComponentLoader />}>
-                <GenreManager />
+                <LocationManager />
               </Suspense>
             )}
 
             {activeTab === 4 && (
               <Suspense fallback={<AdminComponentLoader />}>
-                <AdminNotificationCenter onDataChange={onDataChange} />
+                <GenreManager />
               </Suspense>
             )}
 
