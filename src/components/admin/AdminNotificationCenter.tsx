@@ -193,7 +193,7 @@ export default function AdminNotificationCenter({ onDataChange }: AdminNotificat
             />
             <Tab
               label={
-                <Badge badgeContent={counts.pendingAppeals} color="error">
+                <Badge badgeContent={counts.pendingAppeals} color="primary">
                   Appeals
                 </Badge>
               }
