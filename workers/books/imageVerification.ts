@@ -1,6 +1,86 @@
 import { Env } from '../types';
 
 /**
+ * Get allowed AI classification labels from database
+ * Includes caching for performance
+ */
+interface CachedAllowlistData {
+  labels: string[];
+  confidence_thresholds: [string, number][];
+}
+
+async function getAllowedLabels(env: Env): Promise<{ labels: string[], confidence_thresholds: Map<string, number> }> {
+  try {
+    // Try to get from cache first
+    const cacheKey = 'ai_allowlist_v1';
+    let allowlistData: CachedAllowlistData | null = null;
+
+    if (env.CACHE) {
+      const cached = await env.CACHE.get(cacheKey);
+      if (cached) {
+        allowlistData = JSON.parse(cached);
+      }
+    }
+
+    // If not in cache, fetch from database
+    if (!allowlistData) {
+      const stmt = env.DB.prepare(`
+        SELECT label, confidence_threshold
+        FROM ai_classification_allowlist
+        WHERE is_active = TRUE
+      `);
+
+      const result = await stmt.all();
+      const labels: string[] = [];
+      const thresholdsMap = new Map<string, number>();
+
+      if (result.results) {
+        for (const row of result.results as any[]) {
+          labels.push(row.label.toLowerCase());
+          thresholdsMap.set(row.label.toLowerCase(), row.confidence_threshold || 0.2);
+        }
+      }
+
+      allowlistData = {
+        labels,
+        confidence_thresholds: Array.from(thresholdsMap.entries())
+      };
+
+      // Cache for 1 hour
+      if (env.CACHE) {
+        await env.CACHE.put(cacheKey, JSON.stringify(allowlistData), { expirationTtl: 3600 });
+      }
+    }
+
+    // Convert confidence_thresholds back to Map if it was serialized
+    const confidence_thresholds = new Map(allowlistData.confidence_thresholds);
+
+    return {
+      labels: allowlistData.labels,
+      confidence_thresholds
+    };
+  } catch (error) {
+    console.error('Error fetching allowed labels from database:', error);
+
+    // Fallback to static list if database fails
+    const fallbackLabels = [
+      'book', 'book jacket', 'notebook', 'magazine', 'comic book',
+      'paperback', 'hardcover', 'novel', 'textbook', 'manual',
+      'dictionary', 'encyclopedia', 'publication', 'cover', 'jacket', 'spine',
+      'doormat', 'door mat'
+    ];
+
+    const fallbackThresholds = new Map<string, number>();
+    fallbackLabels.forEach(label => fallbackThresholds.set(label, 0.2));
+
+    return {
+      labels: fallbackLabels,
+      confidence_thresholds: fallbackThresholds
+    };
+  }
+}
+
+/**
  * Image Verification for Book Covers
  * Uses Cloudflare AI to verify that uploaded images are actually book covers
  * and not inappropriate content like selfies or other non-book images
@@ -22,9 +102,30 @@ export async function verifyBookCoverImage(
   env: Env
 ): Promise<ImageVerificationResult> {
   try {
-    // If AI is not available (staging/development), allow all images
+    // If AI is not available (staging/development), simulate verification for testing
     if (!env.AI) {
-      console.warn('Cloudflare AI not available - skipping image verification');
+      console.warn('Cloudflare AI not available - using local test simulation');
+
+      // For local testing of appeals system, simulate rejection
+      // Check if this is a test environment and we want to simulate rejection
+      const simulateRejection = env.ENVIRONMENT === 'local' || env.ENVIRONMENT === 'development';
+
+      if (simulateRejection) {
+        // Simulate AI rejection with realistic data for testing appeals
+        return {
+          isBookCover: false,
+          confidence: 0.85,
+          rejectionReason: 'Image does not appear to be a book cover. Please upload a clear photo of a book cover with the title and author visible.',
+          detectedLabels: [
+            'person:0.92',
+            'face:0.88',
+            'human:0.85',
+            'adult:0.78'
+          ]
+        };
+      }
+
+      // Default: allow images when AI not available
       return {
         isBookCover: true,
         confidence: 1.0,
@@ -44,29 +145,8 @@ export async function verifyBookCoverImage(
     // Extract classification results - the response IS the predictions array
     const predictions = Array.isArray(response) ? response : (response?.predictions || []);
 
-    // Allowlist approach: what we explicitly allow
-    const allowedLabels = [
-      // Books and book-related items
-      'book',
-      'book jacket',
-      'notebook',
-      'magazine',
-      'comic book',
-      'paperback',
-      'hardcover',
-      'novel',
-      'textbook',
-      'manual',
-      'dictionary',
-      'encyclopedia',
-      'publication',
-      'cover',
-      'jacket',
-      'spine',
-      // Common misclassifications that are actually fine
-      'doormat',
-      'door mat'
-    ];
+    // Get dynamic allowlist from database
+    const { labels: allowedLabels, confidence_thresholds } = await getAllowedLabels(env);
 
     // Only reject obvious human/person indicators
     const personIndicators = [
@@ -112,11 +192,14 @@ export async function verifyBookCoverImage(
 
       detectedLabels.push(`${label}:${confidence.toFixed(2)}`);
 
-      // Check for explicitly allowed content
+      // Check for explicitly allowed content with dynamic thresholds
       for (const allowedLabel of allowedLabels) {
         if (label.includes(allowedLabel)) {
-          hasAllowedContent = true;
-          maxAllowedConfidence = Math.max(maxAllowedConfidence, confidence);
+          const threshold = confidence_thresholds.get(allowedLabel) || 0.2;
+          if (confidence >= threshold) {
+            hasAllowedContent = true;
+            maxAllowedConfidence = Math.max(maxAllowedConfidence, confidence);
+          }
         }
       }
 
@@ -134,8 +217,8 @@ export async function verifyBookCoverImage(
     let rejectionReason: string | undefined;
     let finalConfidence = 0;
 
-    if (hasAllowedContent && maxAllowedConfidence > 0.2) {
-      // Detected book-related content - accept
+    if (hasAllowedContent) {
+      // Detected book-related content above dynamic thresholds - accept
       isBookCover = true;
       finalConfidence = maxAllowedConfidence;
     } else {

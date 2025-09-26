@@ -8,7 +8,7 @@ import {
 } from '../email/index';
 import { getWorkerFromEmail } from '../utils/domainConfig';
 
-export type NotificationType = 
+export type NotificationType =
   | 'user_registration'
   | 'location_access_granted'
   | 'location_access_revoked'
@@ -22,6 +22,7 @@ export type NotificationType =
   | 'genre_suggestion'
   | 'genre_approved'
   | 'genre_rejected'
+  | 'appeal_submitted'
   | 'system_maintenance';
 
 interface NotificationContext {
@@ -146,9 +147,9 @@ export async function createInAppNotification(
 ) {
   try {
     await env.DB.prepare(`
-      INSERT INTO in_app_notifications 
-      (recipient_user_id, notification_type, title, message, action_url, action_label, related_user_id, related_location_id, metadata)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO in_app_notifications
+      (recipient_user_id, notification_type, title, message, action_url, action_label, related_user_id, related_location_id, metadata, is_read, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       recipientUserId,
       notificationType,
@@ -158,7 +159,9 @@ export async function createInAppNotification(
       actionLabel || null,
       relatedUserId || null,
       relatedLocationId || null,
-      metadata ? JSON.stringify(metadata) : null
+      metadata ? JSON.stringify(metadata) : null,
+      0, // is_read = false
+      new Date().toISOString() // created_at = current timestamp
     ).run();
 
     // Update unread count

@@ -271,10 +271,10 @@ export default function AdminDashboard({ initialTab, onDataChange }: AdminDashbo
             label="Genres"
             iconPosition="start"
           />
-          <Tab 
+          <Tab
             icon={
-              <Badge 
-                badgeContent={adminCounts.total > 0 ? adminCounts.total : undefined} 
+              <Badge
+                badgeContent={adminCounts.total > 0 ? adminCounts.total : undefined}
                 color="primary"
                 max={99}
                 sx={{
@@ -343,6 +343,7 @@ export default function AdminDashboard({ initialTab, onDataChange }: AdminDashbo
                 <AdminNotificationCenter onDataChange={onDataChange} />
               </Suspense>
             )}
+
           </Box>
         </Fade>
       </Box>
