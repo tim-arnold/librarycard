@@ -74,9 +74,9 @@ export default function HeroSection() {
 
           {/* CTA buttons */}
           <Flex justify="center" gap={4} className="marketing-flex-col marketing-flex-md-row">
-            <Button 
-              href="/auth/signin" 
-              variant="primary" 
+            <Button
+              href="/auth/signin?register=true"
+              variant="primary"
               size="lg"
             >
               Join Beta

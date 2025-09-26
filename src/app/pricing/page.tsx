@@ -102,7 +102,7 @@ function BetaAccess() {
                 { text: 'Community support and discussions', included: true }
               ]}
               ctaText="Join Beta Program"
-              ctaHref="/auth/signin"
+              ctaHref="/auth/signin?register=true"
               featured={true}
             />
           </div>
@@ -333,9 +333,9 @@ function CTASection() {
           </Text>
           
           <div className="marketing-flex marketing-justify-center marketing-gap-4 marketing-flex-col marketing-flex-md-row">
-            <Button 
-              href="/auth/signin" 
-              variant="secondary" 
+            <Button
+              href="/auth/signin?register=true"
+              variant="secondary"
               size="lg"
             >
               Join Beta Now

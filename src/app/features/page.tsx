@@ -75,9 +75,9 @@ function FeaturesHeader() {
           </Text>
 
           <div className="marketing-flex marketing-justify-center marketing-gap-4 marketing-flex-col marketing-flex-md-row">
-            <Button 
-              href="/auth/signin" 
-              variant="primary" 
+            <Button
+              href="/auth/signin?register=true"
+              variant="primary"
               size="lg"
             >
               Join Beta Program
@@ -521,9 +521,9 @@ function CTASection() {
           </Text>
           
           <div className="marketing-flex marketing-justify-center marketing-gap-4 marketing-flex-col marketing-flex-md-row">
-            <Button 
-              href="/auth/signin" 
-              variant="secondary" 
+            <Button
+              href="/auth/signin?register=true"
+              variant="secondary"
               size="lg"
             >
               Join Beta Program

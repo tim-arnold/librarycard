@@ -15,7 +15,7 @@ export default function MarketingFooter() {
       links: [
         { name: 'Features', href: '/features' },
         { name: 'Pricing', href: '/pricing' },
-        { name: 'Sign Up', href: '/auth/signin' },
+        { name: 'Sign Up', href: '/auth/signin?register=true' },
       ]
     },
     company: {
