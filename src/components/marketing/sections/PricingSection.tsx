@@ -25,7 +25,7 @@ export default function PricingSection() {
         { text: 'Shape future development', included: true }
       ],
       ctaText: 'Join Beta',
-      ctaHref: '/auth/signin',
+      ctaHref: '/auth/signin?register=true',
       featured: true
     }
   ]
