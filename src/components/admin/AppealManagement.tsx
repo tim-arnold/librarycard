@@ -65,6 +65,8 @@ export default function AppealManagement({ onCountChange }: AppealManagementProp
   const [allowlistLabels, setAllowlistLabels] = useState<string>('')
   const [allowlistImageAction, setAllowlistImageAction] = useState<'approve' | 'reject'>('approve')
   const [isResolving, setIsResolving] = useState(false)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [appealToDelete, setAppealToDelete] = useState<BookCoverAppeal | null>(null)
   const { data: session } = useSession()
 
   const fetchAppeals = async () => {
@@ -106,13 +108,19 @@ export default function AppealManagement({ onCountChange }: AppealManagementProp
   }
 
   const handleResolveAppeal = async () => {
+    console.log('handleResolveAppeal called') // Debug
+    console.log('selectedAppeal:', selectedAppeal) // Debug
+    console.log('resolutionAction:', resolutionAction) // Debug
+    
     if (!selectedAppeal) {
+      console.log('No appeal selected') // Debug
       setError('No appeal selected')
       setResolutionModalOpen(false)
       return
     }
 
     if (!session?.user?.email) {
+      console.log('No authentication') // Debug
       setError('Authentication required')
       setResolutionModalOpen(false)
       return
@@ -126,6 +134,7 @@ export default function AppealManagement({ onCountChange }: AppealManagementProp
       return
     }
 
+    console.log('Starting resolution process...') // Debug
     setIsResolving(true)
 
     try {
@@ -143,19 +152,35 @@ export default function AppealManagement({ onCountChange }: AppealManagementProp
         body.image_action = allowlistImageAction // Include whether to approve/reject the specific image
       }
 
+      console.log('Making API call with body:', body) // Debug
+      
+      // Get CSRF token first
+      const csrfResponse = await fetch(`${getApiBaseUrl()}/api/csrf-token`, {
+        headers: {
+          'Authorization': `Bearer ${session.user.email}`
+        }
+      })
+      const csrfData = await csrfResponse.json()
+      console.log('Got CSRF token:', csrfData.csrfToken) // Debug
+
       const response = await fetch(`${getApiBaseUrl()}/api/appeals/resolve`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.user.email}`,
           'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRF-Token': csrfData.csrfToken,
         },
         body: JSON.stringify(body)
       })
+      
+      console.log('API response status:', response.status) // Debug
 
       const data = await response.json()
 
       if (!response.ok) {
+        // Even if there's an error, the appeal might have been resolved
+        // Refresh the list to check if it actually worked
+        await fetchAppeals()
         throw new Error(data.error || 'Failed to resolve appeal')
       }
 
@@ -183,15 +208,16 @@ export default function AppealManagement({ onCountChange }: AppealManagementProp
     }
   }
 
-  const handleDeleteAppeal = async (appealId: number) => {
-    if (!session?.user?.email) return
+  const confirmDeleteAppeal = (appeal: BookCoverAppeal) => {
+    setAppealToDelete(appeal)
+    setDeleteConfirmOpen(true)
+  }
 
-    if (!confirm('Are you sure you want to permanently delete this appeal? This action cannot be undone.')) {
-      return
-    }
+  const handleDeleteAppeal = async () => {
+    if (!session?.user?.email || !appealToDelete) return
 
     try {
-      const response = await fetch(`${getApiBaseUrl()}/api/appeals/${appealId}`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/appeals/${appealToDelete.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${session.user.email}`,
@@ -206,6 +232,10 @@ export default function AppealManagement({ onCountChange }: AppealManagementProp
         throw new Error(data.error || 'Failed to delete appeal')
       }
 
+      // Close confirmation dialog and reset state
+      setDeleteConfirmOpen(false)
+      setAppealToDelete(null)
+
       // Refresh appeals list
       await fetchAppeals()
 
@@ -217,6 +247,9 @@ export default function AppealManagement({ onCountChange }: AppealManagementProp
     } catch (err) {
       console.error('Error deleting appeal:', err)
       setError(err instanceof Error ? err.message : 'Failed to delete appeal')
+      // Close dialog even on error
+      setDeleteConfirmOpen(false)
+      setAppealToDelete(null)
     }
   }
 
@@ -400,15 +433,15 @@ export default function AppealManagement({ onCountChange }: AppealManagementProp
                       Resolve
                     </Button>
                   )}
-                  {appeal.status === 'rejected' && (
+                  {appeal.status !== 'pending' && (
                     <Button
                       variant="outlined"
                       size="small"
                       color="error"
-                      onClick={() => handleDeleteAppeal(appeal.id)}
+                      onClick={() => confirmDeleteAppeal(appeal)}
                       startIcon={<Delete />}
                     >
-                      Delete
+                      {appeal.status === 'rejected' ? 'Delete' : 'Archive'}
                     </Button>
                   )}
                 </CardActions>
@@ -549,12 +582,74 @@ export default function AppealManagement({ onCountChange }: AppealManagementProp
             Cancel
           </Button>
           <Button
-            onClick={handleResolveAppeal}
+            onClick={() => {
+              console.log('Resolve button clicked!') // Debug
+              console.log('Button disabled?', isResolving) // Debug
+              console.log('Resolution action:', resolutionAction) // Debug
+              handleResolveAppeal()
+            }}
             variant="contained"
-            disabled={isResolving}
+            disabled={isResolving || !resolutionAction}
             startIcon={isResolving ? <CircularProgress size={16} /> : <CheckCircle />}
           >
             {isResolving ? 'Resolving...' : 'Resolve Appeal'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Confirmation Modal */}
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          {appealToDelete?.status === 'rejected' ? 'Delete Appeal' : 'Archive Appeal'}
+        </DialogTitle>
+
+        <DialogContent>
+          {appealToDelete && (
+            <Box>
+              <Alert severity="warning" sx={{ mb: 2 }}>
+                <Typography variant="body2">
+                  Are you sure you want to {appealToDelete.status === 'rejected' ? 'delete' : 'archive'} this appeal?
+                </Typography>
+              </Alert>
+
+              <Typography variant="body2" gutterBottom>
+                <strong>Appeal:</strong> #{appealToDelete.id}
+              </Typography>
+              <Typography variant="body2" gutterBottom>
+                <strong>Book:</strong> {appealToDelete.book_title} by {appealToDelete.book_author}
+              </Typography>
+              <Typography variant="body2" gutterBottom>
+                <strong>Status:</strong> {appealToDelete.status}
+              </Typography>
+              <Typography variant="body2" gutterBottom>
+                <strong>User:</strong> {appealToDelete.user_first_name} {appealToDelete.user_last_name}
+              </Typography>
+
+              <Alert severity="error" sx={{ mt: 2 }}>
+                This action cannot be undone.
+              </Alert>
+            </Box>
+          )}
+        </DialogContent>
+
+        <DialogActions>
+          <Button
+            onClick={() => setDeleteConfirmOpen(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleDeleteAppeal}
+            variant="contained"
+            color="error"
+            startIcon={<Delete />}
+          >
+            {appealToDelete?.status === 'rejected' ? 'Delete' : 'Archive'}
           </Button>
         </DialogActions>
       </Dialog>

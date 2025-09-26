@@ -279,13 +279,14 @@ async function listAppeals(userId: string, env: Env, corsHeaders: Record<string,
         FROM book_cover_appeals a
         LEFT JOIN users u ON a.user_id = u.id
         LEFT JOIN users resolver ON a.resolved_by = resolver.id
+        WHERE a.status != 'deleted'
         ORDER BY a.submitted_at DESC
       `);
     } else {
-      // Regular users see only their own appeals
+      // Regular users see only their own appeals (excluding deleted)
       stmt = env.DB.prepare(`
         SELECT * FROM book_cover_appeals
-        WHERE user_id = ?
+        WHERE user_id = ? AND status != 'deleted'
         ORDER BY submitted_at DESC
       `);
       params = [userId];
@@ -480,6 +481,7 @@ async function resolveAppeal(
     }
 
     // Update the appeal
+    console.log('Updating appeal status to:', newStatus);
     const updateStmt = env.DB.prepare(`
       UPDATE book_cover_appeals
       SET status = ?, admin_notes = ?, resolved_by = ?, resolved_at = ?
@@ -493,8 +495,10 @@ async function resolveAppeal(
       now,
       appeal.id
     ).run();
+    console.log('Appeal status updated successfully');
 
     // Log resolution actions
+    console.log('Logging resolution actions:', actions);
     for (const actionType of actions) {
       const actionStmt = env.DB.prepare(`
         INSERT INTO appeal_resolution_actions
@@ -508,14 +512,104 @@ async function resolveAppeal(
         resolution_timestamp: now
       };
 
+      console.log(`Inserting action: ${actionType}`);
       await actionStmt.bind(
         appeal.id,
         actionType,
         JSON.stringify(actionDetails),
-        user.id
+        userId
       ).run();
+      console.log(`Action ${actionType} logged successfully`);
     }
 
+    // If approved, apply the cover to the actual book
+    if (newStatus === 'approved') {
+      console.log('Applying approved cover to book...');
+      try {
+        // Find the book by title and author to update its cover
+        const bookStmt = env.DB.prepare(`
+          SELECT id FROM books 
+          WHERE title = ? AND authors LIKE ?
+          LIMIT 1
+        `);
+        const book = await bookStmt.bind(
+          appeal.book_title,
+          `%${appeal.book_author}%`
+        ).first() as any;
+
+        if (book) {
+          // Update the book's cover URL
+          const updateBookStmt = env.DB.prepare(`
+            UPDATE books
+            SET thumbnail = ?, selected_cover_source = ?
+            WHERE id = ?
+          `);
+          
+          const coverMetadata = {
+            source: 'user_upload',
+            url: appeal.image_data_url,
+            selectedAt: now,
+            selectedBy: userId,
+            appeal_id: appeal.id,
+            selection_reason: 'Approved from appeal'
+          };
+
+          await updateBookStmt.bind(
+            appeal.image_data_url,
+            JSON.stringify(coverMetadata),
+            book.id
+          ).run();
+          
+          console.log(`Updated book ${book.id} with approved cover`);
+        } else {
+          console.log('Could not find matching book to update cover');
+        }
+      } catch (bookUpdateError) {
+        console.error('Failed to update book cover:', bookUpdateError);
+        // Don't fail the appeal resolution if book update fails
+      }
+    }
+
+    // Send notification to the appeal submitter
+    try {
+      console.log('Sending notification to appeal submitter...');
+      const notificationTitle = newStatus === 'approved' 
+        ? 'Appeal Approved!' 
+        : newStatus === 'rejected' 
+        ? 'Appeal Rejected' 
+        : 'Appeal Resolved';
+      
+      const notificationMessage = newStatus === 'approved'
+        ? `Your book cover appeal for "${appeal.book_title}" has been approved and the cover has been applied.`
+        : newStatus === 'rejected'
+        ? `Your book cover appeal for "${appeal.book_title}" has been rejected. ${body.admin_notes ? 'Reason: ' + body.admin_notes : ''}`
+        : `Your book cover appeal for "${appeal.book_title}" has been resolved.`;
+
+      await createInAppNotification(
+        env,
+        appeal.user_id,
+        'book_review_approved', // Use existing notification type for now
+        notificationTitle,
+        notificationMessage,
+        '/library', // Link to library to see the updated book
+        'View Library',
+        userId, // Who created the notification (admin)
+        undefined,
+        {
+          appeal_id: appeal.id,
+          book_title: appeal.book_title,
+          resolution: newStatus,
+          admin_notes: body.admin_notes
+        }
+      );
+      
+      console.log('Notification sent to appeal submitter');
+    } catch (notificationError) {
+      console.error('Failed to send notification:', notificationError);
+      // Don't fail the appeal resolution if notification fails
+    }
+
+    console.log('Preparing response...');
     return new Response(JSON.stringify({
       success: true,
       message: `Appeal ${body.action === 'approve' ? 'approved' : body.action === 'reject' ? 'rejected' : 'resolved with allowlist update'}`,
@@ -753,11 +847,36 @@ async function deleteAppeal(
   }
 
   try {
-    const stmt = env.DB.prepare(`DELETE FROM book_cover_appeals WHERE id = ?`);
-    const result = await stmt.bind(appealId).run();
-
-    if (!result.success || result.changes === 0) {
+    // Check if the appeal exists first
+    const checkStmt = env.DB.prepare(`SELECT id FROM book_cover_appeals WHERE id = ?`);
+    const existingAppeal = await checkStmt.bind(appealId).first();
+    
+    if (!existingAppeal) {
       return new Response(JSON.stringify({ error: 'Appeal not found' }), {
+        status: 404,
+        headers: corsHeaders,
+      });
+    }
+
+    // Due to foreign key constraint issues in the database, use soft delete
+    // Update the appeal status to 'deleted' instead of actually removing the record
+    const result = await env.DB.prepare(`
+      UPDATE book_cover_appeals 
+      SET status = 'deleted', 
+          admin_notes = COALESCE(admin_notes, '') || ' [DELETED by admin]',
+          resolved_by = ?,
+          resolved_at = CURRENT_TIMESTAMP,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).bind(user.id, appealId).run();
+
+    if (!result.success) {
+      console.error('Failed to mark appeal as deleted:', result.error);
+      throw new Error('Database update failed');
+    }
+
+    if (result.changes === 0) {
+      return new Response(JSON.stringify({ error: 'Appeal not found or already deleted' }), {
         status: 404,
         headers: corsHeaders,
       });
@@ -772,8 +891,11 @@ async function deleteAppeal(
 
   } catch (error) {
     console.error('Error deleting appeal:', error);
+    // Provide more detailed error information
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     return new Response(JSON.stringify({
-      error: 'Failed to delete appeal'
+      error: 'Failed to delete appeal',
+      details: errorMessage
     }), {
       status: 500,
       headers: corsHeaders,
