@@ -91,20 +91,25 @@ export default function AdminDashboard({ initialTab, onDataChange }: AdminDashbo
   const [isTransitioning, setIsTransitioning] = useState(false)
   const { counts: adminCounts } = useAdminPendingCounts()
 
+  // Smart tab selection: prioritize actionable content
+  const getDefaultTab = () => {
+    // If explicitly set via prop, use that
+    if (initialTab) {
+      return initialTab
+    }
+
+    // Always default to notifications as the primary admin tab
+    // Smart logic will kick in after data loads if there are actionable items
+    return 'notifications'
+  }
+
   useEffect(() => {
     // Only run on initial mount to set tab from URL/prop
-    let tabName = 'notifications' // default
-    
-    if (initialTab) {
-      tabName = initialTab
-    }
-    // Note: We don't read pathname here to avoid re-renders on URL changes
-    // The initial tab is set via initialTab prop passed from page components
-    
+    const tabName = getDefaultTab()
     const newTabIndex = TAB_INDEX_MAP[tabName] ?? 0
     setActiveTab(newTabIndex)
     setFadeIn(true)
-  }, [initialTab]) // Only depend on initialTab
+  }, [initialTab]) // Only depend on initialTab for initial setup
 
   useEffect(() => {
     if (session?.user?.email && !dataLoaded) {
@@ -161,13 +166,18 @@ export default function AdminDashboard({ initialTab, onDataChange }: AdminDashbo
       setTimeout(() => {
         setActiveTab(newValue)
         const tabName = TAB_NAMES[newValue]
-        
+
+        // Persist last-used tab for smart defaults
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('admin-last-tab', tabName)
+        }
+
         // Fade in the new content after a short delay to ensure content is ready
         setTimeout(() => {
           setFadeIn(true)
-          
+
           // URL updates disabled for subtabs to prevent flash during transitions
-          
+
           // Clear transition flag after fade completes
           setTimeout(() => {
             setIsTransitioning(false)
@@ -230,8 +240,8 @@ export default function AdminDashboard({ initialTab, onDataChange }: AdminDashbo
 
       {/* Navigation Tabs */}
       <Box sx={{ position: 'relative', mb: 3 }}>
-        <Tabs 
-          value={activeTab} 
+        <Tabs
+          value={activeTab}
           onChange={handleTabChange} 
           variant="scrollable" 
           scrollButtons="auto" 
