@@ -279,14 +279,14 @@ async function listAppeals(userId: string, env: Env, corsHeaders: Record<string,
         FROM book_cover_appeals a
         LEFT JOIN users u ON a.user_id = u.id
         LEFT JOIN users resolver ON a.resolved_by = resolver.id
-        WHERE a.status != 'deleted'
+        WHERE (a.admin_notes IS NULL OR a.admin_notes NOT LIKE '%[ARCHIVED by admin%')
         ORDER BY a.submitted_at DESC
       `);
     } else {
       // Regular users see only their own appeals (excluding deleted)
       stmt = env.DB.prepare(`
         SELECT * FROM book_cover_appeals
-        WHERE user_id = ? AND status != 'deleted'
+        WHERE user_id = ? AND (admin_notes IS NULL OR admin_notes NOT LIKE '%[ARCHIVED by admin%')
         ORDER BY submitted_at DESC
       `);
       params = [userId];
@@ -859,11 +859,12 @@ async function deleteAppeal(
     }
 
     // Due to foreign key constraint issues in the database, use soft delete
-    // Update the appeal status to 'deleted' instead of actually removing the record
+    // Since the CHECK constraint only allows specific status values, we'll use 'resolved'
+    // and track the deletion in admin_notes and with a special resolved_at timestamp
     const result = await env.DB.prepare(`
-      UPDATE book_cover_appeals 
-      SET status = 'deleted', 
-          admin_notes = COALESCE(admin_notes, '') || ' [DELETED by admin]',
+      UPDATE book_cover_appeals
+      SET status = 'resolved',
+          admin_notes = COALESCE(admin_notes, '') || ' [ARCHIVED by admin at ' || datetime('now') || ']',
           resolved_by = ?,
           resolved_at = CURRENT_TIMESTAMP,
           updated_at = CURRENT_TIMESTAMP
