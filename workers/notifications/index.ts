@@ -147,9 +147,9 @@ export async function createInAppNotification(
 ) {
   try {
     await env.DB.prepare(`
-      INSERT INTO in_app_notifications 
-      (recipient_user_id, notification_type, title, message, action_url, action_label, related_user_id, related_location_id, metadata)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO in_app_notifications
+      (recipient_user_id, notification_type, title, message, action_url, action_label, related_user_id, related_location_id, metadata, is_read, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       recipientUserId,
       notificationType,
@@ -159,7 +159,9 @@ export async function createInAppNotification(
       actionLabel || null,
       relatedUserId || null,
       relatedLocationId || null,
-      metadata ? JSON.stringify(metadata) : null
+      metadata ? JSON.stringify(metadata) : null,
+      0, // is_read = false
+      new Date().toISOString() // created_at = current timestamp
     ).run();
 
     // Update unread count

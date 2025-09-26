@@ -100,6 +100,11 @@ class ProductionDataImporter {
         type = 'BOOLEAN';
       }
 
+      // Special handling for ID columns to ensure proper primary key constraints
+      if (column === 'id' && type === 'INTEGER') {
+        return `${column} ${type} PRIMARY KEY AUTOINCREMENT`;
+      }
+
       return `${column} ${type}`;
     });
 
