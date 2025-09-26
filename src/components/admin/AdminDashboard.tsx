@@ -107,7 +107,6 @@ export default function AdminDashboard({ initialTab, onDataChange }: AdminDashbo
     // Only run on initial mount to set tab from URL/prop
     const tabName = getDefaultTab()
     const newTabIndex = TAB_INDEX_MAP[tabName] ?? 0
-    console.log('AdminDashboard: Setting default tab:', { tabName, newTabIndex, initialTab })
     setActiveTab(newTabIndex)
     setFadeIn(true)
   }, [initialTab]) // Only depend on initialTab for initial setup
@@ -221,14 +220,12 @@ export default function AdminDashboard({ initialTab, onDataChange }: AdminDashbo
     )
   }
 
-  console.log('AdminDashboard render: activeTab =', activeTab)
-
   return (
     <Container maxWidth="xl" sx={{ pb: 2 }}>
       <Paper sx={{ p: 3, borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" component="h1">
-          🔧 Admin Dashboard (activeTab: {activeTab})
+          🔧 Admin Dashboard
         </Typography>
         <Button
           variant="outlined"
