@@ -81,6 +81,7 @@ export default function CoverSelectionModal({
   } | null>(null)
   const [appealSubmitted, setAppealSubmitted] = useState(false)
   const [appealBookTitle, setAppealBookTitle] = useState('')
+  const [isUploading, setIsUploading] = useState(false)
   const { data: session } = useSession()
 
   const fetchEditions = async (queryParam?: string) => {
@@ -154,6 +155,8 @@ export default function CoverSelectionModal({
   }
 
   const handleCameraCapture = async (imageDataUrl: string) => {
+    setIsUploading(true)
+    setError('')
     try {
       // Upload the captured image to our backend storage
       const response = await fetch(`${getApiBaseUrl()}/api/books/images/upload`, {
@@ -238,6 +241,8 @@ export default function CoverSelectionModal({
     } catch (error) {
       console.error('Error uploading camera capture:', error);
       setError(error instanceof Error ? error.message : 'Failed to upload captured image. Please try again.');
+    } finally {
+      setIsUploading(false)
     }
   }
 
@@ -669,8 +674,35 @@ export default function CoverSelectionModal({
               flex: 1,
               minHeight: 300,
               maxHeight: 'calc(100vh - 280px)', // Account for header, tabs, error, and buttons
-              overflow: 'hidden'
+              overflow: 'hidden',
+              position: 'relative'
             }}>
+              {/* Upload Progress Overlay */}
+              {isUploading && (
+                <Box sx={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 1000,
+                  borderRadius: 1
+                }}>
+                  <CircularProgress size={60} sx={{ color: 'white', mb: 2 }} />
+                  <Typography variant="h6" sx={{ color: 'white', mb: 1, textAlign: 'center' }}>
+                    Uploading Cover Photo
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.8)', textAlign: 'center' }}>
+                    Please wait while we process your image...
+                  </Typography>
+                </Box>
+              )}
+
               <BookCoverCapture
                 key={appealSubmitted ? 'appeal-submitted' : 'normal'} // Force re-render when appeal is submitted
                 title={title}
