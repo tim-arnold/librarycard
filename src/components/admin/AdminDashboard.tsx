@@ -98,19 +98,9 @@ export default function AdminDashboard({ initialTab, onDataChange }: AdminDashbo
       return initialTab
     }
 
-    // If there are pending notifications, prioritize notifications tab
-    if (adminCounts.total > 0) {
-      return 'notifications'
-    }
-
-    // Otherwise, use last-used tab or fall back to notifications
-    const lastUsedTab = typeof window !== 'undefined'
-      ? localStorage.getItem('admin-last-tab')
-      : null
-
-    return lastUsedTab && TAB_INDEX_MAP[lastUsedTab] !== undefined
-      ? lastUsedTab
-      : 'notifications'
+    // Always default to notifications as the primary admin tab
+    // Smart logic will kick in after data loads if there are actionable items
+    return 'notifications'
   }
 
   useEffect(() => {
@@ -119,7 +109,7 @@ export default function AdminDashboard({ initialTab, onDataChange }: AdminDashbo
     const newTabIndex = TAB_INDEX_MAP[tabName] ?? 0
     setActiveTab(newTabIndex)
     setFadeIn(true)
-  }, [initialTab, adminCounts.total]) // Depend on adminCounts to react to pending items
+  }, [initialTab]) // Only depend on initialTab for initial setup
 
   useEffect(() => {
     if (session?.user?.email && !dataLoaded) {
