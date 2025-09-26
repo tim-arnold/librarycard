@@ -425,8 +425,8 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                     {item.key === 'admin' && totalAdminNotifications > 0 && (
                       <span
                         style={{
-                          backgroundColor: muiTheme.palette.error.main,
-                          color: muiTheme.palette.error.contrastText,
+                          backgroundColor: muiTheme.palette.primary.main,
+                          color: muiTheme.palette.primary.contrastText,
                           borderRadius: '50%',
                           width: '18px',
                           height: '18px',
@@ -711,7 +711,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                             position: 'absolute',
                             top: '-6px',
                             right: '-6px',
-                            backgroundColor: 'var(--marketing-error)',
+                            backgroundColor: 'var(--marketing-primary)',
                             color: 'var(--marketing-white)',
                             borderRadius: '50%',
                             width: '20px',
@@ -763,7 +763,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                                     position: 'absolute',
                                     top: '-6px',
                                     right: '-6px',
-                                    backgroundColor: 'var(--marketing-error)',
+                                    backgroundColor: 'var(--marketing-primary)',
                                     color: 'var(--marketing-white)',
                                     borderRadius: '50%',
                                     width: '16px',
@@ -1247,8 +1247,8 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                       {item.key === 'admin' && totalAdminNotifications > 0 && (
                         <span
                           style={{
-                            backgroundColor: muiTheme.palette.error.main,
-                            color: muiTheme.palette.error.contrastText,
+                            backgroundColor: muiTheme.palette.primary.main,
+                            color: muiTheme.palette.primary.contrastText,
                             borderRadius: '50%',
                             width: '20px',
                             height: '20px',
