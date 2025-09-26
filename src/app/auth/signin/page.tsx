@@ -32,12 +32,12 @@ import PasskeySignIn from '@/components/auth/PasskeySignIn'
 function SignInForm() {
   const [loading, setLoading] = useState(false)
   const [emailLoading, setEmailLoading] = useState(false)
-  const [showEmailForm, setShowEmailForm] = useState(false)
   const [showRegisterForm, setShowRegisterForm] = useState(false)
   const [showForgotPasswordForm, setShowForgotPasswordForm] = useState(false)
   const [show2FAForm, setShow2FAForm] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [totpCode, setTotpCode] = useState('')
@@ -123,6 +123,11 @@ function SignInForm() {
       setMessage('Email verified successfully! You can now sign in.')
     }
 
+    // Check for register parameter to show registration form
+    if (searchParams.get('register') === 'true') {
+      setShowRegisterForm(true)
+    }
+
     // Check for general message parameter (e.g., from password reset)
     const messageParam = searchParams.get('message')
     if (messageParam) {
@@ -192,7 +197,6 @@ function SignInForm() {
           // 2FA is required - show 2FA form
           setPendingUserId(verifyResult.user_id)
           setShow2FAForm(true)
-          setShowEmailForm(false)
           setError('')
           return
         }
@@ -280,7 +284,6 @@ function SignInForm() {
       if (response.ok) {
         setMessage(data.message)
         setShowForgotPasswordForm(false)
-        setShowEmailForm(false)
         setEmail('')
       } else {
         setError(data.error || 'Failed to send reset email')
@@ -298,6 +301,13 @@ function SignInForm() {
     setEmailLoading(true)
     setError('')
     setMessage('')
+
+    // Validate password confirmation
+    if (password !== confirmPassword) {
+      setError("Passwords don't match")
+      setEmailLoading(false)
+      return
+    }
 
     // Validate password strength
     const passwordError = validatePassword(password)
@@ -338,10 +348,10 @@ function SignInForm() {
           // Admin approval required - show appropriate message
           setMessage('Your signup request has been submitted for admin approval. You will receive an email notification once your request is reviewed. Thank you for your interest in LibraryCard!')
           setShowRegisterForm(false)
-          setShowEmailForm(false)
           // Clear form
           setEmail('')
           setPassword('')
+          setConfirmPassword('')
           setFirstName('')
           setLastName('')
         } else if (data.requires_verification) {
@@ -352,10 +362,10 @@ function SignInForm() {
             setMessage('Registration successful! Please check your email to verify your account before signing in.')
           }
           setShowRegisterForm(false)
-          setShowEmailForm(false)
           // Clear form
           setEmail('')
           setPassword('')
+          setConfirmPassword('')
           setFirstName('')
           setLastName('')
         } else {
@@ -383,7 +393,7 @@ function SignInForm() {
                 // Show sign-in form with helpful message
                 setMessage('Account created successfully! Please use your new password to sign in and accept the invitation.')
                 setShowRegisterForm(false)
-                setShowEmailForm(true)
+                // Stay on main signin page
                 // Keep email filled, clear only password for security
                 setPassword('')
                 setFirstName('')
@@ -397,7 +407,7 @@ function SignInForm() {
             // Normal registration flow without invitation
             setMessage('Registration successful! You can now sign in.')
             setShowRegisterForm(false)
-            setShowEmailForm(true)
+            // Stay on main signin page
             // Keep email filled, clear only password for security
             setPassword('')
             setFirstName('')
@@ -419,7 +429,7 @@ function SignInForm() {
     if (!pendingUserId) {
       setError('Session expired. Please sign in again.')
       setShow2FAForm(false)
-      setShowEmailForm(true)
+      // Return to main signin page
       return
     }
 
@@ -519,21 +529,74 @@ function SignInForm() {
           </Alert>
         )}
 
-        {!showEmailForm && !showRegisterForm && !showForgotPasswordForm && !show2FAForm && !(typeof message === 'string' && message.includes('verification')) && (
+        {!showRegisterForm && !showForgotPasswordForm && !show2FAForm && !(typeof message === 'string' && message.includes('verification')) && (
           <Box sx={{ width: '100%' }}>
+            {/* Email/Password Form - Now on main page */}
+            <Box component="form" onSubmit={handleEmailSignIn} sx={{ textAlign: 'left', mb: 3 }}>
+              <TextField
+                fullWidth
+                type="email"
+                label="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={!!invitationDetails}
+                sx={{ mb: 2 }}
+                variant="outlined"
+              />
+
+              <TextField
+                fullWidth
+                type="password"
+                label="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                sx={{ mb: 3 }}
+                variant="outlined"
+              />
+
+              <Button
+                type="submit"
+                variant="contained"
+                fullWidth
+                disabled={emailLoading}
+                startIcon={emailLoading ? <CircularProgress size={16} color="inherit" /> : <Login />}
+                sx={{ py: 1.5, mb: 2 }}
+              >
+                {emailLoading ? 'Signing in...' : 'Sign In'}
+              </Button>
+
+              <Box sx={{ textAlign: 'center', mb: 3 }}>
+                <Link
+                  component="button"
+                  onClick={() => {
+                    setShowForgotPasswordForm(true)
+                    setError('')
+                    setPassword('')
+                  }}
+                  variant="body2"
+                  sx={{ cursor: 'pointer', color: 'primary.main' }}
+                >
+                  Forgot Password?
+                </Link>
+              </Box>
+            </Box>
+
+            <Divider sx={{ my: 3 }}>
+              <Typography variant="body2" color="text.secondary">or continue with</Typography>
+            </Divider>
+
+            {/* Google and Passkey options - Now below email/password */}
             <Button
               onClick={handleGoogleSignIn}
               disabled={loading}
-              variant="contained"
+              variant="outlined"
               fullWidth
               startIcon={loading ? <CircularProgress size={16} color="inherit" /> : <Google />}
-              sx={{ 
+              sx={{
                 py: 1.5,
                 mb: 2,
-                backgroundColor: '#4285F4',
-                '&:hover': {
-                  backgroundColor: '#357ae8'
-                }
               }}
             >
               {loading ? 'Signing in...' : (invitationToken ? 'Continue with Google and Accept Invitation' : 'Continue with Google')}
@@ -546,49 +609,27 @@ function SignInForm() {
               invitationToken={invitationToken}
             />
 
-            <Divider sx={{ my: 2 }}>
-              <Typography variant="body2" color="text.secondary">or</Typography>
-            </Divider>
-
-            <Button
-              onClick={() => {
-                if (invitationToken && invitationDetails) {
-                  // For invited users, go directly to registration
-                  setShowRegisterForm(true)
-                } else {
-                  // For existing users, show email signin
-                  setShowEmailForm(true)
-                }
-              }}
-              variant="outlined"
-              fullWidth
-              startIcon={<Email />}
-              sx={{ py: 1.5, mb: 2 }}
-            >
-              {invitationToken && invitationDetails ? 'Create Account with Email' : 'Sign in with Email'}
-            </Button>
-
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', mt: 3 }}>
               {invitationToken && invitationDetails ? (
                 <>
-                  Already have an account?{' '}
-                  <Link
-                    component="button"
-                    onClick={() => setShowEmailForm(true)}
-                    sx={{ cursor: 'pointer' }}
-                  >
-                    Sign in here
-                  </Link>
-                </>
-              ) : (
-                <>
-                  Don&apos;t have an account?{' '}
+                  Need to create an account?{' '}
                   <Link
                     component="button"
                     onClick={() => setShowRegisterForm(true)}
                     sx={{ cursor: 'pointer' }}
                   >
-                    Request one here
+                    Sign up here
+                  </Link>
+                </>
+              ) : (
+                <>
+                  New to LibraryCard?{' '}
+                  <Link
+                    component="button"
+                    onClick={() => setShowRegisterForm(true)}
+                    sx={{ cursor: 'pointer' }}
+                  >
+                    Join the beta
                   </Link>
                 </>
               )}
@@ -596,76 +637,6 @@ function SignInForm() {
           </Box>
         )}
 
-        {showEmailForm && !showRegisterForm && (
-          <Box>
-            <Box component="form" onSubmit={handleEmailSignIn} sx={{ textAlign: 'left', mb: 2 }}>
-              <TextField
-                fullWidth
-                type="email"
-                label="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={!!invitationDetails}
-                sx={{ mb: 2 }}
-                variant="outlined"
-              />
-              
-              <TextField
-                fullWidth
-                type="password"
-                label="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                sx={{ mb: 3 }}
-                variant="outlined"
-              />
-              
-              <Button
-                type="submit"
-                variant="contained"
-                fullWidth
-                disabled={emailLoading}
-                startIcon={emailLoading ? <CircularProgress size={16} color="inherit" /> : <Login />}
-                sx={{ py: 1.5, mb: 2 }}
-              >
-                {emailLoading ? 'Signing in...' : 'Sign In'}
-              </Button>
-            </Box>
-
-            <Box sx={{ textAlign: 'center', mb: 2 }}>
-              <Link
-                component="button"
-                onClick={() => {
-                  setShowForgotPasswordForm(true)
-                  setShowEmailForm(false)
-                  setError('')
-                  setPassword('')
-                }}
-                variant="body2"
-                sx={{ cursor: 'pointer', color: 'primary.main' }}
-              >
-                Forgot Password?
-              </Link>
-            </Box>
-
-            <Link
-              component="button"
-              onClick={() => {
-                setShowEmailForm(false)
-                setError('')
-                setEmail('')
-                setPassword('')
-              }}
-              variant="body2"
-              color="text.secondary"
-              sx={{ cursor: 'pointer' }}
-            >
-              Back to sign in options
-            </Link>
-          </Box>
-        )}
 
         {showRegisterForm && (
           <Box>
@@ -716,6 +687,19 @@ function SignInForm() {
                 variant="outlined"
               />
 
+              <TextField
+                fullWidth
+                type="password"
+                label="Confirm Password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                error={confirmPassword.length > 0 && password !== confirmPassword}
+                helperText={confirmPassword.length > 0 && password !== confirmPassword ? "Passwords don't match" : "Re-enter your password to confirm"}
+                sx={{ mb: 2 }}
+                variant="outlined"
+              />
+
               <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
                 <Turnstile
                   ref={turnstileRef}
@@ -752,6 +736,7 @@ function SignInForm() {
                 setError('')
                 setEmail('')
                 setPassword('')
+                setConfirmPassword('')
                 setFirstName('')
                 setLastName('')
                 setTurnstileToken(null)
@@ -802,7 +787,7 @@ function SignInForm() {
               component="button"
               onClick={() => {
                 setShow2FAForm(false)
-                setShowEmailForm(true)
+                // Return to main signin page
                 setError('')
                 setTotpCode('')
                 setPendingUserId(null)
@@ -855,7 +840,7 @@ function SignInForm() {
               component="button"
               onClick={() => {
                 setShowForgotPasswordForm(false)
-                setShowEmailForm(true)
+                // Return to main signin page
                 setError('')
                 setEmail('')
               }}

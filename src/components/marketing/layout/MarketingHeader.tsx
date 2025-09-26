@@ -122,7 +122,7 @@ export default function MarketingHeader() {
                 <Button href="/auth/signin" variant="ghost">
                   Sign In
                 </Button>
-                <Button href="/auth/signin" variant="primary">
+                <Button href="/auth/signin?register=true" variant="primary">
                   Join Beta
                 </Button>
               </>
@@ -220,7 +220,7 @@ export default function MarketingHeader() {
                   <Button href="/auth/signin" variant="ghost" fullWidth>
                     Sign In
                   </Button>
-                  <Button href="/auth/signin" variant="primary" fullWidth>
+                  <Button href="/auth/signin?register=true" variant="primary" fullWidth>
                     Join Beta
                   </Button>
                 </>
