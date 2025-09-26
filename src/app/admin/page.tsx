@@ -73,5 +73,5 @@ export default function AdminPage() {
     return null
   }
 
-  return <AdminDashboard initialTab="analytics" />
+  return <AdminDashboard initialTab="notifications" />
 }

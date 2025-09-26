@@ -55,6 +55,51 @@ export default function AdminNotificationCenter({ onDataChange }: AdminNotificat
   const [genreRequests, setGenreRequests] = useState(0)
   const [pendingAppeals, setPendingAppeals] = useState(0)
   const [dataLoaded, setDataLoaded] = useState(false)
+
+  // Smart subtab selection: priority order for actionable items
+  const TAB_PRIORITY_ORDER = [
+    { key: 'appeals', index: 0, getter: () => pendingAppeals },
+    { key: 'signup-requests', index: 8, getter: () => adminCounts.pendingSignupRequests },
+    { key: 'removal-requests', index: 5, getter: () => adminCounts.pendingRequests },
+    { key: 'review-moderation', index: 6, getter: () => adminCounts.pendingReviews },
+    { key: 'genre-requests', index: 1, getter: () => genreRequests },
+    { key: 'series-reviews', index: 7, getter: () => adminCounts.pendingSeries },
+  ]
+
+  // Get smart default subtab based on priority and pending counts
+  const getDefaultSubtab = useCallback(() => {
+    // Check priority items first
+    for (const tab of TAB_PRIORITY_ORDER) {
+      if (tab.getter() > 0) {
+        return tab.index
+      }
+    }
+
+    // If no priority items, check for any pending items by highest count
+    const allCounts = [
+      { index: 0, count: pendingAppeals },
+      { index: 1, count: genreRequests },
+      { index: 5, count: adminCounts.pendingRequests },
+      { index: 6, count: adminCounts.pendingReviews },
+      { index: 7, count: adminCounts.pendingSeries },
+      { index: 8, count: adminCounts.pendingSignupRequests },
+    ]
+
+    const maxCountTab = allCounts.reduce((max, current) =>
+      current.count > max.count ? current : max
+    )
+
+    if (maxCountTab.count > 0) {
+      return maxCountTab.index
+    }
+
+    // Fall back to last used subtab or default to first
+    const lastUsedSubtab = typeof window !== 'undefined'
+      ? localStorage.getItem('admin-notification-subtab')
+      : null
+
+    return lastUsedSubtab ? parseInt(lastUsedSubtab, 10) : 0
+  }, [pendingAppeals, genreRequests, adminCounts])
   
   const loadNotificationCounts = useCallback(async () => {
     if (!session?.user?.email) return
@@ -132,8 +177,21 @@ export default function AdminNotificationCenter({ onDataChange }: AdminNotificat
     }
   }, [session?.user?.email]);
 
+  // Smart default subtab selection after data loads
+  useEffect(() => {
+    if (dataLoaded && (pendingAppeals > 0 || genreRequests > 0 || adminCounts.total > 0)) {
+      const smartDefault = getDefaultSubtab()
+      setActiveTab(smartDefault)
+    }
+  }, [dataLoaded, getDefaultSubtab, pendingAppeals, genreRequests, adminCounts.total])
+
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue)
+
+    // Persist last-used subtab for smart defaults
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('admin-notification-subtab', newValue.toString())
+    }
   }
 
   return (
