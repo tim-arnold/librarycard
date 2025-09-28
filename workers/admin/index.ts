@@ -235,7 +235,7 @@ export async function denySignupRequest(request: Request, requestId: number, use
   }
 
   try {
-    const { comment }: { comment?: string } = await request.json().catch(() => ({ comment: undefined }));
+    const { comment } = await request.json().catch(() => ({ comment: undefined })) as { comment?: string };
 
     // Get the signup request
     const signupRequest = await env.DB.prepare(`
@@ -449,6 +449,15 @@ export async function cleanupUser(request: Request, userId: string, env: Env, co
       WHERE id = ?
     `).bind(userIdToDelete).run();
 
+    // Invalidate admin cache since user list has changed
+    try {
+      const { invalidateAllAdminAnalytics } = await import('./cached');
+      await invalidateAllAdminAnalytics(env);
+      console.log('✅ Successfully invalidated admin analytics cache');
+    } catch (cacheError) {
+      console.error('❌ Failed to invalidate admin analytics cache:', cacheError);
+    }
+
     const transferredCount = ownedLocations.results.filter((loc: any) =>
       !locations_to_delete || !locations_to_delete.includes(loc.id)
     ).length;
@@ -496,10 +505,11 @@ export async function debugListUsers(userId: string, env: Env, corsHeaders: Reco
   }
 
   try {
-    // Get all users
+    // Get all active users (exclude disabled/archived users)
     const users = await env.DB.prepare(`
       SELECT id, email, first_name, last_name, auth_provider, email_verified, user_role, created_at
-      FROM users 
+      FROM users
+      WHERE user_role != 'disabled'
       ORDER BY created_at DESC
     `).all();
 

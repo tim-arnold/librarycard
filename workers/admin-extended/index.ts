@@ -24,7 +24,7 @@ export async function getAdminAnalytics(userId: string, env: Env, corsHeaders: R
     if (isSuperAdmin) {
       // Super admin gets global statistics
       totalBooks = await env.DB.prepare('SELECT COUNT(*) as count FROM books').first();
-      totalUsers = await env.DB.prepare('SELECT COUNT(*) as count FROM users').first();
+      totalUsers = await env.DB.prepare('SELECT COUNT(*) as count FROM users WHERE user_role != \'disabled\'').first();
       totalLocations = await env.DB.prepare('SELECT COUNT(*) as count FROM locations').first();
       pendingRequests = await env.DB.prepare('SELECT COUNT(*) as count FROM book_removal_requests WHERE status = "pending"').first();
       pendingReviews = await env.DB.prepare('SELECT COUNT(*) as count FROM book_ratings WHERE review_status = "pending"').first();
@@ -45,32 +45,33 @@ export async function getAdminAnalytics(userId: string, env: Env, corsHeaders: R
       `).bind(userId, userId).first();
       
       totalUsers = await env.DB.prepare(`
-        SELECT COUNT(DISTINCT user_id) as count FROM (
+        SELECT COUNT(DISTINCT u.id) as count FROM users u
+        WHERE u.user_role != 'disabled' AND u.id IN (
           -- Users who are members of locations owned by this admin
-          SELECT lm.user_id 
+          SELECT lm.user_id
           FROM location_members lm
           INNER JOIN locations l ON lm.location_id = l.id
           WHERE l.owner_id = ?
-          
+
           UNION
-          
+
           -- Users who are members of locations this admin is assigned to
-          SELECT lm.user_id 
+          SELECT lm.user_id
           FROM location_members lm
           WHERE lm.location_id IN (
             SELECT location_id FROM location_members WHERE user_id = ?
           )
-          
+
           UNION
-          
+
           -- Users who own locations this admin is assigned to
           SELECT l.owner_id as user_id
           FROM locations l
           INNER JOIN location_members lm ON l.id = lm.location_id
           WHERE lm.user_id = ?
-          
+
           UNION
-          
+
           -- Include the admin themselves
           SELECT ? as user_id
         )
@@ -388,7 +389,7 @@ export async function getAdminUsers(userId: string, env: Env, corsHeaders: Recor
         LEFT JOIN location_members lm ON u.id = lm.user_id
         LEFT JOIN locations l ON u.id = l.owner_id
         LEFT JOIN locations loc ON (loc.id = lm.location_id OR loc.id = l.id)
-        WHERE u.user_role != 'super_admin' OR u.id = ?
+        WHERE (u.user_role != 'super_admin' OR u.id = ?) AND u.user_role != 'disabled'
         GROUP BY u.id
         ORDER BY u.created_at DESC
       `).bind(userId).all();
@@ -409,34 +410,34 @@ export async function getAdminUsers(userId: string, env: Env, corsHeaders: Recor
         WHERE u.id IN (
           SELECT DISTINCT user_id FROM (
             -- Users who are members of locations owned by this admin
-            SELECT lm.user_id 
+            SELECT lm.user_id
             FROM location_members lm
             INNER JOIN locations l ON lm.location_id = l.id
             WHERE l.owner_id = ?
-            
+
             UNION
-            
+
             -- Users who are members of locations this admin is assigned to
-            SELECT lm.user_id 
+            SELECT lm.user_id
             FROM location_members lm
             WHERE lm.location_id IN (
               SELECT location_id FROM location_members WHERE user_id = ?
             )
-            
+
             UNION
-            
+
             -- Users who own locations this admin is assigned to
             SELECT l.owner_id as user_id
             FROM locations l
             INNER JOIN location_members lm ON l.id = lm.location_id
             WHERE lm.user_id = ?
-            
+
             UNION
-            
+
             -- Include the admin themselves
             SELECT ? as user_id
           )
-        )
+        ) AND u.user_role != 'disabled'
         GROUP BY u.id
         ORDER BY u.created_at DESC
       `).bind(userId, userId, userId, userId).all();
