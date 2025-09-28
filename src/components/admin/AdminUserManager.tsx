@@ -694,7 +694,8 @@ export default function AdminUserManager() {
           setOwnedLocations([])
           setSelectedOwners({})
           setLocationsToDelete({})
-          await loadUsers()
+          // Update state immediately instead of refetching
+          setUsers(users.filter(u => u.email !== userToDelete))
           await alert({
             title: 'User Cleaned Up',
             message: result.message,

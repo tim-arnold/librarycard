@@ -218,44 +218,64 @@ export async function deleteLocation(userId: string, env: Env, corsHeaders: Reco
     }
   }
 
-  // Disable foreign keys, perform deletions, then re-enable
-  await env.DB.prepare('PRAGMA foreign_keys = OFF').run();
+  // Explicitly handle foreign key constraints by deleting book_images for THIS location first
+  // book_images has foreign keys to both books AND users, so we need to delete it before books
 
   try {
-    // Use a transaction to ensure atomicity
-    await env.DB.batch([
-      // Delete book images first (they reference books and users)
-      env.DB.prepare(`
-        DELETE FROM book_images
-        WHERE book_id IN (
-          SELECT b.id
-          FROM books b
-          JOIN shelves s ON b.shelf_id = s.id
-          WHERE s.location_id = ?
-        )
-      `).bind(id),
+    console.log('🔍 Starting location deletion for location:', id);
 
-      // Delete books (they reference shelves)
-      env.DB.prepare('DELETE FROM books WHERE shelf_id IN (SELECT id FROM shelves WHERE location_id = ?)').bind(id),
+    // Check what exists before deletion
+    const bookCheck = await env.DB.prepare('SELECT COUNT(*) as count FROM books WHERE shelf_id IN (SELECT id FROM shelves WHERE location_id = ?)').bind(id).first();
+    console.log('🔍 Books to delete:', (bookCheck as any)?.count || 0);
 
-      // Delete shelves (they reference locations)
-      env.DB.prepare('DELETE FROM shelves WHERE location_id = ?').bind(id),
+    // Note: book_images table was dropped due to foreign key constraint issues
+    // Custom covers are stored in the thumbnail field instead
+    console.log('🔍 Book images to delete: 0 (table does not exist)');
 
-      // Delete location-specific permission and capability data (if tables exist)
-      env.DB.prepare('DELETE FROM location_user_permissions WHERE location_id = ?').bind(id),
-      env.DB.prepare('DELETE FROM location_admin_capabilities WHERE location_id = ?').bind(id),
-      // Delete location_default_permissions only if table exists (it might not exist in all environments)
+    // Handle book deletion with foreign key constraint workaround
+    const bookCount = (bookCheck as any)?.count || 0;
 
-      // Delete location membership and invitation data
-      env.DB.prepare('DELETE FROM location_members WHERE location_id = ?').bind(id),
-      env.DB.prepare('DELETE FROM location_invitations WHERE location_id = ?').bind(id),
+    if (bookCount > 0) {
+      console.log('🔍 Deleting books and related data...');
 
-      // Finally delete the location itself
-      env.DB.prepare('DELETE FROM locations WHERE id = ?').bind(id)
-    ]);
-  } finally {
-    // Always re-enable foreign keys
-    await env.DB.prepare('PRAGMA foreign_keys = ON').run();
+      // Get all book IDs first, then delete them individually like the working book deletion
+      const booksResult = await env.DB.prepare(`
+        SELECT b.id FROM books b
+        JOIN shelves s ON b.shelf_id = s.id
+        WHERE s.location_id = ?
+      `).bind(id).all();
+
+      const bookIds = booksResult.results.map((book: any) => book.id);
+      console.log(`🔍 Found ${bookIds.length} books to delete:`, bookIds);
+
+      // Delete books one by one using the same method as individual book deletion
+      for (const bookId of bookIds) {
+        console.log(`🔍 Deleting book ${bookId}...`);
+        await env.DB.prepare('DELETE FROM books WHERE id = ?').bind(bookId).run();
+      }
+
+      console.log('🔍 All books deleted successfully');
+    } else {
+      console.log('🔍 No books to delete, skipping books deletion');
+    }
+
+    // Delete shelves
+    await env.DB.prepare('DELETE FROM shelves WHERE location_id = ?').bind(id).run();
+
+    // Delete location-specific permission and capability data
+    await env.DB.prepare('DELETE FROM location_user_permissions WHERE location_id = ?').bind(id).run();
+    await env.DB.prepare('DELETE FROM location_admin_capabilities WHERE location_id = ?').bind(id).run();
+    await env.DB.prepare('DELETE FROM location_default_permissions WHERE location_id = ?').bind(id).run();
+
+    // Delete location membership and invitation data
+    await env.DB.prepare('DELETE FROM location_members WHERE location_id = ?').bind(id).run();
+    await env.DB.prepare('DELETE FROM location_invitations WHERE location_id = ?').bind(id).run();
+
+    // Finally delete the location itself
+    await env.DB.prepare('DELETE FROM locations WHERE id = ?').bind(id).run();
+  } catch (error) {
+    console.error('Location deletion error:', error);
+    throw error;
   }
 
   return new Response(JSON.stringify({ success: true }), {
