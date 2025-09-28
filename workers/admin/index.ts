@@ -395,29 +395,41 @@ export async function cleanupUser(request: Request, userId: string, env: Env, co
     // 3. Delete locations marked for deletion
     if (locations_to_delete && locations_to_delete.length > 0) {
       for (const locationId of locations_to_delete) {
-        // Use the same deletion logic as the location deletion endpoint
-        // Delete associated data in correct order to avoid foreign key constraint violations
+        // Use the same deletion logic as the location deletion endpoint with batch transaction
+        await env.DB.batch([
+          env.DB.prepare('PRAGMA foreign_keys = OFF'),
 
-        // 1. Delete book images first (they reference books and users)
-        await env.DB.prepare('DELETE FROM book_images WHERE book_id IN (SELECT b.id FROM books b JOIN shelves s ON b.shelf_id = s.id WHERE s.location_id = ?)').bind(locationId).run();
+          // Delete book images first (they reference books and users)
+          env.DB.prepare(`
+            DELETE FROM book_images
+            WHERE book_id IN (
+              SELECT b.id
+              FROM books b
+              JOIN shelves s ON b.shelf_id = s.id
+              WHERE s.location_id = ?
+            )
+          `).bind(locationId),
 
-        // 2. Delete books (they reference shelves)
-        await env.DB.prepare('DELETE FROM books WHERE shelf_id IN (SELECT id FROM shelves WHERE location_id = ?)').bind(locationId).run();
+          // Delete books (they reference shelves)
+          env.DB.prepare('DELETE FROM books WHERE shelf_id IN (SELECT id FROM shelves WHERE location_id = ?)').bind(locationId),
 
-        // 3. Delete shelves (they reference locations)
-        await env.DB.prepare('DELETE FROM shelves WHERE location_id = ?').bind(locationId).run();
+          // Delete shelves (they reference locations)
+          env.DB.prepare('DELETE FROM shelves WHERE location_id = ?').bind(locationId),
 
-        // 4. Delete location-specific permission and capability data
-        await env.DB.prepare('DELETE FROM location_user_permissions WHERE location_id = ?').bind(locationId).run();
-        await env.DB.prepare('DELETE FROM location_admin_capabilities WHERE location_id = ?').bind(locationId).run();
-        await env.DB.prepare('DELETE FROM location_default_permissions WHERE location_id = ?').bind(locationId).run();
+          // Delete location-specific permission and capability data
+          env.DB.prepare('DELETE FROM location_user_permissions WHERE location_id = ?').bind(locationId),
+          env.DB.prepare('DELETE FROM location_admin_capabilities WHERE location_id = ?').bind(locationId),
+          env.DB.prepare('DELETE FROM location_default_permissions WHERE location_id = ?').bind(locationId),
 
-        // 5. Delete location membership and invitation data
-        await env.DB.prepare('DELETE FROM location_members WHERE location_id = ?').bind(locationId).run();
-        await env.DB.prepare('DELETE FROM location_invitations WHERE location_id = ?').bind(locationId).run();
+          // Delete location membership and invitation data
+          env.DB.prepare('DELETE FROM location_members WHERE location_id = ?').bind(locationId),
+          env.DB.prepare('DELETE FROM location_invitations WHERE location_id = ?').bind(locationId),
 
-        // 6. Finally delete the location itself
-        await env.DB.prepare('DELETE FROM locations WHERE id = ?').bind(locationId).run();
+          // Finally delete the location itself
+          env.DB.prepare('DELETE FROM locations WHERE id = ?').bind(locationId),
+
+          env.DB.prepare('PRAGMA foreign_keys = ON')
+        ]);
       }
     }
 
