@@ -298,9 +298,10 @@ export async function cleanupUser(request: Request, userId: string, env: Env, co
     });
   }
 
-  const { email_to_delete, new_location_owners }: { 
-    email_to_delete: string; 
-    new_location_owners?: Record<string, string>; 
+  const { email_to_delete, new_location_owners, locations_to_delete }: {
+    email_to_delete: string;
+    new_location_owners?: Record<string, string>;
+    locations_to_delete?: number[];
   } = await request.json();
 
   if (!email_to_delete) {
@@ -330,10 +331,10 @@ export async function cleanupUser(request: Request, userId: string, env: Env, co
       SELECT id, name FROM locations WHERE owner_id = ?
     `).bind(userIdToDelete).all();
 
-    // Check if user owns locations and we need new owners
-    if (ownedLocations.results.length > 0 && !new_location_owners) {
+    // Check if user owns locations and we need new owners or deletion instructions
+    if (ownedLocations.results.length > 0 && !new_location_owners && !locations_to_delete) {
       // Return locations that need new owners
-      return new Response(JSON.stringify({ 
+      return new Response(JSON.stringify({
         error: 'Location ownership transfer required',
         owned_locations: ownedLocations.results,
         requires_ownership_transfer: true
@@ -350,9 +351,14 @@ export async function cleanupUser(request: Request, userId: string, env: Env, co
         const locationId = locationData.id;
         const newOwnerId = new_location_owners[locationId.toString()];
 
+        // Skip locations marked for deletion
+        if (locations_to_delete && locations_to_delete.includes(locationId)) {
+          continue;
+        }
+
         if (!newOwnerId) {
-          return new Response(JSON.stringify({ 
-            error: `New owner required for location: ${locationData.name}` 
+          return new Response(JSON.stringify({
+            error: `New owner required for location: ${locationData.name}`
           }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -386,7 +392,33 @@ export async function cleanupUser(request: Request, userId: string, env: Env, co
       }
     }
 
-    // 3. Keep books but remove user reference (books become property of location/shelf)
+    // 3. Delete locations marked for deletion
+    if (locations_to_delete && locations_to_delete.length > 0) {
+      for (const locationId of locations_to_delete) {
+        // Use the same deletion logic as the location deletion endpoint
+        // Delete associated data in correct order to avoid foreign key constraint violations
+
+        // 1. Delete books first (they reference shelves)
+        await env.DB.prepare('DELETE FROM books WHERE shelf_id IN (SELECT id FROM shelves WHERE location_id = ?)').bind(locationId).run();
+
+        // 2. Delete shelves (they reference locations)
+        await env.DB.prepare('DELETE FROM shelves WHERE location_id = ?').bind(locationId).run();
+
+        // 3. Delete location-specific permission and capability data
+        await env.DB.prepare('DELETE FROM location_user_permissions WHERE location_id = ?').bind(locationId).run();
+        await env.DB.prepare('DELETE FROM location_admin_capabilities WHERE location_id = ?').bind(locationId).run();
+        await env.DB.prepare('DELETE FROM location_default_permissions WHERE location_id = ?').bind(locationId).run();
+
+        // 4. Delete location membership and invitation data
+        await env.DB.prepare('DELETE FROM location_members WHERE location_id = ?').bind(locationId).run();
+        await env.DB.prepare('DELETE FROM location_invitations WHERE location_id = ?').bind(locationId).run();
+
+        // 5. Finally delete the location itself
+        await env.DB.prepare('DELETE FROM locations WHERE id = ?').bind(locationId).run();
+      }
+    }
+
+    // 4. Keep books but remove user reference (books become property of location/shelf)
     await env.DB.prepare(`
       UPDATE books SET added_by = NULL WHERE added_by = ?
     `).bind(userIdToDelete).run();
@@ -422,12 +454,29 @@ export async function cleanupUser(request: Request, userId: string, env: Env, co
       DELETE FROM users WHERE id = ?
     `).bind(userIdToDelete).run();
 
-    return new Response(JSON.stringify({ 
-      message: `User ${email_to_delete} deleted successfully. Books and shelves preserved.`,
+    const transferredCount = ownedLocations.results.filter((loc: any) =>
+      !locations_to_delete || !locations_to_delete.includes(loc.id)
+    ).length;
+    const deletedCount = locations_to_delete ? locations_to_delete.length : 0;
+
+    let message = `User ${email_to_delete} deleted successfully.`;
+    if (transferredCount > 0) {
+      message += ` ${transferredCount} location(s) transferred to new owners.`;
+    }
+    if (deletedCount > 0) {
+      message += ` ${deletedCount} location(s) deleted permanently.`;
+    }
+    if (transferredCount > 0) {
+      message += ' Books and shelves preserved in transferred locations.';
+    }
+
+    return new Response(JSON.stringify({
+      message,
       deleted_user_id: userIdToDelete,
-      transferred_locations_count: ownedLocations.results.length,
-      books_preserved: true,
-      shelves_preserved: true
+      transferred_locations_count: transferredCount,
+      deleted_locations_count: deletedCount,
+      books_preserved: transferredCount > 0,
+      shelves_preserved: transferredCount > 0
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
