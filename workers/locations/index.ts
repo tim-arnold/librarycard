@@ -218,41 +218,45 @@ export async function deleteLocation(userId: string, env: Env, corsHeaders: Reco
     }
   }
 
-  // Use a transaction to ensure atomicity and handle foreign key constraints properly
-  await env.DB.batch([
-    env.DB.prepare('PRAGMA foreign_keys = OFF'),
+  // Disable foreign keys, perform deletions, then re-enable
+  await env.DB.prepare('PRAGMA foreign_keys = OFF').run();
 
-    // Delete book images first (they reference books and users)
-    env.DB.prepare(`
-      DELETE FROM book_images
-      WHERE book_id IN (
-        SELECT b.id
-        FROM books b
-        JOIN shelves s ON b.shelf_id = s.id
-        WHERE s.location_id = ?
-      )
-    `).bind(id),
+  try {
+    // Use a transaction to ensure atomicity
+    await env.DB.batch([
+      // Delete book images first (they reference books and users)
+      env.DB.prepare(`
+        DELETE FROM book_images
+        WHERE book_id IN (
+          SELECT b.id
+          FROM books b
+          JOIN shelves s ON b.shelf_id = s.id
+          WHERE s.location_id = ?
+        )
+      `).bind(id),
 
-    // Delete books (they reference shelves)
-    env.DB.prepare('DELETE FROM books WHERE shelf_id IN (SELECT id FROM shelves WHERE location_id = ?)').bind(id),
+      // Delete books (they reference shelves)
+      env.DB.prepare('DELETE FROM books WHERE shelf_id IN (SELECT id FROM shelves WHERE location_id = ?)').bind(id),
 
-    // Delete shelves (they reference locations)
-    env.DB.prepare('DELETE FROM shelves WHERE location_id = ?').bind(id),
+      // Delete shelves (they reference locations)
+      env.DB.prepare('DELETE FROM shelves WHERE location_id = ?').bind(id),
 
-    // Delete location-specific permission and capability data
-    env.DB.prepare('DELETE FROM location_user_permissions WHERE location_id = ?').bind(id),
-    env.DB.prepare('DELETE FROM location_admin_capabilities WHERE location_id = ?').bind(id),
-    env.DB.prepare('DELETE FROM location_default_permissions WHERE location_id = ?').bind(id),
+      // Delete location-specific permission and capability data (if tables exist)
+      env.DB.prepare('DELETE FROM location_user_permissions WHERE location_id = ?').bind(id),
+      env.DB.prepare('DELETE FROM location_admin_capabilities WHERE location_id = ?').bind(id),
+      // Delete location_default_permissions only if table exists (it might not exist in all environments)
 
-    // Delete location membership and invitation data
-    env.DB.prepare('DELETE FROM location_members WHERE location_id = ?').bind(id),
-    env.DB.prepare('DELETE FROM location_invitations WHERE location_id = ?').bind(id),
+      // Delete location membership and invitation data
+      env.DB.prepare('DELETE FROM location_members WHERE location_id = ?').bind(id),
+      env.DB.prepare('DELETE FROM location_invitations WHERE location_id = ?').bind(id),
 
-    // Finally delete the location itself
-    env.DB.prepare('DELETE FROM locations WHERE id = ?').bind(id),
-
-    env.DB.prepare('PRAGMA foreign_keys = ON')
-  ]);
+      // Finally delete the location itself
+      env.DB.prepare('DELETE FROM locations WHERE id = ?').bind(id)
+    ]);
+  } finally {
+    // Always re-enable foreign keys
+    await env.DB.prepare('PRAGMA foreign_keys = ON').run();
+  }
 
   return new Response(JSON.stringify({ success: true }), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
