@@ -14,6 +14,7 @@
  */
 
 import { betterAuth } from "better-auth";
+import Database from "better-sqlite3";
 
 // TODO: Import Better Auth plugins
 // import { organization } from "better-auth/plugins/organization";
@@ -21,12 +22,9 @@ import { betterAuth } from "better-auth";
 // import { passkey } from "better-auth/plugins/passkey";
 
 export const auth = betterAuth({
-  // Database configuration - using SQLite for now (D1 compatible)
-  database: {
-    // For PoC, we'll use a simple SQLite database
-    provider: "sqlite",
-    url: process.env.BETTER_AUTH_DATABASE_URL || "file:./poc-auth.db",
-  },
+  // Database configuration - using SQLite for PoC
+  // NOTE: This creates a local SQLite file for evaluation. Production would use D1.
+  database: new Database("./poc-auth.db"),
 
   // Secret for signing JWTs and encrypting cookies
   secret: process.env.BETTER_AUTH_SECRET || "temporary-poc-secret-key-12345",
