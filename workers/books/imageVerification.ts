@@ -106,24 +106,8 @@ export async function verifyBookCoverImage(
     if (!env.AI) {
       console.warn('Cloudflare AI not available - using local test simulation');
 
-      // For local testing of appeals system, simulate rejection
-      // Check if this is a test environment and we want to simulate rejection
-      const simulateRejection = env.ENVIRONMENT === 'local' || env.ENVIRONMENT === 'development';
-
-      if (simulateRejection) {
-        // Simulate AI rejection with realistic data for testing appeals
-        return {
-          isBookCover: false,
-          confidence: 0.85,
-          rejectionReason: 'Image does not appear to be a book cover. Please upload a clear photo of a book cover with the title and author visible.',
-          detectedLabels: [
-            'person:0.92',
-            'face:0.88',
-            'human:0.85',
-            'adult:0.78'
-          ]
-        };
-      }
+      // For local testing: allow legitimate cover uploads by default
+      // Only simulate rejection if specifically testing appeals system
 
       // Default: allow images when AI not available
       return {

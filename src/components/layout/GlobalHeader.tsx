@@ -856,7 +856,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                   Sign In
                 </a>
                 <a
-                  href="/auth/signin"
+                  href="/auth/signin?register=true"
                   className="marketing-button marketing-button-primary marketing-button-md"
                   style={{ textDecoration: 'none' }}
                 >
@@ -1314,11 +1314,29 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                   marginTop: 'var(--marketing-spacing-6)',
                   paddingTop: 'var(--marketing-spacing-4)',
                   borderTop: `1px solid ${muiTheme.palette.divider}`,
-                  padding: 'var(--marketing-spacing-4) var(--marketing-spacing-4) 0'
+                  padding: 'var(--marketing-spacing-4) var(--marketing-spacing-4) 0',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 'var(--marketing-spacing-3)'
                 }}
               >
                 <a
                   href="/auth/signin"
+                  className="marketing-button marketing-button-ghost marketing-button-md"
+                  style={{
+                    width: '100%',
+                    borderRadius: 'var(--marketing-radius-lg)',
+                    minHeight: '48px',
+                    textDecoration: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  Sign In
+                </a>
+                <a
+                  href="/auth/signin?register=true"
                   className="marketing-button marketing-button-primary marketing-button-md"
                   style={{
                     width: '100%',
