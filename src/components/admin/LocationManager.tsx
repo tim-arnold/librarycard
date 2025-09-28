@@ -266,45 +266,53 @@ export default function LocationManager() {
   }
 
   const deleteLocation = async (locationId: number, locationName: string) => {
-    const confirmed = await confirmAsync(
-      {
-        title: 'Delete Location',
-        message: `Are you sure you want to delete "${locationName}"? This will permanently delete all shelves and books in this location. This action cannot be undone.`,
-        confirmText: 'Delete Location',
-        variant: 'error'
-      },
-      async () => {
-        if (!session?.user?.email) throw new Error('Not authenticated')
-        
-        const response = await authenticatedApiCall(`/api/locations/${locationId}`, {
-          method: 'DELETE',
-        })
+    try {
+      const confirmed = await confirmAsync(
+        {
+          title: 'Delete Location',
+          message: `Are you sure you want to delete "${locationName}"? This will permanently delete all shelves and books in this location. This action cannot be undone.`,
+          confirmText: 'Delete Location',
+          variant: 'error'
+        },
+        async () => {
+          if (!session?.user?.email) throw new Error('Not authenticated')
 
-        if (response.ok) {
-          // Start the deletion animation
-          setDeletingLocationId(locationId)
-          
-          // Wait for animation to complete before removing from state
-          setTimeout(() => {
-            const updatedLocations = locations.filter(loc => loc.id !== locationId)
-            setLocations(updatedLocations)
-            if (selectedLocation?.id === locationId) {
-              setSelectedLocation(updatedLocations[0] || null)
-              setShelves([])
-            }
-            setDeletingLocationId(null)
-          }, 1200) // Animation duration
-        } else {
-          const errorData = await response.json()
-          throw new Error(errorData.error || 'Failed to delete location')
+          const response = await authenticatedApiCall(`/api/locations/${locationId}`, {
+            method: 'DELETE',
+          })
+
+          if (response.ok) {
+            // Start the deletion animation
+            setDeletingLocationId(locationId)
+
+            // Wait for animation to complete before removing from state
+            setTimeout(() => {
+              const updatedLocations = locations.filter(loc => loc.id !== locationId)
+              setLocations(updatedLocations)
+              if (selectedLocation?.id === locationId) {
+                setSelectedLocation(updatedLocations[0] || null)
+                setShelves([])
+              }
+              setDeletingLocationId(null)
+            }, 1200) // Animation duration
+          } else {
+            const errorData = await response.json()
+            throw new Error(errorData.error || 'Failed to delete location')
+          }
         }
-      }
-    )
+      )
 
-    if (!confirmed) {
+      // If we get here and confirmed is false, the user cancelled (not an error)
+      if (!confirmed) {
+        // User cancelled - no need to show error
+        return
+      }
+    } catch (error) {
+      // This catches errors from the actual deletion process
+      console.error('Error deleting location:', error)
       await alert({
         title: 'Delete Failed',
-        message: 'Failed to delete the location. Please try again.',
+        message: error instanceof Error ? error.message : 'Failed to delete the location. Please try again.',
         variant: 'error'
       })
     }

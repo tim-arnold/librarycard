@@ -28,6 +28,8 @@ Examine the project configuration:
 - tsconfig.json
 - next.config.js
 - wrangler.toml
+- wrangler-prod.toml
+- wrangler-staging-new.toml
 - netlify.toml
 
 ## Read Core Application Files
