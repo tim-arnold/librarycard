@@ -8,15 +8,26 @@
 -- Add is_active column for enable/disable functionality (separate from deletion)
 -- ============================================================================
 
--- Add is_active column to users table (default TRUE for existing users)
-ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT TRUE;
+-- NOTE: is_active column addition is commented out for staging recovery
+-- The column was partially added in a previous failed migration attempt
+-- If running on a fresh database, uncomment the ALTER TABLE line below
 
--- Create index for filtering active users
+-- Add is_active column to users table (default TRUE for existing users)
+-- ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT TRUE;
+
+-- Create index for filtering active users (IF NOT EXISTS handles idempotency)
 CREATE INDEX IF NOT EXISTS idx_users_is_active ON users(is_active);
 
 -- Update any existing 'disabled' role users to be marked as inactive
 -- (These were soft-deleted users from the old system)
-UPDATE users SET is_active = FALSE WHERE user_role = 'disabled';
+-- Only update if is_active column exists (safe for both fresh and recovery scenarios)
+UPDATE users
+SET is_active = COALESCE(is_active, TRUE)
+WHERE is_active IS NULL;
+
+UPDATE users
+SET is_active = FALSE
+WHERE user_role = 'disabled';
 
 -- Clean up the 'disabled' role - convert back to 'user' role
 -- Since we now have a proper is_active flag
