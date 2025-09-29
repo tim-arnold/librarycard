@@ -200,6 +200,9 @@ CREATE INDEX idx_location_invitations_token ON location_invitations(invitation_t
 -- Remove data that only makes sense with the user
 -- ============================================================================
 
+-- Drop view that depends on location_members before modifying the table
+DROP VIEW IF EXISTS library_ratings_agg;
+
 -- location_members.user_id → CASCADE (user removed from all locations)
 -- location_members.invited_by → SET NULL (membership preserved, inviter lost)
 CREATE TABLE location_members_new (
@@ -223,6 +226,29 @@ ALTER TABLE location_members_new RENAME TO location_members;
 CREATE INDEX idx_location_members_location ON location_members(location_id);
 CREATE INDEX idx_location_members_user ON location_members(user_id);
 CREATE INDEX idx_location_members_user_location ON location_members(user_id, location_id);
+
+-- Recreate the library_ratings_agg view with updated location_members table
+CREATE VIEW library_ratings_agg AS
+WITH location_users AS (
+  SELECT DISTINCT
+    l.id as location_id,
+    u.id as user_id
+  FROM locations l
+  LEFT JOIN location_members lm ON l.id = lm.location_id
+  LEFT JOIN users u ON lm.user_id = u.id OR l.owner_id = u.id
+  WHERE u.id IS NOT NULL
+)
+SELECT
+  b.id as book_id,
+  l.id as location_id,
+  AVG(CAST(br.rating AS REAL)) as library_average_rating,
+  COUNT(br.rating) as library_rating_count
+FROM books b
+JOIN shelves s ON b.shelf_id = s.id
+JOIN locations l ON s.location_id = l.id
+LEFT JOIN book_ratings br ON b.id = br.book_id
+LEFT JOIN location_users lu ON l.id = lu.location_id AND br.user_id = lu.user_id
+GROUP BY b.id, l.id;
 
 -- ============================================================================
 -- PHASE 3: RESTRICT for High-Risk Cases (locations.owner_id)
