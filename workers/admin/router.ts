@@ -4,7 +4,8 @@ import {
   approveSignupRequest,
   denySignupRequest,
   cleanupUser,
-  debugListUsers
+  debugListUsers,
+  toggleUserActiveStatus
 } from '../admin';
 import {
   getCachedAdminAnalytics,
@@ -553,6 +554,12 @@ To review this request, log in as a super administrator and go to Admin Dashboar
     if (path.match(/^\/api\/admin\/users\/[^\/]+\/role$/) && request.method === 'PUT') {
       const targetUserId = path.split('/')[4];
       return await updateUserRole(request, targetUserId, userId, env, corsHeaders);
+    }
+
+    // Admin-only user enable/disable endpoint
+    if (path.match(/^\/api\/admin\/users\/[^\/]+\/status$/) && request.method === 'PUT') {
+      const targetUserId = path.split('/')[4];
+      return await toggleUserActiveStatus(request, targetUserId, userId, env, corsHeaders);
     }
 
     // Admin-only endpoint to get available admin users for ownership transfer
