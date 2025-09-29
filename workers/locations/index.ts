@@ -218,24 +218,65 @@ export async function deleteLocation(userId: string, env: Env, corsHeaders: Reco
     }
   }
 
-  // Delete associated data in correct order to avoid foreign key constraint violations
-  // 1. Delete books first (they reference shelves)
-  await env.DB.prepare('DELETE FROM books WHERE shelf_id IN (SELECT id FROM shelves WHERE location_id = ?)').bind(id).run();
-  
-  // 2. Delete shelves (they reference locations)
-  await env.DB.prepare('DELETE FROM shelves WHERE location_id = ?').bind(id).run();
-  
-  // 3. Delete location-specific permission and capability data
-  await env.DB.prepare('DELETE FROM location_user_permissions WHERE location_id = ?').bind(id).run();
-  await env.DB.prepare('DELETE FROM location_admin_capabilities WHERE location_id = ?').bind(id).run();
-  await env.DB.prepare('DELETE FROM location_default_permissions WHERE location_id = ?').bind(id).run();
-  
-  // 4. Delete location membership and invitation data
-  await env.DB.prepare('DELETE FROM location_members WHERE location_id = ?').bind(id).run();
-  await env.DB.prepare('DELETE FROM location_invitations WHERE location_id = ?').bind(id).run();
-  
-  // 5. Finally delete the location itself
-  await env.DB.prepare('DELETE FROM locations WHERE id = ?').bind(id).run();
+  // Explicitly handle foreign key constraints by deleting book_images for THIS location first
+  // book_images has foreign keys to both books AND users, so we need to delete it before books
+
+  try {
+    console.log('🔍 Starting location deletion for location:', id);
+
+    // Check what exists before deletion
+    const bookCheck = await env.DB.prepare('SELECT COUNT(*) as count FROM books WHERE shelf_id IN (SELECT id FROM shelves WHERE location_id = ?)').bind(id).first();
+    console.log('🔍 Books to delete:', (bookCheck as any)?.count || 0);
+
+    // Note: book_images table was dropped due to foreign key constraint issues
+    // Custom covers are stored in the thumbnail field instead
+    console.log('🔍 Book images to delete: 0 (table does not exist)');
+
+    // Handle book deletion with foreign key constraint workaround
+    const bookCount = (bookCheck as any)?.count || 0;
+
+    if (bookCount > 0) {
+      console.log('🔍 Deleting books and related data...');
+
+      // Get all book IDs first, then delete them individually like the working book deletion
+      const booksResult = await env.DB.prepare(`
+        SELECT b.id FROM books b
+        JOIN shelves s ON b.shelf_id = s.id
+        WHERE s.location_id = ?
+      `).bind(id).all();
+
+      const bookIds = booksResult.results.map((book: any) => book.id);
+      console.log(`🔍 Found ${bookIds.length} books to delete:`, bookIds);
+
+      // Delete books one by one using the same method as individual book deletion
+      for (const bookId of bookIds) {
+        console.log(`🔍 Deleting book ${bookId}...`);
+        await env.DB.prepare('DELETE FROM books WHERE id = ?').bind(bookId).run();
+      }
+
+      console.log('🔍 All books deleted successfully');
+    } else {
+      console.log('🔍 No books to delete, skipping books deletion');
+    }
+
+    // Delete shelves
+    await env.DB.prepare('DELETE FROM shelves WHERE location_id = ?').bind(id).run();
+
+    // Delete location-specific permission and capability data
+    await env.DB.prepare('DELETE FROM location_user_permissions WHERE location_id = ?').bind(id).run();
+    await env.DB.prepare('DELETE FROM location_admin_capabilities WHERE location_id = ?').bind(id).run();
+    await env.DB.prepare('DELETE FROM location_default_permissions WHERE location_id = ?').bind(id).run();
+
+    // Delete location membership and invitation data
+    await env.DB.prepare('DELETE FROM location_members WHERE location_id = ?').bind(id).run();
+    await env.DB.prepare('DELETE FROM location_invitations WHERE location_id = ?').bind(id).run();
+
+    // Finally delete the location itself
+    await env.DB.prepare('DELETE FROM locations WHERE id = ?').bind(id).run();
+  } catch (error) {
+    console.error('Location deletion error:', error);
+    throw error;
+  }
 
   return new Response(JSON.stringify({ success: true }), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
