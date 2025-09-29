@@ -195,6 +195,74 @@ CREATE INDEX idx_location_invitations_email ON location_invitations(invited_emai
 CREATE INDEX idx_location_invitations_location ON location_invitations(location_id);
 CREATE INDEX idx_location_invitations_token ON location_invitations(invitation_token);
 
+-- location_admin_capabilities.granted_by → SET NULL (preserve capability, lose granter)
+CREATE TABLE location_admin_capabilities_new (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  location_id INTEGER NOT NULL,
+  user_id TEXT NOT NULL,
+  capability TEXT NOT NULL,
+  granted_by TEXT,
+  granted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (location_id) REFERENCES locations(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (granted_by) REFERENCES users(id) ON DELETE SET NULL,
+  UNIQUE(location_id, user_id, capability)
+);
+
+INSERT INTO location_admin_capabilities_new SELECT * FROM location_admin_capabilities;
+DROP TABLE location_admin_capabilities;
+ALTER TABLE location_admin_capabilities_new RENAME TO location_admin_capabilities;
+
+-- Recreate indexes for location_admin_capabilities
+CREATE INDEX idx_location_admin_capabilities_capability ON location_admin_capabilities(capability);
+CREATE INDEX idx_location_admin_capabilities_location_user ON location_admin_capabilities(location_id, user_id);
+CREATE INDEX idx_location_admin_capabilities_user ON location_admin_capabilities(user_id);
+
+-- location_user_permissions.granted_by → SET NULL (preserve permission, lose granter)
+CREATE TABLE location_user_permissions_new (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  location_id INTEGER NOT NULL,
+  user_id TEXT NOT NULL,
+  permission TEXT NOT NULL,
+  granted_by TEXT,
+  granted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (location_id) REFERENCES locations(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (granted_by) REFERENCES users(id) ON DELETE SET NULL,
+  UNIQUE(location_id, user_id, permission)
+);
+
+INSERT INTO location_user_permissions_new SELECT * FROM location_user_permissions;
+DROP TABLE location_user_permissions;
+ALTER TABLE location_user_permissions_new RENAME TO location_user_permissions;
+
+-- Recreate indexes for location_user_permissions
+CREATE INDEX idx_location_user_permissions_location_user ON location_user_permissions(location_id, user_id);
+CREATE INDEX idx_location_user_permissions_permission ON location_user_permissions(permission);
+CREATE INDEX idx_location_user_permissions_user ON location_user_permissions(user_id);
+
+-- user_global_permissions.granted_by → SET NULL (preserve permission, lose granter)
+CREATE TABLE user_global_permissions_new (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id TEXT NOT NULL,
+  permission TEXT NOT NULL,
+  granted_by TEXT,
+  granted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  notes TEXT,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (granted_by) REFERENCES users(id) ON DELETE SET NULL,
+  UNIQUE(user_id, permission)
+);
+
+INSERT INTO user_global_permissions_new SELECT * FROM user_global_permissions;
+DROP TABLE user_global_permissions;
+ALTER TABLE user_global_permissions_new RENAME TO user_global_permissions;
+
+-- Recreate indexes for user_global_permissions
+CREATE INDEX idx_user_global_permissions_granted_by ON user_global_permissions(granted_by);
+CREATE INDEX idx_user_global_permissions_permission ON user_global_permissions(permission);
+CREATE INDEX idx_user_global_permissions_user ON user_global_permissions(user_id);
+
 -- ============================================================================
 -- PHASE 2: CASCADE for User-Specific Data
 -- Remove data that only makes sense with the user
