@@ -34,7 +34,7 @@ export async function getUserFromRequest(request: Request, env: Env): Promise<st
       const user = await env.DB.prepare(`
         SELECT id FROM users WHERE email = ?
       `).bind(token).first();
-      
+
       return user ? (user as UserIdRow).id : null;
     } catch (error) {
       return null;
