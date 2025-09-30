@@ -2,163 +2,72 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
-import { authenticatedApiCall } from '@/lib/api'
-import { getApiBaseUrl } from '@/lib/apiConfig'
 import {
   Typography,
   Box,
   Card,
   CardContent,
-  Paper,
   CircularProgress,
   Alert,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Chip,
   Button,
-  IconButton,
-  Menu,
-  MenuItem,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  List,
-  ListItem,
-  ListItemText,
-  Switch,
-  TableSortLabel,
-  Pagination,
-  Collapse,
-  Divider,
-  Checkbox,
 } from '@mui/material'
-import {
-  MoreVert,
-  Delete,
-  Security,
-  Person,
-  PersonAdd,
-  Email,
-  CheckCircle,
-  Cancel,
-  Refresh,
-  LocationOn,
-  LibraryBooks,
-  Warning,
-  FilterList,
-  Sort,
-  ExpandMore,
-  ExpandLess,
-  Clear,
-} from '@mui/icons-material'
+import { Person, Refresh, Email as EmailIcon } from '@mui/icons-material'
 import ConfirmationModal from '../modals/ConfirmationModal'
 import AlertModal from '../modals/AlertModal'
 import { useModal } from '@/hooks/useModal'
-import { isAdmin, isSuperAdmin } from '@/lib/permissions'
-
-
-interface AdminUser {
-  id: string
-  email: string
-  first_name: string
-  last_name: string
-  auth_provider: string
-  email_verified: boolean
-  user_role: 'super_admin' | 'admin' | 'user'
-  is_active: boolean
-  created_at: string
-  books_added: number
-  locations_joined: number
-  last_book_added: string | null
-  location_names: string | null
-}
-
-interface LocationInvitation {
-  id: number
-  location_id: number
-  location_name?: string
-  invited_email: string
-  invitation_token: string
-  invited_by: string
-  invited_by_name?: string
-  expires_at: string
-  used_at?: string
-  created_at: string
-}
-
-interface Location {
-  id: number
-  name: string
-  description?: string
-}
+import { useUserManagement } from './user-management/useUserManagement'
+import { useLocationAssignment } from './locations/useLocationAssignment'
+import UserTable from './user-management/UserTable'
+import UserActionsMenu from './user-management/UserActionsMenu'
+import OwnershipTransferDialog from './user-management/OwnershipTransferDialog'
+import EmailDialog from './user-management/EmailDialog'
+import RolePromotionDialog from './user-management/RolePromotionDialog'
+import LocationAssignmentDialog from './locations/LocationAssignmentDialog'
+import InvitationManager from './invitations/InvitationManager'
+import type { AdminUser } from './shared/types'
 
 export default function AdminUserManager() {
   const { data: session } = useSession()
-  const { modalState, confirmAsync, alert, closeModal } = useModal()
-  const [users, setUsers] = useState<AdminUser[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const { modalState, closeModal } = useModal()
+  const {
+    users,
+    loading,
+    error,
+    currentUserRole,
+    loadUsers,
+    loadCurrentUserRole,
+    toggleUserActiveStatus,
+    updateUserRole,
+    promoteToSuperAdmin,
+    deleteUser,
+    updateUserLocations,
+    setUsers,
+  } = useUserManagement()
+
+  const {
+    userAssignedLocations,
+    availableLocationsForAssignment,
+    userGlobalPermissions,
+    loadUserAssignedLocations,
+    loadUserGlobalPermissions,
+    toggleGlobalPermission,
+    assignLocationToUser,
+    unassignLocationFromUser,
+  } = useLocationAssignment()
+
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null)
-  const [cleanupDialogOpen, setCleanupDialogOpen] = useState(false)
-  const [cleanupEmail, setCleanupEmail] = useState('')
+  const [showInvitations, setShowInvitations] = useState(false)
   const [ownershipTransferDialogOpen, setOwnershipTransferDialogOpen] = useState(false)
   const [ownedLocations, setOwnedLocations] = useState<any[]>([])
-  const [selectedOwners, setSelectedOwners] = useState<Record<string, string>>({})
-  const [availableAdmins, setAvailableAdmins] = useState<any[]>([])
   const [userToDelete, setUserToDelete] = useState('')
-  const [locationsToDelete, setLocationsToDelete] = useState<Record<string, boolean>>({})
   const [emailDialogOpen, setEmailDialogOpen] = useState(false)
-  const [emailSubject, setEmailSubject] = useState('')
-  const [emailMessage, setEmailMessage] = useState('')
   const [emailRecipient, setEmailRecipient] = useState<AdminUser | null>(null)
-  
-  // Invitation management state
-  const [showInvitations, setShowInvitations] = useState(false)
-  const [invitations, setInvitations] = useState<LocationInvitation[]>([])
-  const [invitationSearchTerm, setInvitationSearchTerm] = useState('')
-  const [invitationDialogOpen, setInvitationDialogOpen] = useState(false)
-  const [inviteEmail, setInviteEmail] = useState('')
-  const [inviteCustomMessage, setInviteCustomMessage] = useState('')
-  const [selectedLocationId, setSelectedLocationId] = useState<number | null>(null)
-  const [availableLocations, setAvailableLocations] = useState<Location[]>([])
-  const [invitationsLoading, setInvitationsLoading] = useState(false)
-  
-  // Invitation filtering and sorting state
-  const [invitationStatusFilter, setInvitationStatusFilter] = useState<string>('all')
-  const [invitationLocationFilter, setInvitationLocationFilter] = useState<string>('all')
-  const [invitationSortBy, setInvitationSortBy] = useState<string>('created_at')
-  const [invitationSortOrder, setInvitationSortOrder] = useState<'asc' | 'desc'>('desc')
-  const [invitationsPage, setInvitationsPage] = useState(1)
-  const [invitationsPerPage] = useState(10)
-  const [showInvitationFilters, setShowInvitationFilters] = useState(false)
-  
-  // Super admin management state
-  const [currentUserRole, setCurrentUserRole] = useState<string>('')
   const [rolePromotionDialogOpen, setRolePromotionDialogOpen] = useState(false)
-  const [locationAssignmentDialogOpen, setLocationAssignmentDialogOpen] = useState(false)
   const [userForRoleChange, setUserForRoleChange] = useState<AdminUser | null>(null)
+  const [locationAssignmentDialogOpen, setLocationAssignmentDialogOpen] = useState(false)
   const [userForLocationAssignment, setUserForLocationAssignment] = useState<AdminUser | null>(null)
-  const [userAssignedLocations, setUserAssignedLocations] = useState<Location[]>([])
-  const [availableLocationsForAssignment, setAvailableLocationsForAssignment] = useState<Location[]>([])
-  const [userGlobalPermissions, setUserGlobalPermissions] = useState<string[]>([])
-  
-  // Bulk invitation state
-  const [bulkInviteMode, setBulkInviteMode] = useState(false)
-  const [bulkEmails, setBulkEmails] = useState('')
-  const [bulkInviteResults, setBulkInviteResults] = useState<{email: string, success: boolean, error?: string}[]>([])
-  const [bulkInviteLoading, setBulkInviteLoading] = useState(false)
-  
-  // Ref for scrolling to invitations section
+
   const invitationsSectionRef = useRef<HTMLDivElement>(null)
   const [dataLoaded, setDataLoaded] = useState(false)
 
@@ -170,52 +79,6 @@ export default function AdminUserManager() {
     }
   }, [session?.user?.email, dataLoaded])
 
-  const loadCurrentUserRole = async () => {
-    try {
-      const response = await fetch(`${getApiBaseUrl()}/api/profile`, {
-        headers: {
-          'Authorization': `Bearer ${session?.user?.email}`,
-          'Content-Type': 'application/json',
-        },
-      })
-      if (response.ok) {
-        const data = await response.json()
-        setCurrentUserRole(data.user_role || 'user')
-      }
-    } catch (error) {
-      console.error('Failed to fetch current user role:', error)
-      setCurrentUserRole('user')
-    }
-  }
-
-  const loadUsers = async () => {
-    if (!session?.user?.email) return
-
-    try {
-      setLoading(true)
-      const response = await fetch(`${getApiBaseUrl()}/api/admin/users`, {
-        headers: {
-          'Authorization': `Bearer ${session.user.email}`,
-          'Content-Type': 'application/json',
-        },
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setUsers(data)
-        setError('')
-      } else {
-        const errorData = await response.json()
-        setError(errorData.error || 'Failed to load users')
-      }
-    } catch (error) {
-      console.error('Error loading users:', error)
-      setError('Failed to load users')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>, user: AdminUser) => {
     setAnchorEl(event.currentTarget)
     setSelectedUser(user)
@@ -226,967 +89,23 @@ export default function AdminUserManager() {
     setSelectedUser(null)
   }
 
-  const loadUserAssignedLocations = async (userId: string) => {
-    try {
-      const response = await fetch(`${getApiBaseUrl()}/api/admin/users/${userId}/locations`, {
-        headers: {
-          'Authorization': `Bearer ${session?.user?.email}`,
-          'Content-Type': 'application/json',
-        },
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setUserAssignedLocations(data.assigned_locations || [])
-        setAvailableLocationsForAssignment(data.available_locations || [])
-      } else {
-        console.error('Failed to load user locations')
-      }
-    } catch (error) {
-      console.error('Error loading user locations:', error)
-    }
-  }
-
-  const promoteToSuperAdmin = async () => {
-    if (!userForRoleChange) return
-
-    try {
-      const response = await authenticatedApiCall(`/api/admin/users/${userForRoleChange.id}/role`, {
-        method: 'PUT',
-        body: JSON.stringify({ role: 'super_admin' })
-      })
-
-      if (response.ok) {
-        setRolePromotionDialogOpen(false)
-        setUserForRoleChange(null)
-        await loadUsers()
-        await alert({
-          title: 'Promotion Successful',
-          message: `${userForRoleChange.first_name || userForRoleChange.email} has been promoted to Super Admin.`,
-          variant: 'success'
-        })
-      } else {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to promote user')
-      }
-    } catch (error) {
-      console.error('Error promoting user:', error)
-      await alert({
-        title: 'Promotion Failed',
-        message: error instanceof Error ? error.message : 'Failed to promote user. Please try again.',
-        variant: 'error'
-      })
-    }
-  }
-
-  // Global permission functions
-  const loadUserGlobalPermissions = async (userId: string) => {
-    try {
-      const response = await fetch(`${getApiBaseUrl()}/api/permissions/global?userId=${userId}`, {
-        headers: {
-          'Authorization': `Bearer ${session?.user?.email}`,
-          'Content-Type': 'application/json',
-        },
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setUserGlobalPermissions(data.permissions || [])
-      }
-    } catch (error) {
-      console.error('Failed to load user global permissions:', error)
-      setUserGlobalPermissions([])
-    }
-  }
-
-  const toggleGlobalPermission = async (permission: string, currentlyHas: boolean) => {
-    if (!userForLocationAssignment) return
-
-    try {
-      const response = await authenticatedApiCall('/api/permissions/global', {
-        method: currentlyHas ? 'DELETE' : 'POST',
-        body: JSON.stringify({
-          targetUserId: userForLocationAssignment.id,
-          permission,
-          ...(currentlyHas ? {} : { notes: 'Granted via Admin Dashboard' })
-        })
-      })
-
-      if (response.ok) {
-        // Reload global permissions
-        await loadUserGlobalPermissions(userForLocationAssignment.id)
-      } else {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to update global permission')
-      }
-    } catch (error) {
-      console.error('Failed to toggle global permission:', error)
-      // Could add a toast notification here
-    }
-  }
-
-  const assignLocationToUser = async (locationId: number) => {
-    if (!userForLocationAssignment) return
-
-    try {
-      const response = await authenticatedApiCall(`/api/admin/users/${userForLocationAssignment.id}/locations/${locationId}`, {
-        method: 'POST',
-      })
-
-      if (response.ok) {
-        // Get fresh location data
-        const locResponse = await fetch(`${getApiBaseUrl()}/api/admin/users/${userForLocationAssignment.id}/locations`, {
-          headers: {
-            'Authorization': `Bearer ${session?.user?.email}`,
-            'Content-Type': 'application/json',
-          },
-        })
-        
-        if (locResponse.ok) {
-          const locData = await locResponse.json()
-          setUserAssignedLocations(locData.assigned_locations || [])
-          setAvailableLocationsForAssignment(locData.available_locations || [])
-          
-          // Update the user's location data with the actual current state
-          const locationNames = (locData.assigned_locations || []).map((loc: any) => loc.name).join(',')
-          setUsers(prevUsers => 
-            prevUsers.map(user => 
-              user.id === userForLocationAssignment.id 
-                ? { 
-                    ...user, 
-                    locations_joined: (locData.assigned_locations || []).length,
-                    location_names: locationNames || null
-                  }
-                : user
-            )
-          )
-        }
-        
-        await alert({
-          title: 'Location Assigned',
-          message: 'Location has been successfully assigned to the user.',
-          variant: 'success'
-        })
-      } else {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to assign location')
-      }
-    } catch (error) {
-      console.error('Error assigning location:', error)
-      await alert({
-        title: 'Assignment Failed',
-        message: error instanceof Error ? error.message : 'Failed to assign location. Please try again.',
-        variant: 'error'
-      })
-    }
-  }
-
-  const unassignLocationFromUser = async (locationId: number) => {
-    if (!userForLocationAssignment) return
-
-    try {
-      const response = await authenticatedApiCall(`/api/admin/users/${userForLocationAssignment.id}/locations/${locationId}`, {
-        method: 'DELETE',
-      })
-
-      if (response.ok) {
-        // Get fresh location data
-        const locResponse = await fetch(`${getApiBaseUrl()}/api/admin/users/${userForLocationAssignment.id}/locations`, {
-          headers: {
-            'Authorization': `Bearer ${session?.user?.email}`,
-            'Content-Type': 'application/json',
-          },
-        })
-        
-        if (locResponse.ok) {
-          const locData = await locResponse.json()
-          setUserAssignedLocations(locData.assigned_locations || [])
-          setAvailableLocationsForAssignment(locData.available_locations || [])
-          
-          // Update the user's location data with the actual current state
-          const locationNames = (locData.assigned_locations || []).map((loc: any) => loc.name).join(',')
-          setUsers(prevUsers => 
-            prevUsers.map(user => 
-              user.id === userForLocationAssignment.id 
-                ? { 
-                    ...user, 
-                    locations_joined: (locData.assigned_locations || []).length,
-                    location_names: locationNames || null
-                  }
-                : user
-            )
-          )
-        }
-        
-        await alert({
-          title: 'Location Unassigned',
-          message: 'Location has been successfully unassigned from the user.',
-          variant: 'success'
-        })
-      } else {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to unassign location')
-      }
-    } catch (error) {
-      console.error('Error unassigning location:', error)
-      await alert({
-        title: 'Unassignment Failed',
-        message: error instanceof Error ? error.message : 'Failed to unassign location. Please try again.',
-        variant: 'error'
-      })
-    }
-  }
-
-  const toggleUserActiveStatus = async (user: AdminUser) => {
-    const newStatus = !user.is_active
-    const action = newStatus ? 'enable' : 'disable'
-    const userName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email
-
-    const confirmed = await confirmAsync(
-      {
-        title: `${action === 'enable' ? 'Enable' : 'Disable'} User Account`,
-        message: `Are you sure you want to ${action} ${userName}'s account? ${
-          action === 'disable'
-            ? 'They will not be able to log in until re-enabled.'
-            : 'They will be able to log in again.'
-        }`,
-        confirmText: `${action === 'enable' ? 'Enable' : 'Disable'} Account`,
-        variant: action === 'disable' ? 'warning' : 'info'
-      },
-      async () => {
-        const response = await authenticatedApiCall(`/api/admin/users/${user.id}/status`, {
-          method: 'PUT',
-          body: JSON.stringify({ is_active: newStatus })
-        })
-
-        if (response.ok) {
-          await loadUsers()
-          await alert({
-            title: 'Status Updated',
-            message: `${userName}'s account has been ${action}d.`,
-            variant: 'success'
-          })
-        } else {
-          const errorData = await response.json()
-          throw new Error(errorData.error || 'Failed to update user status')
-        }
-      }
-    )
-
-    if (!confirmed) {
-      await alert({
-        title: 'Update Failed',
-        message: 'Failed to update user status. Please try again.',
-        variant: 'error'
-      })
-    }
-  }
-
-  const updateUserRole = async (userId: string, newRole: 'admin' | 'user', userName: string) => {
-    const confirmed = await confirmAsync(
-      {
-        title: `Change User Role`,
-        message: `Are you sure you want to change ${userName}'s role to ${newRole}? ${
-          newRole === 'admin'
-            ? 'This will give them full administrative privileges.'
-            : 'This will remove their administrative privileges.'
-        }`,
-        confirmText: `Change to ${newRole}`,
-        variant: newRole === 'admin' ? 'warning' : 'info'
-      },
-      async () => {
-        const response = await authenticatedApiCall(`/api/admin/users/${userId}/role`, {
-          method: 'PUT',
-          body: JSON.stringify({ role: newRole })
-        })
-
-        if (response.ok) {
-          await loadUsers() // Refresh the list
-          await alert({
-            title: 'Role Updated',
-            message: `${userName}'s role has been successfully changed to ${newRole}.`,
-            variant: 'success'
-          })
-        } else {
-          const errorData = await response.json()
-          throw new Error(errorData.error || 'Failed to update user role')
-        }
-      }
-    )
-
-    if (!confirmed) {
-      await alert({
-        title: 'Update Failed',
-        message: 'Failed to update user role. Please try again.',
-        variant: 'error'
-      })
-    }
-  }
-
-  const cleanupUser = async () => {
-    if (!cleanupEmail.trim()) {
-      await alert({
-        title: 'Email Required',
-        message: 'Please enter the email address of the user to clean up.',
-        variant: 'warning'
-      })
-      return
-    }
-
-    try {
-      // First check if location ownership transfer is needed
-      const response = await authenticatedApiCall('/api/admin/cleanup-user', {
-        method: 'POST',
-        body: JSON.stringify({ email_to_delete: cleanupEmail.trim() })
-      })
-
-      if (response.ok) {
-        // User cleanup succeeded
-        const result = await response.json()
-        setCleanupDialogOpen(false)
-        setCleanupEmail('')
-        // Update the UI immediately by refreshing the user list
-        await loadUsers()
-        await alert({
-          title: 'User Cleaned Up',
-          message: result.message,
-          variant: 'success'
-        })
-      } else {
-        const errorData = await response.json()
-        
-        if (errorData.requires_ownership_transfer) {
-          // User owns locations - need to transfer ownership
-          setOwnedLocations(errorData.owned_locations)
-          setUserToDelete(cleanupEmail.trim())
-          setSelectedOwners({})
-          setLocationsToDelete({})
-          
-          // Load available admins
-          const adminsResponse = await fetch(`${getApiBaseUrl()}/api/admin/available-admins`, {
-            headers: {
-              'Authorization': `Bearer ${session?.user?.email}`,
-              'Content-Type': 'application/json',
-            },
-          })
-          
-          if (adminsResponse.ok) {
-            const admins = await adminsResponse.json()
-            setAvailableAdmins(admins)
-            setCleanupDialogOpen(false)
-            setOwnershipTransferDialogOpen(true)
-          } else {
-            throw new Error('Failed to load available admins')
-          }
-        } else {
-          throw new Error(errorData.error || 'Failed to cleanup user')
-        }
-      }
-    } catch (error) {
-      console.error('Error cleaning up user:', error)
-      await alert({
-        title: 'Cleanup Failed',
-        message: error instanceof Error ? error.message : 'Failed to cleanup user. Please try again.',
-        variant: 'error'
-      })
-    }
-  }
-
   const handleDeleteUser = async (user: AdminUser) => {
     const userName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email
 
-    const confirmed = await confirmAsync(
-      {
-        title: 'Delete User Account',
-        message: `Are you sure you want to permanently delete ${userName} (${user.email})?\n\nThis will:\n• Delete the user account\n• Preserve all books they added (but remove author reference)\n• Remove them from all locations\n\nThis action cannot be undone!`,
-        confirmText: 'Delete User',
-        variant: 'error'
-      },
-      async () => {
-        // The actual deletion logic moved to here
-      }
-    )
+    const result = await deleteUser(user)
 
-    if (!confirmed) {
-      return
-    }
-
-    try {
-      // First check if location ownership transfer is needed
-      const response = await authenticatedApiCall('/api/admin/cleanup-user', {
-        method: 'POST',
-        body: JSON.stringify({ email_to_delete: user.email })
-      })
-
-      if (response.ok) {
-        // User deletion succeeded
-        const result = await response.json()
-        // Update the UI immediately by removing the user from the list
-        setUsers(users.filter(u => u.email !== user.email))
-        await alert({
-          title: 'User Deleted',
-          message: result.message,
-          variant: 'success'
-        })
-      } else {
-        const errorData = await response.json()
-        
-        if (errorData.requires_ownership_transfer) {
-          // User owns locations - need to transfer ownership
-          setOwnedLocations(errorData.owned_locations)
-          setUserToDelete(user.email)
-          setSelectedOwners({})
-          setLocationsToDelete({})
-          
-          // Load available admins
-          const adminsResponse = await fetch(`${getApiBaseUrl()}/api/admin/available-admins`, {
-            headers: {
-              'Authorization': `Bearer ${session?.user?.email}`,
-              'Content-Type': 'application/json',
-            },
-          })
-          
-          if (adminsResponse.ok) {
-            const admins = await adminsResponse.json()
-            setAvailableAdmins(admins)
-            setOwnershipTransferDialogOpen(true)
-          } else {
-            throw new Error('Failed to load available admins')
-          }
-        } else {
-          throw new Error(errorData.error || 'Failed to delete user')
-        }
-      }
-    } catch (error) {
-      console.error('Error deleting user:', error)
-      await alert({
-        title: 'Delete Failed',
-        message: error instanceof Error ? error.message : 'Failed to delete user. Please try again.',
-        variant: 'error'
-      })
+    if (result.requiresOwnershipTransfer) {
+      setOwnedLocations(result.ownedLocations)
+      setUserToDelete(user.email)
+      setOwnershipTransferDialogOpen(true)
     }
   }
 
-  const sendEmail = async () => {
-    if (!emailRecipient || !emailSubject.trim() || !emailMessage.trim()) {
-      await alert({
-        title: 'Missing Information',
-        message: 'Please fill in both subject and message fields.',
-        variant: 'warning'
-      })
-      return
-    }
-
-    try {
-      // For now, we'll simulate sending an email by showing the composed message
-      // In the future, this could integrate with a real email service
-      await alert({
-        title: 'Email Composed',
-        message: `Email would be sent to: ${emailRecipient.email}\nSubject: ${emailSubject}\n\nMessage: ${emailMessage}`,
-        variant: 'info'
-      })
-      
-      setEmailDialogOpen(false)
-      setEmailSubject('')
-      setEmailMessage('')
-      setEmailRecipient(null)
-    } catch (error) {
-      console.error('Error sending email:', error)
-      await alert({
-        title: 'Email Failed',
-        message: 'Failed to send email. Please try again.',
-        variant: 'error'
-      })
-    }
-  }
-
-  const completeOwnershipTransfer = async () => {
-    // Validate all locations have either new owners assigned or are marked for deletion
-    const unassignedLocations = ownedLocations.filter(loc => !selectedOwners[loc.id] && !locationsToDelete[loc.id])
-    if (unassignedLocations.length > 0) {
-      await alert({
-        title: 'Missing Assignments',
-        message: `Please assign new owners or mark for deletion for all locations: ${unassignedLocations.map(loc => loc.name).join(', ')}`,
-        variant: 'warning'
-      })
-      return
-    }
-
-    const locationsToTransfer = ownedLocations.filter(loc => selectedOwners[loc.id])
-    const locationsToDeleteList = ownedLocations.filter(loc => locationsToDelete[loc.id])
-
-    const confirmed = await confirmAsync(
-      {
-        title: 'Transfer Ownership & Delete User',
-        message: `This will:\n\n${locationsToTransfer.length > 0 ? `• Transfer ownership of ${locationsToTransfer.length} location(s) to selected admins\n` : ''}${locationsToDeleteList.length > 0 ? `• Delete ${locationsToDeleteList.length} location(s) and all their books\n` : ''}• Delete the user "${userToDelete}"\n\nBooks added by this user will remain in transferred locations but no longer show the original author. This action cannot be undone!`,
-        confirmText: 'Transfer & Delete User',
-        variant: 'error'
-      },
-      async () => {
-        const response = await authenticatedApiCall('/api/admin/cleanup-user', {
-          method: 'POST',
-          body: JSON.stringify({
-            email_to_delete: userToDelete,
-            new_location_owners: selectedOwners,
-            locations_to_delete: Object.keys(locationsToDelete).filter(id => locationsToDelete[id]).map(id => parseInt(id))
-          })
-        })
-
-        if (response.ok) {
-          const result = await response.json()
-          setOwnershipTransferDialogOpen(false)
-          setCleanupEmail('')
-          setUserToDelete('')
-          setOwnedLocations([])
-          setSelectedOwners({})
-          setLocationsToDelete({})
-          // Update state immediately instead of refetching
-          setUsers(users.filter(u => u.email !== userToDelete))
-          await alert({
-            title: 'User Cleaned Up',
-            message: result.message,
-            variant: 'success'
-          })
-        } else {
-          const errorData = await response.json()
-          throw new Error(errorData.error || 'Failed to complete ownership transfer')
-        }
-      }
-    )
-
-    if (!confirmed) {
-      await alert({
-        title: 'Transfer Failed',
-        message: 'Ownership transfer was cancelled.',
-        variant: 'error'
-      })
-    }
-  }
-
-  const formatDate = (dateString: string) => {
-    if (!dateString) return 'Never'
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    })
-  }
-
-  const getRoleChip = (role: string, verified: boolean) => {
-    if (role === 'super_admin') {
-      return <Chip icon={<Security />} label="Super Admin" color="error" size="small" />
-    }
-    if (role === 'admin') {
-      return <Chip icon={<Security />} label="Admin" color="primary" size="small" />
-    }
-    return (
-      <Chip 
-        icon={verified ? <CheckCircle /> : <Cancel />} 
-        label={verified ? "User" : "Unverified"} 
-        color={verified ? "success" : "warning"} 
-        size="small" 
-      />
-    )
-  }
-
-  const getProviderChip = (provider: string) => {
-    const color = provider === 'google' ? 'info' : 'default'
-    return <Chip label={provider} color={color} size="small" variant="outlined" />
-  }
-
-  const formatLocationDisplay = (user: AdminUser) => {
-    if (!user.location_names) {
-      return `${user.locations_joined} locations`
-    }
-    
-    const locationNames = user.location_names.split(',').filter(name => name && name.trim())
-    
-    if (locationNames.length === 1) {
-      return locationNames[0].trim()
-    } else if (locationNames.length > 1) {
-      return `${locationNames.length} locations`
-    } else {
-      return `${user.locations_joined} locations`
-    }
-  }
-
-  // Invitation Management Functions
-  const loadInvitations = async () => {
-    if (!session?.user?.email) return
-    
-    try {
-      setInvitationsLoading(true)
-      
-      // First, get all locations the user has access to
-      const locationsResponse = await fetch(`${getApiBaseUrl()}/api/locations`, {
-        headers: {
-          'Authorization': `Bearer ${session.user.email}`,
-          'Content-Type': 'application/json',
-        },
-        cache: 'no-cache'
-      })
-      
-      if (!locationsResponse.ok) {
-        throw new Error('Failed to load locations')
-      }
-      
-      const locations = await locationsResponse.json()
-      
-      // Then fetch invitations for each location
-      const allInvitations: LocationInvitation[] = []
-      
-      for (const location of locations) {
-        try {
-          const invitationsResponse = await fetch(`${getApiBaseUrl()}/api/locations/${location.id}/invitations`, {
-            headers: {
-              'Authorization': `Bearer ${session.user.email}`,
-              'Content-Type': 'application/json',
-            },
-            cache: 'no-cache'
-          })
-          
-          if (invitationsResponse.ok) {
-            const locationInvitations = await invitationsResponse.json()
-            // Add location name to each invitation
-            const enrichedInvitations = locationInvitations.map((inv: any) => ({
-              ...inv,
-              location_name: location.name
-            }))
-            allInvitations.push(...enrichedInvitations)
-          }
-        } catch (error) {
-          console.error(`Error loading invitations for location ${location.name}:`, error)
-          // Continue with other locations even if one fails
-        }
-      }
-      
-      setInvitations(allInvitations)
-      setError('')
-    } catch (error) {
-      console.error('Error loading invitations:', error)
-      setError('Failed to load invitations')
-    } finally {
-      setInvitationsLoading(false)
-    }
-  }
-
-  const loadAvailableLocations = async () => {
-    if (!session?.user?.email) return
-    
-    try {
-      const response = await fetch(`${getApiBaseUrl()}/api/locations`, {
-        headers: {
-          'Authorization': `Bearer ${session.user.email}`,
-          'Content-Type': 'application/json',
-        },
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        setAvailableLocations(data)
-      }
-    } catch (error) {
-      console.error('Error loading locations:', error)
-    }
-  }
-
-  const sendInvitation = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (bulkInviteMode) {
-      await sendBulkInvitations()
-    } else {
-      await sendSingleInvitation()
-    }
-  }
-
-  const sendSingleInvitation = async () => {
-    if (!inviteEmail.trim() || !selectedLocationId) return
-    if (!session?.user?.email) return
-    
-    try {
-      const response = await authenticatedApiCall(`/api/locations/${selectedLocationId}/invite`, {
-        method: 'POST',
-        body: JSON.stringify({
-          invited_email: inviteEmail.trim(),
-          custom_message: inviteCustomMessage.trim() || undefined,
-        }),
-      })
-
-      if (response.ok) {
-        setInviteEmail('')
-        setInviteCustomMessage('')
-        setSelectedLocationId(null)
-        setInvitationDialogOpen(false)
-        await alert({
-          title: 'Invitation Sent',
-          message: `Invitation successfully sent to ${inviteEmail}`,
-          variant: 'success'
-        })
-        // Force refresh invitations list
-        await loadInvitations()
-      } else {
-        const errorData = await response.json()
-        await alert({
-          title: 'Invitation Failed',
-          message: errorData.error || 'Failed to send invitation',
-          variant: 'error'
-        })
-      }
-    } catch (error) {
-      console.error('Error sending invitation:', error)
-      await alert({
-        title: 'Invitation Failed',
-        message: 'Failed to send invitation. Please try again.',
-        variant: 'error'
-      })
-    }
-  }
-
-  const sendBulkInvitations = async () => {
-    if (!bulkEmails.trim() || !selectedLocationId) return
-    if (!session?.user?.email) return
-
-    setBulkInviteLoading(true)
-    setBulkInviteResults([])
-
-    // Parse emails - support comma, semicolon, and newline separation
-    const emailList = bulkEmails
-      .split(/[,;\n]/)
-      .map(email => email.trim())
-      .filter(email => email.length > 0)
-
-    if (emailList.length === 0) {
-      setBulkInviteLoading(false)
-      await alert({
-        title: 'No Emails',
-        message: 'Please enter at least one email address.',
-        variant: 'warning'
-      })
-      return
-    }
-
-    const results: {email: string, success: boolean, error?: string}[] = []
-
-    // Send invitations one by one to get individual results
-    for (const email of emailList) {
-      try {
-        const response = await authenticatedApiCall(`/api/locations/${selectedLocationId}/invite`, {
-          method: 'POST',
-          body: JSON.stringify({
-            invited_email: email,
-          }),
-        })
-
-        if (response.ok) {
-          results.push({ email, success: true })
-        } else {
-          const errorData = await response.json()
-          results.push({ email, success: false, error: errorData.error || 'Failed to send' })
-        }
-      } catch (_error) {
-        results.push({ email, success: false, error: 'Network error' })
-      }
-    }
-
-    setBulkInviteResults(results)
-    setBulkInviteLoading(false)
-
-    const successCount = results.filter(r => r.success).length
-    const failCount = results.length - successCount
-
-    if (failCount === 0) {
-      setBulkEmails('')
-      setSelectedLocationId(null)
-      setInvitationDialogOpen(false)
-      await alert({
-        title: 'All Invitations Sent',
-        message: `Successfully sent ${successCount} invitation(s)!`,
-        variant: 'success'
-      })
-      await loadInvitations()
-    } else {
-      await alert({
-        title: 'Bulk Invitation Results',
-        message: `${successCount} succeeded, ${failCount} failed. See details below.`,
-        variant: successCount > 0 ? 'warning' : 'error'
-      })
-      // Don't close dialog so user can see results and retry failed ones
-      if (successCount > 0) {
-        await loadInvitations()
-      }
-    }
-  }
-
-  const revokeInvitation = async (invitationId: number, invitedEmail: string) => {
-    const confirmed = await confirmAsync(
-      {
-        title: 'Revoke Invitation',
-        message: `Are you sure you want to revoke the invitation for ${invitedEmail}? This action cannot be undone.`,
-        confirmText: 'Revoke Invitation',
-        variant: 'warning'
-      },
-      async () => {
-        if (!session?.user?.email) throw new Error('Not authenticated')
-        
-        const response = await authenticatedApiCall(`/api/invitations/${invitationId}/revoke`, {
-          method: 'DELETE',
-        })
-
-        if (response.ok) {
-          await alert({
-            title: 'Invitation Revoked',
-            message: `Invitation for ${invitedEmail} has been successfully revoked.`,
-            variant: 'success'
-          })
-          // Force refresh invitations list
-          await loadInvitations()
-        } else {
-          const errorData = await response.json()
-          throw new Error(errorData.error || 'Failed to revoke invitation')
-        }
-      }
-    )
-
-    if (!confirmed) {
-      await alert({
-        title: 'Revoke Failed',
-        message: 'Failed to revoke the invitation. Please try again.',
-        variant: 'error'
-      })
-    }
-  }
-
-  const formatInvitationDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    })
-  }
-
-  const getInvitationStatus = (invitation: LocationInvitation) => {
-    const now = new Date()
-    const expiresAt = new Date(invitation.expires_at)
-    
-    if (invitation.used_at) {
-      return { status: 'accepted', color: 'success' as const, label: 'Accepted' }
-    } else if (expiresAt < now) {
-      return { status: 'expired', color: 'error' as const, label: 'Expired' }
-    } else {
-      const daysLeft = Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-      if (daysLeft <= 1) {
-        return { status: 'expiring', color: 'warning' as const, label: 'Expires Soon' }
-      }
-      return { status: 'pending', color: 'info' as const, label: 'Pending' }
-    }
-  }
-
-  const getInvitationAnalytics = () => {
-    const total = invitations.length
-    const accepted = invitations.filter(inv => inv.used_at).length
-    const pending = invitations.filter(inv => !inv.used_at && new Date(inv.expires_at) > new Date()).length
-    const expired = invitations.filter(inv => !inv.used_at && new Date(inv.expires_at) <= new Date()).length
-    
-    return { total, accepted, pending, expired }
-  }
-
-  // Enhanced filtering, sorting, and pagination logic
-  const getFilteredAndSortedInvitations = () => {
-    let filtered = invitations.filter(invitation => {
-      // Search filter
-      if (invitationSearchTerm) {
-        const searchLower = invitationSearchTerm.toLowerCase()
-        const matchesSearch = (
-          invitation.invited_email.toLowerCase().includes(searchLower) ||
-          invitation.location_name?.toLowerCase().includes(searchLower) ||
-          invitation.invited_by_name?.toLowerCase().includes(searchLower)
-        )
-        if (!matchesSearch) return false
-      }
-      
-      // Status filter
-      if (invitationStatusFilter !== 'all') {
-        const status = getInvitationStatus(invitation).status
-        if (status !== invitationStatusFilter) return false
-      }
-      
-      // Location filter
-      if (invitationLocationFilter !== 'all') {
-        if (invitation.location_id.toString() !== invitationLocationFilter) return false
-      }
-      
-      return true
-    })
-    
-    // Sorting
-    filtered.sort((a, b) => {
-      let aValue: any, bValue: any
-      
-      switch (invitationSortBy) {
-        case 'email':
-          aValue = a.invited_email.toLowerCase()
-          bValue = b.invited_email.toLowerCase()
-          break
-        case 'location':
-          aValue = (a.location_name || '').toLowerCase()
-          bValue = (b.location_name || '').toLowerCase()
-          break
-        case 'status':
-          aValue = getInvitationStatus(a).status
-          bValue = getInvitationStatus(b).status
-          break
-        case 'expires_at':
-          aValue = new Date(a.expires_at).getTime()
-          bValue = new Date(b.expires_at).getTime()
-          break
-        case 'invited_by':
-          aValue = (a.invited_by_name || '').toLowerCase()
-          bValue = (b.invited_by_name || '').toLowerCase()
-          break
-        case 'created_at':
-        default:
-          aValue = new Date(a.created_at).getTime()
-          bValue = new Date(b.created_at).getTime()
-          break
-      }
-      
-      if (aValue < bValue) return invitationSortOrder === 'asc' ? -1 : 1
-      if (aValue > bValue) return invitationSortOrder === 'asc' ? 1 : -1
-      return 0
-    })
-    
-    return filtered
-  }
-  
-  const filteredInvitations = getFilteredAndSortedInvitations()
-  
-  // Pagination
-  const totalPages = Math.ceil(filteredInvitations.length / invitationsPerPage)
-  const startIndex = (invitationsPage - 1) * invitationsPerPage
-  const paginatedInvitations = filteredInvitations.slice(startIndex, startIndex + invitationsPerPage)
-  
-  // Reset page when filters change
-  useEffect(() => {
-    setInvitationsPage(1)
-  }, [invitationSearchTerm, invitationStatusFilter, invitationLocationFilter, invitationSortBy, invitationSortOrder])
-
-  // Helper functions for sorting
-  const handleSortChange = (sortBy: string) => {
-    if (invitationSortBy === sortBy) {
-      setInvitationSortOrder(invitationSortOrder === 'asc' ? 'desc' : 'asc')
-    } else {
-      setInvitationSortBy(sortBy)
-      setInvitationSortOrder('desc')
-    }
-  }
-  
-  const clearAllFilters = () => {
-    setInvitationSearchTerm('')
-    setInvitationStatusFilter('all')
-    setInvitationLocationFilter('all')
-    setInvitationSortBy('created_at')
-    setInvitationSortOrder('desc')
-    setInvitationsPage(1)
+  const handleOwnershipTransferSuccess = () => {
+    setUsers(users.filter(u => u.email !== userToDelete))
+    setOwnershipTransferDialogOpen(false)
+    setUserToDelete('')
+    setOwnedLocations([])
   }
 
   if (loading) {
@@ -1217,17 +136,14 @@ export default function AdminUserManager() {
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Button
             variant={showInvitations ? "contained" : "outlined"}
-            startIcon={<Email />}
-            onClick={async () => {
+            startIcon={<EmailIcon />}
+            onClick={() => {
               setShowInvitations(!showInvitations)
               if (!showInvitations) {
-                await loadInvitations()
-                await loadAvailableLocations()
-                // Scroll to invitations section after state update
                 setTimeout(() => {
-                  invitationsSectionRef.current?.scrollIntoView({ 
-                    behavior: 'smooth', 
-                    block: 'start' 
+                  invitationsSectionRef.current?.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
                   })
                 }, 100)
               }
@@ -1249,804 +165,112 @@ export default function AdminUserManager() {
 
       <Card>
         <CardContent sx={{ p: 0 }}>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>User</TableCell>
-                  <TableCell>Role & Status</TableCell>
-                  <TableCell>Provider</TableCell>
-                  <TableCell align="right">Activity</TableCell>
-                  <TableCell align="right">Joined</TableCell>
-                  <TableCell align="right">Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {users.map((user) => {
-                  const displayName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'No name'
-                  const isCurrentUser = user.email === session?.user?.email
-                  
-                  return (
-                    <TableRow key={user.id} hover>
-                      <TableCell>
-                        <Box>
-                          <Typography variant="body1" fontWeight="medium">
-                            {displayName}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {user.email}
-                          </Typography>
-                        </Box>
-                      </TableCell>
-                      
-                      <TableCell>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                          {getRoleChip(user.user_role, user.email_verified)}
-                          {!user.is_active && (
-                            <Chip label="Disabled" color="error" size="small" variant="outlined" />
-                          )}
-                          {isCurrentUser && (
-                            <Chip label="You" color="secondary" size="small" variant="outlined" />
-                          )}
-                        </Box>
-                      </TableCell>
-
-                      <TableCell>
-                        {getProviderChip(user.auth_provider)}
-                      </TableCell>
-
-                      <TableCell align="right">
-                        <Box sx={{ textAlign: 'right' }}>
-                          <Typography variant="body2">
-                            <LibraryBooks sx={{ mr: 0.5, verticalAlign: 'middle', fontSize: 'inherit' }} /> {user.books_added} books
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            <LocationOn sx={{ mr: 0.5, verticalAlign: 'middle', fontSize: 'inherit' }} /> {formatLocationDisplay(user)}
-                          </Typography>
-                          {user.last_book_added && (
-                            <Typography variant="caption" color="text.secondary">
-                              Last: {formatDate(user.last_book_added)}
-                            </Typography>
-                          )}
-                        </Box>
-                      </TableCell>
-
-                      <TableCell align="right">
-                        <Typography variant="body2">
-                          {formatDate(user.created_at)}
-                        </Typography>
-                      </TableCell>
-
-                      <TableCell align="right">
-                        <IconButton
-                          onClick={(e) => handleMenuClick(e, user)}
-                          size="small"
-                          disabled={isCurrentUser && user.user_role === 'admin'} // Prevent admin from changing their own role
-                        >
-                          <MoreVert />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <UserTable users={users} onMenuClick={handleMenuClick} />
         </CardContent>
       </Card>
 
-      {/* Invitations Section */}
-      {showInvitations && (
-        <Card ref={invitationsSectionRef} sx={{ mt: 3 }}>
-          <CardContent>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h6">
-                📧 Invitation Management
-              </Typography>
-              <Button
-                variant="contained"
-                startIcon={<PersonAdd />}
-                onClick={() => setInvitationDialogOpen(true)}
-                size="small"
-              >
-                Send Invitation
-              </Button>
-            </Box>
+      <div ref={invitationsSectionRef}>
+        <InvitationManager visible={showInvitations} />
+      </div>
 
-            {invitations.length > 0 && (
-              <>
-                <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
-                  {(() => {
-                    const analytics = getInvitationAnalytics()
-                    return (
-                      <>
-                        <Chip label={`Total: ${analytics.total} | Filtered: ${filteredInvitations.length}`} variant="outlined" />
-                        <Chip label={`Accepted: ${analytics.accepted}`} color="success" variant="outlined" />
-                        <Chip label={`Pending: ${analytics.pending}`} color="info" variant="outlined" />
-                        {analytics.expired > 0 && (
-                          <Chip label={`Expired: ${analytics.expired}`} color="error" variant="outlined" />
-                        )}
-                      </>
-                    )
-                  })()}
-                </Box>
-                {/* Search and Filter Controls */}
-                <Box sx={{ mb: 2 }}>
-                  <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <Box sx={{ flex: 1, minWidth: 200 }}>
-                      <TextField
-                        size="small"
-                        placeholder="Search invitations..."
-                        value={invitationSearchTerm}
-                        onChange={(e) => setInvitationSearchTerm(e.target.value)}
-                        fullWidth
-                      />
-                    </Box>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      startIcon={showInvitationFilters ? <ExpandLess /> : <ExpandMore />}
-                      onClick={() => setShowInvitationFilters(!showInvitationFilters)}
-                    >
-                      Filters & Sort
-                    </Button>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      startIcon={<Clear />}
-                      onClick={clearAllFilters}
-                      title="Clear all filters and sorting"
-                    >
-                      Clear
-                    </Button>
-                  </Box>
-                  
-                  {/* Collapsible Filters */}
-                  <Collapse in={showInvitationFilters}>
-                    <Box sx={{ mt: 2, p: 2, bgcolor: 'action.hover', borderRadius: 1 }}>
-                      <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                        <Box sx={{ minWidth: 150, flex: 1 }}>
-                          <FormControl size="small" fullWidth>
-                            <InputLabel>Status Filter</InputLabel>
-                            <Select
-                              value={invitationStatusFilter}
-                              onChange={(e) => setInvitationStatusFilter(e.target.value)}
-                              label="Status Filter"
-                            >
-                              <MenuItem value="all">All Statuses</MenuItem>
-                              <MenuItem value="pending">Pending</MenuItem>
-                              <MenuItem value="expiring">Expiring Soon</MenuItem>
-                              <MenuItem value="accepted">Accepted</MenuItem>
-                              <MenuItem value="expired">Expired</MenuItem>
-                            </Select>
-                          </FormControl>
-                        </Box>
-                        <Box sx={{ minWidth: 150, flex: 1 }}>
-                          <FormControl size="small" fullWidth>
-                            <InputLabel>Location Filter</InputLabel>
-                            <Select
-                              value={invitationLocationFilter}
-                              onChange={(e) => setInvitationLocationFilter(e.target.value)}
-                              label="Location Filter"
-                            >
-                              <MenuItem value="all">All Locations</MenuItem>
-                              {availableLocations.map((location) => (
-                                <MenuItem key={location.id} value={location.id.toString()}>
-                                  {location.name}
-                                </MenuItem>
-                              ))}
-                            </Select>
-                          </FormControl>
-                        </Box>
-                        <Box sx={{ minWidth: 150, flex: 1 }}>
-                          <FormControl size="small" fullWidth>
-                            <InputLabel>Sort By</InputLabel>
-                            <Select
-                              value={invitationSortBy}
-                              onChange={(e) => setInvitationSortBy(e.target.value)}
-                              label="Sort By"
-                            >
-                              <MenuItem value="created_at">Date Created</MenuItem>
-                              <MenuItem value="expires_at">Expiration Date</MenuItem>
-                              <MenuItem value="email">Email Address</MenuItem>
-                              <MenuItem value="location">Location</MenuItem>
-                              <MenuItem value="status">Status</MenuItem>
-                              <MenuItem value="invited_by">Sent By</MenuItem>
-                            </Select>
-                          </FormControl>
-                        </Box>
-                        <Box sx={{ minWidth: 150, flex: 1 }}>
-                          <FormControl size="small" fullWidth>
-                            <InputLabel>Sort Order</InputLabel>
-                            <Select
-                              value={invitationSortOrder}
-                              onChange={(e) => setInvitationSortOrder(e.target.value as 'asc' | 'desc')}
-                              label="Sort Order"
-                            >
-                              <MenuItem value="desc">Newest First</MenuItem>
-                              <MenuItem value="asc">Oldest First</MenuItem>
-                            </Select>
-                          </FormControl>
-                        </Box>
-                      </Box>
-                    </Box>
-                  </Collapse>
-                </Box>
-              </>
-            )}
-
-            {invitationsLoading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
-                <CircularProgress size={32} />
-                <Typography sx={{ ml: 2 }} color="text.secondary">
-                  Loading invitations...
-                </Typography>
-              </Box>
-            ) : invitations.length === 0 ? (
-              <Alert severity="info">
-                No pending invitations found. Send invitations to add new users to locations.
-              </Alert>
-            ) : filteredInvitations.length === 0 ? (
-              <Alert severity="info">
-                No invitations match your filters. {invitations.length > 0 ? 'Try adjusting your search criteria.' : ''}
-              </Alert>
-            ) : (
-              <>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                  {paginatedInvitations.map((invitation) => {
-                  const statusInfo = getInvitationStatus(invitation)
-                  const canRevoke = statusInfo.status === 'pending' || statusInfo.status === 'expiring'
-                  
-                  // Color mapping for border
-                  const borderColors: Record<string, string> = {
-                    'pending': '#2196F3',     // blue
-                    'expiring': '#FF9800',    // orange  
-                    'accepted': '#4CAF50',    // green
-                    'expired': '#f44336'      // red
-                  }
-                  
-                  return (
-                    <Paper key={invitation.id} sx={{ 
-                      display: 'flex', 
-                      justifyContent: 'space-between', 
-                      alignItems: 'center',
-                      p: 2,
-                      borderRadius: 1,
-                      borderLeft: `4px solid ${borderColors[statusInfo.status] || '#2196F3'}`
-                    }}>
-                      <Box sx={{ flex: 1 }}>
-                        <Typography variant="body1" fontWeight="medium">
-                          {invitation.invited_email}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                          <LocationOn sx={{ mr: 0.5, verticalAlign: 'middle', fontSize: 'inherit' }} /> {invitation.location_name || `Location ${invitation.location_id}`}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Sent: {formatInvitationDate(invitation.created_at)} by {invitation.invited_by_name || 'Admin'} | 
-                          Expires: {formatInvitationDate(invitation.expires_at)}
-                          {invitation.used_at && (
-                            <Box component="span" sx={{ color: 'success.main' }}> | <CheckCircle sx={{ fontSize: 'inherit', verticalAlign: 'middle' }} /> Accepted</Box>
-                          )}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Chip
-                          label={statusInfo.label}
-                          color={statusInfo.color}
-                          size="small"
-                        />
-                        {canRevoke && (
-                          <Button
-                            variant="contained"
-                            color="error"
-                            size="small"
-                            startIcon={<Cancel />}
-                            onClick={() => revokeInvitation(invitation.id, invitation.invited_email)}
-                            title="Revoke this invitation"
-                            sx={{ fontSize: '0.75rem' }}
-                          >
-                            Revoke
-                          </Button>
-                        )}
-                      </Box>
-                    </Paper>
-                  )
-                  })}
-                </Box>
-                
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
-                    <Pagination
-                      count={totalPages}
-                      page={invitationsPage}
-                      onChange={(_, page) => setInvitationsPage(page)}
-                      color="primary"
-                      size="small"
-                      showFirstButton
-                      showLastButton
-                    />
-                  </Box>
-                )}
-                
-                {/* Results Summary */}
-                <Box sx={{ mt: 2, textAlign: 'center' }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Showing {startIndex + 1}-{Math.min(startIndex + invitationsPerPage, filteredInvitations.length)} of {filteredInvitations.length} invitation{filteredInvitations.length !== 1 ? 's' : ''}
-                    {filteredInvitations.length !== invitations.length && (
-                      <span> (filtered from {invitations.length} total)</span>
-                    )}
-                  </Typography>
-                </Box>
-              </>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Action Menu */}
-      <Menu
+      <UserActionsMenu
         anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
+        selectedUser={selectedUser}
+        currentUserRole={currentUserRole}
         onClose={handleMenuClose}
-      >
-        {/* Check if current user is regular admin viewing super admin - only show email action */}
-        {selectedUser && selectedUser.user_role === 'super_admin' && !isSuperAdmin(currentUserRole) ? (
-          <MenuItem 
-            onClick={() => {
-              handleMenuClose()
-              setEmailRecipient(selectedUser)
-              setEmailSubject('')
-              setEmailMessage('')
-              setEmailDialogOpen(true)
-            }}
-          >
-            <Email sx={{ mr: 1 }} />
-            Email
-          </MenuItem>
-        ) : (
-          <>
-            {/* Regular user actions - promote to admin */}
-            {selectedUser && selectedUser.user_role === 'user' && (
-              <MenuItem 
-                onClick={() => {
-                  handleMenuClose()
-                  updateUserRole(selectedUser.id, 'admin', `${selectedUser.first_name || ''} ${selectedUser.last_name || ''}`.trim() || selectedUser.email)
-                }}
-              >
-                <Security sx={{ mr: 1 }} />
-                Promote to Admin
-              </MenuItem>
-            )}
-            
-            {/* Admin actions - demote to user */}
-            {selectedUser && selectedUser.user_role === 'admin' && selectedUser.email !== session?.user?.email && (
-              <MenuItem 
-                onClick={() => {
-                  handleMenuClose()
-                  updateUserRole(selectedUser.id, 'user', `${selectedUser.first_name || ''} ${selectedUser.last_name || ''}`.trim() || selectedUser.email)
-                }}
-              >
-                <Person sx={{ mr: 1 }} />
-                Demote to User
-              </MenuItem>
-            )}
-            
-            {/* Super Admin Only Actions */}
-            {isSuperAdmin(currentUserRole) && selectedUser && selectedUser.user_role === 'admin' && selectedUser.email !== session?.user?.email && (
-              <MenuItem 
-                onClick={() => {
-                  handleMenuClose()
-                  setUserForRoleChange(selectedUser)
-                  setRolePromotionDialogOpen(true)
-                }}
-              >
-                <Security sx={{ mr: 1 }} />
-                Promote to Super Admin
-              </MenuItem>
-            )}
-            
-            {isAdmin(currentUserRole) && selectedUser && (
-              <MenuItem 
-                onClick={() => {
-                  handleMenuClose()
-                  setUserForLocationAssignment(selectedUser)
-                  loadUserAssignedLocations(selectedUser.id)
-                  loadUserGlobalPermissions(selectedUser.id)
-                  setLocationAssignmentDialogOpen(true)
-                }}
-              >
-                <LocationOn sx={{ mr: 1 }} />
-                Manage Locations
-              </MenuItem>
-            )}
-            
-            {/* Enable/Disable user action - Super admin only, can't disable yourself */}
-            {isSuperAdmin(currentUserRole) && selectedUser && selectedUser.email !== session?.user?.email && (
-              <MenuItem
-                onClick={() => {
-                  handleMenuClose()
-                  toggleUserActiveStatus(selectedUser)
-                }}
-              >
-                <Switch sx={{ mr: 1 }} />
-                {selectedUser.is_active ? 'Disable Account' : 'Enable Account'}
-              </MenuItem>
-            )}
-
-            {/* Email action for all users */}
-            {selectedUser && (
-              <MenuItem
-                onClick={() => {
-                  handleMenuClose()
-                  setEmailRecipient(selectedUser)
-                  setEmailSubject('')
-                  setEmailMessage('')
-                  setEmailDialogOpen(true)
-                }}
-              >
-                <Email sx={{ mr: 1 }} />
-                Email
-              </MenuItem>
-            )}
-
-            {/* Delete action - not available for super admins when viewed by regular admins */}
-            {selectedUser && selectedUser.email !== session?.user?.email && !(selectedUser.user_role === 'super_admin' && !isSuperAdmin(currentUserRole)) && (
-              <MenuItem
-                onClick={() => {
-                  handleMenuClose()
-                  handleDeleteUser(selectedUser)
-                }}
-                sx={{ color: 'error.main' }}
-              >
-                <Delete sx={{ mr: 1 }} />
-                Delete User
-              </MenuItem>
-            )}
-          </>
-        )}
-      </Menu>
-
-      {/* User Cleanup Dialog */}
-      <Dialog open={cleanupDialogOpen} onClose={() => setCleanupDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle><Warning sx={{ mr: 1, verticalAlign: 'middle' }} /> Cleanup User Account</DialogTitle>
-        <DialogContent>
-          <Typography variant="body1" paragraph>
-            This action will permanently delete a user and ALL their associated data. Use with extreme caution.
-          </Typography>
-          <TextField
-            autoFocus
-            label="User Email to Delete"
-            type="email"
-            fullWidth
-            value={cleanupEmail}
-            onChange={(e) => setCleanupEmail(e.target.value)}
-            placeholder="user@example.com"
-            sx={{ mt: 2 }}
-            helperText="Type the exact email address of the user you want to delete"
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setCleanupDialogOpen(false)}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={cleanupUser} 
-            color="error" 
-            variant="contained"
-            disabled={!cleanupEmail.trim()}
-          >
-            Delete User & All Data
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Ownership Transfer Dialog */}
-      <Dialog 
-        open={ownershipTransferDialogOpen} 
-        onClose={() => setOwnershipTransferDialogOpen(false)} 
-        maxWidth="md" 
-        fullWidth
-      >
-        <DialogTitle>🏢 Transfer Location Ownership</DialogTitle>
-        <DialogContent>
-          <Typography variant="body1" paragraph>
-            The user &quot;{userToDelete}&quot; owns {ownedLocations.length} location(s). For each location, you can either assign a new admin owner or delete the location entirely.
-          </Typography>
-
-          <Alert severity="info" sx={{ mb: 3 }}>
-            For transferred locations: Books and shelves will be preserved. Books added by this user will remain but no longer show the original author.
-          </Alert>
-
-          <Alert severity="warning" sx={{ mb: 3 }}>
-            For deleted locations: All books, shelves, and location data will be permanently deleted and cannot be recovered.
-          </Alert>
-
-          <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-            Location Management:
-          </Typography>
-          
-          <List>
-            {ownedLocations.map((location) => (
-              <ListItem key={location.id} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 1, border: 1, borderColor: 'divider', borderRadius: 1, mb: 1 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <ListItemText
-                    primary={location.name}
-                    secondary={`Location ID: ${location.id}`}
-                    sx={{ flex: 1 }}
-                  />
-                  <Checkbox
-                    checked={locationsToDelete[location.id] || false}
-                    onChange={(e) => {
-                      const isDelete = e.target.checked
-                      setLocationsToDelete(prev => ({
-                        ...prev,
-                        [location.id]: isDelete
-                      }))
-                      // Clear owner selection if deleting
-                      if (isDelete) {
-                        setSelectedOwners(prev => {
-                          const newState = { ...prev }
-                          delete newState[location.id]
-                          return newState
-                        })
-                      }
-                    }}
-                    color="error"
-                  />
-                  <Typography variant="body2" color="error.main" sx={{ minWidth: 100 }}>
-                    Delete Location
-                  </Typography>
-                </Box>
-
-                {!locationsToDelete[location.id] && (
-                  <Box sx={{ ml: 2 }}>
-                    <FormControl sx={{ minWidth: 200 }}>
-                      <InputLabel>New Owner</InputLabel>
-                      <Select
-                        value={selectedOwners[location.id] || ''}
-                        onChange={(e) => setSelectedOwners(prev => ({
-                          ...prev,
-                          [location.id]: e.target.value
-                        }))}
-                        label="New Owner"
-                        size="small"
-                      >
-                        {availableAdmins.map((admin) => (
-                          <MenuItem key={admin.id} value={admin.id}>
-                            {admin.first_name && admin.last_name
-                              ? `${admin.first_name} ${admin.last_name} (${admin.email})`
-                              : admin.email
-                            }
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Box>
-                )}
-              </ListItem>
-            ))}
-          </List>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOwnershipTransferDialogOpen(false)}>
-            Cancel
-          </Button>
-          <Button
-            onClick={completeOwnershipTransfer}
-            color="error"
-            variant="contained"
-            disabled={ownedLocations.some(loc => !selectedOwners[loc.id] && !locationsToDelete[loc.id])}
-          >
-            Complete User Deletion
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Email Dialog */}
-      <Dialog open={emailDialogOpen} onClose={() => setEmailDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>📧 Send Email</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Sending email to: <strong>{emailRecipient?.email}</strong>
-          </Typography>
-          
-          <TextField
-            autoFocus
-            label="Subject"
-            fullWidth
-            value={emailSubject}
-            onChange={(e) => setEmailSubject(e.target.value)}
-            placeholder="Enter email subject"
-            sx={{ mb: 2 }}
-          />
-          
-          <TextField
-            label="Message"
-            fullWidth
-            multiline
-            rows={6}
-            value={emailMessage}
-            onChange={(e) => setEmailMessage(e.target.value)}
-            placeholder="Enter your message"
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setEmailDialogOpen(false)}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={sendEmail} 
-            color="primary" 
-            variant="contained"
-            disabled={!emailSubject.trim() || !emailMessage.trim()}
-            startIcon={<Email />}
-          >
-            Send Email
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Invitation Dialog */}
-      <Dialog 
-        open={invitationDialogOpen} 
-        onClose={() => {
-          setInvitationDialogOpen(false)
-          setInviteEmail('')
-          setBulkEmails('')
-          setSelectedLocationId(null)
-          setBulkInviteMode(false)
-          setBulkInviteResults([])
+        onPromoteToAdmin={() => {
+          if (!selectedUser) return
+          handleMenuClose()
+          const userName = `${selectedUser.first_name || ''} ${selectedUser.last_name || ''}`.trim() || selectedUser.email
+          updateUserRole(selectedUser.id, 'admin', userName)
         }}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>
-          📧 Send Location Invitation{bulkInviteMode ? 's (Bulk Mode)' : ''}
-        </DialogTitle>
-        <form onSubmit={sendInvitation}>
-          <DialogContent>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="body2" color="text.secondary">
-                {bulkInviteMode 
-                  ? 'Send invitations to multiple users at once.'
-                  : 'Send an invitation to add a new user to a specific location.'
-                }
-              </Typography>
-              <Button
-                size="small"
-                variant="outlined"
-                onClick={() => {
-                  setBulkInviteMode(!bulkInviteMode)
-                  setInviteEmail('')
-                  setBulkEmails('')
-                  setBulkInviteResults([])
-                }}
-              >
-                {bulkInviteMode ? 'Single Mode' : 'Bulk Mode'}
-              </Button>
-            </Box>
-            
-            {bulkInviteMode ? (
-              <TextField
-                label="Email Addresses"
-                multiline
-                rows={6}
-                value={bulkEmails}
-                onChange={(e) => setBulkEmails(e.target.value)}
-                fullWidth
-                required
-                sx={{ mb: 3 }}
-                placeholder="user1@example.com, user2@example.com&#10;user3@example.com&#10;user4@example.com"
-                helperText="Separate multiple emails with commas, semicolons, or new lines"
-              />
-            ) : (
-              <TextField
-                label="Email Address"
-                type="email"
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-                fullWidth
-                required
-                sx={{ mb: 3 }}
-                placeholder="user@example.com"
-              />
-            )}
+        onDemoteToUser={() => {
+          if (!selectedUser) return
+          handleMenuClose()
+          const userName = `${selectedUser.first_name || ''} ${selectedUser.last_name || ''}`.trim() || selectedUser.email
+          updateUserRole(selectedUser.id, 'user', userName)
+        }}
+        onPromoteToSuperAdmin={() => {
+          handleMenuClose()
+          setUserForRoleChange(selectedUser)
+          setRolePromotionDialogOpen(true)
+        }}
+        onManageLocations={() => {
+          if (!selectedUser) return
+          handleMenuClose()
+          setUserForLocationAssignment(selectedUser)
+          loadUserAssignedLocations(selectedUser.id)
+          loadUserGlobalPermissions(selectedUser.id)
+          setLocationAssignmentDialogOpen(true)
+        }}
+        onToggleActiveStatus={() => {
+          if (!selectedUser) return
+          handleMenuClose()
+          toggleUserActiveStatus(selectedUser)
+        }}
+        onEmail={() => {
+          handleMenuClose()
+          setEmailRecipient(selectedUser)
+          setEmailDialogOpen(true)
+        }}
+        onDelete={() => {
+          if (!selectedUser) return
+          handleMenuClose()
+          handleDeleteUser(selectedUser)
+        }}
+      />
 
-            <FormControl fullWidth required sx={{ mb: 2 }}>
-              <InputLabel>Select Location</InputLabel>
-              <Select
-                value={selectedLocationId || ''}
-                onChange={(e) => setSelectedLocationId(Number(e.target.value))}
-                label="Select Location"
-              >
-                {availableLocations.map((location) => (
-                  <MenuItem key={location.id} value={location.id}>
-                    <Box>
-                      <Typography variant="body1" fontWeight="medium">
-                        {location.name}
-                      </Typography>
-                      {location.description && (
-                        <Typography variant="body2" color="text.secondary">
-                          {location.description}
-                        </Typography>
-                      )}
-                    </Box>
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+      <OwnershipTransferDialog
+        open={ownershipTransferDialogOpen}
+        onClose={() => setOwnershipTransferDialogOpen(false)}
+        userToDelete={userToDelete}
+        ownedLocations={ownedLocations}
+        onSuccess={handleOwnershipTransferSuccess}
+      />
 
-            <TextField
-              label="Personal Message (Optional)"
-              multiline
-              rows={3}
-              value={inviteCustomMessage}
-              onChange={(e) => setInviteCustomMessage(e.target.value)}
-              fullWidth
-              sx={{ mb: 2 }}
-              placeholder="Add a personal message to include with the invitation..."
-              helperText="This message will be included in the invitation email to make it more personal"
-            />
+      <EmailDialog
+        open={emailDialogOpen}
+        onClose={() => setEmailDialogOpen(false)}
+        recipient={emailRecipient}
+      />
 
-            {/* Bulk invitation results */}
-            {bulkInviteResults.length > 0 && (
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="h6" gutterBottom>
-                  Results:
-                </Typography>
-                <List dense>
-                  {bulkInviteResults.map((result, index) => (
-                    <ListItem key={index} sx={{ py: 0.5 }}>
-                      <ListItemText
-                        primary={result.email}
-                        secondary={result.success ? <><CheckCircle sx={{ fontSize: 'inherit', verticalAlign: 'middle', mr: 0.5 }} /> Sent successfully</> : <>❌ {result.error}</>}
-                        secondaryTypographyProps={{
-                          color: result.success ? 'success.main' : 'error.main'
-                        }}
-                      />
-                    </ListItem>
-                  ))}
-                </List>
-              </Box>
-            )}
-          </DialogContent>
-          <DialogActions>
-            <Button 
-              onClick={() => {
-                setInvitationDialogOpen(false)
-                setInviteEmail('')
-                setInviteCustomMessage('')
-                setBulkEmails('')
-                setSelectedLocationId(null)
-                setBulkInviteMode(false)
-                setBulkInviteResults([])
-              }}
-            >
-              Cancel
-            </Button>
-            <Button 
-              type="submit" 
-              variant="contained"
-              disabled={
-                bulkInviteLoading ||
-                !selectedLocationId ||
-                (bulkInviteMode ? !bulkEmails.trim() : !inviteEmail.trim())
-              }
-              startIcon={bulkInviteLoading ? <CircularProgress size={16} /> : undefined}
-            >
-              {bulkInviteLoading 
-                ? 'Sending...' 
-                : bulkInviteMode 
-                  ? 'Send Bulk Invitations' 
-                  : 'Send Invitation'
-              }
-            </Button>
-          </DialogActions>
-        </form>
-      </Dialog>
+      <RolePromotionDialog
+        open={rolePromotionDialogOpen}
+        onClose={() => setRolePromotionDialogOpen(false)}
+        user={userForRoleChange}
+        onConfirm={async () => {
+          if (!userForRoleChange) return
+          setRolePromotionDialogOpen(false)
+          await promoteToSuperAdmin(userForRoleChange)
+          setUserForRoleChange(null)
+        }}
+      />
 
-      {/* Modal Components */}
+      <LocationAssignmentDialog
+        open={locationAssignmentDialogOpen}
+        onClose={() => setLocationAssignmentDialogOpen(false)}
+        user={userForLocationAssignment}
+        assignedLocations={userAssignedLocations}
+        availableLocations={availableLocationsForAssignment}
+        globalPermissions={userGlobalPermissions}
+        onAssignLocation={(locationId) => {
+          if (!userForLocationAssignment) return
+          assignLocationToUser(userForLocationAssignment.id, locationId, (locationNames, locationsCount) => {
+            updateUserLocations(userForLocationAssignment.id, locationNames, locationsCount)
+          })
+        }}
+        onUnassignLocation={(locationId) => {
+          if (!userForLocationAssignment) return
+          unassignLocationFromUser(userForLocationAssignment.id, locationId, (locationNames, locationsCount) => {
+            updateUserLocations(userForLocationAssignment.id, locationNames, locationsCount)
+          })
+        }}
+        onTogglePermission={(permission, currentlyHas) => {
+          if (!userForLocationAssignment) return
+          toggleGlobalPermission(userForLocationAssignment.id, permission, currentlyHas)
+        }}
+      />
+
       {modalState.type === 'confirm' && (
         <ConfirmationModal
           isOpen={modalState.isOpen}
@@ -2060,7 +284,7 @@ export default function AdminUserManager() {
           loading={modalState.loading}
         />
       )}
-      
+
       {modalState.type === 'alert' && (
         <AlertModal
           isOpen={modalState.isOpen}
@@ -2071,187 +295,6 @@ export default function AdminUserManager() {
           buttonText={modalState.options.buttonText}
         />
       )}
-
-      {/* Role Promotion Dialog */}
-      <Dialog 
-        open={rolePromotionDialogOpen} 
-        onClose={() => setRolePromotionDialogOpen(false)} 
-        maxWidth="sm" 
-        fullWidth
-      >
-        <DialogTitle>🚀 Promote to Super Admin</DialogTitle>
-        <DialogContent>
-          <Typography variant="body1" paragraph>
-            Are you sure you want to promote <strong>{userForRoleChange?.first_name || userForRoleChange?.email}</strong> to Super Admin?
-          </Typography>
-          <Typography variant="body2" color="text.secondary" paragraph>
-            Super Admins have full system privileges including:
-          </Typography>
-          <Box component="ul" sx={{ pl: 2, mb: 2 }}>
-            <Typography component="li" variant="body2">Global access to all locations and books</Typography>
-            <Typography component="li" variant="body2">User role management and promotion</Typography>
-            <Typography component="li" variant="body2">Location assignment to regular admins</Typography>
-            <Typography component="li" variant="body2">System-wide analytics and administration</Typography>
-          </Box>
-          <Alert severity="warning" sx={{ mt: 2 }}>
-            This action grants the highest level of administrative privileges. Only promote trusted users.
-          </Alert>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setRolePromotionDialogOpen(false)}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={promoteToSuperAdmin}
-            color="error" 
-            variant="contained"
-          >
-            Promote to Super Admin
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Location Assignment Dialog */}
-      <Dialog 
-        open={locationAssignmentDialogOpen} 
-        onClose={() => setLocationAssignmentDialogOpen(false)} 
-        maxWidth="md" 
-        fullWidth
-      >
-        <DialogTitle><LocationOn sx={{ mr: 1, verticalAlign: 'middle' }} /> Manage Location Access</DialogTitle>
-        <DialogContent>
-          <Typography variant="body1" paragraph>
-            Managing location access for <strong>{userForLocationAssignment?.first_name || userForLocationAssignment?.email}</strong>
-          </Typography>
-          
-          {userAssignedLocations.length > 0 && (
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Currently Assigned Locations:
-              </Typography>
-              <List dense>
-                {userAssignedLocations.map((location) => (
-                  <ListItem 
-                    key={location.id}
-                    sx={{ 
-                      border: 1, 
-                      borderColor: 'divider', 
-                      borderRadius: 1, 
-                      mb: 1,
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center'
-                    }}
-                  >
-                    <ListItemText 
-                      primary={location.name}
-                      secondary={location.description}
-                    />
-                    <Button
-                      size="small"
-                      color="error"
-                      variant="outlined"
-                      onClick={() => unassignLocationFromUser(location.id)}
-                    >
-                      Remove
-                    </Button>
-                  </ListItem>
-                ))}
-              </List>
-            </Box>
-          )}
-
-          {/* Global Permissions Section */}
-          {userAssignedLocations.length > 1 && (
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Cross-Location Permissions:
-              </Typography>
-              <Typography variant="body2" color="text.secondary" paragraph>
-                These permissions apply across all locations this user has access to.
-              </Typography>
-              <Box sx={{ 
-                border: 1, 
-                borderColor: 'divider', 
-                borderRadius: 1, 
-                p: 2 
-              }}>
-                <Box sx={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  alignItems: 'center',
-                  mb: 1
-                }}>
-                  <Box>
-                    <Typography variant="body1" fontWeight="medium">
-                      Move Books Between Locations
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Allows this user to move books from shelves in one location to shelves in another location they have access to.
-                    </Typography>
-                  </Box>
-                  <Switch
-                    checked={userGlobalPermissions.includes('can_move_books_between_locations')}
-                    onChange={() => toggleGlobalPermission(
-                      'can_move_books_between_locations',
-                      userGlobalPermissions.includes('can_move_books_between_locations')
-                    )}
-                    color="primary"
-                  />
-                </Box>
-              </Box>
-            </Box>
-          )}
-
-          {availableLocationsForAssignment.length > 0 && (
-            <Box>
-              <Typography variant="h6" gutterBottom>
-                Available Locations to Assign:
-              </Typography>
-              <List dense>
-                {availableLocationsForAssignment.map((location) => (
-                  <ListItem 
-                    key={location.id}
-                    sx={{ 
-                      border: 1, 
-                      borderColor: 'divider', 
-                      borderRadius: 1, 
-                      mb: 1,
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center'
-                    }}
-                  >
-                    <ListItemText 
-                      primary={location.name}
-                      secondary={location.description}
-                    />
-                    <Button
-                      size="small"
-                      color="primary"
-                      variant="contained"
-                      onClick={() => assignLocationToUser(location.id)}
-                    >
-                      Assign
-                    </Button>
-                  </ListItem>
-                ))}
-              </List>
-            </Box>
-          )}
-
-          {userAssignedLocations.length === 0 && availableLocationsForAssignment.length === 0 && (
-            <Alert severity="info">
-              This user has access to all available locations or no locations are available for assignment.
-            </Alert>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setLocationAssignmentDialogOpen(false)}>
-            Close
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   )
 }
