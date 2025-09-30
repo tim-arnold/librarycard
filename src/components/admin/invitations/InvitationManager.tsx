@@ -18,10 +18,12 @@ import { getInvitationAnalytics, filterAndSortInvitations } from './utils'
 
 interface InvitationManagerProps {
   visible: boolean
+  confirmAsync: (options: any, asyncAction: () => Promise<void>) => Promise<boolean>
+  alert: (options: any) => Promise<void>
   onLoad?: () => void
 }
 
-export default function InvitationManager({ visible, onLoad }: InvitationManagerProps) {
+export default function InvitationManager({ visible, confirmAsync, alert, onLoad }: InvitationManagerProps) {
   const {
     invitations,
     availableLocations,
@@ -31,7 +33,7 @@ export default function InvitationManager({ visible, onLoad }: InvitationManager
     sendSingleInvitation,
     sendBulkInvitations,
     revokeInvitation,
-  } = useInvitations()
+  } = useInvitations({ confirmAsync, alert })
 
   const [invitationSearchTerm, setInvitationSearchTerm] = useState('')
   const [invitationStatusFilter, setInvitationStatusFilter] = useState<string>('all')

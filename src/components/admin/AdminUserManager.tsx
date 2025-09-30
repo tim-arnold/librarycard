@@ -28,7 +28,7 @@ import type { AdminUser } from './shared/types'
 
 export default function AdminUserManager() {
   const { data: session } = useSession()
-  const { modalState, closeModal } = useModal()
+  const { modalState, confirmAsync, alert, closeModal } = useModal()
   const {
     users,
     loading,
@@ -42,7 +42,7 @@ export default function AdminUserManager() {
     deleteUser,
     updateUserLocations,
     setUsers,
-  } = useUserManagement()
+  } = useUserManagement({ confirmAsync, alert })
 
   const {
     userAssignedLocations,
@@ -53,7 +53,7 @@ export default function AdminUserManager() {
     toggleGlobalPermission,
     assignLocationToUser,
     unassignLocationFromUser,
-  } = useLocationAssignment()
+  } = useLocationAssignment({ alert })
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null)
@@ -170,7 +170,7 @@ export default function AdminUserManager() {
       </Card>
 
       <div ref={invitationsSectionRef}>
-        <InvitationManager visible={showInvitations} />
+        <InvitationManager visible={showInvitations} confirmAsync={confirmAsync} alert={alert} />
       </div>
 
       <UserActionsMenu
@@ -225,6 +225,8 @@ export default function AdminUserManager() {
         onClose={() => setOwnershipTransferDialogOpen(false)}
         userToDelete={userToDelete}
         ownedLocations={ownedLocations}
+        confirmAsync={confirmAsync}
+        alert={alert}
         onSuccess={handleOwnershipTransferSuccess}
       />
 
@@ -232,6 +234,7 @@ export default function AdminUserManager() {
         open={emailDialogOpen}
         onClose={() => setEmailDialogOpen(false)}
         recipient={emailRecipient}
+        alert={alert}
       />
 
       <RolePromotionDialog

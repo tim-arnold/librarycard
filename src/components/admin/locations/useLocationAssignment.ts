@@ -3,11 +3,13 @@ import { useSession } from 'next-auth/react'
 import { authenticatedApiCall } from '@/lib/api'
 import { getApiBaseUrl } from '@/lib/apiConfig'
 import type { Location } from '../shared/types'
-import { useModal } from '@/hooks/useModal'
 
-export function useLocationAssignment() {
+interface UseLocationAssignmentProps {
+  alert: (options: any) => Promise<void>
+}
+
+export function useLocationAssignment({ alert }: UseLocationAssignmentProps) {
   const { data: session } = useSession()
-  const { alert } = useModal()
   const [userAssignedLocations, setUserAssignedLocations] = useState<Location[]>([])
   const [availableLocationsForAssignment, setAvailableLocationsForAssignment] = useState<Location[]>([])
   const [userGlobalPermissions, setUserGlobalPermissions] = useState<string[]>([])

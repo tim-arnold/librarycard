@@ -20,13 +20,14 @@ import {
 } from '@mui/material'
 import { authenticatedApiCall } from '@/lib/api'
 import { getApiBaseUrl } from '@/lib/apiConfig'
-import { useModal } from '@/hooks/useModal'
 
 interface OwnershipTransferDialogProps {
   open: boolean
   onClose: () => void
   userToDelete: string
   ownedLocations: any[]
+  confirmAsync: (options: any, asyncAction: () => Promise<void>) => Promise<boolean>
+  alert: (options: any) => Promise<void>
   onSuccess: () => void
 }
 
@@ -35,10 +36,11 @@ export default function OwnershipTransferDialog({
   onClose,
   userToDelete,
   ownedLocations,
+  confirmAsync,
+  alert,
   onSuccess,
 }: OwnershipTransferDialogProps) {
   const { data: session } = useSession()
-  const { confirmAsync, alert } = useModal()
   const [selectedOwners, setSelectedOwners] = useState<Record<string, string>>({})
   const [locationsToDelete, setLocationsToDelete] = useState<Record<string, boolean>>({})
   const [availableAdmins, setAvailableAdmins] = useState<any[]>([])
@@ -79,7 +81,7 @@ export default function OwnershipTransferDialog({
     const locationsToTransfer = ownedLocations.filter(loc => selectedOwners[loc.id])
     const locationsToDeleteList = ownedLocations.filter(loc => locationsToDelete[loc.id])
 
-    const confirmed = await confirmAsync(
+    await confirmAsync(
       {
         title: 'Transfer Ownership & Delete User',
         message: `This will:\n\n${locationsToTransfer.length > 0 ? `• Transfer ownership of ${locationsToTransfer.length} location(s) to selected admins\n` : ''}${locationsToDeleteList.length > 0 ? `• Delete ${locationsToDeleteList.length} location(s) and all their books\n` : ''}• Delete the user "${userToDelete}"\n\nBooks added by this user will remain in transferred locations but no longer show the original author. This action cannot be undone!`,
@@ -111,14 +113,6 @@ export default function OwnershipTransferDialog({
         }
       }
     )
-
-    if (!confirmed) {
-      await alert({
-        title: 'Transfer Failed',
-        message: 'Ownership transfer was cancelled.',
-        variant: 'error'
-      })
-    }
   }
 
   return (

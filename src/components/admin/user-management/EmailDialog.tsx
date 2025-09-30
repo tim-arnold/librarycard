@@ -10,16 +10,15 @@ import {
 } from '@mui/material'
 import { Email as EmailIcon } from '@mui/icons-material'
 import type { AdminUser } from '../shared/types'
-import { useModal } from '@/hooks/useModal'
 
 interface EmailDialogProps {
   open: boolean
   onClose: () => void
   recipient: AdminUser | null
+  alert: (options: any) => Promise<void>
 }
 
-export default function EmailDialog({ open, onClose, recipient }: EmailDialogProps) {
-  const { alert } = useModal()
+export default function EmailDialog({ open, onClose, recipient, alert }: EmailDialogProps) {
   const [emailSubject, setEmailSubject] = useState('')
   const [emailMessage, setEmailMessage] = useState('')
 

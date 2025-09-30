@@ -3,11 +3,14 @@ import { useSession } from 'next-auth/react'
 import { authenticatedApiCall } from '@/lib/api'
 import { getApiBaseUrl } from '@/lib/apiConfig'
 import type { LocationInvitation, Location } from '../shared/types'
-import { useModal } from '@/hooks/useModal'
 
-export function useInvitations() {
+interface UseInvitationsProps {
+  confirmAsync: (options: any, asyncAction: () => Promise<void>) => Promise<boolean>
+  alert: (options: any) => Promise<void>
+}
+
+export function useInvitations({ confirmAsync, alert }: UseInvitationsProps) {
   const { data: session } = useSession()
-  const { confirmAsync, alert } = useModal()
   const [invitations, setInvitations] = useState<LocationInvitation[]>([])
   const [availableLocations, setAvailableLocations] = useState<Location[]>([])
   const [invitationsLoading, setInvitationsLoading] = useState(false)
@@ -199,7 +202,7 @@ export function useInvitations() {
   }
 
   const revokeInvitation = async (invitationId: number, invitedEmail: string) => {
-    const confirmed = await confirmAsync(
+    await confirmAsync(
       {
         title: 'Revoke Invitation',
         message: `Are you sure you want to revoke the invitation for ${invitedEmail}? This action cannot be undone.`,
@@ -226,14 +229,6 @@ export function useInvitations() {
         }
       }
     )
-
-    if (!confirmed) {
-      await alert({
-        title: 'Revoke Failed',
-        message: 'Failed to revoke the invitation. Please try again.',
-        variant: 'error'
-      })
-    }
   }
 
   return {

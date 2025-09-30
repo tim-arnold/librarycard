@@ -3,11 +3,14 @@ import { useSession } from 'next-auth/react'
 import { authenticatedApiCall } from '@/lib/api'
 import { getApiBaseUrl } from '@/lib/apiConfig'
 import type { AdminUser } from '../shared/types'
-import { useModal } from '@/hooks/useModal'
 
-export function useUserManagement() {
+interface UseUserManagementProps {
+  confirmAsync: (options: any, asyncAction: () => Promise<void>) => Promise<boolean>
+  alert: (options: any) => Promise<void>
+}
+
+export function useUserManagement({ confirmAsync, alert }: UseUserManagementProps) {
   const { data: session } = useSession()
-  const { confirmAsync, alert } = useModal()
   const [users, setUsers] = useState<AdminUser[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -64,7 +67,7 @@ export function useUserManagement() {
     const action = newStatus ? 'enable' : 'disable'
     const userName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email
 
-    const confirmed = await confirmAsync(
+    await confirmAsync(
       {
         title: `${action === 'enable' ? 'Enable' : 'Disable'} User Account`,
         message: `Are you sure you want to ${action} ${userName}'s account? ${
@@ -94,18 +97,10 @@ export function useUserManagement() {
         }
       }
     )
-
-    if (!confirmed) {
-      await alert({
-        title: 'Update Failed',
-        message: 'Failed to update user status. Please try again.',
-        variant: 'error'
-      })
-    }
   }
 
   const updateUserRole = async (userId: string, newRole: 'admin' | 'user', userName: string) => {
-    const confirmed = await confirmAsync(
+    await confirmAsync(
       {
         title: `Change User Role`,
         message: `Are you sure you want to change ${userName}'s role to ${newRole}? ${
@@ -135,14 +130,6 @@ export function useUserManagement() {
         }
       }
     )
-
-    if (!confirmed) {
-      await alert({
-        title: 'Update Failed',
-        message: 'Failed to update user role. Please try again.',
-        variant: 'error'
-      })
-    }
   }
 
   const promoteToSuperAdmin = async (user: AdminUser) => {
