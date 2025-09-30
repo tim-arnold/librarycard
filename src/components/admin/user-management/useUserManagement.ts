@@ -86,11 +86,6 @@ export function useUserManagement({ confirmAsync, alert }: UseUserManagementProp
 
         if (response.ok) {
           await loadUsers()
-          await alert({
-            title: 'Status Updated',
-            message: `${userName}'s account has been ${action}d.`,
-            variant: 'success'
-          })
         } else {
           const errorData = await response.json()
           throw new Error(errorData.error || 'Failed to update user status')

@@ -31,4 +31,19 @@ export interface Location {
   id: number
   name: string
   description?: string
+  owner_id: string
+  created_at: string
+  single_shelf_location?: boolean
+  activity_visibility?: 'private' | 'public'
+  book_count?: number
+  shelf_count?: number
+  owner_name?: string
+}
+
+export interface Shelf {
+  id: number
+  name: string
+  location_id: number
+  created_at: string
+  book_count?: number
 }
