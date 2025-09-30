@@ -284,8 +284,8 @@ export async function verifyCredentials(request: Request, env: Env, corsHeaders:
   
   const user = await env.DB.prepare(`
     SELECT id, email, first_name, last_name, password_hash, email_verified, auth_provider, totp_enabled
-    FROM users 
-    WHERE email = ? AND auth_provider = 'email'
+    FROM users
+    WHERE email = ? AND auth_provider = 'email' AND (is_active IS NULL OR is_active = TRUE)
   `).bind(email).first();
   
   if (!user) {

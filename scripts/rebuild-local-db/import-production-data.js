@@ -112,8 +112,48 @@ class ProductionDataImporter {
     this.executeLocalD1Command(createTableSQL);
   }
 
+  applySchema() {
+    const schemaPath = path.join(__dirname, '../../schema.sql');
+
+    if (!existsSync(schemaPath)) {
+      throw new Error(`Schema file not found: ${schemaPath}`);
+    }
+
+    console.log('📋 Applying database schema from schema.sql...');
+    console.log(`   Source: ${schemaPath}`);
+
+    const schemaSQL = readFileSync(schemaPath, 'utf8');
+
+    // Split schema into individual statements (separated by semicolons)
+    const statements = schemaSQL
+      .split(';')
+      .map(stmt => stmt.trim())
+      .filter(stmt => stmt.length > 0 && !stmt.startsWith('--'));
+
+    console.log(`   Executing ${statements.length} schema statements...`);
+
+    let successCount = 0;
+    for (const statement of statements) {
+      try {
+        this.executeLocalD1Command(statement + ';');
+        successCount++;
+      } catch (error) {
+        // Some statements might fail if tables already exist, that's OK
+        if (!error.message.includes('already exists')) {
+          console.log(`   ⚠️  Statement failed: ${error.message}`);
+        }
+      }
+    }
+
+    console.log(`   ✅ Applied ${successCount}/${statements.length} schema statements`);
+    console.log('');
+  }
+
   async importProductionData() {
-    // Load backup data
+    // Step 1: Apply schema first
+    this.applySchema();
+
+    // Step 2: Load backup data
     if (!existsSync(BACKUP_FILE)) {
       throw new Error(`Backup file not found: ${BACKUP_FILE}`);
     }
