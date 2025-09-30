@@ -433,20 +433,13 @@ export async function cleanupUser(request: Request, userId: string, env: Env, co
       }
     }
 
-    // Skip ALL cleanup operations to isolate the issue
-    // Let's see if the error is in the final user deletion or somewhere else
-
-    // 13. Skip all foreign key problematic cleanups for testing
-    // Just try to delete the user directly to see what specific constraint fails
-
-    // 14. Soft delete user instead of hard delete to avoid foreign key issues
-    // Mark user as disabled/archived instead of deleting
+    // 4. After migrations are run, foreign keys have CASCADE/SET NULL
+    // We can now safely delete the user - dependent data will be handled automatically:
+    // - CASCADE: location_members, user permissions will be deleted
+    // - SET NULL: checkout history, book images, approval requests will be preserved but anonymized
+    // - RESTRICT: locations.owner_id (already handled via transfer/delete above)
     await env.DB.prepare(`
-      UPDATE users SET
-        user_role = 'disabled',
-        email_verified = 0,
-        updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
+      DELETE FROM users WHERE id = ?
     `).bind(userIdToDelete).run();
 
     // Invalidate admin cache since user list has changed
@@ -494,6 +487,70 @@ export async function cleanupUser(request: Request, userId: string, env: Env, co
   }
 }
 
+// Admin-only user enable/disable functions (separate from deletion)
+export async function toggleUserActiveStatus(request: Request, targetUserId: string, userId: string, env: Env, corsHeaders: Record<string, string>) {
+  // Check if user is super admin
+  if (!(await isUserSuperAdmin(userId, env))) {
+    return new Response(JSON.stringify({ error: 'Super admin privileges required' }), {
+      status: 403,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  try {
+    const { is_active }: { is_active: boolean } = await request.json();
+
+    // Prevent user from disabling themselves
+    if (targetUserId === userId) {
+      return new Response(JSON.stringify({ error: 'Cannot disable your own account' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Get current user info
+    const targetUser = await env.DB.prepare(`
+      SELECT email, first_name, last_name, is_active FROM users WHERE id = ?
+    `).bind(targetUserId).first();
+
+    if (!targetUser) {
+      return new Response(JSON.stringify({ error: 'User not found' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const userData = targetUser as any;
+
+    // Update user active status
+    await env.DB.prepare(`
+      UPDATE users SET is_active = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+    `).bind(is_active, targetUserId).run();
+
+    // Invalidate admin cache
+    const { invalidateAllAdminAnalytics } = await import('./cached');
+    await invalidateAllAdminAnalytics(env);
+
+    const action = is_active ? 'enabled' : 'disabled';
+    const userName = `${userData.first_name || ''} ${userData.last_name || ''}`.trim() || userData.email;
+
+    return new Response(JSON.stringify({
+      message: `User ${userName} has been ${action}`,
+      user_id: targetUserId,
+      is_active
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (error) {
+    console.error('Error toggling user active status:', error);
+    return new Response(JSON.stringify({ error: 'Failed to update user status' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+}
+
 // Admin-only debug function to list all users
 export async function debugListUsers(userId: string, env: Env, corsHeaders: Record<string, string>) {
   // Check if user is super admin (global user listing is super admin only)
@@ -505,11 +562,10 @@ export async function debugListUsers(userId: string, env: Env, corsHeaders: Reco
   }
 
   try {
-    // Get all active users (exclude disabled/archived users)
+    // Get all users (now including is_active status)
     const users = await env.DB.prepare(`
-      SELECT id, email, first_name, last_name, auth_provider, email_verified, user_role, created_at
+      SELECT id, email, first_name, last_name, auth_provider, email_verified, user_role, is_active, created_at
       FROM users
-      WHERE user_role != 'disabled'
       ORDER BY created_at DESC
     `).all();
 

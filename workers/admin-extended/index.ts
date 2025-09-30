@@ -378,8 +378,8 @@ export async function getAdminUsers(userId: string, env: Env, corsHeaders: Recor
     if (isSuperAdmin) {
       // Super admins can see all users globally, except other super admins
       users = await env.DB.prepare(`
-        SELECT u.id, u.email, u.first_name, u.last_name, u.auth_provider, 
-               u.email_verified, u.user_role, u.created_at,
+        SELECT u.id, u.email, u.first_name, u.last_name, u.auth_provider,
+               u.email_verified, u.user_role, u.is_active, u.created_at,
                COUNT(DISTINCT b.id) as books_added,
                COUNT(DISTINCT COALESCE(lm.location_id, l.id)) as locations_joined,
                MAX(b.created_at) as last_book_added,
@@ -396,8 +396,8 @@ export async function getAdminUsers(userId: string, env: Env, corsHeaders: Recor
     } else {
       // Regular admins can only see users from their assigned locations
       users = await env.DB.prepare(`
-        SELECT DISTINCT u.id, u.email, u.first_name, u.last_name, u.auth_provider, 
-               u.email_verified, u.user_role, u.created_at,
+        SELECT DISTINCT u.id, u.email, u.first_name, u.last_name, u.auth_provider,
+               u.email_verified, u.user_role, u.is_active, u.created_at,
                COUNT(DISTINCT b.id) as books_added,
                COUNT(DISTINCT COALESCE(lm_user.location_id, l_user.id)) as locations_joined,
                MAX(b.created_at) as last_book_added,

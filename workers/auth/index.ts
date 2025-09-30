@@ -19,28 +19,37 @@ export async function getUserFromRequest(request: Request, env: Env): Promise<st
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return null;
   }
-  
+
   const token = authHeader.substring(7);
-  
+
   // First try to verify as JWT
   const jwtPayload = await verifyJWT(token, env);
   if (jwtPayload) {
-    return jwtPayload.userId;
-  }
-  
-  // Fallback: If token looks like an email, look up the user ID (backward compatibility)
-  if (token.includes('@')) {
+    // Check if user is still active in database
     try {
       const user = await env.DB.prepare(`
-        SELECT id FROM users WHERE email = ?
-      `).bind(token).first();
-      
+        SELECT id FROM users WHERE id = ? AND (is_active IS NULL OR is_active = TRUE)
+      `).bind(jwtPayload.userId).first();
+
       return user ? (user as UserIdRow).id : null;
     } catch (error) {
       return null;
     }
   }
-  
+
+  // Fallback: If token looks like an email, look up the user ID (backward compatibility)
+  if (token.includes('@')) {
+    try {
+      const user = await env.DB.prepare(`
+        SELECT id FROM users WHERE email = ? AND (is_active IS NULL OR is_active = TRUE)
+      `).bind(token).first();
+
+      return user ? (user as UserIdRow).id : null;
+    } catch (error) {
+      return null;
+    }
+  }
+
   // Last fallback: assume it's already a user ID
   return token;
 }
