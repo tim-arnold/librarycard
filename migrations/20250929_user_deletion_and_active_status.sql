@@ -8,12 +8,8 @@
 -- Add is_active column for enable/disable functionality (separate from deletion)
 -- ============================================================================
 
--- NOTE: is_active column addition is commented out for staging recovery
--- The column was partially added in a previous failed migration attempt
--- If running on a fresh database, uncomment the ALTER TABLE line below
-
 -- Add is_active column to users table (default TRUE for existing users)
--- ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT TRUE;
+ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT TRUE;
 
 -- Create index for filtering active users (IF NOT EXISTS handles idempotency)
 CREATE INDEX IF NOT EXISTS idx_users_is_active ON users(is_active);

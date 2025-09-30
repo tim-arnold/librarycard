@@ -333,7 +333,7 @@ export class TOTPService {
   async getUserTOTPSecret(userId: string): Promise<string | null> {
     try {
       const result = await this.env.DB.prepare(`
-        SELECT totp_secret FROM users WHERE id = ? AND totp_enabled = TRUE
+        SELECT totp_secret FROM users WHERE id = ? AND totp_enabled = TRUE AND (is_active IS NULL OR is_active = TRUE)
       `).bind(userId).first() as UserTotpRow | null;
 
       return result?.totp_secret || null;

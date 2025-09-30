@@ -74,6 +74,7 @@ interface AdminUser {
   auth_provider: string
   email_verified: boolean
   user_role: 'super_admin' | 'admin' | 'user'
+  is_active: boolean
   created_at: string
   books_added: number
   locations_joined: number
@@ -436,13 +437,58 @@ export default function AdminUserManager() {
     }
   }
 
+  const toggleUserActiveStatus = async (user: AdminUser) => {
+    const newStatus = !user.is_active
+    const action = newStatus ? 'enable' : 'disable'
+    const userName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email
+
+    const confirmed = await confirmAsync(
+      {
+        title: `${action === 'enable' ? 'Enable' : 'Disable'} User Account`,
+        message: `Are you sure you want to ${action} ${userName}'s account? ${
+          action === 'disable'
+            ? 'They will not be able to log in until re-enabled.'
+            : 'They will be able to log in again.'
+        }`,
+        confirmText: `${action === 'enable' ? 'Enable' : 'Disable'} Account`,
+        variant: action === 'disable' ? 'warning' : 'info'
+      },
+      async () => {
+        const response = await authenticatedApiCall(`/api/admin/users/${user.id}/status`, {
+          method: 'PUT',
+          body: JSON.stringify({ is_active: newStatus })
+        })
+
+        if (response.ok) {
+          await loadUsers()
+          await alert({
+            title: 'Status Updated',
+            message: `${userName}'s account has been ${action}d.`,
+            variant: 'success'
+          })
+        } else {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Failed to update user status')
+        }
+      }
+    )
+
+    if (!confirmed) {
+      await alert({
+        title: 'Update Failed',
+        message: 'Failed to update user status. Please try again.',
+        variant: 'error'
+      })
+    }
+  }
+
   const updateUserRole = async (userId: string, newRole: 'admin' | 'user', userName: string) => {
     const confirmed = await confirmAsync(
       {
         title: `Change User Role`,
         message: `Are you sure you want to change ${userName}'s role to ${newRole}? ${
-          newRole === 'admin' 
-            ? 'This will give them full administrative privileges.' 
+          newRole === 'admin'
+            ? 'This will give them full administrative privileges.'
             : 'This will remove their administrative privileges.'
         }`,
         confirmText: `Change to ${newRole}`,
@@ -1236,6 +1282,9 @@ export default function AdminUserManager() {
                       <TableCell>
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                           {getRoleChip(user.user_role, user.email_verified)}
+                          {!user.is_active && (
+                            <Chip label="Disabled" color="error" size="small" variant="outlined" />
+                          )}
                           {isCurrentUser && (
                             <Chip label="You" color="secondary" size="small" variant="outlined" />
                           )}
@@ -1612,9 +1661,22 @@ export default function AdminUserManager() {
               </MenuItem>
             )}
             
+            {/* Enable/Disable user action - Super admin only, can't disable yourself */}
+            {isSuperAdmin(currentUserRole) && selectedUser && selectedUser.email !== session?.user?.email && (
+              <MenuItem
+                onClick={() => {
+                  handleMenuClose()
+                  toggleUserActiveStatus(selectedUser)
+                }}
+              >
+                <Switch sx={{ mr: 1 }} />
+                {selectedUser.is_active ? 'Disable Account' : 'Enable Account'}
+              </MenuItem>
+            )}
+
             {/* Email action for all users */}
             {selectedUser && (
-              <MenuItem 
+              <MenuItem
                 onClick={() => {
                   handleMenuClose()
                   setEmailRecipient(selectedUser)
@@ -1627,10 +1689,10 @@ export default function AdminUserManager() {
                 Email
               </MenuItem>
             )}
-            
+
             {/* Delete action - not available for super admins when viewed by regular admins */}
             {selectedUser && selectedUser.email !== session?.user?.email && !(selectedUser.user_role === 'super_admin' && !isSuperAdmin(currentUserRole)) && (
-              <MenuItem 
+              <MenuItem
                 onClick={() => {
                   handleMenuClose()
                   handleDeleteUser(selectedUser)
