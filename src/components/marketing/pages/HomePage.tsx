@@ -11,13 +11,16 @@ function BetaProgramSection() {
   return (
     <Section background="white">
       <Container>
-        <div 
+        <Heading level="2" style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0 }}>
+          About LibraryCard
+        </Heading>
+        <div
           className="marketing-grid marketing-grid-cols-1 marketing-grid-lg-cols-2 marketing-gap-16"
           style={{ alignItems: 'center' }}
         >
           {/* What we're building */}
           <div>
-            <Heading level="2">
+            <Heading level="3">
               What We're Building Together
             </Heading>
             <div style={{ marginTop: 'var(--marketing-spacing-6)' }}>
@@ -45,7 +48,7 @@ function BetaProgramSection() {
 
           {/* Beta program */}
           <div>
-            <Heading level="2">
+            <Heading level="3">
               Join Our <Highlight>Beta Program</Highlight>
             </Heading>
             <div style={{ marginTop: 'var(--marketing-spacing-6)' }}>
@@ -130,7 +133,7 @@ function UseCasesSection() {
                 border: '1px solid var(--marketing-gray-200)'
               }}
             >
-              <Heading level="4" style={{ marginBottom: 'var(--marketing-spacing-4)' }}>
+              <Heading level="3" style={{ marginBottom: 'var(--marketing-spacing-4)' }}>
                 {useCase.title}
               </Heading>
               <Text 
