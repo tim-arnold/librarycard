@@ -75,25 +75,59 @@ export async function handleExportRequest(
 
   const userIsAdmin = userRecord?.user_role === 'admin' || userRecord?.user_role === 'super_admin';
 
-  if (!userIsAdmin && locationId) {
-    const location = await env.DB.prepare(
-      'SELECT allow_user_exports FROM locations WHERE id = ?'
-    )
-      .bind(locationId)
-      .first() as any;
+  // Get user's accessible locations (owner or member)
+  // Even admins/super_admins only see locations they have explicit access to
+  const userLocationsQuery = `
+    SELECT DISTINCT l.id
+    FROM locations l
+    LEFT JOIN location_members lm ON l.id = lm.location_id
+    WHERE l.owner_id = ? OR lm.user_id = ?
+  `;
 
-    if (!location || !location.allow_user_exports) {
+  const { results: userLocations } = await env.DB.prepare(userLocationsQuery)
+    .bind(userId, userId)
+    .all();
+
+  const accessibleLocationIds = (userLocations as any[]).map((l) => l.id.toString());
+
+  // Validate location access if specific location requested
+  if (locationId && locationId !== 'all') {
+    if (!accessibleLocationIds.includes(locationId)) {
       return new Response(
-        JSON.stringify({ error: 'Export not allowed for this location' }),
+        JSON.stringify({ error: 'You do not have access to this location' }),
         {
           status: 403,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
     }
+
+    // Check export permission for non-admins
+    if (!userIsAdmin) {
+      const location = await env.DB.prepare(
+        'SELECT allow_user_exports FROM locations WHERE id = ?'
+      )
+        .bind(locationId)
+        .first() as any;
+
+      if (!location || !location.allow_user_exports) {
+        return new Response(
+          JSON.stringify({ error: 'Export not allowed for this location' }),
+          {
+            status: 403,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+    }
   }
 
-  const exportData = await generateExportData(env, userId, locationId, userIsAdmin);
+  // Determine which locations to export
+  const exportLocationIds = locationId && locationId !== 'all'
+    ? [locationId]
+    : accessibleLocationIds;
+
+  const exportData = await generateExportData(env, userId, exportLocationIds, userIsAdmin);
 
   if (format === 'csv') {
     const csv = convertToCSV(exportData.books);
@@ -118,15 +152,16 @@ export async function handleExportRequest(
 async function generateExportData(
   env: Env,
   userEmail: string,
-  locationId: string | null,
+  locationIds: string[],
   includeFullData: boolean
 ): Promise<ExportData> {
   let locationFilter = '';
   let params: any[] = [userEmail];
 
-  if (locationId) {
-    locationFilter = 'AND shelves.location_id = ?';
-    params.push(locationId);
+  if (locationIds.length > 0) {
+    const placeholders = locationIds.map(() => '?').join(',');
+    locationFilter = `AND shelves.location_id IN (${placeholders})`;
+    params.push(...locationIds);
   }
 
   const booksQuery = `
@@ -224,7 +259,8 @@ async function generateExportData(
     },
   };
 
-  if (includeFullData) {
+  if (includeFullData && locationIds.length > 0) {
+    const placeholders = locationIds.map(() => '?').join(',');
     const locationsQuery = `
       SELECT
         locations.id,
@@ -232,13 +268,12 @@ async function generateExportData(
         GROUP_CONCAT(shelves.id || ':' || shelves.name) as shelves
       FROM locations
       LEFT JOIN shelves ON locations.id = shelves.location_id
-      WHERE 1=1
-      ${locationId ? 'AND locations.id = ?' : ''}
+      WHERE locations.id IN (${placeholders})
       GROUP BY locations.id
     `;
 
     const { results: locations } = await env.DB.prepare(locationsQuery)
-      .bind(...(locationId ? [locationId] : []))
+      .bind(...locationIds)
       .all();
 
     exportData.locations = (locations as any[]).map((loc) => ({
