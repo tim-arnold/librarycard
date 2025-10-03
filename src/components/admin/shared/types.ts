@@ -35,6 +35,7 @@ export interface Location {
   created_at: string
   single_shelf_location?: boolean
   activity_visibility?: 'private' | 'public'
+  allow_user_exports?: number
   book_count?: number
   shelf_count?: number
   owner_name?: string
