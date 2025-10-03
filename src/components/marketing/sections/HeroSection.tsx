@@ -12,7 +12,7 @@ export default function HeroSection() {
       className="hero-background-section"
       style={{
         position: 'relative',
-        backgroundImage: 'url(/images/hero-bg.jpg)',
+        backgroundImage: 'linear-gradient(hsl(0 0% 0 / .2)), url(/images/hero-bg.jpg)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
@@ -65,6 +65,7 @@ export default function HeroSection() {
               maxWidth: '700px',
               marginLeft: 'auto',
               marginRight: 'auto',
+              fontWeight: 'bold',
               color: 'rgba(255, 255, 255, 0.9)'
             }}
           >
@@ -73,7 +74,7 @@ export default function HeroSection() {
           </Text>
 
           {/* CTA buttons */}
-          <Flex justify="center" gap={4} className="marketing-flex-col marketing-flex-md-row">
+          <Flex justify="center" gap={4} className="marketing-flex-md-row">
             <Button
               href="/auth/signin?register=true"
               variant="primary"
