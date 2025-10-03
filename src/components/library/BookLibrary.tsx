@@ -24,6 +24,7 @@ const GenreEditModal = dynamic(() => import('../modals/GenreEditModal'))
 const CoverSelectionModal = dynamic(() => import('../modals/CoverSelectionModal'))
 const MoreDetailsModal = dynamic(() => import('../modals/MoreDetailsModal'))
 const BookRelocateModal = dynamic(() => import('../modals/BookRelocateModal'))
+const ExportModal = dynamic(() => import('../modals/ExportModal'))
 
 // Conditionally load performance monitor only in development
 const PerformanceMonitor = dynamic(() => import('../dev/PerformanceMonitor'), {
@@ -179,6 +180,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
   const [selectedBookForRating, setSelectedBookForRating] = useState<EnhancedBook | null>(null)
   const [selectedBookForGenreEdit, setSelectedBookForGenreEdit] = useState<EnhancedBook | null>(null)
   const [selectedBookForCoverEdit, setSelectedBookForCoverEdit] = useState<EnhancedBook | null>(null)
+  const [exportModalOpen, setExportModalOpen] = useState(false)
   
   // Mobile sidebar state
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
@@ -540,6 +542,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
           totalBooksCount={books.length}
           onViewModeChange={handleViewModeChange}
           onBooksPerPageChange={handleBooksPerPageChange}
+          onExportClick={() => setExportModalOpen(true)}
         />
 
         {/* Main Content Layout */}
@@ -808,6 +811,14 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
             onClose={() => setSelectedBookForCoverEdit(null)}
             onAnimationStart={handleCoverAnimationStart}
             open={true}
+          />
+        )}
+
+        {currentUserId && (
+          <ExportModal
+            isOpen={exportModalOpen}
+            onClose={() => setExportModalOpen(false)}
+            userEmail={currentUserId}
           />
         )}
       </PageContainer>

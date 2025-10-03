@@ -6,6 +6,7 @@ import { LocationsRouter } from './locations/router';
 import { ProfileRouter } from './profile/router';
 import { SeriesRouter } from './series/router';
 import { handleAppealsRequest } from './appeals';
+import { handleExportRequest } from './export';
 import { getUserFromRequest } from './auth';
 import { RateLimiter } from './auth/rate-limiter';
 import { withGlobalErrorHandling, ErrorCategory, createSecureErrorResponse } from './errors';
@@ -145,6 +146,11 @@ export class MainRouter {
       );
       if (protectedAuthResponse) {
         return protectedAuthResponse;
+      }
+
+      // Export endpoint
+      if (path === '/api/library/export' && method === 'GET') {
+        return await handleExportRequest(request, env, corsHeaders);
       }
 
       // Books endpoints
