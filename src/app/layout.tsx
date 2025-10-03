@@ -38,10 +38,16 @@ export default function RootLayout({
           .marketing-gap-8 { gap: 2rem; }
           .marketing-hidden-mobile { display: none; }
           .marketing-hidden-desktop { display: block; }
+          .header-desktop-only { display: none !important; }
+          .header-mobile-only { display: block !important; }
           @media (min-width: 768px) {
             .marketing-hidden-mobile { display: flex; }
             .marketing-hidden-desktop { display: none; }
             .marketing-flex-md-row { flex-direction: row !important; }
+          }
+          @media (min-width: 1160px) {
+            .header-desktop-only { display: flex !important; }
+            .header-mobile-only { display: none !important; }
           }
         `}} />
         <style dangerouslySetInnerHTML={{ __html: `

@@ -375,7 +375,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="marketing-hidden-mobile" id="main-navigation" tabIndex={-1}>
+          <nav className="header-desktop-only" id="main-navigation" tabIndex={-1}>
             <ul 
               className="marketing-flex marketing-items-center marketing-gap-8"
               style={{ listStyle: 'none', margin: 0, padding: 0 }}
@@ -463,7 +463,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
           </nav>
 
           {/* Desktop User Controls */}
-          <div className="marketing-hidden-mobile marketing-flex marketing-items-center marketing-gap-4">
+          <div className="header-desktop-only marketing-flex marketing-items-center marketing-gap-4">
             {/* Theme Options Menu */}
             <div style={{ position: 'relative' }}>
               <button
@@ -868,7 +868,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
 
           {/* Mobile controls */}
           <div
-            className="marketing-hidden-desktop marketing-flex marketing-items-center marketing-gap-2"
+            className="header-mobile-only marketing-flex marketing-items-center marketing-gap-2"
           >
             {/* Mobile theme button */}
             <button

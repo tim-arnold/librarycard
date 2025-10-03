@@ -51,7 +51,7 @@ export default function MarketingHeader() {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="marketing-hidden-mobile">
+          <nav className="header-desktop-only">
             <ul 
               className="marketing-flex marketing-items-center marketing-gap-8"
               style={{ listStyle: 'none', margin: 0, padding: 0 }}
@@ -82,7 +82,7 @@ export default function MarketingHeader() {
           </nav>
 
           {/* Desktop CTAs */}
-          <div className="marketing-hidden-mobile marketing-flex marketing-items-center marketing-gap-4">
+          <div className="header-desktop-only marketing-flex marketing-items-center marketing-gap-4">
             {/* Light/Dark Mode Toggle - only shown when logged out */}
             {!session && (
               <button
@@ -131,7 +131,7 @@ export default function MarketingHeader() {
 
           {/* Mobile menu button */}
           <button
-            className="marketing-hidden-desktop"
+            className="header-mobile-only"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             style={{
               background: 'none',
@@ -148,8 +148,8 @@ export default function MarketingHeader() {
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <div 
-            className="marketing-hidden-desktop"
+          <div
+            className="header-mobile-only"
             style={{
               borderTop: '1px solid var(--marketing-gray-200)',
               paddingTop: 'var(--marketing-spacing-4)',
