@@ -22,6 +22,28 @@ export default function RootLayout({
         <link rel="preload" href="/fonts/inter-400.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <link rel="preload" href="/fonts/inter-600.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <style dangerouslySetInnerHTML={{ __html: `
+          html { max-width: 100vw; overflow-x: hidden; }
+          body { margin: 0; font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+          .hero-background-section {
+            position: relative;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            min-height: 80vh;
+          }
+          .marketing-text-center { text-align: center; }
+          .marketing-heading-display {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 700;
+            line-height: 1.1;
+            margin: 0;
+          }
+          .marketing-text-lead {
+            font-size: clamp(1.125rem, 2vw, 1.5rem);
+            line-height: 1.6;
+          }
+        `}} />
+        <style dangerouslySetInnerHTML={{ __html: `
           @font-face {
             font-family: 'Inter';
             font-style: normal;
