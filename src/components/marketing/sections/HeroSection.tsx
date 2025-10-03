@@ -18,7 +18,7 @@ export default function HeroSection() {
       }
 
       // Fade out overlay while scrolling
-      setOverlayOpacity(0)
+      setOverlayOpacity(0.2)
 
       // Set timeout to fade back in after scrolling stops
       const timeout = setTimeout(() => {
@@ -45,7 +45,7 @@ export default function HeroSection() {
       className="hero-background-section"
       style={{
         position: 'relative',
-        backgroundImage: 'linear-gradient(hsl(0 0% 0% / .2) 0 0), url(/images/hero-bg.jpg)',
+        backgroundImage: 'url(/images/hero-bg.jpg)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
