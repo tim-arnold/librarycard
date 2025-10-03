@@ -93,12 +93,12 @@ export default function LocationManager() {
   }, [selectedLocation, session])
 
   useEffect(() => {
-    if (locations.length === 0 && userRole === 'super_admin') {
+    if (locations.length === 0 && userRole === 'super_admin' && !loading) {
       setShowCreateForm(true)
     } else if (locations.length > 0 && !selectedLocation) {
       setSelectedLocation(locations[0])
     }
-  }, [locations, userRole])
+  }, [locations, userRole, selectedLocation, loading])
 
   const handleCreateLocation = async (formData: any) => {
     const newLocation = await createLocation(formData)
