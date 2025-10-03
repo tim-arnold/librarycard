@@ -965,7 +965,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
         <>
           {/* Backdrop - lower z-index than header and footer - mobile only */}
           <div
-            className="marketing-hidden-desktop"
+            className="header-mobile-only"
             style={{
               position: 'fixed',
               top: 0,
@@ -979,7 +979,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
           />
           {/* Theme menu content */}
           <div
-            className="marketing-hidden-desktop"
+            className="header-mobile-only"
             style={{
               borderTop: `1px solid ${muiTheme.palette.divider}`,
               borderBottomLeftRadius: '16px',
@@ -1147,7 +1147,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
         <>
           {/* Backdrop - lower z-index than header and footer - mobile only */}
           <div
-            className="marketing-hidden-desktop"
+            className="header-mobile-only"
             style={{
               position: 'fixed',
               top: 0,
@@ -1161,7 +1161,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
           />
           {/* Mobile menu content */}
           <div
-            className="marketing-hidden-desktop"
+            className="header-mobile-only"
             style={{
               borderTop: `1px solid ${muiTheme.palette.divider}`,
               borderBottomLeftRadius: '16px',
