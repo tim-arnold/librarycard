@@ -33,6 +33,7 @@ export interface LocationFormData {
   description: string
   single_shelf_location: boolean
   activity_visibility: 'private' | 'public'
+  allow_user_exports: boolean
 }
 
 export default function LocationFormDialog({
@@ -47,6 +48,7 @@ export default function LocationFormDialog({
   const [description, setDescription] = useState('')
   const [singleShelfLocation, setSingleShelfLocation] = useState(false)
   const [activityVisibility, setActivityVisibility] = useState<'private' | 'public'>('private')
+  const [allowUserExports, setAllowUserExports] = useState(true)
 
   useEffect(() => {
     if (editingLocation) {
@@ -54,11 +56,13 @@ export default function LocationFormDialog({
       setDescription(editingLocation.description || '')
       setSingleShelfLocation(editingLocation.single_shelf_location || false)
       setActivityVisibility(editingLocation.activity_visibility || 'private')
+      setAllowUserExports(editingLocation.allow_user_exports !== 0)
     } else {
       setName('')
       setDescription('')
       setSingleShelfLocation(false)
       setActivityVisibility('private')
+      setAllowUserExports(true)
     }
   }, [editingLocation, open])
 
@@ -67,6 +71,7 @@ export default function LocationFormDialog({
     setDescription('')
     setSingleShelfLocation(false)
     setActivityVisibility('private')
+    setAllowUserExports(true)
     onClose()
   }
 
@@ -79,6 +84,7 @@ export default function LocationFormDialog({
       description,
       single_shelf_location: singleShelfLocation,
       activity_visibility: activityVisibility,
+      allow_user_exports: allowUserExports,
     }
 
     try {
@@ -171,6 +177,26 @@ export default function LocationFormDialog({
                   Users can choose how their names appear and can set individual activities as anonymous. Members will see each other's activity based on their privacy preferences.
                 </Typography>
               </RadioGroup>
+            </FormControl>
+
+            <Divider sx={{ my: 2 }} />
+
+            <FormControl component="fieldset" sx={{ width: '100%' }}>
+              <FormLabel component="legend" sx={{ mb: 1, fontWeight: 'bold' }}>
+                Export Permissions
+              </FormLabel>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={allowUserExports}
+                    onChange={(e) => setAllowUserExports(e.target.checked)}
+                  />
+                }
+                label="Allow members to export library data"
+              />
+              <Typography variant="caption" color="text.secondary" sx={{ ml: 4, display: 'block' }}>
+                When enabled, location members can export books and their personal data (reviews, ratings). Admins can always export regardless of this setting.
+              </Typography>
             </FormControl>
           </Box>
         </DialogContent>

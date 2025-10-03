@@ -107,8 +107,8 @@ export async function createLocation(request: Request, userId: string, env: Env,
   
   // Create location
   const locationStmt = env.DB.prepare(`
-    INSERT INTO locations (name, description, owner_id, single_shelf_location, activity_visibility, created_at)
-    VALUES (?, ?, ?, ?, ?, datetime('now'))
+    INSERT INTO locations (name, description, owner_id, single_shelf_location, activity_visibility, allow_user_exports, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
   `);
 
   const locationResult = await locationStmt.bind(
@@ -116,7 +116,8 @@ export async function createLocation(request: Request, userId: string, env: Env,
     location.description || null,
     userId,
     location.single_shelf_location || false,
-    location.activity_visibility || 'private'
+    location.activity_visibility || 'private',
+    location.allow_user_exports !== undefined ? (location.allow_user_exports ? 1 : 0) : 1
   ).run();
 
   const locationId = locationResult.meta.last_row_id;
@@ -170,7 +171,7 @@ export async function updateLocation(request: Request, userId: string, env: Env,
 
   const stmt = env.DB.prepare(`
     UPDATE locations
-    SET name = ?, description = ?, single_shelf_location = ?, activity_visibility = ?, updated_at = datetime('now')
+    SET name = ?, description = ?, single_shelf_location = ?, activity_visibility = ?, allow_user_exports = ?, updated_at = datetime('now')
     WHERE id = ?
   `);
 
@@ -179,6 +180,7 @@ export async function updateLocation(request: Request, userId: string, env: Env,
     location.description || null,
     location.single_shelf_location || false,
     location.activity_visibility || 'private',
+    location.allow_user_exports !== undefined ? (location.allow_user_exports ? 1 : 0) : 1,
     id
   ).run();
 
