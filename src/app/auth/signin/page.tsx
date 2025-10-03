@@ -24,10 +24,12 @@ import {
   CreditCard,
 } from '@mui/icons-material'
 import Footer from '@/components/layout/Footer'
+import GlobalHeader from '@/components/layout/GlobalHeader'
 import { Turnstile, TurnstileInstance } from '@marsidev/react-turnstile'
 import { getApiBaseUrl } from '@/lib/apiConfig'
 import TOTPInput from '@/components/auth/TOTPInput'
 import PasskeySignIn from '@/components/auth/PasskeySignIn'
+import { useUserData } from '@/contexts/UserDataContext'
 
 function SignInForm() {
   const [loading, setLoading] = useState(false)
@@ -50,6 +52,7 @@ function SignInForm() {
   const turnstileRef = useRef<TurnstileInstance>()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { userRole, userFirstName } = useUserData()
 
   const handleInvitationAcceptance = useCallback(async (token: string) => {
     setError('')
@@ -489,11 +492,16 @@ function SignInForm() {
   }
 
   return (
-    <Container maxWidth="sm" sx={{ py: 4 }}>
-      <Paper sx={{ p: 4, textAlign: 'center' }}>
-        <Typography variant="h3" component="h1" gutterBottom sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-          <CreditCard sx={{ mr: 1, verticalAlign: 'middle' }} /> LibraryCard
-        </Typography>
+    <>
+      <GlobalHeader
+        userRole={userRole}
+        userFirstName={userFirstName}
+      />
+      <Container maxWidth="sm" sx={{ py: 4 }}>
+        <Paper sx={{ p: 4, textAlign: 'center' }}>
+          <Typography variant="h3" component="h1" gutterBottom sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+            <CreditCard sx={{ mr: 1, verticalAlign: 'middle' }} /> LibraryCard
+          </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
           Sign in to start managing your book collection
         </Typography>
@@ -853,9 +861,10 @@ function SignInForm() {
           </Box>
         )}
       </Paper>
-      
-      <Footer />
     </Container>
+
+    <Footer />
+    </>
   )
 }
 
