@@ -9,10 +9,12 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Typography,
+  Button,
 } from '@mui/material'
 import {
   GridView,
   FormatListBulleted,
+  Download,
 } from '@mui/icons-material'
 import useMobileBreakpoints from '@/hooks/useMobileBreakpoints'
 
@@ -23,6 +25,7 @@ interface ViewModeControlsProps {
   totalBooksCount?: number
   onViewModeChange: (newViewMode: 'card' | 'list') => void
   onBooksPerPageChange: (newBooksPerPage: number) => void
+  onExportClick?: () => void
 }
 
 export default function ViewModeControls({
@@ -31,7 +34,8 @@ export default function ViewModeControls({
   filteredBooksCount,
   totalBooksCount,
   onViewModeChange,
-  onBooksPerPageChange
+  onBooksPerPageChange,
+  onExportClick
 }: ViewModeControlsProps) {
   const { isSmallMobile: isMobile } = useMobileBreakpoints()
 
@@ -82,27 +86,42 @@ export default function ViewModeControls({
           </Select>
         </FormControl>
 
-        {/* View mode toggle */}
-        <ToggleButtonGroup
-          value={viewMode}
-          exclusive
-          onChange={(_, newViewMode) => {
-            if (newViewMode !== null) {
-              onViewModeChange(newViewMode)
-            }
-          }}
-          size="small"
-          aria-label="view mode"
-        >
-        <ToggleButton value="card" aria-label="card view">
-          <GridView sx={{ mr: isMobile ? 0 : 1 }} />
-          {!isMobile && 'Grid'}
-        </ToggleButton>
-        <ToggleButton value="list" aria-label="list view">
-          <FormatListBulleted sx={{ mr: isMobile ? 0 : 1 }} />
-          {!isMobile && 'List'}
-        </ToggleButton>
-      </ToggleButtonGroup>
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+          {/* Export button */}
+          {onExportClick && (
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<Download />}
+              onClick={onExportClick}
+              sx={{ whiteSpace: 'nowrap' }}
+            >
+              {!isMobile && 'Export'}
+            </Button>
+          )}
+
+          {/* View mode toggle */}
+          <ToggleButtonGroup
+            value={viewMode}
+            exclusive
+            onChange={(_, newViewMode) => {
+              if (newViewMode !== null) {
+                onViewModeChange(newViewMode)
+              }
+            }}
+            size="small"
+            aria-label="view mode"
+          >
+          <ToggleButton value="card" aria-label="card view">
+            <GridView sx={{ mr: isMobile ? 0 : 1 }} />
+            {!isMobile && 'Grid'}
+          </ToggleButton>
+          <ToggleButton value="list" aria-label="list view">
+            <FormatListBulleted sx={{ mr: isMobile ? 0 : 1 }} />
+            {!isMobile && 'List'}
+          </ToggleButton>
+        </ToggleButtonGroup>
+        </Box>
       </Box>
     </Box>
   )
