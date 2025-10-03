@@ -29,12 +29,17 @@ export default function RootLayout({
           .marketing-heading-display { font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 700; line-height: 1.1; margin: 0; color: white; }
           .marketing-text-lead { font-size: clamp(1.125rem, 2vw, 1.5rem); line-height: 1.6; }
           .marketing-flex { display: flex; }
+          .marketing-flex-col { flex-direction: column; }
           .marketing-items-center { align-items: center; }
           .marketing-justify-center { justify-content: center; }
+          .marketing-justify-between { justify-content: space-between; }
+          .marketing-gap-2 { gap: 0.5rem; }
+          .marketing-gap-4 { gap: 1rem; }
+          .marketing-gap-8 { gap: 2rem; }
           .marketing-hidden-mobile { display: none; }
           .marketing-hidden-desktop { display: block; }
           @media (min-width: 768px) {
-            .marketing-hidden-mobile { display: block; }
+            .marketing-hidden-mobile { display: flex; }
             .marketing-hidden-desktop { display: none; }
             .marketing-flex-md-row { flex-direction: row !important; }
           }
