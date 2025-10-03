@@ -298,6 +298,19 @@
   }
 }
 
+/* Header-specific responsive utilities with 1160px breakpoint */
+@media (max-width: 1159px) {
+  .header-desktop-only {
+    display: none !important;
+  }
+}
+
+@media (min-width: 1160px) {
+  .header-mobile-only {
+    display: none !important;
+  }
+}
+
 /* Print styles */
 @media print {
   .marketing-page {

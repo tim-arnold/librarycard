@@ -375,7 +375,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="marketing-hidden-mobile" id="main-navigation" tabIndex={-1}>
+          <nav className="header-desktop-only" id="main-navigation" tabIndex={-1}>
             <ul 
               className="marketing-flex marketing-items-center marketing-gap-8"
               style={{ listStyle: 'none', margin: 0, padding: 0 }}
@@ -463,7 +463,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
           </nav>
 
           {/* Desktop User Controls */}
-          <div className="marketing-hidden-mobile marketing-flex marketing-items-center marketing-gap-4">
+          <div className="header-desktop-only marketing-flex marketing-items-center marketing-gap-4">
             {/* Theme Options Menu */}
             <div style={{ position: 'relative' }}>
               <button
@@ -510,7 +510,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
               {/* Theme Dropdown Menu */}
               {themeMenuOpen && (
                 <div
-                  className="marketing-hidden-mobile"
+                  className="header-desktop-only"
                   style={{
                     position: 'absolute',
                     top: '100%',
@@ -868,7 +868,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
 
           {/* Mobile controls */}
           <div
-            className="marketing-hidden-desktop marketing-flex marketing-items-center marketing-gap-2"
+            className="header-mobile-only marketing-flex marketing-items-center marketing-gap-2"
           >
             {/* Mobile theme button */}
             <button
@@ -965,7 +965,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
         <>
           {/* Backdrop - lower z-index than header and footer - mobile only */}
           <div
-            className="marketing-hidden-desktop"
+            className="header-mobile-only"
             style={{
               position: 'fixed',
               top: 0,
@@ -979,7 +979,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
           />
           {/* Theme menu content */}
           <div
-            className="marketing-hidden-desktop"
+            className="header-mobile-only"
             style={{
               borderTop: `1px solid ${muiTheme.palette.divider}`,
               borderBottomLeftRadius: '16px',
@@ -1004,6 +1004,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
             onClick={(e) => e.stopPropagation()}
             style={{
               maxWidth: '1280px', // Same as marketing-container-xl
+              width: '100%',
               margin: '0 auto',
               padding: 'var(--marketing-spacing-4)',
               background: 'transparent'
@@ -1147,7 +1148,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
         <>
           {/* Backdrop - lower z-index than header and footer - mobile only */}
           <div
-            className="marketing-hidden-desktop"
+            className="header-mobile-only"
             style={{
               position: 'fixed',
               top: 0,
@@ -1161,7 +1162,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
           />
           {/* Mobile menu content */}
           <div
-            className="marketing-hidden-desktop"
+            className="header-mobile-only"
             style={{
               borderTop: `1px solid ${muiTheme.palette.divider}`,
               borderBottomLeftRadius: '16px',
@@ -1186,6 +1187,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
             onClick={(e) => e.stopPropagation()}
             style={{
               maxWidth: '1280px', // Same as marketing-container-xl
+              width: '100%',
               margin: '0 auto',
               padding: '0 var(--marketing-spacing-4)',
               background: 'transparent'
@@ -1373,7 +1375,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
       )}
       {themeMenuOpen && (
         <div
-          className="marketing-hidden-mobile"
+          className="header-desktop-only"
           style={{
             position: 'fixed',
             top: 0,

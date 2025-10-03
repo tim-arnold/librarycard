@@ -1,10 +1,43 @@
-import React from 'react'
+'use client'
+
+import React, { useState, useEffect } from 'react'
 import Button from '../ui/Button'
 import Container, { Section } from '../ui/Container'
 import { Heading, Text, Highlight } from '../ui/Typography'
 import { Flex } from '../ui/Container'
 
 export default function HeroSection() {
+  const [overlayOpacity, setOverlayOpacity] = useState(0.4)
+  const [scrollTimeout, setScrollTimeout] = useState<NodeJS.Timeout | null>(null)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      // Clear existing timeout
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout)
+      }
+
+      // Fade out overlay while scrolling
+      setOverlayOpacity(0.2)
+
+      // Set timeout to fade back in after scrolling stops
+      const timeout = setTimeout(() => {
+        setOverlayOpacity(0.4)
+      }, 150) // Wait 150ms after scrolling stops
+
+      setScrollTimeout(timeout)
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout)
+      }
+    }
+  }, [scrollTimeout])
+
   return (
     <Section
       background="white"
@@ -30,8 +63,9 @@ export default function HeroSection() {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.4)',
-          zIndex: 1
+          backgroundColor: `rgba(0, 0, 0, ${overlayOpacity})`,
+          zIndex: 1,
+          transition: 'background-color 0.3s ease'
         }}
       />
 
@@ -52,7 +86,7 @@ export default function HeroSection() {
             className="marketing-text-center"
             style={{ color: 'white' }}
           >
-            <Highlight>Community Library</Highlight> Management Beta
+            <span style={{ color: 'var(--marketing-primary-light)' }}>Community Library</span> Management Beta
           </Heading>
 
           {/* Subheading */}
@@ -65,6 +99,7 @@ export default function HeroSection() {
               maxWidth: '700px',
               marginLeft: 'auto',
               marginRight: 'auto',
+              fontWeight: 'bold',
               color: 'rgba(255, 255, 255, 0.9)'
             }}
           >
@@ -73,7 +108,7 @@ export default function HeroSection() {
           </Text>
 
           {/* CTA buttons */}
-          <Flex justify="center" gap={4} className="marketing-flex-col marketing-flex-md-row">
+          <Flex justify="center" gap={4} className="marketing-flex-md-row">
             <Button
               href="/auth/signin?register=true"
               variant="primary"
