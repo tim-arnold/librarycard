@@ -122,7 +122,7 @@ async function generateExportData(
   includeFullData: boolean
 ): Promise<ExportData> {
   let locationFilter = '';
-  let params: any[] = [];
+  let params: any[] = [userEmail];
 
   if (locationId) {
     locationFilter = 'AND shelves.location_id = ?';
@@ -147,8 +147,8 @@ async function generateExportData(
       shelves.name as shelf_name,
       books.checked_out_by,
       books.due_date,
-      books.user_rating,
-      books.user_review,
+      book_ratings.rating as user_rating,
+      book_ratings.review_text as user_review,
       books.series as series_name,
       books.series_number as series_position,
       books.tags,
@@ -156,6 +156,7 @@ async function generateExportData(
     FROM books
     LEFT JOIN shelves ON books.shelf_id = shelves.id
     LEFT JOIN locations ON shelves.location_id = locations.id
+    LEFT JOIN book_ratings ON books.id = book_ratings.book_id AND book_ratings.user_id = ?
     WHERE 1=1
     ${locationFilter}
     ORDER BY books.title
