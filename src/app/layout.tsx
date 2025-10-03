@@ -31,6 +31,13 @@ export default function RootLayout({
           .marketing-flex { display: flex; }
           .marketing-items-center { align-items: center; }
           .marketing-justify-center { justify-content: center; }
+          .marketing-hidden-mobile { display: none; }
+          .marketing-hidden-desktop { display: block; }
+          @media (min-width: 768px) {
+            .marketing-hidden-mobile { display: block; }
+            .marketing-hidden-desktop { display: none; }
+            .marketing-flex-md-row { flex-direction: row !important; }
+          }
         `}} />
         <style dangerouslySetInnerHTML={{ __html: `
           @font-face {
