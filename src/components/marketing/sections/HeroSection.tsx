@@ -12,7 +12,7 @@ export default function HeroSection() {
       className="hero-background-section"
       style={{
         position: 'relative',
-        backgroundImage: 'linear-gradient(hsl(0 0% 0 / .2)), url(/images/hero-bg.jpg)',
+        backgroundImage: 'linear-gradient(hsl(0 0% 0% / .2) 0 0), url(/images/hero-bg.jpg)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
