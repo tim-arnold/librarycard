@@ -52,7 +52,7 @@ export default function HeroSection() {
             className="marketing-text-center"
             style={{ color: 'white' }}
           >
-            <Highlight>Community Library</Highlight> Management Beta
+            <span style={{ color: 'var(--marketing-primary-light)' }}>Community Library</span> Management Beta
           </Heading>
 
           {/* Subheading */}
