@@ -510,7 +510,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
               {/* Theme Dropdown Menu */}
               {themeMenuOpen && (
                 <div
-                  className="marketing-hidden-mobile"
+                  className="header-desktop-only"
                   style={{
                     position: 'absolute',
                     top: '100%',
@@ -1004,6 +1004,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
             onClick={(e) => e.stopPropagation()}
             style={{
               maxWidth: '1280px', // Same as marketing-container-xl
+              width: '100%',
               margin: '0 auto',
               padding: 'var(--marketing-spacing-4)',
               background: 'transparent'
@@ -1186,6 +1187,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
             onClick={(e) => e.stopPropagation()}
             style={{
               maxWidth: '1280px', // Same as marketing-container-xl
+              width: '100%',
               margin: '0 auto',
               padding: '0 var(--marketing-spacing-4)',
               background: 'transparent'
@@ -1373,7 +1375,7 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
       )}
       {themeMenuOpen && (
         <div
-          className="marketing-hidden-mobile"
+          className="header-desktop-only"
           style={{
             position: 'fixed',
             top: 0,

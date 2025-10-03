@@ -39,7 +39,7 @@ export default function RootLayout({
           .marketing-hidden-mobile { display: none; }
           .marketing-hidden-desktop { display: block; }
           .header-desktop-only { display: none !important; }
-          .header-mobile-only { display: block !important; }
+          .header-mobile-only { display: flex !important; }
           @media (min-width: 768px) {
             .marketing-hidden-mobile { display: flex; }
             .marketing-hidden-desktop { display: none; }
