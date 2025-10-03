@@ -56,13 +56,16 @@ export default function ExportModal({
 
   const fetchLocations = async () => {
     try {
-      const response = await fetch(`${getApiBaseUrl()}/api/user/locations`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/locations`, {
         headers: {
           Authorization: `Bearer ${userEmail}`,
         },
       })
       if (response.ok) {
         const data = await response.json()
+        console.log('Export modal - fetched locations:', data)
+        console.log('Export modal - isAdmin:', isAdmin)
+        console.log('Export modal - userRole:', userRole)
         setLocations(data)
         if (data.length === 1) {
           setSelectedLocation(data[0].id.toString())
@@ -149,7 +152,7 @@ export default function ExportModal({
           </Alert>
         )}
 
-        {locations.length > 1 && isAdmin && (
+        {locations.length > 0 && (isAdmin || locations.length > 1) && (
           <Box sx={{ mb: 3 }}>
             <FormControl fullWidth size="small">
               <InputLabel>Location</InputLabel>
@@ -159,7 +162,9 @@ export default function ExportModal({
                 onChange={(e) => setSelectedLocation(e.target.value)}
                 disabled={loading}
               >
-                <MenuItem value="all">All Locations</MenuItem>
+                {(isAdmin || locations.length > 1) && (
+                  <MenuItem value="all">All Locations</MenuItem>
+                )}
                 {locations.map((location) => (
                   <MenuItem key={location.id} value={location.id.toString()}>
                     {location.name}
