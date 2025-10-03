@@ -1,14 +1,17 @@
 'use client'
 
-import { Typography, Paper, Box, AppBar, Toolbar, Container, Button } from '@mui/material'
-import { CreditCard, ArrowBack } from '@mui/icons-material'
+import { Typography, Paper, Box, Container, Button } from '@mui/material'
+import { ArrowBack } from '@mui/icons-material'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Footer from '@/components/layout/Footer'
+import GlobalHeader from '@/components/layout/GlobalHeader'
+import { useUserData } from '@/contexts/UserDataContext'
 
 export default function PrivacyPage() {
   const { data: session } = useSession()
   const router = useRouter()
+  const { userRole, userFirstName } = useUserData()
 
   // If authenticated, show with normal AppLayout styling
   if (session) {
@@ -32,36 +35,15 @@ export default function PrivacyPage() {
     )
   }
 
-  // If not authenticated, show with branded header and footer
+  // If not authenticated, show with GlobalHeader and footer
   return (
-    <Box sx={{ flexGrow: 1, minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <AppBar position="static" color="primary">
-        <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-            <CreditCard sx={{ mr: 1, verticalAlign: 'middle' }} /> LibraryCard
-          </Typography>
-          <Button
-            color="inherit"
-            onClick={() => router.push('/auth/signin')}
-            sx={{ ml: 2 }}
-          >
-            Sign In
-          </Button>
-        </Toolbar>
-      </AppBar>
-
-      <Container maxWidth="md" sx={{ flex: 1, py: 4 }}>
+    <>
+      <GlobalHeader
+        userRole={userRole}
+        userFirstName={userFirstName}
+      />
+      <Container maxWidth="md" sx={{ py: 4 }}>
         <Paper sx={{ p: 4 }}>
-          <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Button
-              startIcon={<ArrowBack />}
-              onClick={() => router.push('/auth/signin')}
-              variant="text"
-              sx={{ minWidth: 'auto' }}
-            >
-              Back to Sign In
-            </Button>
-          </Box>
           <Typography variant="h4" component="h1" gutterBottom>
             Privacy Policy
           </Typography>
@@ -70,7 +52,7 @@ export default function PrivacyPage() {
       </Container>
 
       <Footer />
-    </Box>
+    </>
   )
 }
 
