@@ -22,25 +22,40 @@ export default function RootLayout({
         <link rel="preload" href="/fonts/inter-400.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <link rel="preload" href="/fonts/inter-600.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <style dangerouslySetInnerHTML={{ __html: `
+          :root {
+            --marketing-primary: #3b82f6;
+            --marketing-secondary: #8b5cf6;
+            --marketing-white: #ffffff;
+            --marketing-spacing-2: 0.5rem;
+            --marketing-spacing-4: 1rem;
+            --marketing-spacing-6: 1.5rem;
+            --marketing-spacing-8: 2rem;
+            --marketing-spacing-12: 3rem;
+            --marketing-radius-full: 9999px;
+            --marketing-text-sm: 0.875rem;
+            --marketing-text-lg: 1.125rem;
+            --marketing-font-medium: 500;
+          }
           html { max-width: 100vw; overflow-x: hidden; }
           body { margin: 0; font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-          .hero-background-section {
-            position: relative;
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            min-height: 80vh;
-          }
+          .hero-background-section { position: relative; background-size: cover; background-position: center; background-repeat: no-repeat; min-height: 80vh; }
           .marketing-text-center { text-align: center; }
-          .marketing-heading-display {
-            font-size: clamp(2.5rem, 5vw, 4rem);
-            font-weight: 700;
-            line-height: 1.1;
-            margin: 0;
-          }
-          .marketing-text-lead {
-            font-size: clamp(1.125rem, 2vw, 1.5rem);
-            line-height: 1.6;
+          .marketing-heading-display { font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 700; line-height: 1.1; margin: 0; color: white; }
+          .marketing-text-lead { font-size: clamp(1.125rem, 2vw, 1.5rem); line-height: 1.6; }
+          .marketing-flex { display: flex; }
+          .marketing-items-center { align-items: center; }
+          .marketing-justify-center { justify-content: center; }
+          .marketing-gap-4 { gap: var(--marketing-spacing-4); }
+          .marketing-gap-8 { gap: var(--marketing-spacing-8); }
+          .marketing-button { display: inline-flex; align-items: center; justify-content: center; font-family: 'Inter', sans-serif; font-weight: 500; border-radius: 0.5rem; text-decoration: none; transition: all 0.15s; cursor: pointer; border: none; }
+          .marketing-button-lg { font-size: var(--marketing-text-lg); padding: var(--marketing-spacing-4) var(--marketing-spacing-8); height: 52px; }
+          .marketing-button-primary { background: linear-gradient(135deg, var(--marketing-primary) 0%, #2563eb 100%); color: var(--marketing-white); }
+          .marketing-button-secondary { background: var(--marketing-white); color: var(--marketing-primary); border: 2px solid var(--marketing-primary); }
+          .marketing-text-small { font-size: 0.875rem; line-height: 1.5; }
+          .marketing-hidden-mobile { display: none; }
+          @media (min-width: 768px) {
+            .marketing-flex-md-row { flex-direction: row !important; }
+            .marketing-hidden-mobile { display: block; }
           }
         `}} />
         <style dangerouslySetInnerHTML={{ __html: `
