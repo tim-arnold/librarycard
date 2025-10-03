@@ -26,57 +26,65 @@ export default function RootLayout({
             font-family: 'Inter';
             font-style: normal;
             font-weight: 400;
-            font-display: swap;
+            font-display: optional;
             src: url('/fonts/inter-400.woff2') format('woff2');
+            size-adjust: 107%;
           }
           @font-face {
             font-family: 'Inter';
             font-style: normal;
             font-weight: 500;
-            font-display: swap;
+            font-display: optional;
             src: url('/fonts/inter-500.woff2') format('woff2');
+            size-adjust: 107%;
           }
           @font-face {
             font-family: 'Inter';
             font-style: normal;
             font-weight: 600;
-            font-display: swap;
+            font-display: optional;
             src: url('/fonts/inter-600.woff2') format('woff2');
+            size-adjust: 107%;
           }
           @font-face {
             font-family: 'Inter';
             font-style: normal;
             font-weight: 700;
-            font-display: swap;
+            font-display: optional;
             src: url('/fonts/inter-700.woff2') format('woff2');
+            size-adjust: 107%;
           }
           @font-face {
             font-family: 'Nunito';
             font-style: normal;
             font-weight: 400;
-            font-display: swap;
+            font-display: optional;
             src: url('/fonts/nunito-400.woff2') format('woff2');
+            size-adjust: 100%;
           }
           @font-face {
             font-family: 'Nunito';
             font-style: normal;
             font-weight: 500;
-            font-display: swap;
+            font-display: optional;
             src: url('/fonts/nunito-500.woff2') format('woff2');
+            size-adjust: 100%;
           }
           @font-face {
             font-family: 'Nunito';
             font-style: normal;
             font-weight: 600;
-            font-display: swap;
+            font-display: optional;
             src: url('/fonts/nunito-600.woff2') format('woff2');
+            size-adjust: 100%;
           }
           @font-face {
             font-family: 'Nunito';
             font-style: normal;
             font-weight: 700;
-            font-display: swap;
+            font-display: optional;
             src: url('/fonts/nunito-700.woff2') format('woff2');
+            size-adjust: 100%;
           }
         `}} />
       </head>
