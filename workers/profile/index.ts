@@ -28,8 +28,37 @@ export async function updateUserProfile(request: Request, userId: string, env: E
     email?: string;
     [key: string]: any;
   } = await request.json();
-  
-  // Get current user info to check auth provider
+
+  if (updates.first_name !== undefined) {
+    if (typeof updates.first_name !== 'string' || updates.first_name.length > 100) {
+      return new Response(JSON.stringify({ error: 'First name must be 100 characters or less' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    updates.first_name = updates.first_name.trim();
+  }
+
+  if (updates.last_name !== undefined) {
+    if (typeof updates.last_name !== 'string' || updates.last_name.length > 100) {
+      return new Response(JSON.stringify({ error: 'Last name must be 100 characters or less' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    updates.last_name = updates.last_name.trim();
+  }
+
+  if (updates.email !== undefined) {
+    if (typeof updates.email !== 'string' || updates.email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(updates.email)) {
+      return new Response(JSON.stringify({ error: 'Invalid email address' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    updates.email = updates.email.trim().toLowerCase();
+  }
+
   const currentUser = await env.DB.prepare(`
     SELECT auth_provider FROM users WHERE id = ?
   `).bind(userId).first();
