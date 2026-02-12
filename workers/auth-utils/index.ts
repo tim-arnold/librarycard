@@ -19,9 +19,8 @@ export async function checkUserExists(request: Request, env: Env, corsHeaders: R
       SELECT id, email_verified FROM users WHERE email = ?
     `).bind(email).first();
 
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
       exists: !!user,
-      verified: user ? (user as any).email_verified : false
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

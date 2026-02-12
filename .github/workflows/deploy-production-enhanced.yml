@@ -1,5 +1,9 @@
 name: 🚀 Production Deployment
 
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
 on:
   workflow_dispatch:
     inputs:

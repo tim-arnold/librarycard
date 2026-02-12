@@ -1,5 +1,9 @@
 name: ⏪ Automated Database Rollbacks
 
+concurrency:
+  group: db-${{ github.event.inputs.environment || 'staging' }}
+  cancel-in-progress: false
+
 on:
   workflow_dispatch:
     inputs:
