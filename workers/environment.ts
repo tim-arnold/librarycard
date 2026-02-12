@@ -1,5 +1,4 @@
 import { Env } from './types';
-import { getWorkerFrontendUrl } from './utils/domainConfig';
 
 export function getEnvironment(env: Env): string {
   return env.ENVIRONMENT || 'production';
@@ -19,26 +18,6 @@ export function isProductionEnvironment(env: Env): boolean {
 
 export function isDevelopmentEnvironment(env: Env): boolean {
   return isLocalEnvironment(env) || isStagingEnvironment(env);
-}
-
-export function requireConfirmationForDestructiveAction(env: Env, action: string): boolean {
-  if (isDevelopmentEnvironment(env)) {
-    console.warn(`⚠️  DEVELOPMENT ENVIRONMENT: Performing destructive action: ${action}`);
-    return false;
-  }
-  return false;
-}
-
-export function logEnvironmentInfo(env: Env): void {
-  const environment = getEnvironment(env);
-  const appUrl = getWorkerFrontendUrl(env);
-
-  console.log(`🌍 Environment: ${environment}`);
-  console.log(`🔗 App URL: ${appUrl}`);
-
-  if (isDevelopmentEnvironment(env)) {
-    console.log(`🛠️  Development mode: Enhanced logging and safeguards enabled`);
-  }
 }
 
 export function getEnvironmentSpecificSettings(env: Env) {

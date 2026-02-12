@@ -16,6 +16,7 @@ interface LocationFormData {
   description: string
   single_shelf_location: boolean
   activity_visibility: 'private' | 'public'
+  allow_user_exports: boolean
 }
 
 export function useLocationManagement({
@@ -71,6 +72,7 @@ export function useLocationManagement({
           description: formData.description.trim() || null,
           single_shelf_location: formData.single_shelf_location,
           activity_visibility: formData.activity_visibility,
+          allow_user_exports: formData.allow_user_exports,
         }),
       })
 
@@ -100,6 +102,7 @@ export function useLocationManagement({
           description: formData.description.trim() || null,
           single_shelf_location: formData.single_shelf_location,
           activity_visibility: formData.activity_visibility,
+          allow_user_exports: formData.allow_user_exports,
         }),
       })
 
