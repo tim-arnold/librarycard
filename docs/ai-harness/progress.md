@@ -6,11 +6,11 @@ This file provides persistent context for AI agents working on the LibraryCard p
 
 ## Current State
 
-**Last Updated:** 2026-02-12 (Session 1)
+**Last Updated:** 2026-02-12 (Session 2)
 
 ### Project Phase
 - **Core Platform**: Mature and production-stable
-- **Current Work**: UI polish, accessibility, component refactoring
+- **Current Work**: Code review remediation, security hardening, backend fixes
 - **Infrastructure**: Enterprise-grade (automated migrations, backups, CI/CD)
 
 ### Environment
@@ -18,7 +18,7 @@ This file provides persistent context for AI agents working on the LibraryCard p
 - TypeScript, Material UI, NextAuth.js (Google OAuth + email/password)
 - Google Books API + Google Vision API (OCR)
 - Dev server: `npm run dev` (frontend) + `npx wrangler dev` (worker)
-- Branch: `main`
+- Branch: `LCWEB-review-fixes-batch2` (pending merge to main)
 
 ### Codebase Health
 - Build status: Passing
@@ -31,6 +31,9 @@ This file provides persistent context for AI agents working on the LibraryCard p
 ## Completed Work
 
 ### February 2026
+- [x] **Comprehensive code review** - 6-agent parallel review covering security, architecture, database, frontend, backend, infrastructure. Documented 43+ findings in `docs/reference/CODE-REVIEW-2026-02.md`
+- [x] **Security hardening (Batch 1, merged)** - Fixed auth bypass via raw token fallback, WebAuthn JWT verification, hardcoded JWT secret, user overwrite endpoint, CSRF bypass, error sanitization. Added 6 critical DB indexes. Moved puppeteer to devDeps, Node 18→20
+- [x] **Backend fixes & cleanup (Batch 2, pending merge)** - Fixed broken updateAppeal parameter, super_admin analytics exclusion, added Content-Type headers to appeals. Transaction batching for checkout/checkin/deletion/permissions. Removed ~70 debug console.logs. Config cleanup (remotePatterns, dead code removal). Deleted 79KB backup file
 - [x] **Homepage accessibility & performance (LCWEB-204)** - Critical CSS inlining, font/image loading optimization, hero section accessibility, heading hierarchy fix, scroll overlay fade effect, header-specific mobile breakpoint (1160px), removed unused MarketingHeader component
 - [x] **GlobalHeader on sign-in page (LCWEB-205)** - Added GlobalHeader and full-width footer to sign-in page
 - [x] **GlobalHeader on privacy/terms pages (LCWEB-206)** - Added GlobalHeader to privacy and terms pages
@@ -64,12 +67,19 @@ This file provides persistent context for AI agents working on the LibraryCard p
 
 ## Current Focus
 
-**UI polish and accessibility** - Recent work has focused on homepage accessibility (LCWEB-204) and consistent header/footer across all pages (LCWEB-205, LCWEB-206).
+**Code review remediation** - Working through findings from comprehensive 43-issue code review (`docs/reference/CODE-REVIEW-2026-02.md`). Batch 1 (critical security) merged. Batch 2 (backend bugs, transaction batching, cleanup) committed, pending merge.
 
-Next steps (from open specs):
+Next review items to address (in priority order):
+- N+1 query patterns (#9) - hasUserPermission(), getLibraryActivity() sequential queries
+- Basic test suite (#10) - no automated tests exist
+- Legacy password hashing (#11) - SHA-256 with static salt
+- book_series.book_id type mismatch (#12) - TEXT vs INTEGER
+- React Error Boundaries (#25) - no error boundaries exist
+- Large component decomposition (#21-23) - MoreDetailsModal, GlobalHeader, HelpModal
+
+Other open work:
 - Theme consolidation (see `docs/specs/theme-consolidation-analysis.md`)
 - User deletion strategy (see `docs/specs/user-deletion-strategy.md`)
-- React Native mobile app (see `docs/specs/react-native-mobile-app-specification.md`)
 
 ---
 
@@ -77,14 +87,26 @@ Next steps (from open specs):
 
 | Issue | Priority | Notes |
 |-------|----------|-------|
+| N+1 query patterns in permission checks | High | hasUserPermission() makes 4-5 sequential queries per operation |
+| No automated test suite | High | Zero tests, ESLint disabled in builds |
+| Legacy SHA-256 password hashing | Medium | Static salt, non-constant-time comparison |
+| book_series.book_id TEXT/INTEGER mismatch | Medium | Prevents FK enforcement, requires CAST workarounds |
 | Two separate theme systems (MUI + marketing CSS) | Medium | Analysis complete, consolidation spec exists |
 | User deletion fails on FK constraints | Medium | Strategy approved, needs migration implementation |
+| No React Error Boundaries | Medium | Unhandled errors cause white-screen crashes |
+| Large components (MoreDetailsModal 1694, GlobalHeader 1392, HelpModal 1310 lines) | Medium | Should be decomposed |
+| Rate limiter fails open on KV outage | Low | Catches return `allowed: true` |
 | TODO.md is stale | Low | Jira is source of truth for task tracking |
-| LocationPermissionManager still 768 lines | Low | Separate from LocationManager refactor |
 
 ---
 
 ## Session Log
+
+### 2026-02-12 (Session 2)
+- Ran comprehensive 6-agent parallel code review (security, architecture, database, frontend, backend, infra)
+- Created `docs/reference/CODE-REVIEW-2026-02.md` with 43+ prioritized findings
+- **Batch 1 (merged to main)**: Fixed 6 critical security issues (auth bypass, JWT verification, CSRF, error handling), added 6 DB indexes, moved puppeteer to devDeps, Node 18→20
+- **Batch 2 (committed on LCWEB-review-fixes-batch2)**: Fixed 3 backend bugs, added transaction batching to 6 operations, removed ~70 debug console.logs, config cleanup, deleted backup file
 
 ### 2026-02-12 (Session 1)
 - Created AI agent harness infrastructure (`docs/ai-harness/`)
