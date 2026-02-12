@@ -5,6 +5,7 @@ import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Container, CircularProgress, Typography, Box } from '@mui/material'
 import BookLibrary from '@/components/library/BookLibrary'
+import ErrorBoundary from '@/components/ui/ErrorBoundary'
 import { getApiBaseUrl } from '@/lib/apiConfig'
 import { slugToName, createSlugMap } from '@/lib/urlUtils'
 
@@ -105,5 +106,9 @@ export default function FilteredLibraryPage() {
   }
 
 
-  return <BookLibrary initialFilters={urlFilters} />
+  return (
+    <ErrorBoundary>
+      <BookLibrary initialFilters={urlFilters} />
+    </ErrorBoundary>
+  )
 }

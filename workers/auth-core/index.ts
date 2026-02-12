@@ -313,14 +313,24 @@ export async function verifyCredentials(request: Request, env: Env, corsHeaders:
   }
   
   const isValidPassword = await verifyPassword(password, user.password_hash as string);
-  
+
   if (!isValidPassword) {
     return new Response(JSON.stringify({ error: 'Invalid credentials' }), {
       status: 401,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
-  
+
+  if (isLegacyHash(user.password_hash as string)) {
+    try {
+      const upgradedHash = await hashPassword(password);
+      await env.DB.prepare('UPDATE users SET password_hash = ? WHERE id = ?')
+        .bind(upgradedHash, user.id).run();
+    } catch (error) {
+      console.error('Failed to upgrade legacy password hash:', error);
+    }
+  }
+
   // Clear user cache on successful login to ensure fresh data
   try {
     const { invalidateUserCache } = await import('../auth/cached');
@@ -479,14 +489,16 @@ export async function hashPassword(password: string): Promise<string> {
   return btoa(String.fromCharCode(...combined));
 }
 
+export function isLegacyHash(storedHash: string): boolean {
+  return !(isBase64(storedHash) && storedHash.length > 40);
+}
+
 export async function verifyPassword(password: string, storedHash: string): Promise<boolean> {
   try {
-    // Try new PBKDF2 format first (base64 encoded)
-    if (isBase64(storedHash) && storedHash.length > 40) {
+    if (!isLegacyHash(storedHash)) {
       return await verifyPBKDF2Hash(password, storedHash);
     }
-    
-    // Fall back to old SHA-256 format for backwards compatibility
+
     return await verifyLegacyHash(password, storedHash);
   } catch (error) {
     console.error('Password verification error:', error);
@@ -541,15 +553,17 @@ async function verifyPBKDF2Hash(password: string, storedHash: string): Promise<b
 }
 
 async function verifyLegacyHash(password: string, storedHash: string): Promise<boolean> {
-  // Legacy SHA-256 with simple salt for backwards compatibility
   const encoder = new TextEncoder();
   const data = encoder.encode(password + 'salt');
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
   const computedHash = Array.from(new Uint8Array(hashBuffer))
     .map(b => b.toString(16).padStart(2, '0'))
     .join('');
-  
-  return computedHash === storedHash;
+
+  const computedBytes = encoder.encode(computedHash);
+  const storedBytes = encoder.encode(storedHash);
+  if (computedBytes.length !== storedBytes.length) return false;
+  return constantTimeEqual(computedBytes, storedBytes);
 }
 
 function isBase64(str: string): boolean {
