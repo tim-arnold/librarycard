@@ -2,7 +2,11 @@ import type { Metadata } from 'next'
 import './globals.css'
 import '@/styles/marketing/marketing.css'
 import { Providers } from './providers'
-import CookieNotice from '@/components/layout/CookieNotice'
+import dynamic from 'next/dynamic'
+
+const CookieNotice = dynamic(() => import('@/components/layout/CookieNotice'), {
+  ssr: false,
+})
 import ConditionalAppLayout from '@/components/layout/ConditionalAppLayout'
 
 export const metadata: Metadata = {
@@ -18,13 +22,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="preload" href="/images/hero-bg.jpg" as="image" fetchPriority="high" />
         <link rel="preload" href="/fonts/inter-400.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <link rel="preload" href="/fonts/inter-600.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <style dangerouslySetInnerHTML={{ __html: `
           html { max-width: 100vw; overflow-x: hidden; }
           body { margin: 0; font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-          .hero-background-section { position: relative; background-size: cover; background-position: center; background-repeat: no-repeat; min-height: 80vh; }
+          .hero-background-section { position: relative; min-height: 80vh; background-color: var(--marketing-primary, #6d4c2e); }
+          @media (max-width: 768px) { .hero-background-section { min-height: 60vh; } }
           .marketing-text-center { text-align: center; }
           .marketing-heading-display { font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 700; line-height: 1.1; margin: 0; color: white; }
           .marketing-text-lead { font-size: clamp(1.125rem, 2vw, 1.5rem); line-height: 1.6; }
