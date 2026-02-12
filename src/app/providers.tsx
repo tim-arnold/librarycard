@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import PerformanceTracker from '@/components/performance/PerformanceTracker'
 import inputEventDebug from '@/lib/inputEventDebug'
 import { UserDataProvider } from '@/contexts/UserDataContext'
+import ErrorBoundary from '@/components/ui/ErrorBoundary'
 import { useState, useEffect } from 'react'
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -35,16 +36,17 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }))
 
   return (
-    <SessionProvider>
-      <QueryClientProvider client={queryClient}>
-        <ThemeContextProvider>
-          <UserDataProvider>
-            {children}
-            {/* Performance monitoring */}
-            <PerformanceTracker />
-          </UserDataProvider>
-        </ThemeContextProvider>
-      </QueryClientProvider>
-    </SessionProvider>
+    <ErrorBoundary>
+      <SessionProvider>
+        <QueryClientProvider client={queryClient}>
+          <ThemeContextProvider>
+            <UserDataProvider>
+              {children}
+              <PerformanceTracker />
+            </UserDataProvider>
+          </ThemeContextProvider>
+        </QueryClientProvider>
+      </SessionProvider>
+    </ErrorBoundary>
   )
 }
