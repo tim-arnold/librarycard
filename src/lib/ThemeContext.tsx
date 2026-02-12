@@ -31,97 +31,88 @@ interface ThemeContextProviderProps {
   children: React.ReactNode
 }
 
+function getInitialDarkMode(): boolean {
+  if (typeof window === 'undefined') return false
+  const saved = getStorageItem('librarycard-theme', 'functional')
+  return saved === 'dark'
+}
+
+function getInitialThemeVariant(): ThemeVariant {
+  if (typeof window === 'undefined') return 'amber'
+  const saved = getStorageItem('librarycard-theme-variant', 'functional') as ThemeVariant
+  if (saved && ['indigo', 'green', 'red', 'blue', 'purple', 'amber'].includes(saved)) {
+    return saved
+  }
+  return 'amber'
+}
+
 export function ThemeContextProvider({ children }: ThemeContextProviderProps) {
   const { data: session, status } = useSession()
-  const [isDarkMode, setIsDarkMode] = useState(false)
-  const [themeVariant, setThemeVariant] = useState<ThemeVariant>('amber')
-  const [isLoaded, setIsLoaded] = useState(false)
+  const [isDarkMode, setIsDarkMode] = useState(getInitialDarkMode)
+  const [themeVariant, setThemeVariant] = useState(getInitialThemeVariant)
+  const [hasMounted, setHasMounted] = useState(false)
+  const [sessionResolved, setSessionResolved] = useState(false)
 
-  // Load theme preferences based on authentication state
   useEffect(() => {
-    // Wait for session to be determined
-    if (status === 'loading') {
-      return
-    }
+    setHasMounted(true)
+  }, [])
 
-    const savedTheme = getStorageItem('librarycard-theme', 'functional')
+  useEffect(() => {
+    if (status === 'loading') return
 
-    // Light/Dark mode preference is always honored (both logged in and out)
-    if (savedTheme === 'light') {
-      setIsDarkMode(false)
-    } else if (!savedTheme) {
-      // Default to light mode for new users
-      setIsDarkMode(false)
-    } else {
-      setIsDarkMode(savedTheme === 'dark')
-    }
-
-    // Theme variant logic depends on authentication state
     if (session) {
-      // User is logged in - honor their saved preference
       const savedVariant = getStorageItem('librarycard-theme-variant', 'functional') as ThemeVariant
-
       if (savedVariant && ['indigo', 'green', 'red', 'blue', 'purple', 'amber'].includes(savedVariant)) {
         setThemeVariant(savedVariant)
-      } else {
-        // Default to golden amber for new logged-in users
-        setThemeVariant('amber')
       }
     } else {
-      // User is logged out - force Golden Amber theme for marketing pages
       setThemeVariant('amber')
     }
 
-    setIsLoaded(true)
+    setSessionResolved(true)
   }, [session, status])
 
-  // Save theme preferences to localStorage when they change
   useEffect(() => {
-    if (isLoaded) {
+    if (sessionResolved) {
       setStorageItem('librarycard-theme', isDarkMode ? 'dark' : 'light', 'functional')
     }
-  }, [isDarkMode, isLoaded])
+  }, [isDarkMode, sessionResolved])
 
   useEffect(() => {
-    // Only save theme variant preference when user is logged in
-    if (isLoaded && session) {
+    if (sessionResolved && session) {
       setStorageItem('librarycard-theme-variant', themeVariant, 'functional')
     }
-  }, [themeVariant, isLoaded, session])
+  }, [themeVariant, sessionResolved, session])
 
   const toggleTheme = () => {
     setIsDarkMode(prev => !prev)
   }
 
   const handleSetThemeVariant = (variant: ThemeVariant) => {
-    // Only allow theme variant changes when user is logged in
     if (session) {
       setThemeVariant(variant)
     }
-    // For logged-out users, theme variant is always locked to 'amber'
   }
 
   const theme = createAppTheme(isDarkMode, themeVariant)
-  
-  // Inject marketing variables whenever theme changes
+
   useEffect(() => {
-    if (typeof window !== 'undefined' && isLoaded) {
+    if (typeof window !== 'undefined' && hasMounted) {
       const marketingVariables = generateMarketingVariables(theme, themeVariant)
       injectMarketingVariables(marketingVariables)
     }
-  }, [theme, themeVariant, isLoaded])
+  }, [theme, themeVariant, hasMounted])
 
-  // Don't render until we've loaded the preferences to prevent flash
-  if (!isLoaded) {
+  if (!hasMounted) {
     return null
   }
 
   return (
-    <ThemeContext.Provider value={{ 
-      isDarkMode, 
-      themeVariant, 
-      toggleTheme, 
-      setThemeVariant: handleSetThemeVariant 
+    <ThemeContext.Provider value={{
+      isDarkMode,
+      themeVariant,
+      toggleTheme,
+      setThemeVariant: handleSetThemeVariant
     }}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
