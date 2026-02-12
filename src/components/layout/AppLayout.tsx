@@ -145,13 +145,6 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
     }
   }, [session?.user?.email, refreshCount, refreshRejectedReviews])
 
-  // Debug badge counts
-  useEffect(() => {
-    console.log('🏷️ AppLayout Badge counts - unreadCount:', unreadCount, 'unreadRejectedCount:', unreadRejectedCount, 'total:', unreadCount + unreadRejectedCount)
-    console.log('🏷️ Badge display calculation:', `(${unreadCount} + ${unreadRejectedCount}) = ${unreadCount + unreadRejectedCount}`)
-    console.log('🏷️ AppLayout component refresh triggered by:', { unreadCount, unreadRejectedCount })
-  }, [unreadCount, unreadRejectedCount])
-
   const loadUserData = async () => {
     
     try {
@@ -249,8 +242,6 @@ export default function AppLayout({ children, currentPage }: AppLayoutProps) {
         const url = new URL(window.location.href)
         url.searchParams.delete('invitation')
         window.history.replaceState({}, '', url.toString())
-        
-        console.log(`Successfully joined ${data.location_name}!`)
         
         // Reload user data after successful invitation acceptance
         await loadUserData()

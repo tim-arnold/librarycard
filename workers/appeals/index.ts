@@ -39,7 +39,7 @@ export async function handleAppealsRequest(
   if (!userId) {
     return new Response(JSON.stringify({ error: 'Authentication required' }), {
       status: 401,
-      headers: corsHeaders,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
@@ -78,7 +78,7 @@ export async function handleAppealsRequest(
           if (isNaN(appealId)) {
             return new Response(JSON.stringify({ error: 'Invalid appeal ID' }), {
               status: 400,
-              headers: corsHeaders,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             });
           }
           return await updateAppeal(request, userId, env, corsHeaders, appealId);
@@ -92,7 +92,7 @@ export async function handleAppealsRequest(
           if (isNaN(appealId)) {
             return new Response(JSON.stringify({ error: 'Invalid appeal ID' }), {
               status: 400,
-              headers: corsHeaders,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             });
           }
           return await deleteAppeal(userId, env, corsHeaders, appealId);
@@ -102,14 +102,14 @@ export async function handleAppealsRequest(
 
     return new Response(JSON.stringify({ error: 'Invalid endpoint or method' }), {
       status: 404,
-      headers: corsHeaders,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
     console.error('Error in appeals request:', error);
     return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
-      headers: corsHeaders,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 }
@@ -132,7 +132,7 @@ async function submitAppeal(
         error: 'Missing required fields: book_title, book_author, image_data_url, rejection_reason'
       }), {
         status: 400,
-        headers: corsHeaders,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
@@ -142,7 +142,7 @@ async function submitAppeal(
         error: 'Invalid image data URL format'
       }), {
         status: 400,
-        headers: corsHeaders,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
@@ -166,7 +166,7 @@ async function submitAppeal(
         error: 'You have already submitted a recent appeal for this book. Please wait before submitting another.'
       }), {
         status: 429,
-        headers: corsHeaders,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
@@ -235,7 +235,7 @@ async function submitAppeal(
       appeal_id: result.meta.last_row_id,
       message: 'Your appeal has been submitted successfully. An admin will review it shortly.'
     }), {
-      headers: corsHeaders,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
@@ -244,7 +244,7 @@ async function submitAppeal(
       error: 'Failed to submit appeal. Please try again.'
     }), {
       status: 500,
-      headers: corsHeaders,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 }
@@ -259,7 +259,7 @@ async function listAppeals(userId: string, env: Env, corsHeaders: Record<string,
     if (!user) {
       return new Response(JSON.stringify({ error: 'User not found' }), {
         status: 404,
-        headers: corsHeaders,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
@@ -329,7 +329,7 @@ async function listAppeals(userId: string, env: Env, corsHeaders: Record<string,
       appeals: processedAppeals,
       total: processedAppeals.length
     }), {
-      headers: corsHeaders,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
@@ -338,7 +338,7 @@ async function listAppeals(userId: string, env: Env, corsHeaders: Record<string,
       error: 'Failed to load appeals'
     }), {
       status: 500,
-      headers: corsHeaders,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 }
@@ -352,7 +352,7 @@ async function listAppealsForAdmin(userId: string, env: Env, corsHeaders: Record
   if (!user) {
     return new Response(JSON.stringify({ error: 'User not found' }), {
       status: 404,
-      headers: corsHeaders,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
@@ -360,7 +360,7 @@ async function listAppealsForAdmin(userId: string, env: Env, corsHeaders: Record
   if (user.user_role !== 'admin' && user.user_role !== 'super_admin') {
     return new Response(JSON.stringify({ error: 'Admin access required' }), {
       status: 403,
-      headers: corsHeaders,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
@@ -381,7 +381,7 @@ async function resolveAppeal(
   if (!user) {
     return new Response(JSON.stringify({ error: 'User not found' }), {
       status: 404,
-      headers: corsHeaders,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
@@ -389,7 +389,7 @@ async function resolveAppeal(
   if (user.user_role !== 'admin' && user.user_role !== 'super_admin') {
     return new Response(JSON.stringify({ error: 'Admin access required' }), {
       status: 403,
-      headers: corsHeaders,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
@@ -401,7 +401,7 @@ async function resolveAppeal(
         error: 'Missing required fields: appeal_id, action'
       }), {
         status: 400,
-        headers: corsHeaders,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
@@ -410,7 +410,7 @@ async function resolveAppeal(
         error: 'Invalid action. Must be: approve, reject, or add_to_allowlist'
       }), {
         status: 400,
-        headers: corsHeaders,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
@@ -423,14 +423,14 @@ async function resolveAppeal(
     if (!appeal) {
       return new Response(JSON.stringify({ error: 'Appeal not found' }), {
         status: 404,
-        headers: corsHeaders,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     if (appeal.status !== 'pending') {
       return new Response(JSON.stringify({ error: 'Appeal has already been resolved' }), {
         status: 400,
-        headers: corsHeaders,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
@@ -616,7 +616,7 @@ async function resolveAppeal(
       appeal_id: appeal.id,
       new_status: newStatus
     }), {
-      headers: corsHeaders,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
@@ -625,7 +625,7 @@ async function resolveAppeal(
       error: 'Failed to resolve appeal'
     }), {
       status: 500,
-      headers: corsHeaders,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 }
@@ -639,7 +639,7 @@ async function getAIAllowlist(userId: string, env: Env, corsHeaders: Record<stri
   if (!user) {
     return new Response(JSON.stringify({ error: 'User not found' }), {
       status: 404,
-      headers: corsHeaders,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
@@ -647,7 +647,7 @@ async function getAIAllowlist(userId: string, env: Env, corsHeaders: Record<stri
   if (user.user_role !== 'admin' && user.user_role !== 'super_admin') {
     return new Response(JSON.stringify({ error: 'Admin access required' }), {
       status: 403,
-      headers: corsHeaders,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
@@ -668,7 +668,7 @@ async function getAIAllowlist(userId: string, env: Env, corsHeaders: Record<stri
     return new Response(JSON.stringify({
       allowlist: allowlistItems.results || []
     }), {
-      headers: corsHeaders,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
@@ -677,7 +677,7 @@ async function getAIAllowlist(userId: string, env: Env, corsHeaders: Record<stri
       error: 'Failed to load allowlist'
     }), {
       status: 500,
-      headers: corsHeaders,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 }
@@ -696,7 +696,7 @@ async function addToAllowlist(
   if (!user) {
     return new Response(JSON.stringify({ error: 'User not found' }), {
       status: 404,
-      headers: corsHeaders,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
@@ -704,7 +704,7 @@ async function addToAllowlist(
   if (user.user_role !== 'admin' && user.user_role !== 'super_admin') {
     return new Response(JSON.stringify({ error: 'Admin access required' }), {
       status: 403,
-      headers: corsHeaders,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
@@ -716,7 +716,7 @@ async function addToAllowlist(
         error: 'Missing or invalid labels array'
       }), {
         status: 400,
-        headers: corsHeaders,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
@@ -752,7 +752,7 @@ async function addToAllowlist(
       results,
       message: `Added ${results.filter(r => r.success).length} labels to allowlist`
     }), {
-      headers: corsHeaders,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
@@ -761,7 +761,7 @@ async function addToAllowlist(
       error: 'Failed to add to allowlist'
     }), {
       status: 500,
-      headers: corsHeaders,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 }
@@ -771,16 +771,23 @@ async function addToAllowlist(
  */
 async function updateAppeal(
   request: Request,
-  user: any,
+  userId: string,
   env: Env,
   corsHeaders: Record<string, string>,
   appealId: number
 ): Promise<Response> {
-  // Check admin permissions
+  const user = await getUserData(userId, env);
+  if (!user) {
+    return new Response(JSON.stringify({ error: 'User not found' }), {
+      status: 404,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
   if (user.user_role !== 'admin' && user.user_role !== 'super_admin') {
     return new Response(JSON.stringify({ error: 'Admin access required' }), {
       status: 403,
-      headers: corsHeaders,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
@@ -798,7 +805,7 @@ async function updateAppeal(
     if (!result.success || result.changes === 0) {
       return new Response(JSON.stringify({ error: 'Appeal not found or update failed' }), {
         status: 404,
-        headers: corsHeaders,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
@@ -806,7 +813,7 @@ async function updateAppeal(
       success: true,
       message: 'Appeal updated successfully'
     }), {
-      headers: corsHeaders,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
@@ -815,7 +822,7 @@ async function updateAppeal(
       error: 'Failed to update appeal'
     }), {
       status: 500,
-      headers: corsHeaders,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 }
@@ -834,7 +841,7 @@ async function deleteAppeal(
   if (!user) {
     return new Response(JSON.stringify({ error: 'User not found' }), {
       status: 404,
-      headers: corsHeaders,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
@@ -842,7 +849,7 @@ async function deleteAppeal(
   if (user.user_role !== 'admin' && user.user_role !== 'super_admin') {
     return new Response(JSON.stringify({ error: 'Admin access required' }), {
       status: 403,
-      headers: corsHeaders,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
@@ -854,7 +861,7 @@ async function deleteAppeal(
     if (!existingAppeal) {
       return new Response(JSON.stringify({ error: 'Appeal not found' }), {
         status: 404,
-        headers: corsHeaders,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
@@ -879,7 +886,7 @@ async function deleteAppeal(
     if (result.changes === 0) {
       return new Response(JSON.stringify({ error: 'Appeal not found or already deleted' }), {
         status: 404,
-        headers: corsHeaders,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
@@ -887,7 +894,7 @@ async function deleteAppeal(
       success: true,
       message: 'Appeal deleted successfully'
     }), {
-      headers: corsHeaders,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
@@ -899,7 +906,7 @@ async function deleteAppeal(
       details: errorMessage
     }), {
       status: 500,
-      headers: corsHeaders,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 }

@@ -14,42 +14,21 @@ export async function getCachedUserBooks(userId: string, env: Env, corsHeaders: 
   const cache = new CacheManager(env);
   const cacheKey = CacheKeys.userBooks(userId);
   
-  if (env.ENVIRONMENT === 'local') {
-    console.log('🔍 CachedBooks Debug: Cache key', cacheKey);
-  }
-  
   // Try to get from cache first
   const cachedBooks = await cache.get<any[]>(cacheKey);
   if (cachedBooks) {
-    if (env.ENVIRONMENT === 'local') {
-      console.log('🔍 CachedBooks Debug: Found cached books', cachedBooks.length);
-      console.log('🔍 CachedBooks Debug: Sample book current_series:', cachedBooks[0]?.current_series);
-    }
     return new Response(JSON.stringify(cachedBooks), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
-  
-  if (env.ENVIRONMENT === 'local') {
-    console.log('🔍 CachedBooks Debug: No cache, falling back to database');
-  }
-  
+
   // Fallback to database
   try {
     const response = await getUserBooks(userId, env, corsHeaders);
-    
-    if (env.ENVIRONMENT === 'local') {
-      console.log('🔍 CachedBooks Debug: Database response status', response.status);
-    }
-    
+
     // Cache the result if successful
     if (response.ok) {
       const books = await response.json();
-      
-      if (env.ENVIRONMENT === 'local') {
-        console.log('🔍 CachedBooks Debug: Got books from database', books.length);
-        console.log('🔍 CachedBooks Debug: Sample book from DB current_series:', books[0]?.current_series);
-      }
       
       await cache.set(cacheKey, books, CacheTTL.USER_BOOKS);
       
