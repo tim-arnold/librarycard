@@ -522,7 +522,9 @@ export default function GlobalHeader({ userRole, userFirstName }: GlobalHeaderPr
                     boxShadow: 'var(--marketing-shadow-lg)',
                     minWidth: '200px',
                     zIndex: 1000,
-                    padding: 'var(--marketing-spacing-2) 0'
+                    padding: 'var(--marketing-spacing-2) 0',
+                    display: 'flex',
+                    flexDirection: 'column'
                   }}
                 >
                   {/* Light/Dark Mode Toggle */}

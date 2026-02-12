@@ -78,10 +78,16 @@ export async function approveSignupRequest(request: Request, requestId: number, 
     const verificationToken = generateUUID();
     const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-    // Create the user account
+    // Default to personal library creation if no onboarding specified (backward compatibility)
+    const onboarding = onboardingParam || { type: 'new_location' };
+
+    // Determine user role based on onboarding type
+    const userRole = onboarding.type === 'new_location' ? 'admin' : 'user';
+
+    // Create the user account with correct role
     const newUserId = generateUUID();
     await env.DB.prepare(`
-      INSERT INTO users (id, email, first_name, last_name, password_hash, auth_provider, email_verified, 
+      INSERT INTO users (id, email, first_name, last_name, password_hash, auth_provider, email_verified,
                         email_verification_token, email_verification_expires, user_role)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
@@ -94,7 +100,7 @@ export async function approveSignupRequest(request: Request, requestId: number, 
       false,
       verificationToken,
       verificationExpires.toISOString(),
-      'user'
+      userRole
     ).run();
 
     // Enhanced User Onboarding (LCWEB-169) - Handle location assignment
@@ -111,19 +117,6 @@ export async function approveSignupRequest(request: Request, requestId: number, 
       permissions_granted: [],
       capabilities_granted: []
     };
-
-    // Default to personal library creation if no onboarding specified (backward compatibility)
-    const onboarding = onboardingParam || { type: 'new_location' };
-
-    // Determine user role based on onboarding type
-    const userRole = onboarding.type === 'new_location' ? 'admin' : 'user';
-
-    // Update user role for location owners
-    if (userRole === 'admin') {
-      await env.DB.prepare(`
-        UPDATE users SET user_role = ? WHERE id = ?
-      `).bind(userRole, newUserId).run();
-    }
 
     if (onboarding) {
       const { assignUserToLocation, createPersonalLocation } = await import('../locations');
@@ -379,16 +372,13 @@ export async function cleanupUser(request: Request, userId: string, env: Env, co
           });
         }
 
-        // Transfer location ownership
-        await env.DB.prepare(`
-          UPDATE locations SET owner_id = ? WHERE id = ?
-        `).bind(newOwnerId, locationId).run();
-
-        // Update location membership to make new owner an owner
-        await env.DB.prepare(`
-          INSERT OR REPLACE INTO location_members (location_id, user_id, role, invited_by, joined_at)
-          VALUES (?, ?, 'owner', ?, CURRENT_TIMESTAMP)
-        `).bind(locationId, newOwnerId, userId).run();
+        await env.DB.batch([
+          env.DB.prepare(`UPDATE locations SET owner_id = ? WHERE id = ?`).bind(newOwnerId, locationId),
+          env.DB.prepare(`
+            INSERT OR REPLACE INTO location_members (location_id, user_id, role, invited_by, joined_at)
+            VALUES (?, ?, 'owner', ?, CURRENT_TIMESTAMP)
+          `).bind(locationId, newOwnerId, userId),
+        ]);
       }
     }
 
@@ -399,7 +389,6 @@ export async function cleanupUser(request: Request, userId: string, env: Env, co
         await env.DB.prepare('PRAGMA foreign_keys = OFF').run();
 
         try {
-          // Get all book IDs first, then delete them individually like the working book deletion
           const booksResult = await env.DB.prepare(`
             SELECT b.id FROM books b
             JOIN shelves s ON b.shelf_id = s.id
@@ -408,25 +397,20 @@ export async function cleanupUser(request: Request, userId: string, env: Env, co
 
           const bookIds = booksResult.results.map((book: any) => book.id);
 
-          // Delete books one by one using the same method as individual book deletion
-          for (const bookId of bookIds) {
-            await env.DB.prepare('DELETE FROM books WHERE id = ?').bind(bookId).run();
-          }
+          const deleteStatements = [
+            ...bookIds.map((bookId: any) =>
+              env.DB.prepare('DELETE FROM books WHERE id = ?').bind(bookId)
+            ),
+            env.DB.prepare('DELETE FROM shelves WHERE location_id = ?').bind(locationId),
+            env.DB.prepare('DELETE FROM location_user_permissions WHERE location_id = ?').bind(locationId),
+            env.DB.prepare('DELETE FROM location_admin_capabilities WHERE location_id = ?').bind(locationId),
+            env.DB.prepare('DELETE FROM location_default_permissions WHERE location_id = ?').bind(locationId),
+            env.DB.prepare('DELETE FROM location_members WHERE location_id = ?').bind(locationId),
+            env.DB.prepare('DELETE FROM location_invitations WHERE location_id = ?').bind(locationId),
+            env.DB.prepare('DELETE FROM locations WHERE id = ?').bind(locationId),
+          ];
 
-          // Delete shelves (they reference locations)
-          await env.DB.prepare('DELETE FROM shelves WHERE location_id = ?').bind(locationId).run();
-
-          // Delete location-specific permission and capability data
-          await env.DB.prepare('DELETE FROM location_user_permissions WHERE location_id = ?').bind(locationId).run();
-          await env.DB.prepare('DELETE FROM location_admin_capabilities WHERE location_id = ?').bind(locationId).run();
-          await env.DB.prepare('DELETE FROM location_default_permissions WHERE location_id = ?').bind(locationId).run();
-
-          // Delete location membership and invitation data
-          await env.DB.prepare('DELETE FROM location_members WHERE location_id = ?').bind(locationId).run();
-          await env.DB.prepare('DELETE FROM location_invitations WHERE location_id = ?').bind(locationId).run();
-
-          // Finally delete the location itself
-          await env.DB.prepare('DELETE FROM locations WHERE id = ?').bind(locationId).run();
+          await env.DB.batch(deleteStatements);
         } finally {
           await env.DB.prepare('PRAGMA foreign_keys = ON').run();
         }
@@ -446,7 +430,6 @@ export async function cleanupUser(request: Request, userId: string, env: Env, co
     try {
       const { invalidateAllAdminAnalytics } = await import('./cached');
       await invalidateAllAdminAnalytics(env);
-      console.log('✅ Successfully invalidated admin analytics cache');
     } catch (cacheError) {
       console.error('❌ Failed to invalidate admin analytics cache:', cacheError);
     }

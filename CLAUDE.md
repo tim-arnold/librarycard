@@ -178,6 +178,33 @@ When adding new features:
 - Avoid creating new Next.js API routes unless absolutely necessary for auth flows
 - Include proper Bearer token authentication for all worker requests
 
+## AI-Assisted Development
+
+This project uses an AI agent harness architecture for session continuity. See `docs/ai-harness/README.md` for full details.
+
+### Session Startup
+
+At the start of each session, the AI should:
+1. Read `docs/ai-harness/progress.md` - current state and recent work
+2. Check `git log --oneline -10` - recent commits
+3. Review `docs/ai-harness/feature-checklist.md` - if working on tracked features
+4. Run `npm run build && npm run lint` - verify build health
+
+**Trigger phrases:** "start session", "get up to speed", "read the harness"
+
+### Session Closeout
+
+Before ending a session:
+1. Update `progress.md` with work completed
+2. Update `feature-checklist.md` if items were completed
+3. Commit changes with descriptive messages
+
+**Trigger phrases:** "close session", "wrap up", "end session"
+
+### Key Principle
+
+Work on **one feature at a time**. Complete and verify before moving on.
+
 ## AI Task Patterns
 
 ### When Adding Features

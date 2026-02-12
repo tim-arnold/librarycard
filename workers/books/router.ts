@@ -1,5 +1,6 @@
 import { Env } from '../types';
-import { getUserDisplayInfo, canViewUserActivity } from '../privacy';
+import { formatUserDisplayName } from '../privacy';
+import { isUserAdmin, isUserSuperAdmin } from '../auth';
 import {
   getUserBooks,
   createBook,
@@ -55,34 +56,7 @@ export class BooksRouter {
 
     // EXACT COPY FROM ORIGINAL - Book endpoints
     if (path === '/api/books' && request.method === 'GET') {
-      if (env.ENVIRONMENT === 'local') {
-        if (env.ENVIRONMENT === 'local') {
-          console.log('🔍 Books Debug: Fetching books for user', userId);
-        }
-      }
-      
-      try {
-        const result = await getCachedUserBooks(userId, env, corsHeaders);
-        
-        if (env.ENVIRONMENT === 'local') {
-          if (env.ENVIRONMENT === 'local') {
-            console.log('🔍 Books Debug: Result status', result.status);
-            if (!result.ok) {
-              const errorText = await result.text();
-              console.log('🔍 Books Debug: Error response', errorText);
-            }
-          }
-        }
-        
-        return result;
-      } catch (error) {
-        if (env.ENVIRONMENT === 'local') {
-          if (env.ENVIRONMENT === 'local') {
-            console.error('🔍 Books Debug: Exception caught', error);
-          }
-        }
-        throw error;
-      }
+      return await getCachedUserBooks(userId, env, corsHeaders);
     }
 
     if (path === '/api/books' && request.method === 'POST') {
@@ -98,13 +72,10 @@ export class BooksRouter {
 
     // Enhanced book editions endpoint for cover selection (multi-source)
     if (path === '/api/books/editions' && request.method === 'GET') {
-      console.log('🔍 Enhanced book editions request received');
       const title = url.searchParams.get('title');
       const author = url.searchParams.get('author');
-      const query = url.searchParams.get('q'); // Fallback for general search
+      const query = url.searchParams.get('q');
       const enhanced = url.searchParams.get('enhanced') === 'true';
-      
-      console.log('📝 Request params:', { title, author, query, enhanced });
       
       // Require either title+author or general query
       if (!title && !author && !query) {
@@ -119,13 +90,7 @@ export class BooksRouter {
         const searchTitle = title || query || '';
         const searchAuthor = author || query || '';
         
-        console.log('🚀 Calling getEnhancedBookEditions with:', { searchTitle, searchAuthor });
-        console.log('ℹ️  Enhanced search always filters for books with cover art');
-        
-        // Use enhanced multi-source approach (always filters for covers)
         const editions = await getEnhancedBookEditions(searchTitle, searchAuthor, env);
-        
-        console.log('✅ Enhanced search complete, returning', editions.length, 'editions');
         
         return new Response(JSON.stringify({ editions }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -517,6 +482,10 @@ export class BooksRouter {
         popular_books: [],
       };
 
+      const viewerIsAdmin = await isUserAdmin(userId, env);
+      const viewerIsSuperAdmin = !viewerIsAdmin ? await isUserSuperAdmin(userId, env) : false;
+      const canViewReal = viewerIsAdmin || viewerIsSuperAdmin;
+
       // Get recent reviews (last 30 days)
       if (includeReviews) {
         const recentReviewsStmt = env.DB.prepare(`
@@ -546,7 +515,7 @@ export class BooksRouter {
             l.name as location_name,
             l.activity_visibility
           FROM book_ratings br
-          JOIN books b ON br.book_id = CAST(b.id AS INTEGER)
+          JOIN books b ON br.book_id = b.id
           JOIN users u ON br.user_id = u.id
           JOIN shelves s ON b.shelf_id = s.id
           JOIN locations l ON s.location_id = l.id
@@ -561,9 +530,7 @@ export class BooksRouter {
         
         const recentReviews = await recentReviewsStmt.bind(...locationIds, limit).all();
 
-        // Apply privacy settings to each review
-        const privacyAwareReviews = [];
-        for (const review of recentReviews.results) {
+        results.recent_reviews = recentReviews.results.map((review: any) => {
           const user = {
             id: review.user_id,
             email: review.email,
@@ -573,17 +540,16 @@ export class BooksRouter {
             custom_username: review.custom_username
           };
 
-          // Get privacy-aware user display info
-          const userDisplayInfo = await getUserDisplayInfo(
-            user,
-            userId,
-            review.location_id,
-            'review',
-            review.id.toString(),
-            env
-          );
+          const isAnonymous = canViewReal ? false :
+            (review.activity_visibility === 'private' ? true :
+            review.reviewer_anonymous !== null ? !!review.reviewer_anonymous :
+            user.display_name_preference === 'anonymous');
 
-          privacyAwareReviews.push({
+          const displayName = canViewReal
+            ? formatUserDisplayName(user as any, 'full_name', false)
+            : formatUserDisplayName(user as any, user.display_name_preference, isAnonymous, user.custom_username);
+
+          return {
             id: `review-${review.id}`,
             type: 'recent_review',
             timestamp: review.created_at,
@@ -604,18 +570,17 @@ export class BooksRouter {
                 id: review.user_id,
                 first_name: user.first_name,
                 last_name: user.last_name,
-                display_name: userDisplayInfo.displayName,
-                is_anonymous: userDisplayInfo.isAnonymous,
+                display_name: displayName,
+                is_anonymous: isAnonymous,
                 display_name_preference: user.display_name_preference,
                 custom_username: user.custom_username
               },
               rating: review.rating,
               review: review.review,
             },
-          });
-        }
+          };
+        });
 
-        results.recent_reviews = privacyAwareReviews;
       }
 
       // Get newly added books (last 14 days)
@@ -656,9 +621,7 @@ export class BooksRouter {
         
         const newBooks = await newBooksStmt.bind(...locationIds, limit).all();
 
-        // Apply privacy settings to each newly added book
-        const privacyAwareBooks = [];
-        for (const book of newBooks.results) {
+        results.newly_added = newBooks.results.map((book: any) => {
           const user = {
             id: book.user_id,
             email: book.email,
@@ -668,17 +631,16 @@ export class BooksRouter {
             custom_username: book.custom_username
           };
 
-          // Get privacy-aware user display info
-          const userDisplayInfo = await getUserDisplayInfo(
-            user,
-            userId,
-            book.location_id,
-            'book_addition',
-            book.id.toString(),
-            env
-          );
+          const isAnonymous = canViewReal ? false :
+            (book.activity_visibility === 'private' ? true :
+            book.added_by_anonymous !== null ? !!book.added_by_anonymous :
+            user.display_name_preference === 'anonymous');
 
-          privacyAwareBooks.push({
+          const displayName = canViewReal
+            ? formatUserDisplayName(user as any, 'full_name', false)
+            : formatUserDisplayName(user as any, user.display_name_preference, isAnonymous, user.custom_username);
+
+          return {
             id: `new-${book.id}`,
             type: 'newly_added',
             timestamp: book.created_at,
@@ -699,18 +661,17 @@ export class BooksRouter {
                 id: book.user_id,
                 first_name: user.first_name,
                 last_name: user.last_name,
-                display_name: userDisplayInfo.displayName,
-                is_anonymous: userDisplayInfo.isAnonymous,
+                display_name: displayName,
+                is_anonymous: isAnonymous,
                 display_name_preference: user.display_name_preference,
                 custom_username: user.custom_username
               },
               action: 'added',
               days_ago: Math.floor(book.days_ago),
             },
-          });
-        }
+          };
+        });
 
-        results.newly_added = privacyAwareBooks;
       }
 
       // Get popular books (most rated and highest average ratings)
@@ -733,7 +694,7 @@ export class BooksRouter {
           FROM books b
           JOIN shelves s ON b.shelf_id = s.id
           JOIN locations l ON s.location_id = l.id
-          LEFT JOIN book_ratings br ON br.book_id = CAST(b.id AS INTEGER)
+          LEFT JOIN book_ratings br ON br.book_id = b.id
           WHERE l.id IN (${locationIds.map(() => '?').join(',')})
             AND br.id IS NOT NULL
           GROUP BY b.id

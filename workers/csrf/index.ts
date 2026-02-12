@@ -96,16 +96,7 @@ export async function requireCSRFToken(
   }
 
   // Get CSRF token from header
-  const csrfToken = request.headers.get('X-CSRF-Token') || request.headers.get('X-Requested-With');
-  
-  // For AJAX requests with X-Requested-With: XMLHttpRequest, we can be more lenient
-  // This header is difficult for attackers to forge cross-origin
-  const isXMLHttpRequest = request.headers.get('X-Requested-With') === 'XMLHttpRequest';
-  
-  if (isXMLHttpRequest) {
-    // XMLHttpRequest header provides some CSRF protection
-    return null;
-  }
+  const csrfToken = request.headers.get('X-CSRF-Token');
 
   // Validate CSRF token
   if (!csrfToken || !(await validateCSRFToken(env, userId, csrfToken))) {
@@ -149,8 +140,24 @@ export async function getCSRFTokenEndpoint(
 
 // Check if endpoint should be protected with CSRF
 export function shouldProtectWithCSRF(path: string, method: string): boolean {
-  // Skip CSRF for authentication endpoints (they have other protections)
-  if (path.startsWith('/api/auth/')) {
+  // Skip CSRF for safe methods
+  if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase())) {
+    return false;
+  }
+
+  // Skip CSRF for public auth endpoints (login, register, forgot-password, etc.)
+  const publicAuthPaths = [
+    '/api/auth/register',
+    '/api/auth/verify',
+    '/api/auth/verify-email',
+    '/api/auth/forgot-password',
+    '/api/auth/reset-password',
+    '/api/auth/verify-reset-token',
+    '/api/auth/2fa/complete-login',
+    '/api/auth/webauthn/authenticate/begin',
+    '/api/auth/webauthn/authenticate/finish',
+  ];
+  if (publicAuthPaths.includes(path)) {
     return false;
   }
 
@@ -159,11 +166,7 @@ export function shouldProtectWithCSRF(path: string, method: string): boolean {
     return false;
   }
 
-  // Skip CSRF for safe methods
-  if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase())) {
-    return false;
-  }
-
-  // Protect all other state-changing operations
+  // Protect all other state-changing operations including protected auth endpoints
+  // (change-password, 2FA setup/disable, logout, webauthn registration)
   return true;
 }

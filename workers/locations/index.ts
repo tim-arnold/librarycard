@@ -107,8 +107,8 @@ export async function createLocation(request: Request, userId: string, env: Env,
   
   // Create location
   const locationStmt = env.DB.prepare(`
-    INSERT INTO locations (name, description, owner_id, single_shelf_location, activity_visibility, created_at)
-    VALUES (?, ?, ?, ?, ?, datetime('now'))
+    INSERT INTO locations (name, description, owner_id, single_shelf_location, activity_visibility, allow_user_exports, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
   `);
 
   const locationResult = await locationStmt.bind(
@@ -116,7 +116,8 @@ export async function createLocation(request: Request, userId: string, env: Env,
     location.description || null,
     userId,
     location.single_shelf_location || false,
-    location.activity_visibility || 'private'
+    location.activity_visibility || 'private',
+    location.allow_user_exports !== undefined ? (location.allow_user_exports ? 1 : 0) : 1
   ).run();
 
   const locationId = locationResult.meta.last_row_id;
@@ -170,7 +171,7 @@ export async function updateLocation(request: Request, userId: string, env: Env,
 
   const stmt = env.DB.prepare(`
     UPDATE locations
-    SET name = ?, description = ?, single_shelf_location = ?, activity_visibility = ?, updated_at = datetime('now')
+    SET name = ?, description = ?, single_shelf_location = ?, activity_visibility = ?, allow_user_exports = ?, updated_at = datetime('now')
     WHERE id = ?
   `);
 
@@ -179,6 +180,7 @@ export async function updateLocation(request: Request, userId: string, env: Env,
     location.description || null,
     location.single_shelf_location || false,
     location.activity_visibility || 'private',
+    location.allow_user_exports !== undefined ? (location.allow_user_exports ? 1 : 0) : 1,
     id
   ).run();
 
@@ -222,23 +224,11 @@ export async function deleteLocation(userId: string, env: Env, corsHeaders: Reco
   // book_images has foreign keys to both books AND users, so we need to delete it before books
 
   try {
-    console.log('🔍 Starting location deletion for location:', id);
-
     // Check what exists before deletion
     const bookCheck = await env.DB.prepare('SELECT COUNT(*) as count FROM books WHERE shelf_id IN (SELECT id FROM shelves WHERE location_id = ?)').bind(id).first();
-    console.log('🔍 Books to delete:', (bookCheck as any)?.count || 0);
-
-    // Note: book_images table was dropped due to foreign key constraint issues
-    // Custom covers are stored in the thumbnail field instead
-    console.log('🔍 Book images to delete: 0 (table does not exist)');
-
-    // Handle book deletion with foreign key constraint workaround
     const bookCount = (bookCheck as any)?.count || 0;
 
     if (bookCount > 0) {
-      console.log('🔍 Deleting books and related data...');
-
-      // Get all book IDs first, then delete them individually like the working book deletion
       const booksResult = await env.DB.prepare(`
         SELECT b.id FROM books b
         JOIN shelves s ON b.shelf_id = s.id
@@ -246,17 +236,10 @@ export async function deleteLocation(userId: string, env: Env, corsHeaders: Reco
       `).bind(id).all();
 
       const bookIds = booksResult.results.map((book: any) => book.id);
-      console.log(`🔍 Found ${bookIds.length} books to delete:`, bookIds);
 
-      // Delete books one by one using the same method as individual book deletion
       for (const bookId of bookIds) {
-        console.log(`🔍 Deleting book ${bookId}...`);
         await env.DB.prepare('DELETE FROM books WHERE id = ?').bind(bookId).run();
       }
-
-      console.log('🔍 All books deleted successfully');
-    } else {
-      console.log('🔍 No books to delete, skipping books deletion');
     }
 
     // Delete shelves
@@ -692,12 +675,12 @@ export async function getLocationDefaultPermissionsAPI(locationId: number, userI
 
 export async function updateLocationDefaultPermissions(request: Request, locationId: number, userId: string, env: Env, corsHeaders: Record<string, string>) {
   const requestBody = await request.json() as any;
-  console.log('🔍 Default permissions request body:', requestBody);
+
   
   const userPermissions = Array.isArray(requestBody?.userPermissions) ? requestBody.userPermissions : [];
   const adminCapabilities = Array.isArray(requestBody?.adminCapabilities) ? requestBody.adminCapabilities : [];
   
-  console.log('🔍 Processed arrays:', { userPermissions, adminCapabilities });
+
 
   // Check if user is super admin or has can_manage_location_settings capability
   const isSuperAdmin = await isUserSuperAdmin(userId, env);
@@ -739,28 +722,19 @@ export async function updateLocationDefaultPermissions(request: Request, locatio
   }
 
   try {
-    // Remove all existing default permissions for this location
-    await env.DB.prepare(`
-      DELETE FROM location_default_permissions WHERE location_id = ?
-    `).bind(locationId).run();
+    const statements = [
+      env.DB.prepare('DELETE FROM location_default_permissions WHERE location_id = ?').bind(locationId),
+      ...userPermissions.map((permission: string) =>
+        env.DB.prepare('INSERT INTO location_default_permissions (location_id, permission, permission_type) VALUES (?, ?, ?)').bind(locationId, permission, 'user')
+      ),
+      ...adminCapabilities.map((capability: string) =>
+        env.DB.prepare('INSERT INTO location_default_permissions (location_id, permission, permission_type) VALUES (?, ?, ?)').bind(locationId, capability, 'admin')
+      ),
+    ];
 
-    // Add new user permissions
-    for (const permission of userPermissions) {
-      await env.DB.prepare(`
-        INSERT INTO location_default_permissions (location_id, permission, permission_type)
-        VALUES (?, ?, 'user')
-      `).bind(locationId, permission).run();
-    }
+    await env.DB.batch(statements);
 
-    // Add new admin capabilities
-    for (const capability of adminCapabilities) {
-      await env.DB.prepare(`
-        INSERT INTO location_default_permissions (location_id, permission, permission_type)
-        VALUES (?, ?, 'admin')
-      `).bind(locationId, capability).run();
-    }
-
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
       message: 'Default permissions updated successfully',
       userPermissions,
       adminCapabilities

@@ -181,7 +181,13 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
   const [selectedBookForGenreEdit, setSelectedBookForGenreEdit] = useState<EnhancedBook | null>(null)
   const [selectedBookForCoverEdit, setSelectedBookForCoverEdit] = useState<EnhancedBook | null>(null)
   const [exportModalOpen, setExportModalOpen] = useState(false)
-  
+
+  // Check if export should be shown: admins can always export, or user has at least one location with export enabled
+  const canExport = useMemo(() => {
+    if (isAdmin(userRole)) return true
+    return userLocations.some((loc: any) => loc.allow_user_exports !== 0)
+  }, [userRole, userLocations])
+
   // Mobile sidebar state
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
@@ -542,7 +548,7 @@ export default function BookLibrary({ initialFilters }: BookLibraryProps = {}) {
           totalBooksCount={books.length}
           onViewModeChange={handleViewModeChange}
           onBooksPerPageChange={handleBooksPerPageChange}
-          onExportClick={() => setExportModalOpen(true)}
+          onExportClick={canExport ? () => setExportModalOpen(true) : undefined}
         />
 
         {/* Main Content Layout */}

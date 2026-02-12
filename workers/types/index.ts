@@ -62,6 +62,8 @@ export interface Location {
   single_shelf_location?: boolean;
   // Privacy Settings (LCWEB-174)
   activity_visibility?: 'private' | 'public';
+  // Export Permissions (LCWEB-207)
+  allow_user_exports?: boolean;
 }
 
 export interface Shelf {

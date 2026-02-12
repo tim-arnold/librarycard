@@ -14,7 +14,7 @@ CREATE TABLE locations (
   owner_id TEXT NOT NULL,
   single_shelf_location BOOLEAN DEFAULT FALSE,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME, activity_visibility TEXT DEFAULT 'private' CHECK (activity_visibility IN ('private', 'public')),
+  updated_at DATETIME, activity_visibility TEXT DEFAULT 'private' CHECK (activity_visibility IN ('private', 'public')), allow_user_exports INTEGER DEFAULT 1,
   FOREIGN KEY (owner_id) REFERENCES users(id)
 );
 
@@ -286,7 +286,7 @@ CREATE TABLE series (
 );
 
 CREATE TABLE book_series (
-    book_id TEXT NOT NULL,
+    book_id INTEGER NOT NULL,
     series_id TEXT NOT NULL,
     added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (book_id, series_id),

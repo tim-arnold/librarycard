@@ -39,7 +39,7 @@ export async function getUserBooks(userId: string, env: Env, corsHeaders: Record
           SELECT json_group_array(json_object('id', s.id, 'name', s.name, 'description', s.description, 'color', s.color))
           FROM book_series bs
           JOIN series s ON bs.series_id = s.id
-          WHERE bs.book_id = CAST(b.id AS TEXT) AND s.approval_status = 'approved'
+          WHERE bs.book_id = b.id AND s.approval_status = 'approved'
         ), '[]') as current_series,
         COALESCE(lra.library_average_rating, 0) as library_average_rating,
         COALESCE(lra.library_rating_count, 0) as library_rating_count,
@@ -80,7 +80,7 @@ export async function getUserBooks(userId: string, env: Env, corsHeaders: Record
           SELECT json_group_array(json_object('id', s.id, 'name', s.name, 'description', s.description, 'color', s.color))
           FROM book_series bs
           JOIN series s ON bs.series_id = s.id
-          WHERE bs.book_id = CAST(b.id AS TEXT) AND s.approval_status = 'approved'
+          WHERE bs.book_id = b.id AND s.approval_status = 'approved'
         ), '[]') as current_series,
         COALESCE(lra.library_average_rating, 0) as library_average_rating,
         COALESCE(lra.library_rating_count, 0) as library_rating_count,
@@ -407,25 +407,21 @@ export async function checkoutBook(request: Request, bookId: number, userId: str
     // Calculate due date (default to 2 weeks from now if not provided)
     const dueDate = due_date || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
 
-    // Update book status
-    const updateBookStmt = env.DB.prepare(`
-      UPDATE books 
-      SET status = 'checked_out', 
-          checked_out_by = ?, 
-          checked_out_date = datetime('now'), 
-          due_date = ?
-      WHERE id = ?
-    `);
-
-    await updateBookStmt.bind(userId, dueDate, bookId).run();
-
-    // Add checkout history entry
-    const historyStmt = env.DB.prepare(`
-      INSERT INTO book_checkout_history (book_id, user_id, action, action_date, due_date, notes, created_at)
-      VALUES (?, ?, 'checkout', datetime('now'), ?, ?, datetime('now'))
-    `);
-
-    await historyStmt.bind(bookId, userId, dueDate, notes || null).run();
+    // Update book status and add history atomically
+    await env.DB.batch([
+      env.DB.prepare(`
+        UPDATE books
+        SET status = 'checked_out',
+            checked_out_by = ?,
+            checked_out_date = datetime('now'),
+            due_date = ?
+        WHERE id = ?
+      `).bind(userId, dueDate, bookId),
+      env.DB.prepare(`
+        INSERT INTO book_checkout_history (book_id, user_id, action, action_date, due_date, notes, created_at)
+        VALUES (?, ?, 'checkout', datetime('now'), ?, ?, datetime('now'))
+      `).bind(bookId, userId, dueDate, notes || null),
+    ]);
 
     // Get user name for response
     const userStmt = env.DB.prepare(`SELECT first_name, last_name FROM users WHERE id = ?`);
@@ -489,24 +485,20 @@ export async function checkinBook(bookId: number, userId: string, env: Env, cors
       }
       
       // Admin can check in any book - proceed to checkin logic
-      const updateBookStmt = env.DB.prepare(`
-        UPDATE books 
-        SET status = 'available', 
-            checked_out_by = NULL, 
-            checked_out_date = NULL, 
-            due_date = NULL
-        WHERE id = ?
-      `);
-
-      await updateBookStmt.bind(bookId).run();
-
-      // Add checkin history entry
-      const historyStmt = env.DB.prepare(`
-        INSERT INTO book_checkout_history (book_id, user_id, action, action_date, created_at)
-        VALUES (?, ?, 'return', datetime('now'), datetime('now'))
-      `);
-
-      await historyStmt.bind(bookId, userId).run();
+      await env.DB.batch([
+        env.DB.prepare(`
+          UPDATE books
+          SET status = 'available',
+              checked_out_by = NULL,
+              checked_out_date = NULL,
+              due_date = NULL
+          WHERE id = ?
+        `).bind(bookId),
+        env.DB.prepare(`
+          INSERT INTO book_checkout_history (book_id, user_id, action, action_date, created_at)
+          VALUES (?, ?, 'return', datetime('now'), datetime('now'))
+        `).bind(bookId, userId),
+      ]);
 
       return new Response(JSON.stringify({ 
         message: 'Book checked in successfully',
@@ -561,25 +553,21 @@ export async function checkinBook(bookId: number, userId: string, env: Env, cors
       }
     }
 
-    // Update book status
-    const updateBookStmt = env.DB.prepare(`
-      UPDATE books 
-      SET status = 'available', 
-          checked_out_by = NULL, 
-          checked_out_date = NULL, 
-          due_date = NULL
-      WHERE id = ?
-    `);
-
-    await updateBookStmt.bind(bookId).run();
-
-    // Add checkin history entry
-    const historyStmt = env.DB.prepare(`
-      INSERT INTO book_checkout_history (book_id, user_id, action, action_date, created_at)
-      VALUES (?, ?, 'return', datetime('now'), datetime('now'))
-    `);
-
-    await historyStmt.bind(bookId, userId).run();
+    // Update book status and add history atomically
+    await env.DB.batch([
+      env.DB.prepare(`
+        UPDATE books
+        SET status = 'available',
+            checked_out_by = NULL,
+            checked_out_date = NULL,
+            due_date = NULL
+        WHERE id = ?
+      `).bind(bookId),
+      env.DB.prepare(`
+        INSERT INTO book_checkout_history (book_id, user_id, action, action_date, created_at)
+        VALUES (?, ?, 'return', datetime('now'), datetime('now'))
+      `).bind(bookId, userId),
+    ]);
 
     return new Response(JSON.stringify({ 
       message: 'Book checked in successfully',
@@ -877,18 +865,14 @@ export async function approveBookRemovalRequest(requestId: number, userId: strin
       });
     }
 
-    // Delete the book
-    const deleteBookStmt = env.DB.prepare('DELETE FROM books WHERE id = ?');
-    await deleteBookStmt.bind((removalRequest as any).book_id).run();
-
-    // Update the removal request status
-    const updateRequestStmt = env.DB.prepare(`
-      UPDATE book_removal_requests 
-      SET status = 'approved', reviewed_by = ?, reviewed_at = datetime('now')
-      WHERE id = ?
-    `);
-    
-    await updateRequestStmt.bind(userId, requestId).run();
+    await env.DB.batch([
+      env.DB.prepare('DELETE FROM books WHERE id = ?').bind((removalRequest as any).book_id),
+      env.DB.prepare(`
+        UPDATE book_removal_requests
+        SET status = 'approved', reviewed_by = ?, reviewed_at = datetime('now')
+        WHERE id = ?
+      `).bind(userId, requestId),
+    ]);
 
     return new Response(JSON.stringify({ 
       message: 'Book removal request approved and book deleted successfully',

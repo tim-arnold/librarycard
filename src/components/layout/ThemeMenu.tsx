@@ -38,7 +38,6 @@ export default function ThemeMenu() {
   const variantKeys = Object.keys(themeVariants) as ThemeVariant[]
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    console.log('🔓 Theme menu opening...')
     setAnchorEl(event.currentTarget)
     // Set initial focus to current theme variant
     const currentIndex = variantKeys.indexOf(themeVariant)
@@ -47,7 +46,6 @@ export default function ThemeMenu() {
   }
 
   const handleMenuClose = () => {
-    console.log('🔒 Theme menu closing...')
     setAnchorEl(null)
     setFocusedVariantIndex(0)
   }
@@ -62,9 +60,6 @@ export default function ThemeMenu() {
   const GRID_ROWS = Math.ceil(variantKeys.length / GRID_COLUMNS)
 
   const handleVariantKeyDown = useCallback((event: React.KeyboardEvent, index: number) => {
-    console.log('🔥 handleVariantKeyDown called with key:', event.key, 'index:', index)
-
-    // Get all theme buttons dynamically
     const allThemeButtons = Array.from(document.querySelectorAll('button')).filter(btn =>
       btn.style.background?.includes('var(--marketing-primary)') ||
       btn.style.background?.includes('var(--marketing-gray-100)')
@@ -74,21 +69,16 @@ export default function ThemeMenu() {
     const currentRow = Math.floor(index / GRID_COLUMNS)
     const currentCol = index % GRID_COLUMNS
 
-    console.log('🎯 Navigation context:', { index, currentRow, currentCol, totalButtons })
-
     switch (event.key) {
       case 'ArrowRight':
         event.preventDefault()
         let nextColIndex = index
         if (currentCol < GRID_COLUMNS - 1 && index + 1 < totalButtons) {
-          // Move right within the same row
           nextColIndex = index + 1
         } else {
-          // Wrap to the beginning of the next row (or first row if at end)
           const nextRow = (currentRow + 1) % Math.ceil(totalButtons / GRID_COLUMNS)
           nextColIndex = Math.min(nextRow * GRID_COLUMNS, totalButtons - 1)
         }
-        console.log('➡️ Moving to index:', nextColIndex)
         allThemeButtons[nextColIndex]?.focus()
         setFocusedVariantIndex(nextColIndex)
         break
@@ -97,15 +87,12 @@ export default function ThemeMenu() {
         event.preventDefault()
         let prevColIndex = index
         if (currentCol > 0) {
-          // Move left within the same row
           prevColIndex = index - 1
         } else {
-          // Wrap to the end of the previous row (or last row if at beginning)
           const prevRow = (currentRow - 1 + Math.ceil(totalButtons / GRID_COLUMNS)) % Math.ceil(totalButtons / GRID_COLUMNS)
           const prevRowLastCol = Math.min((prevRow + 1) * GRID_COLUMNS - 1, totalButtons - 1)
           prevColIndex = prevRowLastCol
         }
-        console.log('⬅️ Moving to index:', prevColIndex)
         allThemeButtons[prevColIndex]?.focus()
         setFocusedVariantIndex(prevColIndex)
         break
@@ -115,13 +102,10 @@ export default function ThemeMenu() {
         let nextRowIndex = index
         const nextRowCalc = currentRow + 1
         if (nextRowCalc < Math.ceil(totalButtons / GRID_COLUMNS)) {
-          // Move down to the same column in the next row
           nextRowIndex = Math.min(nextRowCalc * GRID_COLUMNS + currentCol, totalButtons - 1)
         } else {
-          // Wrap to the top row, same column
           nextRowIndex = currentCol
         }
-        console.log('⬇️ Moving to index:', nextRowIndex)
         allThemeButtons[nextRowIndex]?.focus()
         setFocusedVariantIndex(nextRowIndex)
         break
@@ -131,22 +115,18 @@ export default function ThemeMenu() {
         let prevRowIndex = index
         const prevRowCalc = currentRow - 1
         if (prevRowCalc >= 0) {
-          // Move up to the same column in the previous row
           prevRowIndex = prevRowCalc * GRID_COLUMNS + currentCol
         } else {
-          // Wrap to the bottom row, same column
           const lastRow = Math.ceil(totalButtons / GRID_COLUMNS) - 1
           const targetIndex = lastRow * GRID_COLUMNS + currentCol
           prevRowIndex = Math.min(targetIndex, totalButtons - 1)
         }
-        console.log('⬆️ Moving to index:', prevRowIndex)
         allThemeButtons[prevRowIndex]?.focus()
         setFocusedVariantIndex(prevRowIndex)
         break
 
       case 'Home':
         event.preventDefault()
-        console.log('🏠 Moving to first button')
         allThemeButtons[0]?.focus()
         setFocusedVariantIndex(0)
         break
@@ -154,7 +134,6 @@ export default function ThemeMenu() {
       case 'End':
         event.preventDefault()
         const lastIndex = totalButtons - 1
-        console.log('🔚 Moving to last button:', lastIndex)
         allThemeButtons[lastIndex]?.focus()
         setFocusedVariantIndex(lastIndex)
         break
@@ -162,7 +141,6 @@ export default function ThemeMenu() {
       case 'Enter':
       case ' ':
         event.preventDefault()
-        console.log('✅ Selecting variant at index:', index)
         if (index < variantKeys.length) {
           handleThemeVariantChange(variantKeys[index])
         }
@@ -170,7 +148,6 @@ export default function ThemeMenu() {
 
       case 'Escape':
         event.preventDefault()
-        console.log('🚪 Closing menu')
         handleMenuClose()
         break
     }
@@ -207,35 +184,26 @@ export default function ThemeMenu() {
 
   // Global keyboard handler when menu is open
   useEffect(() => {
-    console.log('🎛️ Theme menu useEffect - isOpen:', isOpen, 'anchorEl:', !!anchorEl)
     if (!isOpen) return
 
-    console.log('✅ Setting up theme menu keyboard listener')
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      console.log('🎯 Theme menu global keydown:', e.key)
-
       const activeElement = document.activeElement as HTMLElement
 
-      // Check if we're in the theme color section (look for our button styling)
       const isThemeColorButton = activeElement?.tagName === 'BUTTON' &&
         activeElement?.style?.background?.includes('var(--marketing-primary)')
 
       if (isThemeColorButton && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'Enter', ' '].includes(e.key)) {
-        console.log('🎨 Handling theme color navigation:', e.key)
         e.preventDefault()
         e.stopPropagation()
 
-        // Find which button index this is by looking at all theme buttons
         const allThemeButtons = Array.from(document.querySelectorAll('button')).filter(btn =>
           btn.style.background?.includes('var(--marketing-primary)') ||
           btn.style.background?.includes('var(--marketing-gray-100)')
         )
 
         const currentIndex = allThemeButtons.indexOf(activeElement as HTMLButtonElement)
-        console.log('📍 Current theme button index:', currentIndex, 'of', allThemeButtons.length)
 
         if (currentIndex >= 0) {
-          // Convert to React event and route to our handler
           const syntheticEvent = {
             key: e.key,
             preventDefault: () => e.preventDefault(),
@@ -245,7 +213,6 @@ export default function ThemeMenu() {
           handleVariantKeyDown(syntheticEvent, currentIndex)
         }
       } else if (e.key === 'Escape') {
-        console.log('🚪 Closing theme menu with Escape')
         e.preventDefault()
         e.stopPropagation()
         handleMenuClose()
@@ -372,14 +339,6 @@ export default function ThemeMenu() {
                   component="button"
                   onClick={() => handleThemeVariantChange(key as ThemeVariant)}
                   onKeyDown={(e) => {
-                    console.log('=== KEYDOWN EVENT ===')
-                    console.log('Key:', e.key)
-                    console.log('Index:', index)
-                    console.log('Event target:', e.target)
-                    console.log('Current target:', e.currentTarget)
-                    console.log('Event type:', e.type)
-                    console.log('=====================')
-
                     handleVariantKeyDown(e, index)
                     // Handle shift+tab for first variant to go back to dark mode toggle
                     if (index === 0) {
