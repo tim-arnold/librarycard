@@ -33,9 +33,8 @@ interface ErrorDetails {
 }
 
 // Sanitize error messages to prevent information disclosure
-function sanitizeErrorMessage(error: any, category: ErrorCategory): string {
-  // Never expose raw error messages in production
-  const isProduction = process.env.NODE_ENV === 'production';
+function sanitizeErrorMessage(error: any, category: ErrorCategory, env?: Env): string {
+  const isProduction = env ? env.ENVIRONMENT === 'production' || env.ENVIRONMENT === 'staging' : true;
   
   switch (category) {
     case ErrorCategory.AUTHENTICATION:
@@ -107,10 +106,11 @@ export function createSecureErrorResponse(
     endpoint?: string;
     userId?: string;
     additionalContext?: Record<string, any>;
+    corsHeaders?: Record<string, string>;
   }
 ): Response {
   const errorCode = generateErrorCode(category);
-  const sanitizedMessage = sanitizeErrorMessage(error, category);
+  const sanitizedMessage = sanitizeErrorMessage(error, category, env);
   
   // Log error details for debugging
   logErrorSecurely(env, {
@@ -161,6 +161,7 @@ export function createSecureErrorResponse(
   return new Response(JSON.stringify(response), {
     status: statusCode,
     headers: {
+      ...(context?.corsHeaders || {}),
       'Content-Type': 'application/json'
     }
   });
@@ -255,10 +256,10 @@ export function withGlobalErrorHandling(
 ): Promise<Response> {
   return handler().catch((error) => {
     return createSecureErrorResponse(
-      env, 
-      error, 
-      ErrorCategory.SERVER_ERROR, 
-      context
+      env,
+      error,
+      ErrorCategory.SERVER_ERROR,
+      { ...context, corsHeaders }
     );
   });
 }

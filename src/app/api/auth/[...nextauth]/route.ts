@@ -42,15 +42,19 @@ const handler = NextAuth({
         // Handle WebAuthn authentication
         if (credentials?.authMethod === 'webauthn' && credentials?.token && credentials?.userId) {
           try {
-            // Verify JWT token
-            const jwt = credentials.token;
-            // Parse JWT payload (simple decode - the token was already verified by our WebAuthn endpoint)
-            const payload = JSON.parse(Buffer.from(jwt.split('.')[1], 'base64').toString());
-            
+            const { jwtVerify } = await import('jose')
+            const jwtSecret = process.env.JWT_SECRET
+            if (!jwtSecret) {
+              console.error('JWT_SECRET not configured')
+              return null
+            }
+            const secret = new TextEncoder().encode(jwtSecret)
+            const { payload } = await jwtVerify(credentials.token, secret)
+
             return {
-              id: payload.userId,
-              email: payload.email,
-              name: payload.email,
+              id: payload.userId as string,
+              email: payload.email as string,
+              name: payload.email as string,
               authProvider: 'webauthn'
             }
           } catch (error) {
