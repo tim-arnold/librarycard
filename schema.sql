@@ -286,7 +286,7 @@ CREATE TABLE series (
 );
 
 CREATE TABLE book_series (
-    book_id TEXT NOT NULL,
+    book_id INTEGER NOT NULL,
     series_id TEXT NOT NULL,
     added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (book_id, series_id),
