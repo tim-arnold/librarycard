@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect } from 'react'
 import { Container, CircularProgress, Typography, Box } from '@mui/material'
 import BookLibrary from '@/components/library/BookLibrary'
+import ErrorBoundary from '@/components/ui/ErrorBoundary'
 
 export default function LibraryPage() {
   const { data: session, status } = useSession()
@@ -48,5 +49,9 @@ export default function LibraryPage() {
   }
 
 
-  return <BookLibrary initialFilters={urlFilters} />
+  return (
+    <ErrorBoundary>
+      <BookLibrary initialFilters={urlFilters} />
+    </ErrorBoundary>
+  )
 }

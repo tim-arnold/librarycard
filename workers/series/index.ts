@@ -230,7 +230,6 @@ export async function createSeries(request: Request, userId: string, env: Env, c
     `);
     
     const approvalStatus = canAutoApprove ? 'approved' : 'pending';
-    console.log(`📝 CreateSeries: User ${userId} has can_create_series permission in location ${seriesLocationId}: ${canAutoApprove}, setting approval_status to: ${approvalStatus}`);
     
     await stmt.bind(
       seriesId,
@@ -495,7 +494,7 @@ export async function addBooksToSeries(request: Request, seriesId: string, userI
           VALUES (?, ?, ?)
         `);
         
-        const result = await insertStmt.bind(String(parseInt(bookId)), seriesId, currentTimestamp).run();
+        const result = await insertStmt.bind(parseInt(bookId), seriesId, currentTimestamp).run();
         
         // Check if insertion actually happened (not ignored due to existing entry)
         if (result.meta?.changes > 0 || result.changes > 0) {
@@ -511,8 +510,6 @@ export async function addBooksToSeries(request: Request, seriesId: string, userI
     try {
       const { invalidateBookCache, invalidateUserBookCache } = await import('../books/cached');
       
-      console.log(`🔄 Invalidating caches after series operation: ${book_ids.length} book IDs processed, ${addedBooks.length} actually added, user ${userId}`);
-      
       // Invalidate individual book caches for all requested books (not just added ones)
       for (const bookId of book_ids) {
         await invalidateBookCache(bookId, userId, env);
@@ -525,8 +522,6 @@ export async function addBooksToSeries(request: Request, seriesId: string, userI
       const { CacheManager } = await import('../cache/kv');
       const cache = new CacheManager(env);
       await cache.delPrefix('library:');
-      
-      console.log(`✅ All caches invalidated for series operation, user ${userId}`);
       
     } catch (cacheError) {
       console.error('Failed to invalidate caches after adding to series:', cacheError);
@@ -552,14 +547,11 @@ export async function addBooksToSeries(request: Request, seriesId: string, userI
 // Remove book from series
 export async function removeBookFromSeries(seriesId: string, bookId: string, userId: string, env: Env, corsHeaders: Record<string, string>): Promise<Response> {
   try {
-    console.log(`🔍 RemoveBookFromSeries: Attempting to remove book ${bookId} from series ${seriesId} for user ${userId}`);
-    
     // Check if series exists
     const seriesStmt = env.DB.prepare('SELECT id, user_id, approval_status FROM series WHERE id = ?');
     const series = await seriesStmt.bind(seriesId).first();
     
     if (!series) {
-      console.log(`❌ RemoveBookFromSeries: Series ${seriesId} does not exist`);
       return new Response(JSON.stringify({ error: 'Series not found' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -571,7 +563,6 @@ export async function removeBookFromSeries(seriesId: string, bookId: string, use
     const book = await bookStmt.bind(bookId).first();
     
     if (!book) {
-      console.log(`❌ RemoveBookFromSeries: Book ${bookId} does not exist`);
       return new Response(JSON.stringify({ error: 'Book not found' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -587,14 +578,11 @@ export async function removeBookFromSeries(seriesId: string, bookId: string, use
     const userOwnsSeries = series.user_id === userId;
     
     if (!hasAddBooksPermission && !userOwnsBook && !userOwnsSeries) {
-      console.log(`❌ RemoveBookFromSeries: User ${userId} lacks permission (can_add_books: ${hasAddBooksPermission}, owns book: ${userOwnsBook}, owns series: ${userOwnsSeries})`);
       return new Response(JSON.stringify({ error: 'Access denied - you need can_add_books permission, or must own the book or series' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    
-    console.log(`✅ RemoveBookFromSeries: Access granted (can_add_books: ${hasAddBooksPermission}, owns book: ${userOwnsBook}, owns series: ${userOwnsSeries}), proceeding with removal`);
     
     // Remove book from series
     const removeStmt = env.DB.prepare('DELETE FROM book_series WHERE series_id = ? AND book_id = ?');
@@ -611,8 +599,6 @@ export async function removeBookFromSeries(seriesId: string, bookId: string, use
     try {
       const { invalidateBookCache, invalidateUserBookCache } = await import('../books/cached');
       
-      console.log(`🔄 Invalidating caches after removing book ${bookId} from series, user ${userId}`);
-      
       await invalidateBookCache(bookId, userId, env);
       
       // IMPORTANT: Also invalidate the user book cache used by getCachedUserBooks
@@ -623,10 +609,7 @@ export async function removeBookFromSeries(seriesId: string, bookId: string, use
       const cache = new CacheManager(env);
       await cache.delPrefix('library:');
       
-      console.log(`✅ All caches invalidated after removing book from series, user ${userId}`);
-      
     } catch (cacheError) {
-      console.error('Failed to invalidate book cache after removing from series:', cacheError);
       // Don't fail the series operation if cache invalidation fails
     }
     

@@ -39,7 +39,7 @@ export async function getUserBooks(userId: string, env: Env, corsHeaders: Record
           SELECT json_group_array(json_object('id', s.id, 'name', s.name, 'description', s.description, 'color', s.color))
           FROM book_series bs
           JOIN series s ON bs.series_id = s.id
-          WHERE bs.book_id = CAST(b.id AS TEXT) AND s.approval_status = 'approved'
+          WHERE bs.book_id = b.id AND s.approval_status = 'approved'
         ), '[]') as current_series,
         COALESCE(lra.library_average_rating, 0) as library_average_rating,
         COALESCE(lra.library_rating_count, 0) as library_rating_count,
@@ -80,7 +80,7 @@ export async function getUserBooks(userId: string, env: Env, corsHeaders: Record
           SELECT json_group_array(json_object('id', s.id, 'name', s.name, 'description', s.description, 'color', s.color))
           FROM book_series bs
           JOIN series s ON bs.series_id = s.id
-          WHERE bs.book_id = CAST(b.id AS TEXT) AND s.approval_status = 'approved'
+          WHERE bs.book_id = b.id AND s.approval_status = 'approved'
         ), '[]') as current_series,
         COALESCE(lra.library_average_rating, 0) as library_average_rating,
         COALESCE(lra.library_rating_count, 0) as library_rating_count,
