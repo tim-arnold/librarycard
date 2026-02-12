@@ -117,7 +117,6 @@ export default function MoreDetailsModal({
 
   // Enhanced action handlers that update local state for real-time feedback
   const handleRateBookWithUpdate = useCallback((book: EnhancedBook) => {
-    console.log('🌟 Rating book:', book.id, book.title)
     if (onRateBook) {
       onRateBook(book)
       // Note: The actual rating update will come through the parent onBookUpdate callback
@@ -125,7 +124,6 @@ export default function MoreDetailsModal({
   }, [onRateBook])
 
   const handleGenreEditWithUpdate = useCallback((book: EnhancedBook) => {
-    console.log('🏷️ Editing genre for book:', book.id, book.title)
     if (onGenreEdit) {
       onGenreEdit(book)
       // Note: The actual genre update will come through the parent onBookUpdate callback
@@ -133,7 +131,6 @@ export default function MoreDetailsModal({
   }, [onGenreEdit])
 
   const handleCoverEditWithUpdate = useCallback((book: EnhancedBook) => {
-    console.log('🖼️ Editing cover for book:', book.id, book.title)
     if (onCoverEdit) {
       onCoverEdit(book)
       // Note: The actual cover update will come through the parent onBookUpdate callback
@@ -141,20 +138,14 @@ export default function MoreDetailsModal({
   }, [onCoverEdit])
 
   const handleCheckoutWithUpdate = useCallback(async (bookId: string, bookTitle: string) => {
-    console.log('📚 Checking out book:', bookId, bookTitle)
     if (onCheckout) {
       await onCheckout(bookId, bookTitle)
-      // The parent should handle updating the book state, which will sync back to localBook
-      console.log('✅ Checkout completed, waiting for parent update')
     }
   }, [onCheckout])
 
   const handleCheckinWithUpdate = useCallback(async (bookId: string, bookTitle: string) => {
-    console.log('🔄 Checking in book:', bookId, bookTitle)
     if (onCheckin) {
       await onCheckin(bookId, bookTitle)
-      // The parent should handle updating the book state, which will sync back to localBook
-      console.log('✅ Checkin completed, waiting for parent update')
     }
   }, [onCheckin])
 
@@ -215,7 +206,6 @@ export default function MoreDetailsModal({
   // Initialize local book state when book prop changes
   useEffect(() => {
     if (book?.id) {
-      console.log('📖 Initializing localBook with:', book.id, book.title)
       setLocalBook(book)
     }
   }, [book?.id])
@@ -241,11 +231,6 @@ export default function MoreDetailsModal({
   // Handle real-time updates from parent - sync localBook with book prop changes
   useEffect(() => {
     if (book?.id) {
-      console.log('🔄 Syncing localBook with book prop changes:', book.id, {
-        oldThumbnail: localBook?.thumbnail,
-        newThumbnail: book.thumbnail,
-        changed: localBook?.thumbnail !== book.thumbnail
-      })
       setLocalBook(book)
     }
   }, [book, localBook?.thumbnail])
@@ -301,27 +286,6 @@ export default function MoreDetailsModal({
   }
 
   if (!book || !localBook) return null
-  
-  // Debug: Log current_series data after any changes
-  console.log('MoreDetailsModal render - book data:', {
-    id: book.id,
-    title: book.title,
-    current_series: book.current_series,
-    series: book.series,
-    userRating: book.userRating,
-    assignedGenres: book.assignedGenres,
-    checked_out_by: book.checked_out_by,
-    thumbnail: book.thumbnail
-  })
-
-  console.log('MoreDetailsModal render - localBook data:', {
-    id: localBook?.id,
-    title: localBook?.title,
-    userRating: localBook?.userRating,
-    assignedGenres: localBook?.assignedGenres,
-    checked_out_by: localBook?.checked_out_by,
-    thumbnail: localBook?.thumbnail
-  })
 
   const fetchCheckoutHistory = async () => {
     if (!isAdmin(userRole)) return
@@ -408,11 +372,8 @@ export default function MoreDetailsModal({
     // Optimistically update the local state immediately
     setCurrentSeries(prev => prev.filter(s => s.id !== seriesId))
     
-    console.log('🔄 Removing book', book.id, 'from series', seriesId)
     const success = await removeBookFromSeries(seriesId, book.id)
-    console.log('✅ Remove result:', success)
     if (success) {
-      console.log('✅ Book removed from series successfully')
       // Mark that series have been modified
       setSeriesModified(true)
     } else {
@@ -911,7 +872,6 @@ export default function MoreDetailsModal({
                         onClose()
                       } catch (error) {
                         // If user cancelled or deletion failed, keep modal open
-                        console.log('Deletion cancelled or failed')
                       }
                     }}
                     color="error"
@@ -1005,7 +965,6 @@ export default function MoreDetailsModal({
                                 
                                 const result = await addBooksToSeries(seriesId, [book.id])
                                 if (result) {
-                                  console.log('Book added to series successfully')
                                   // Reset selection
                                   setSelectedSeriesForAdd('')
                                   // Mark that series have been modified

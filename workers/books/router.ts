@@ -55,34 +55,7 @@ export class BooksRouter {
 
     // EXACT COPY FROM ORIGINAL - Book endpoints
     if (path === '/api/books' && request.method === 'GET') {
-      if (env.ENVIRONMENT === 'local') {
-        if (env.ENVIRONMENT === 'local') {
-          console.log('🔍 Books Debug: Fetching books for user', userId);
-        }
-      }
-      
-      try {
-        const result = await getCachedUserBooks(userId, env, corsHeaders);
-        
-        if (env.ENVIRONMENT === 'local') {
-          if (env.ENVIRONMENT === 'local') {
-            console.log('🔍 Books Debug: Result status', result.status);
-            if (!result.ok) {
-              const errorText = await result.text();
-              console.log('🔍 Books Debug: Error response', errorText);
-            }
-          }
-        }
-        
-        return result;
-      } catch (error) {
-        if (env.ENVIRONMENT === 'local') {
-          if (env.ENVIRONMENT === 'local') {
-            console.error('🔍 Books Debug: Exception caught', error);
-          }
-        }
-        throw error;
-      }
+      return await getCachedUserBooks(userId, env, corsHeaders);
     }
 
     if (path === '/api/books' && request.method === 'POST') {
@@ -98,13 +71,10 @@ export class BooksRouter {
 
     // Enhanced book editions endpoint for cover selection (multi-source)
     if (path === '/api/books/editions' && request.method === 'GET') {
-      console.log('🔍 Enhanced book editions request received');
       const title = url.searchParams.get('title');
       const author = url.searchParams.get('author');
-      const query = url.searchParams.get('q'); // Fallback for general search
+      const query = url.searchParams.get('q');
       const enhanced = url.searchParams.get('enhanced') === 'true';
-      
-      console.log('📝 Request params:', { title, author, query, enhanced });
       
       // Require either title+author or general query
       if (!title && !author && !query) {
@@ -119,13 +89,7 @@ export class BooksRouter {
         const searchTitle = title || query || '';
         const searchAuthor = author || query || '';
         
-        console.log('🚀 Calling getEnhancedBookEditions with:', { searchTitle, searchAuthor });
-        console.log('ℹ️  Enhanced search always filters for books with cover art');
-        
-        // Use enhanced multi-source approach (always filters for covers)
         const editions = await getEnhancedBookEditions(searchTitle, searchAuthor, env);
-        
-        console.log('✅ Enhanced search complete, returning', editions.length, 'editions');
         
         return new Response(JSON.stringify({ editions }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },

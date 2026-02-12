@@ -739,7 +739,7 @@ To review this request, log in as a super administrator and go to Admin Dashboar
         SELECT user_role FROM users WHERE id = ?
       `).bind(userId).first() as any;
       
-      if (!user || user.user_role !== 'admin') {
+      if (!user || (user.user_role !== 'admin' && user.user_role !== 'super_admin')) {
         return new Response(JSON.stringify({ error: 'Admin access required' }), {
           status: 403,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
