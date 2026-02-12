@@ -27,9 +27,19 @@ export async function createOrUpdateUser(request: Request, env: Env, corsHeaders
   }
   
   const user = validation.data!;
-  
+
+  const existing = await env.DB.prepare(
+    'SELECT id FROM users WHERE id = ? OR email = ?'
+  ).bind(user.id, user.email).first();
+
+  if (existing) {
+    return new Response(JSON.stringify({ success: true }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
   const stmt = env.DB.prepare(`
-    INSERT OR REPLACE INTO users (id, email, first_name, last_name, auth_provider, email_verified, updated_at)
+    INSERT INTO users (id, email, first_name, last_name, auth_provider, email_verified, updated_at)
     VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
   `);
 

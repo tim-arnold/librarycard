@@ -11,9 +11,10 @@ export interface CustomJWTPayload {
 
 // Generate JWT secret key from environment
 async function getJWTSecret(env: Env): Promise<Uint8Array> {
-  // Use a consistent secret based on environment
-  const secret = env.JWT_SECRET || 'default-jwt-secret-change-in-production';
-  return new TextEncoder().encode(secret);
+  if (!env.JWT_SECRET) {
+    throw new Error('JWT_SECRET environment variable is required');
+  }
+  return new TextEncoder().encode(env.JWT_SECRET);
 }
 
 export async function generateJWT(payload: Omit<CustomJWTPayload, 'iat' | 'exp'>, env: Env): Promise<string> {

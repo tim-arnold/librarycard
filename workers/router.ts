@@ -60,7 +60,7 @@ export class MainRouter {
     const corsHeaders = {
       'Access-Control-Allow-Origin': allowedOrigin,
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-CSRF-Token, X-Requested-With',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-CSRF-Token',
       'Access-Control-Allow-Credentials': 'true',
     };
 
@@ -227,7 +227,7 @@ export class MainRouter {
         env,
         error,
         ErrorCategory.SERVER_ERROR,
-        { endpoint: path, userId: userContext }
+        { endpoint: path, userId: userContext, corsHeaders }
       );
     }
   }
