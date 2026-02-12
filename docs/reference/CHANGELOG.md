@@ -2,6 +2,27 @@
 
 This file documents all completed features, fixes, and improvements to the LibraryCard project.
 
+## February 2026 - Code Review Fixes (Batch 3)
+
+### Security
+- **SQL injection in migration runner (#39)** - Added `escapeSQL()` and `assertInt()` helpers for all interpolated SQL values in `scripts/migrate.js`. Added filename validation regex to reject unsafe migration filenames. Fixed 5 rollback methods that passed arrays as the description argument (parameterized `?` placeholders were never substituted).
+- **User enumeration (#33)** - Removed `verified` field from `/api/users/check` response to prevent email verification status disclosure
+- **Profile input validation (#34)** - Added length limits, type checks, and sanitization to profile update endpoint
+- **Legacy password hashing (#11)** - Added constant-time comparison for legacy SHA-256 passwords and transparent rehash to PBKDF2 on successful login
+- **CSP connect-src (#36)** - Restricted Content-Security-Policy `connect-src` to specific API domains instead of allowing any HTTP/HTTPS
+
+### Performance
+- **N+1 query in getLibraryActivity (#9)** - Pre-check admin permission once and use JOINed data instead of per-review `getUserDisplayInfo()` calls
+
+### Database
+- **book_series.book_id type mismatch (#12)** - Migration to convert TEXT column to INTEGER, removing CAST workarounds that prevented index usage
+
+### Frontend
+- **React Error Boundaries (#25)** - Added error boundaries at app root and library pages to prevent white-screen crashes
+
+### Infrastructure
+- **GitHub Actions concurrency controls (#37)** - Added concurrency groups to deployment and database workflows to prevent concurrent runs against the same environment
+
 ## January 16, 2025 - Camera Capture Custom Covers
 
 ### Added

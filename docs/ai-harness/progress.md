@@ -6,7 +6,7 @@ This file provides persistent context for AI agents working on the LibraryCard p
 
 ## Current State
 
-**Last Updated:** 2026-02-12 (Session 2)
+**Last Updated:** 2026-02-12 (Session 3)
 
 ### Project Phase
 - **Core Platform**: Mature and production-stable
@@ -18,7 +18,7 @@ This file provides persistent context for AI agents working on the LibraryCard p
 - TypeScript, Material UI, NextAuth.js (Google OAuth + email/password)
 - Google Books API + Google Vision API (OCR)
 - Dev server: `npm run dev` (frontend) + `npx wrangler dev` (worker)
-- Branch: `LCWEB-review-fixes-batch2` (pending merge to main)
+- Branch: `LCWEB-review-fixes-batch3` (PR #519 open)
 
 ### Codebase Health
 - Build status: Passing
@@ -33,7 +33,8 @@ This file provides persistent context for AI agents working on the LibraryCard p
 ### February 2026
 - [x] **Comprehensive code review** - 6-agent parallel review covering security, architecture, database, frontend, backend, infrastructure. Documented 43+ findings in `docs/reference/CODE-REVIEW-2026-02.md`
 - [x] **Security hardening (Batch 1, merged)** - Fixed auth bypass via raw token fallback, WebAuthn JWT verification, hardcoded JWT secret, user overwrite endpoint, CSRF bypass, error sanitization. Added 6 critical DB indexes. Moved puppeteer to devDeps, Node 18→20
-- [x] **Backend fixes & cleanup (Batch 2, pending merge)** - Fixed broken updateAppeal parameter, super_admin analytics exclusion, added Content-Type headers to appeals. Transaction batching for checkout/checkin/deletion/permissions. Removed ~70 debug console.logs. Config cleanup (remotePatterns, dead code removal). Deleted 79KB backup file
+- [x] **Backend fixes & cleanup (Batch 2, merged)** - Fixed broken updateAppeal parameter, super_admin analytics exclusion, added Content-Type headers to appeals. Transaction batching for checkout/checkin/deletion/permissions. Removed ~70 debug console.logs. Config cleanup (remotePatterns, dead code removal). Deleted 79KB backup file
+- [x] **Security & infrastructure (Batch 3, PR #519)** - Fixed SQL injection in migration runner (#39), N+1 query in library activity (#9), legacy password rehashing (#11), book_series type mismatch (#12), React error boundaries (#25), user enumeration (#33), profile input validation (#34), CSP connect-src (#36), GitHub Actions concurrency controls (#37)
 - [x] **Homepage accessibility & performance (LCWEB-204)** - Critical CSS inlining, font/image loading optimization, hero section accessibility, heading hierarchy fix, scroll overlay fade effect, header-specific mobile breakpoint (1160px), removed unused MarketingHeader component
 - [x] **GlobalHeader on sign-in page (LCWEB-205)** - Added GlobalHeader and full-width footer to sign-in page
 - [x] **GlobalHeader on privacy/terms pages (LCWEB-206)** - Added GlobalHeader to privacy and terms pages
@@ -67,15 +68,13 @@ This file provides persistent context for AI agents working on the LibraryCard p
 
 ## Current Focus
 
-**Code review remediation** - Working through findings from comprehensive 43-issue code review (`docs/reference/CODE-REVIEW-2026-02.md`). Batch 1 (critical security) merged. Batch 2 (backend bugs, transaction batching, cleanup) committed, pending merge.
+**Code review remediation** - Working through findings from comprehensive 43-issue code review (`docs/reference/CODE-REVIEW-2026-02.md`). Batch 1 (critical security) merged. Batch 2 (backend bugs, transaction batching, cleanup) merged. Batch 3 (security, performance, infrastructure) in PR #519.
 
 Next review items to address (in priority order):
-- N+1 query patterns (#9) - hasUserPermission(), getLibraryActivity() sequential queries
 - Basic test suite (#10) - no automated tests exist
-- Legacy password hashing (#11) - SHA-256 with static salt
-- book_series.book_id type mismatch (#12) - TEXT vs INTEGER
-- React Error Boundaries (#25) - no error boundaries exist
+- N+1 in hasUserPermission (#9 partial) - still makes 4-5 sequential queries per book operation
 - Large component decomposition (#21-23) - MoreDetailsModal, GlobalHeader, HelpModal
+- Rate limiter fails open (#32) - catches return `allowed: true` on KV outage
 
 Other open work:
 - Theme consolidation (see `docs/specs/theme-consolidation-analysis.md`)
@@ -89,11 +88,8 @@ Other open work:
 |-------|----------|-------|
 | N+1 query patterns in permission checks | High | hasUserPermission() makes 4-5 sequential queries per operation |
 | No automated test suite | High | Zero tests, ESLint disabled in builds |
-| Legacy SHA-256 password hashing | Medium | Static salt, non-constant-time comparison |
-| book_series.book_id TEXT/INTEGER mismatch | Medium | Prevents FK enforcement, requires CAST workarounds |
 | Two separate theme systems (MUI + marketing CSS) | Medium | Analysis complete, consolidation spec exists |
 | User deletion fails on FK constraints | Medium | Strategy approved, needs migration implementation |
-| No React Error Boundaries | Medium | Unhandled errors cause white-screen crashes |
 | Large components (MoreDetailsModal 1694, GlobalHeader 1392, HelpModal 1310 lines) | Medium | Should be decomposed |
 | Rate limiter fails open on KV outage | Low | Catches return `allowed: true` |
 | TODO.md is stale | Low | Jira is source of truth for task tracking |
@@ -101,6 +97,14 @@ Other open work:
 ---
 
 ## Session Log
+
+### 2026-02-12 (Session 3)
+- **Batch 3 (PR #519 on LCWEB-review-fixes-batch3)**: 9 review findings addressed:
+  - Security: SQL injection in migration runner (#39), user enumeration (#33), profile input validation (#34), legacy password rehashing (#11), CSP connect-src (#36)
+  - Performance/DB: N+1 in getLibraryActivity (#9), book_series type mismatch (#12)
+  - Frontend: React error boundaries (#25)
+  - Infrastructure: GitHub Actions concurrency controls (#37)
+- Verified 5 issues (#13, #14, #41, #42, #43) were already fixed or inaccurate in review
 
 ### 2026-02-12 (Session 2)
 - Ran comprehensive 6-agent parallel code review (security, architecture, database, frontend, backend, infra)
