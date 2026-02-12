@@ -2,7 +2,7 @@
   command = "DISABLE_ESLINT_PLUGIN=true npx next build"
   
 [build.environment]
-  NODE_VERSION = "18"
+  NODE_VERSION = "20"
 
 # Staging branch context
 [context.staging]

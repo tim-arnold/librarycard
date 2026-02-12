@@ -50,8 +50,8 @@ export async function getUserFromRequest(request: Request, env: Env): Promise<st
     }
   }
 
-  // Last fallback: assume it's already a user ID
-  return token;
+  // Token is not a valid JWT and not an email - reject it
+  return null;
 }
 
 // Permission helper functions
