@@ -69,6 +69,19 @@ class MigrationRunner {
     return crypto.createHash('md5').update(content).digest('hex');
   }
 
+  escapeSQL(value) {
+    if (value === null || value === undefined) return 'NULL';
+    return String(value).replace(/'/g, "''");
+  }
+
+  assertInt(value, name) {
+    const n = Number(value);
+    if (!Number.isFinite(n) || n !== Math.floor(n)) {
+      throw new Error(`Expected integer for ${name}, got: ${value}`);
+    }
+    return n;
+  }
+
   /**
    * Execute SQL command using wrangler d1
    */
@@ -281,9 +294,17 @@ class MigrationRunner {
    * Get list of all migration files from filesystem
    */
   getAllMigrationFiles() {
+    const safeFilenamePattern = /^[\w\-\.]+\.sql$/;
     const files = fs.readdirSync(this.migrationsDir)
       .filter(file => file.endsWith('.sql'))
-      .sort(); // Alphabetical sort ensures chronological order for dated files
+      .filter(file => {
+        if (!safeFilenamePattern.test(file)) {
+          this.log(`⚠️  Skipping migration with unsafe filename: ${file}`);
+          return false;
+        }
+        return true;
+      })
+      .sort();
 
     return files.map(filename => {
       const filepath = path.join(this.migrationsDir, filename);
@@ -333,9 +354,9 @@ class MigrationRunner {
   async recordMigrationApplied(migration, batchId, executionTime) {
     const sql = `
       INSERT OR IGNORE INTO migrations_applied (filename, checksum, execution_time_ms, batch_id)
-      VALUES ('${migration.filename}', '${migration.checksum}', ${executionTime}, '${batchId}')
+      VALUES ('${this.escapeSQL(migration.filename)}', '${this.escapeSQL(migration.checksum)}', ${this.assertInt(executionTime, 'executionTime')}, '${this.escapeSQL(batchId)}')
     `;
-    
+
     await this.executeSQL(sql, `Recording migration ${migration.filename} as applied`);
   }
 
@@ -345,9 +366,9 @@ class MigrationRunner {
   async startMigrationBatch(batchId, totalMigrations) {
     const sql = `
       INSERT INTO migration_batches (id, total_migrations, environment)
-      VALUES ('${batchId}', ${totalMigrations}, '${this.environment}')
+      VALUES ('${this.escapeSQL(batchId)}', ${this.assertInt(totalMigrations, 'totalMigrations')}, '${this.escapeSQL(this.environment)}')
     `;
-    
+
     await this.executeSQL(sql, `Starting migration batch ${batchId}`);
   }
 
@@ -356,26 +377,25 @@ class MigrationRunner {
    */
   async updateMigrationBatch(batchId, status, successfulMigrations = 0, failedMigration = null, errorMessage = null) {
     let sql = `
-      UPDATE migration_batches 
-      SET status = '${status}', 
-          successful_migrations = ${successfulMigrations}
+      UPDATE migration_batches
+      SET status = '${this.escapeSQL(status)}',
+          successful_migrations = ${this.assertInt(successfulMigrations, 'successfulMigrations')}
     `;
-    
+
     if (status === 'completed') {
       sql += `, completed_at = CURRENT_TIMESTAMP`;
     }
-    
+
     if (failedMigration) {
-      sql += `, failed_migration = '${failedMigration}'`;
+      sql += `, failed_migration = '${this.escapeSQL(failedMigration)}'`;
     }
-    
+
     if (errorMessage) {
-      const escapedError = errorMessage.replace(/'/g, "''"); // Escape single quotes
-      sql += `, error_message = '${escapedError}'`;
+      sql += `, error_message = '${this.escapeSQL(errorMessage)}'`;
     }
-    
-    sql += ` WHERE id = '${batchId}'`;
-    
+
+    sql += ` WHERE id = '${this.escapeSQL(batchId)}'`;
+
     await this.executeSQL(sql, `Updating batch ${batchId} status to ${status}`);
   }
 
@@ -589,7 +609,7 @@ class MigrationRunner {
           const rollbackFile = this.getRollbackFilename(migration.filename);
           const rollbackSQL = fs.readFileSync(path.join(this.migrationsDir, rollbackFile), 'utf8');
           
-          await this.executeSQL(rollbackSQL);
+          await this.executeSQL(rollbackSQL, `Rolling back ${migration.filename}`);
           await this.recordMigrationRolledBack(migration.filename, rollbackBatchId);
           
           rolledBackCount++;
@@ -627,21 +647,19 @@ class MigrationRunner {
    */
   async getTargetBatch(batchId) {
     if (batchId) {
-      // Rollback specific batch
       const result = await this.executeSQL(
-        `SELECT * FROM migration_batches WHERE id = ? LIMIT 1`,
-        [batchId]
+        `SELECT * FROM migration_batches WHERE id = '${this.escapeSQL(batchId)}' LIMIT 1`,
+        'Fetching target batch'
       );
-      return result.results[0] || null;
+      return result.results ? result.results[0] || null : null;
     } else {
-      // Rollback last successful batch
       const result = await this.executeSQL(`
-        SELECT * FROM migration_batches 
-        WHERE status = 'completed' 
-        ORDER BY started_at DESC 
+        SELECT * FROM migration_batches
+        WHERE status = 'completed'
+        ORDER BY started_at DESC
         LIMIT 1
-      `);
-      return result.results[0] || null;
+      `, 'Fetching last completed batch');
+      return result.results ? result.results[0] || null : null;
     }
   }
 
@@ -650,11 +668,11 @@ class MigrationRunner {
    */
   async getBatchMigrations(batchId) {
     const result = await this.executeSQL(`
-      SELECT filename FROM migrations_applied 
-      WHERE batch_id = ? 
+      SELECT filename FROM migrations_applied
+      WHERE batch_id = '${this.escapeSQL(batchId)}'
       ORDER BY applied_at DESC
-    `, [batchId]);
-    return result.results;
+    `, `Fetching migrations for batch ${batchId}`);
+    return result.results || [];
   }
 
   /**
@@ -678,26 +696,24 @@ class MigrationRunner {
    */
   async startRollbackBatch(rollbackBatchId, originalBatchId, migrationCount) {
     await this.executeSQL(`
-      INSERT INTO migration_batches (id, started_at, status, migrations_count, rollback_target)
-      VALUES (?, datetime('now'), 'running', ?, ?)
-    `, [rollbackBatchId, migrationCount, originalBatchId]);
+      INSERT INTO migration_batches (id, started_at, status, total_migrations, rollback_target, environment)
+      VALUES ('${this.escapeSQL(rollbackBatchId)}', datetime('now'), 'running', ${this.assertInt(migrationCount, 'migrationCount')}, '${this.escapeSQL(originalBatchId)}', '${this.escapeSQL(this.environment)}')
+    `, `Starting rollback batch ${rollbackBatchId}`);
   }
 
   /**
    * Record migration rollback
    */
   async recordMigrationRolledBack(filename, rollbackBatchId) {
-    // Remove from applied migrations
     await this.executeSQL(`
-      DELETE FROM migrations_applied WHERE filename = ?
-    `, [filename]);
+      DELETE FROM migrations_applied WHERE filename = '${this.escapeSQL(filename)}'
+    `, `Removing ${filename} from applied migrations`);
 
-    // Record in rollback log (optional tracking table)
     try {
       await this.executeSQL(`
         INSERT OR IGNORE INTO migration_rollbacks (filename, rolled_back_at, rollback_batch_id)
-        VALUES (?, datetime('now'), ?)
-      `, [filename, rollbackBatchId]);
+        VALUES ('${this.escapeSQL(filename)}', datetime('now'), '${this.escapeSQL(rollbackBatchId)}')
+      `, `Recording rollback of ${filename}`);
     } catch (error) {
       // Table might not exist, that's ok
     }
@@ -707,11 +723,12 @@ class MigrationRunner {
    * Update rollback batch status
    */
   async updateRollbackBatch(rollbackBatchId, status, successfulRollbacks, errorMessage = null) {
+    const errorPart = errorMessage ? `'${this.escapeSQL(errorMessage)}'` : 'NULL';
     await this.executeSQL(`
-      UPDATE migration_batches 
-      SET status = ?, completed_at = datetime('now'), successful_migrations = ?, error_message = ?
-      WHERE id = ?
-    `, [status, successfulRollbacks, errorMessage, rollbackBatchId]);
+      UPDATE migration_batches
+      SET status = '${this.escapeSQL(status)}', completed_at = datetime('now'), successful_migrations = ${this.assertInt(successfulRollbacks, 'successfulRollbacks')}, error_message = ${errorPart}
+      WHERE id = '${this.escapeSQL(rollbackBatchId)}'
+    `, `Updating rollback batch ${rollbackBatchId} status to ${status}`);
   }
 
   /**

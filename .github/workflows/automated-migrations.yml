@@ -1,5 +1,9 @@
 name: 🔄 Automated Database Migrations
 
+concurrency:
+  group: db-${{ github.event.inputs.environment || 'staging' }}
+  cancel-in-progress: false
+
 on:
   workflow_dispatch:
     inputs:
