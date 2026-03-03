@@ -34,11 +34,6 @@ jobs:
       - name: Install Wrangler CLI
         run: npm install -g wrangler
       
-      - name: Set Cloudflare API Token
-        run: echo "CLOUDFLARE_API_TOKEN_STAGING_NEW is configured"
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_STAGING_NEW }}
-      
       - name: Create backup directory
         run: |
           mkdir -p backup/staging-cloudflare
@@ -76,146 +71,28 @@ jobs:
       - name: Backup D1 database data
         run: |
           echo "💾 Backing up Staging D1 database data..."
-          cd backup/staging-cloudflare
-          
-          # Create comprehensive data backup using our staging backup script approach
-          cat > backup-staging-data.js << 'EOF'
-          #!/usr/bin/env node
-          const { execSync } = require('child_process');
-          const { writeFileSync } = require('fs');
-          
-          function executeD1Command(sql) {
-            const command = `wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote --command="${sql.replace(/"/g, '\\"')}"`;
-            return execSync(command, { encoding: 'utf8' });
-          }
-          
-          function parseD1Output(output) {
-            try {
-              const lines = output.split('\n');
-              const jsonStartIndex = lines.findIndex(line => line.trim().startsWith('['));
-              
-              if (jsonStartIndex === -1) {
-                console.warn('⚠️  No JSON found in D1 output');
-                return [];
-              }
-              
-              const jsonLines = lines.slice(jsonStartIndex);
-              const jsonText = jsonLines.join('\n');
-              const jsonData = JSON.parse(jsonText);
-              
-              if (Array.isArray(jsonData) && jsonData[0] && jsonData[0].results) {
-                return jsonData[0].results;
-              }
-              
-              return [];
-            } catch (error) {
-              console.warn('⚠️  Could not parse D1 JSON output:', error.message);
-              return [];
-            }
-          }
-          
-          async function createGitHubActionsBackup() {
-            console.log('📦 Creating comprehensive staging backup for GitHub Actions...');
-            
-            const backupData = {
-              id: `staging-github-backup-${new Date().toISOString().replace(/[:.]/g, '-')}`,
-              timestamp: new Date().toISOString(),
-              reason: process.env.BACKUP_REASON || 'github-actions-test',
-              environment: 'staging-new',
-              tables: {},
-              metadata: {
-                created_by: 'github-actions',
-                backup_method: 'automated-github',
-                environment: 'staging-new'
-              }
-            };
-          
-            try {
-              // Get list of all tables
-              console.log('📋 Discovering database tables...');
-              const tablesResult = executeD1Command(`
-                SELECT name FROM sqlite_master 
-                WHERE type='table' 
-                AND name NOT LIKE 'sqlite_%'
-                AND name NOT LIKE '_cf_%'
-                ORDER BY name;
-              `);
-              
-              const tables = parseD1Output(tablesResult);
-              console.log(`Found ${tables.length} tables: ${tables.map(t => t.name).join(', ')}`);
-          
-              // Backup each table
-              for (const table of tables) {
-                console.log(`💾 Backing up table: ${table.name}`);
-                
-                try {
-                  // Get table schema
-                  const schemaResult = executeD1Command(`
-                    SELECT sql FROM sqlite_master 
-                    WHERE type='table' AND name='${table.name}';
-                  `);
-                  
-                  // Get table data
-                  const dataResult = executeD1Command(`SELECT * FROM ${table.name};`);
-                  const tableData = parseD1Output(dataResult);
-                  
-                  backupData.tables[table.name] = {
-                    schema: parseD1Output(schemaResult)[0]?.sql || '',
-                    data: tableData,
-                    row_count: tableData.length
-                  };
-                  
-                  console.log(`  ✅ ${tableData.length} rows backed up from ${table.name}`);
-                  
-                } catch (error) {
-                  console.log(`  ⚠️  Skipped table ${table.name}: ${error.message}`);
-                }
-              }
-          
-              // Calculate backup statistics
-              const totalRows = Object.values(backupData.tables).reduce((sum, table) => sum + table.row_count, 0);
-              backupData.metadata.total_tables = tables.length;
-              backupData.metadata.total_rows = totalRows;
-              backupData.metadata.size_estimate = JSON.stringify(backupData).length;
-          
-              // Write backup file
-              writeFileSync('staging-database-backup.json', JSON.stringify(backupData, null, 2));
-              
-              console.log(`✅ Staging backup completed successfully!`);
-              console.log(`📊 Stats: ${tables.length} tables, ${totalRows} rows`);
-              console.log(`💾 Size: ${(backupData.metadata.size_estimate / 1024 / 1024).toFixed(2)} MB`);
-              
-              return backupData;
-          
-            } catch (error) {
-              console.error('❌ Staging backup failed:', error.message);
-              throw error;
-            }
-          }
-          
-          createGitHubActionsBackup().then(() => {
-            console.log('🎉 GitHub Actions staging backup completed');
-          }).catch(error => {
-            console.error('💥 GitHub Actions staging backup failed:', error.message);
-            process.exit(1);
-          });
-          EOF
-          
-          chmod +x backup-staging-data.js
-          
-          # Run the comprehensive backup
-          BACKUP_REASON="${{ github.event.inputs.reason }}" node backup-staging-data.js
-          
+
+          BACKUP_REASON="${{ github.event.inputs.reason || 'github-actions-scheduled' }}"
+          node scripts/backup-staging.js create "$BACKUP_REASON"
+
+          # Copy backup files to the workflow archive directory
+          cp -r backups-staging/* backup/staging-cloudflare/ 2>/dev/null || true
+
+          # Find the latest backup JSON and copy as the expected filename
+          LATEST_BACKUP=$(ls -t backups-staging/staging-backup-*.json 2>/dev/null | head -1)
+          if [ -n "$LATEST_BACKUP" ]; then
+            cp "$LATEST_BACKUP" backup/staging-cloudflare/staging-database-backup.json
+          fi
+
           # Get row counts for verification
           echo "📊 Getting database statistics..."
-          cat > database-stats.txt << EOF
+          cat > backup/staging-cloudflare/database-stats.txt << EOF
           Staging Database Statistics - $(date -u)
           ========================================
-          
+
           EOF
-          
-          # Try to get row counts (may fail if DB is busy)
-          wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote --command="SELECT 'users' as table_name, COUNT(*) as row_count FROM users UNION ALL SELECT 'locations', COUNT(*) FROM locations UNION ALL SELECT 'shelves', COUNT(*) FROM shelves UNION ALL SELECT 'books', COUNT(*) FROM books UNION ALL SELECT 'location_members', COUNT(*) FROM location_members;" >> database-stats.txt || echo "Row count query failed" >> database-stats.txt
+
+          wrangler d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --env=staging --remote --command="SELECT 'users' as table_name, COUNT(*) as row_count FROM users UNION ALL SELECT 'locations', COUNT(*) FROM locations UNION ALL SELECT 'shelves', COUNT(*) FROM shelves UNION ALL SELECT 'books', COUNT(*) FROM books UNION ALL SELECT 'location_members', COUNT(*) FROM location_members;" >> backup/staging-cloudflare/database-stats.txt || echo "Row count query failed" >> backup/staging-cloudflare/database-stats.txt
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_STAGING_NEW }}
       
@@ -335,7 +212,7 @@ jobs:
           echo "BACKUP_DATE=$(date -u)" >> $GITHUB_ENV
       
       - name: Upload backup to GitHub Releases
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: staging-backup-${{ github.run_number }}-${{ env.RELEASE_DATE }}
           name: "Staging Backup - ${{ env.RELEASE_DATE_READABLE }}"
