@@ -2,6 +2,11 @@
 
 This file documents all completed features, fixes, and improvements to the LibraryCard project.
 
+## March 2026 - GitHub Actions Documentation
+
+### Infrastructure
+- **Workflows README** - Added `.github/workflows/README.md` documenting all 13 CI/CD workflows covering deployment, migrations, backups, and disaster recovery
+
 ## February 2026 - Code Review Fixes (Batch 3)
 
 ### Security
