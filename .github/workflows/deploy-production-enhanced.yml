@@ -244,7 +244,7 @@ jobs:
           echo "🔍 ESLint disabled for production build"
 
       - name: Deploy to Cloudflare Workers
-        uses: cloudflare/wrangler-action@v4
+        uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           command: deploy --config=wrangler.prod.toml --env=production

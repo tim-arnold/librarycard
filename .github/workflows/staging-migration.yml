@@ -43,7 +43,7 @@ jobs:
           echo "✅ Migration file found: migrations/${{ github.event.inputs.migration_file }}"
 
       - name: Apply database migration to staging
-        uses: cloudflare/wrangler-action@v4
+        uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN_STAGING_NEW }}
           command: d1 execute librarycard-db-staging-new --config=wrangler.staging-new.toml --file=migrations/${{ github.event.inputs.migration_file }} --env=staging --remote

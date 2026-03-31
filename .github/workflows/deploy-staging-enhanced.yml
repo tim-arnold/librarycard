@@ -68,7 +68,7 @@ jobs:
           echo "🔍 ESLint disabled for performance optimization deployment"
 
       - name: Deploy to Staging (Isolated Account)
-        uses: cloudflare/wrangler-action@v4
+        uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN_STAGING_NEW }}
           command: deploy --config=wrangler.staging-new.toml --env=staging
