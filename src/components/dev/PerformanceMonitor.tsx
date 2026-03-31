@@ -31,7 +31,7 @@ export default function PerformanceMonitor({
     cacheHitRate: 0,
   })
   
-  const [startTime] = useState(performance.now())
+  const [startTime] = useState(() => performance.now())
   
   useEffect(() => {
     // Track component mount time
@@ -126,7 +126,7 @@ export default function PerformanceMonitor({
 
 // Hook for tracking performance in functional components
 export function usePerformanceTracking(name: string) {
-  const [startTime] = useState(performance.now())
+  const [startTime] = useState(() => performance.now())
   const [metrics, setMetrics] = useState({ renderCount: 0 })
   
   useEffect(() => {

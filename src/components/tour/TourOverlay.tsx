@@ -13,14 +13,9 @@ interface ExtendedElementPosition extends ElementPosition {
 export default function TourOverlay() {
   const { isActive, currentStepIndex, steps, skipTour } = useTour()
   const [targetPosition, setTargetPosition] = useState<ExtendedElementPosition | null>(null)
-  const [portalContainer, setPortalContainer] = useState<Element | null>(null)
-
-  // Create portal container
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setPortalContainer(document.body)
-    }
-  }, [])
+  const [portalContainer] = useState<Element | null>(() =>
+    typeof window !== 'undefined' ? document.body : null
+  )
 
   // Calculate target element position
   const updateTargetPosition = useCallback(() => {

@@ -10,9 +10,17 @@ const eslintConfig = [
       "@typescript-eslint/no-explicit-any": "off",
       "react/no-unescaped-entities": "off",
       "react-hooks/exhaustive-deps": "off",
+      // Disabled: react-hooks/set-state-in-effect fires on many legitimate patterns
+      // (form sync with props, animation sequencing, async fetch callbacks, one-time init).
+      // The genuinely improper cases (derived loading state, dataLoaded flags, localStorage init)
+      // were fixed in fix/react-hooks-lint-violations. Remaining violations are intentional.
       "react-hooks/set-state-in-effect": "off",
+      // Disabled: React Compiler rules — project does not use the React Compiler.
       "react-hooks/preserve-manual-memoization": "off",
       "react-hooks/immutability": "off",
+      // Disabled: react-hooks/purity fires on performance.now() in usePerformanceTracking
+      // which was fixed with a lazy initializer. Remaining violations are in the dev-only
+      // PerformanceMonitor component and are acceptable.
       "react-hooks/purity": "off",
       "prefer-const": "off",
       "@next/next/no-img-element": "off",

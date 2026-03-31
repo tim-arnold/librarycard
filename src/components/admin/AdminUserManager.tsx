@@ -69,15 +69,15 @@ export default function AdminUserManager() {
   const [userForLocationAssignment, setUserForLocationAssignment] = useState<AdminUser | null>(null)
 
   const invitationsSectionRef = useRef<HTMLDivElement>(null)
-  const [dataLoaded, setDataLoaded] = useState(false)
+  const dataLoadedRef = useRef(false)
 
   useEffect(() => {
-    if (session?.user?.email && !dataLoaded) {
+    if (session?.user?.email && !dataLoadedRef.current) {
+      dataLoadedRef.current = true
       loadUsers()
       loadCurrentUserRole()
-      setDataLoaded(true)
     }
-  }, [session?.user?.email, dataLoaded])
+  }, [session?.user?.email])
 
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>, user: AdminUser) => {
     setAnchorEl(event.currentTarget)
