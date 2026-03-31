@@ -1,43 +1,13 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React from 'react'
+import Image from 'next/image'
 import Button from '../ui/Button'
 import Container, { Section } from '../ui/Container'
 import { Heading, Text, Highlight } from '../ui/Typography'
 import { Flex } from '../ui/Container'
 
 export default function HeroSection() {
-  const [overlayOpacity, setOverlayOpacity] = useState(0.4)
-  const [scrollTimeout, setScrollTimeout] = useState<NodeJS.Timeout | null>(null)
-
-  useEffect(() => {
-    const handleScroll = () => {
-      // Clear existing timeout
-      if (scrollTimeout) {
-        clearTimeout(scrollTimeout)
-      }
-
-      // Fade out overlay while scrolling
-      setOverlayOpacity(0.2)
-
-      // Set timeout to fade back in after scrolling stops
-      const timeout = setTimeout(() => {
-        setOverlayOpacity(0.4)
-      }, 150) // Wait 150ms after scrolling stops
-
-      setScrollTimeout(timeout)
-    }
-
-    window.addEventListener('scroll', handleScroll, { passive: true })
-
-    return () => {
-      window.removeEventListener('scroll', handleScroll)
-      if (scrollTimeout) {
-        clearTimeout(scrollTimeout)
-      }
-    }
-  }, [scrollTimeout])
-
   return (
     <Section
       background="white"
@@ -45,27 +15,29 @@ export default function HeroSection() {
       className="hero-background-section"
       style={{
         position: 'relative',
-        backgroundImage: 'url(/images/hero-bg.jpg)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-        backgroundAttachment: 'fixed',
         minHeight: '80vh'
       }}
       role="banner"
       aria-label="Hero section with community library management information"
     >
-      {/* Dark overlay for text readability */}
+      <Image
+        src="/images/hero-bg.jpg"
+        alt=""
+        fill
+        priority
+        sizes="100vw"
+        style={{ objectFit: 'cover', objectPosition: 'center' }}
+      />
       <div
+        className="hero-overlay"
         style={{
           position: 'absolute',
           top: 0,
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: `rgba(0, 0, 0, ${overlayOpacity})`,
+          backgroundColor: 'rgba(0, 0, 0, 0.4)',
           zIndex: 1,
-          transition: 'background-color 0.3s ease'
         }}
       />
 
@@ -181,43 +153,4 @@ export default function HeroSection() {
       </div>
     </Section>
   )
-}
-
-// Add responsive styles and accessibility
-const styles = `
-@media (min-width: 768px) {
-  .marketing-flex-md-row {
-    flex-direction: row !important;
-  }
-}
-
-/* Hero background responsiveness and accessibility */
-@media (max-width: 768px) {
-  .hero-background-section {
-    background-attachment: scroll !important;
-    min-height: 60vh;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .hero-background-section {
-    background-attachment: scroll !important;
-  }
-}
-
-/* Fallback for when image fails to load */
-.hero-background-section {
-  background-color: var(--marketing-primary);
-}
-
-/* Improve contrast for better accessibility */
-.hero-text-shadow {
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-}
-`
-
-if (typeof window !== 'undefined') {
-  const styleElement = document.createElement('style')
-  styleElement.textContent = styles
-  document.head.appendChild(styleElement)
 }

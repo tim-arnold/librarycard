@@ -15,12 +15,12 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
       
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '20'
           cache: 'npm'
@@ -52,6 +52,16 @@ jobs:
             tar -czf backup/cloudflare/migrations.tar.gz migrations/
           fi
       
+      - name: Setup Node.js for backup script
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies for backup script
+        run: npm ci
+
+
       - name: Execute production database backup using Node.js script
         run: |
           echo "💾 Creating production database backup using tested Node.js script..."

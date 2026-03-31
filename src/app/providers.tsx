@@ -8,6 +8,11 @@ import inputEventDebug from '@/lib/inputEventDebug'
 import { UserDataProvider } from '@/contexts/UserDataContext'
 import ErrorBoundary from '@/components/ui/ErrorBoundary'
 import { useState, useEffect } from 'react'
+import dynamic from 'next/dynamic'
+
+const CookieNotice = dynamic(() => import('@/components/layout/CookieNotice'), {
+  ssr: false,
+})
 
 export function Providers({ children }: { children: React.ReactNode }) {
   // Input event debugging available in console as window.inputEventDebug
@@ -43,6 +48,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             <UserDataProvider>
               {children}
               <PerformanceTracker />
+              <CookieNotice />
             </UserDataProvider>
           </ThemeContextProvider>
         </QueryClientProvider>
