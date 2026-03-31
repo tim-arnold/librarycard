@@ -19,6 +19,28 @@ import ContactForm from '@/components/marketing/forms/ContactForm'
 export const metadata: Metadata = {
   title: 'Contact - LibraryCard',
   description: 'Get in touch with the LibraryCard beta team. We\'re here to help with questions about the beta program and community library management.',
+  openGraph: {
+    title: 'Contact - LibraryCard',
+    description: 'Get in touch with the LibraryCard beta team. We\'re here to help with questions about the beta program and community library management.',
+    url: 'https://librarycard.tim52.io/contact',
+    siteName: 'LibraryCard',
+    images: [
+      {
+        url: 'https://librarycard.tim52.io/images/hero-bg.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Contact LibraryCard - Community Library Management Platform',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Contact - LibraryCard',
+    description: 'Get in touch with the LibraryCard beta team. We\'re here to help with questions about the beta program and community library management.',
+    images: ['https://librarycard.tim52.io/images/hero-bg.jpg'],
+  },
 }
 
 function ContactHeader() {
