@@ -8,6 +8,9 @@ on:
         required: true
         default: ''
 
+permissions:
+  contents: read
+
 jobs:
   check-schema:
     runs-on: ubuntu-latest
@@ -51,6 +54,5 @@ jobs:
         echo "📋 SCHEMA CHECK COMPLETED"
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo "This was a read-only check of the production database schema."
-        echo "Check the output above to see which genre tables exist."
-        echo "If book_genres is missing the 'assigned_by' column, the July migration needs to be applied."
+        echo "Check the output above to see which genre tables exist and their structure."
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
