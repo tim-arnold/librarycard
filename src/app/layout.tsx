@@ -2,11 +2,6 @@ import type { Metadata } from 'next'
 import './globals.css'
 import '@/styles/marketing/marketing.css'
 import { Providers } from './providers'
-import dynamic from 'next/dynamic'
-
-const CookieNotice = dynamic(() => import('@/components/layout/CookieNotice'), {
-  ssr: false,
-})
 import ConditionalAppLayout from '@/components/layout/ConditionalAppLayout'
 
 export const metadata: Metadata = {
@@ -126,7 +121,6 @@ export default function RootLayout({
           <ConditionalAppLayout>
             {children}
           </ConditionalAppLayout>
-          <CookieNotice />
         </Providers>
       </body>
     </html>
