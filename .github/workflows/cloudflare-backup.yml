@@ -31,11 +31,6 @@ jobs:
       - name: Install Wrangler CLI
         run: npm install -g wrangler
       
-      - name: Set Cloudflare API Token
-        run: echo "CLOUDFLARE_API_TOKEN is configured"
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      
       - name: Create backup directory
         run: |
           mkdir -p backup/cloudflare
@@ -65,6 +60,7 @@ jobs:
 
       - name: Install dependencies for backup script
         run: npm ci
+
 
       - name: Execute production database backup using Node.js script
         run: |
@@ -214,7 +210,7 @@ jobs:
           echo "BACKUP_DATE=$(date -u)" >> $GITHUB_ENV
       
       - name: Upload backup to GitHub Releases
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: cf-backup-${{ github.run_number }}-${{ env.RELEASE_DATE }}
           name: "Cloudflare Backup - ${{ env.RELEASE_DATE_READABLE }}"
