@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import {
@@ -21,20 +21,14 @@ import ProfileSettingsMobileBottomNav from '@/components/layout/ProfileSettingsM
 export default function SettingsPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
-  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/auth/signin')
-      return
-    }
-
-    if (status === 'authenticated') {
-      setLoading(false)
     }
   }, [status, router])
 
-  if (status === 'loading' || loading) {
+  if (status === 'loading') {
     return (
       <Container maxWidth="md" sx={{ py: 4, textAlign: 'center' }}>
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2 }}>

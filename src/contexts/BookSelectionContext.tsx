@@ -75,34 +75,29 @@ const generateBookKey = (book: EnhancedBook): string => {
 
 // Provider component
 export const BookSelectionProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [state, setState] = useState<SelectionState>(initialState)
-
-  // Load saved state on mount
-  useEffect(() => {
+  const [state, setState] = useState<SelectionState>(() => {
     const savedState = getStorageItem('bookSelections', 'functional')
     if (savedState) {
       try {
         const parsed = JSON.parse(savedState)
-        // Convert plain object back to Map
         const selectedBooks = new Map()
         if (parsed.selectedBooks && Array.isArray(parsed.selectedBooks)) {
           parsed.selectedBooks.forEach(([key, value]: [string, SelectedBook]) => {
             selectedBooks.set(key, value)
           })
         }
-        
-        setState(prevState => ({
-          ...prevState,
+        return {
+          ...initialState,
           ...parsed,
           selectedBooks,
-          // Reset selection mode on page load (Scenario C behavior)
           isSelectionMode: false
-        }))
+        }
       } catch (error) {
         console.warn('Failed to parse saved book selections:', error)
       }
     }
-  }, [])
+    return initialState
+  })
 
   // Save state changes
   useEffect(() => {
