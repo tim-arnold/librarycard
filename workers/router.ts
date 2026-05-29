@@ -12,6 +12,7 @@ import { RateLimiter } from './auth/rate-limiter';
 import { withGlobalErrorHandling, ErrorCategory, createSecureErrorResponse } from './errors';
 import { getCachedGenreService } from './cache/genres';
 import { getWorkerFrontendUrl } from './utils/domainConfig';
+import { getCachedGoogleBooksSearch } from './books/google-cached';
 
 /**
  * Main Router - Orchestration layer for all endpoint routers
@@ -93,6 +94,24 @@ export class MainRouter {
         const cachedGenreService = getCachedGenreService(env);
         const genres = await cachedGenreService.getAllActiveGenres();
         return new Response(JSON.stringify(genres), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Public book search endpoint — proxies Google Books with KV caching, no auth needed
+      if (path === '/api/books/search' && method === 'GET') {
+        const query = url.searchParams.get('q');
+        const maxResults = Math.min(parseInt(url.searchParams.get('maxResults') || '40'), 40);
+
+        if (!query) {
+          return new Response(JSON.stringify({ error: 'q parameter is required' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const results = await getCachedGoogleBooksSearch(query, env, maxResults);
+        return new Response(JSON.stringify({ items: results || [], totalItems: results?.length || 0 }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
