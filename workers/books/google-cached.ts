@@ -1,6 +1,13 @@
 import { Env, GoogleBooksResponse } from '../types';
 import { CacheManager, CacheKeys, CacheTTL } from '../cache/kv';
 
+function googleBooksUrl(path: string, params: Record<string, string>, env: Env): string {
+  const url = new URL(`https://www.googleapis.com/books/v1/${path}`);
+  for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
+  if (env.GOOGLE_BOOKS_API_KEY) url.searchParams.set('key', env.GOOGLE_BOOKS_API_KEY);
+  return url.toString();
+}
+
 // Utility function to ensure Google Books thumbnail URLs use HTTPS
 function ensureHttps(url: string | undefined): string | undefined {
   if (!url) return url
@@ -29,8 +36,8 @@ export async function getCachedGoogleBooksISBN(isbn: string, env: Env): Promise<
   
   // Fallback to Google Books API
   try {
-    const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
-    
+    const response = await fetch(googleBooksUrl('volumes', { q: `isbn:${isbn}` }, env));
+
     if (!response.ok) {
       console.warn(`Google Books API error for ISBN ${isbn}: ${response.status}`);
       return null;
@@ -96,7 +103,7 @@ export async function getCachedGoogleBooksSearch(query: string, env: Env, maxRes
   // Fallback to Google Books API
   try {
     const response = await fetch(
-      `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=${maxResults}`
+      googleBooksUrl('volumes', { q: query, maxResults: String(maxResults) }, env)
     );
     
     if (!response.ok) {
@@ -168,7 +175,7 @@ export async function getCachedGoogleBooksVolume(volumeId: string, env: Env): Pr
   
   // Fallback to Google Books API
   try {
-    const response = await fetch(`https://www.googleapis.com/books/v1/volumes/${volumeId}`);
+    const response = await fetch(googleBooksUrl(`volumes/${volumeId}`, {}, env));
     
     if (!response.ok) {
       console.warn(`Google Books API volume error for ID ${volumeId}: ${response.status}`);
@@ -231,7 +238,7 @@ export async function getCachedBookEditions(title: string, author: string, env: 
   // Fallback to Google Books API
   try {
     const response = await fetch(
-      `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=20`
+      googleBooksUrl('volumes', { q: query, maxResults: '20' }, env)
     );
     
     if (!response.ok) {

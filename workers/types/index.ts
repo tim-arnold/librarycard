@@ -25,6 +25,7 @@ export interface Env {
   GOOGLE_CLOUD_PROJECT_ID?: string;
   GOOGLE_APPLICATION_CREDENTIALS_JSON?: string;
   GOOGLE_API_KEY?: string;
+  GOOGLE_BOOKS_API_KEY?: string;
   // Cloudflare KV for caching
   CACHE?: KVNamespace;
   // Cloudflare R2 for image storage
