@@ -1,6 +1,7 @@
 import type { Book, EnhancedBook, DataSource, SourceAttribution, EnhancedCoverOption, GoogleBookItem } from '@/lib/types'
 import { classifyGenres } from '@/lib/genreClassifier'
 import { trackOpenLibraryCall, trackOptimizedSkip } from '@/lib/apiAnalytics'
+import { getApiBaseUrl } from '@/lib/apiConfig'
 
 const GOOGLE_BOOKS_API = 'https://www.googleapis.com/books/v1/volumes'
 
@@ -120,24 +121,23 @@ export async function fetchBookData(isbn: string): Promise<Book | null> {
 
 export async function fetchEnhancedBookData(isbn: string): Promise<EnhancedBook | null> {
   try {
-    // First get basic data from Google Books
-    const googleResponse = await fetch(`${GOOGLE_BOOKS_API}?q=isbn:${isbn}`)
-    const googleData = await googleResponse.json()
+    const workerResponse = await fetch(`${getApiBaseUrl()}/api/books/isbn/${isbn}`)
+    if (!workerResponse.ok && workerResponse.status !== 404) {
+      throw new Error(`ISBN lookup failed: ${workerResponse.status}`)
+    }
+    const bookInfo = workerResponse.status === 404 ? null : await workerResponse.json()
 
-    if (!googleData.items || googleData.items.length === 0) {
+    if (!bookInfo) {
       return null
     }
 
-    const bookInfo = googleData.items[0].volumeInfo
-
-    // Create base book object from Google Books
     const enhancedBook: EnhancedBook = {
       id: `${isbn}-${Date.now()}`,
       isbn,
       title: bookInfo.title || 'Unknown Title',
       authors: bookInfo.authors || ['Unknown Author'],
       description: bookInfo.description,
-      thumbnail: ensureHttps(bookInfo.imageLinks?.thumbnail || bookInfo.imageLinks?.smallThumbnail),
+      thumbnail: bookInfo.thumbnail,
       publishedDate: bookInfo.publishedDate,
       categories: bookInfo.categories,
       publisherInfo: bookInfo.publisher,
