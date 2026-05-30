@@ -12,7 +12,7 @@ import { RateLimiter } from './auth/rate-limiter';
 import { withGlobalErrorHandling, ErrorCategory, createSecureErrorResponse } from './errors';
 import { getCachedGenreService } from './cache/genres';
 import { getWorkerFrontendUrl } from './utils/domainConfig';
-import { getCachedGoogleBooksSearch } from './books/google-cached';
+import { getCachedGoogleBooksSearch, getCachedGoogleBooksISBN } from './books/google-cached';
 
 /**
  * Main Router - Orchestration layer for all endpoint routers
@@ -112,6 +112,17 @@ export class MainRouter {
 
         const results = await getCachedGoogleBooksSearch(query, env, maxResults);
         return new Response(JSON.stringify({ items: results || [], totalItems: results?.length || 0 }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Public ISBN lookup endpoint — proxies Google Books with KV caching, no auth needed
+      const isbnMatch = path.match(/^\/api\/books\/isbn\/([0-9X]+)$/);
+      if (isbnMatch && method === 'GET') {
+        const isbn = isbnMatch[1];
+        const result = await getCachedGoogleBooksISBN(isbn, env);
+        return new Response(JSON.stringify(result || null), {
+          status: result ? 200 : 404,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
