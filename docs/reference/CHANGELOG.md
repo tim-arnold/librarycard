@@ -2,6 +2,11 @@
 
 This file documents all completed features, fixes, and improvements to the LibraryCard project.
 
+## May 2026 - Search Improvements
+
+### Fixed
+- **Smart quote normalization in book search** — Pasting titles or author names containing curly/smart quotes (`'` `"`) or en/em dashes now works correctly. Characters are normalized to their ASCII equivalents before the query is sent to Google Books.
+
 ## May 2026 - Book Search Rate Limit Fix
 
 ### Fixed
