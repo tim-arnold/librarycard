@@ -14,9 +14,10 @@ on:
         default: 'worker-only'
         options:
           - worker-only
+          - frontend-only
+          - worker-and-frontend
           - automated-migrations
           - full-deployment
-          - frontend-only
       migration_dry_run:
         description: 'Run migration dry-run first (recommended)'
         required: false
@@ -211,7 +212,7 @@ jobs:
     name: Deploy Worker to Production
     runs-on: ubuntu-latest
     needs: [safety-validation, pre-deployment-backup]
-    if: always() && needs.safety-validation.result == 'success' && (needs.pre-deployment-backup.result == 'success' || needs.pre-deployment-backup.result == 'skipped') && (github.event.inputs.deployment_type == 'worker-only' || github.event.inputs.deployment_type == 'full-deployment')
+    if: always() && needs.safety-validation.result == 'success' && (needs.pre-deployment-backup.result == 'success' || needs.pre-deployment-backup.result == 'skipped') && (github.event.inputs.deployment_type == 'worker-only' || github.event.inputs.deployment_type == 'worker-and-frontend' || github.event.inputs.deployment_type == 'full-deployment')
     environment: production
     
     steps:
@@ -565,11 +566,85 @@ jobs:
           echo "Commit: ${{ github.sha }}"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
+  deploy-frontend-worker:
+    name: Deploy Frontend (Worker + Frontend)
+    runs-on: ubuntu-latest
+    needs: [safety-validation, deploy-worker]
+    if: github.event.inputs.deployment_type == 'worker-and-frontend' && needs.safety-validation.result == 'success' && needs.deploy-worker.result == 'success'
+    environment: production
+
+    steps:
+      - name: Trigger Netlify frontend build
+        run: |
+          echo "🚀 Triggering Netlify production frontend build..."
+
+          if [ -z "$NETLIFY_BUILD_HOOK" ]; then
+            echo "❌ NETLIFY_PROD_BUILD_HOOK secret not configured"
+            exit 1
+          fi
+
+          BUILD_RESPONSE=$(curl -X POST -s -w "HTTP_STATUS:%{http_code}" "$NETLIFY_BUILD_HOOK")
+          HTTP_STATUS=$(echo $BUILD_RESPONSE | grep -o "HTTP_STATUS:[0-9]*" | cut -d: -f2)
+
+          if [ "$HTTP_STATUS" -eq 200 ]; then
+            echo "✅ Netlify build triggered successfully"
+          else
+            echo "❌ Failed to trigger Netlify build (HTTP $HTTP_STATUS)"
+            exit 1
+          fi
+        env:
+          NETLIFY_BUILD_HOOK: ${{ secrets.NETLIFY_PROD_BUILD_HOOK }}
+
+      - name: Wait for build completion
+        run: |
+          echo "⏳ Waiting for Netlify build to complete (~3 minutes)..."
+          sleep 180
+          echo "✅ Build wait period completed"
+
+      - name: Verify frontend deployment
+        run: |
+          echo "🔍 Verifying production frontend deployment..."
+
+          PROD_FRONTEND="https://librarycard.tim52.io"
+          MAX_RETRIES=5
+          RETRY_COUNT=0
+
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            if curl -f -s --max-time 15 "$PROD_FRONTEND" > /dev/null; then
+              echo "✅ Production frontend accessible and responding"
+              break
+            else
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                echo "⏳ Frontend not ready yet, retrying in 30 seconds... (attempt $RETRY_COUNT/$MAX_RETRIES)"
+                sleep 30
+              else
+                echo "❌ Frontend verification failed after $MAX_RETRIES attempts"
+                echo "Check Netlify dashboard: https://app.netlify.com"
+                exit 1
+              fi
+            fi
+          done
+
+      - name: Worker and frontend deployment success
+        run: |
+          echo "🎉 WORKER + FRONTEND DEPLOYMENT COMPLETED SUCCESSFULLY"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "✅ Worker deployment: COMPLETED"
+          echo "✅ Frontend deployment: COMPLETED"
+          echo "❌ Database migrations: SKIPPED"
+          echo ""
+          echo "Frontend URL: https://librarycard.tim52.io"
+          echo "Completed at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "Deployed by: ${{ github.actor }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
   post-deployment-verification:
     name: Post-Deployment Verification
     runs-on: ubuntu-latest
-    needs: [deploy-worker, automated-migrations, deploy-frontend-full, deploy-frontend-only]
-    if: always() && (((needs.deploy-worker.result == 'success' || needs.deploy-worker.result == 'skipped') && (needs.automated-migrations.result == 'success' || needs.automated-migrations.result == 'skipped') && (needs.deploy-worker.result == 'success' || needs.automated-migrations.result == 'success')) || (needs.deploy-frontend-only.result == 'success') || (needs.deploy-frontend-full.result == 'success'))
+    needs: [deploy-worker, automated-migrations, deploy-frontend-full, deploy-frontend-only, deploy-frontend-worker]
+    if: always() && (((needs.deploy-worker.result == 'success' || needs.deploy-worker.result == 'skipped') && (needs.automated-migrations.result == 'success' || needs.automated-migrations.result == 'skipped') && (needs.deploy-worker.result == 'success' || needs.automated-migrations.result == 'success')) || (needs.deploy-frontend-only.result == 'success') || (needs.deploy-frontend-full.result == 'success') || (needs.deploy-frontend-worker.result == 'success'))
     environment: production
     
     steps:
@@ -611,7 +686,7 @@ jobs:
   rollback-instructions:
     name: Rollback Instructions
     runs-on: ubuntu-latest
-    needs: [deploy-worker, automated-migrations, deploy-frontend-full, deploy-frontend-only]
+    needs: [deploy-worker, automated-migrations, deploy-frontend-full, deploy-frontend-only, deploy-frontend-worker]
     if: failure()
     
     steps:
@@ -632,10 +707,15 @@ jobs:
           echo "- If worker deployment failed, previous version should still be active"
           echo ""
           echo "Deployment Type Specific:"
-          if [[ "${{ github.event.inputs.deployment_type }}" == "frontend-only" ]]; then
+          DEPLOYMENT_TYPE="${{ github.event.inputs.deployment_type }}"
+          if [[ "$DEPLOYMENT_TYPE" == "frontend-only" ]]; then
             echo "- Frontend-only deployment failed - no backend changes were made"
             echo "- Only frontend rollback needed (see Netlify instructions above)"
-          elif [[ "${{ github.event.inputs.deployment_type }}" == "full-deployment" ]]; then
+          elif [[ "$DEPLOYMENT_TYPE" == "worker-and-frontend" ]]; then
+            echo "- Worker + frontend deployment failed - check which component failed"
+            echo "- Worker rollback: previous version should still be active if deploy failed"
+            echo "- Frontend rollback: use Netlify dashboard (see instructions above)"
+          elif [[ "$DEPLOYMENT_TYPE" == "full-deployment" ]]; then
             echo "- Full deployment failed - may need both frontend and backend rollback"
             echo "- Check which component failed and rollback accordingly"
           else
