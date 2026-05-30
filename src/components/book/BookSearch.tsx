@@ -177,6 +177,12 @@ export default function BookSearch({
     }
   }, [searchQuery, shouldAutoSearch])
 
+  const normalizeQuery = (query: string): string =>
+    query
+      .replace(/[‘’‚‛′‵]/g, "'") // curly/smart single quotes → '
+      .replace(/[“”„‟″‶]/g, '"') // curly/smart double quotes → "
+      .replace(/[–—]/g, '-')                          // en/em dash → hyphen
+
   const searchBooks = async (query: string) => {
     if (!query.trim()) return
 
@@ -186,7 +192,7 @@ export default function BookSearch({
     
     try {
       // Always start with Google Books search
-      await searchGoogleBooks(query)
+      await searchGoogleBooks(normalizeQuery(query))
       
       // Show OpenLibrary option after Google search completes
       setShowOpenLibraryOption(true)
