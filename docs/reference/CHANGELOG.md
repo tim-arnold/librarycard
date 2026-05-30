@@ -7,6 +7,11 @@ This file documents all completed features, fixes, and improvements to the Libra
 ### Fixed
 - **Smart quote normalization in book search** — Pasting titles or author names containing curly/smart quotes (`'` `"`) or en/em dashes now works correctly. Characters are normalized to their ASCII equivalents before the query is sent to Google Books.
 
+## May 2026 - Book Search Rate Limit Fix
+
+### Fixed
+- **Google Books 429 rate limiting** — Book search no longer calls the Google Books API directly from the browser. Requests now proxy through the Cloudflare Worker (`/api/books/search`), which applies KV caching so repeated searches for the same query skip the Google API entirely. The endpoint is public (no auth required), matching the previous behaviour. This eliminates per-IP unauthenticated quota exhaustion that was causing 429 errors on the live site.
+
 ## March 2026 - GitHub Actions Documentation
 
 ### Infrastructure

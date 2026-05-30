@@ -210,60 +210,48 @@ export default function BookSearch({
 
 
   const searchGoogleBooks = async (query: string) => {
-    const response = await fetch(
-      `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=40`
-    )
-    
+    const params = new URLSearchParams({ q: query, maxResults: '40' })
+    const response = await fetch(`${getApiBaseUrl()}/api/books/search?${params}`)
+
     if (response.ok) {
       const data = await response.json()
-      // Convert Google Books format to our enhanced format
       const convertedItems = (data.items || []).map((item: any) => ({
         id: item.id,
-        isbn: item.volumeInfo.industryIdentifiers?.find(
-          (id: any) => id.type === 'ISBN_13' || id.type === 'ISBN_10'
-        )?.identifier,
-        title: item.volumeInfo.title,
-        authors: item.volumeInfo.authors,
-        description: item.volumeInfo.description,
-        covers: item.volumeInfo.imageLinks ? {
-          thumbnail: ensureHttps(item.volumeInfo.imageLinks.thumbnail),
-          small: ensureHttps(item.volumeInfo.imageLinks.small),
-          medium: ensureHttps(item.volumeInfo.imageLinks.medium),
-          large: ensureHttps(item.volumeInfo.imageLinks.large),
-          extraLarge: ensureHttps(item.volumeInfo.imageLinks.extraLarge),
+        isbn: item.isbn,
+        title: item.title,
+        authors: item.authors,
+        description: item.description,
+        covers: item.imageLinks ? {
+          thumbnail: ensureHttps(item.imageLinks.thumbnail),
+          small: ensureHttps(item.imageLinks.small),
+          medium: ensureHttps(item.imageLinks.medium),
+          large: ensureHttps(item.imageLinks.large),
+          extraLarge: ensureHttps(item.imageLinks.extraLarge),
         } : undefined,
-        publishedDate: item.volumeInfo.publishedDate,
-        categories: item.volumeInfo.categories,
-        publisher: item.volumeInfo.publisher,
-        pageCount: item.volumeInfo.pageCount,
-        averageRating: item.volumeInfo.averageRating,
-        ratingsCount: item.volumeInfo.ratingsCount,
+        publishedDate: item.publishedDate,
+        categories: item.categories,
+        publisher: item.publisher,
+        pageCount: item.pageCount,
+        averageRating: item.averageRating,
+        ratingsCount: item.ratingsCount,
         source: 'google' as const,
         sourceDisplayName: 'Google Books',
-        // Keep legacy format for backward compatibility
-        volumeInfo: item.volumeInfo
       }))
-      
+
       onSearchResultsChange?.(convertedItems)
       onTotalResultsChange?.(data.totalItems || 0)
-      
-      // Only reset to 10 if parent doesn't have a specific displayedResults value
+
       if (parentDisplayedResults === undefined) {
         setDisplayedResults(10)
         onDisplayedResultsChange?.(10)
       }
-      
-      // Scroll to "Search Results" heading after results are loaded
-      // Use longer timeout to ensure DOM is fully rendered
+
       setTimeout(() => {
         if (searchResultsRef.current) {
-          console.log('Scrolling to Search Results (Google):', { element: searchResultsRef.current, offsetTop: searchResultsRef.current.offsetTop, currentScrollTop: window.scrollY })
-          searchResultsRef.current.scrollIntoView({ 
+          searchResultsRef.current.scrollIntoView({
             behavior: 'smooth',
             block: 'start'
           })
-        } else {
-          console.log('searchResultsRef.current is null (Google)')
         }
       }, 300)
     } else {
