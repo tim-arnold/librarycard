@@ -6,7 +6,7 @@ This file provides persistent context for AI agents working on the LibraryCard p
 
 ## Current State
 
-**Last Updated:** 2026-02-12 (Session 3)
+**Last Updated:** 2026-05-29
 
 ### Project Phase
 - **Core Platform**: Mature and production-stable
@@ -29,6 +29,9 @@ This file provides persistent context for AI agents working on the LibraryCard p
 ---
 
 ## Completed Work
+
+### May 2026
+- [x] **Book search 429 rate limit fix (PR #554, merged)** - Book search now proxies through Cloudflare Worker (`/api/books/search`, public endpoint) with KV caching instead of calling Google Books directly from the browser. Added `GOOGLE_BOOKS_API_KEY` to all Google Books fetch calls in the worker. Key configured as a Wrangler secret for local, staging, and production environments.
 
 ### February 2026
 - [x] **Comprehensive code review** - 6-agent parallel review covering security, architecture, database, frontend, backend, infrastructure. Documented 43+ findings in `docs/reference/CODE-REVIEW-2026-02.md`
@@ -68,7 +71,9 @@ This file provides persistent context for AI agents working on the LibraryCard p
 
 ## Current Focus
 
-**Code review remediation** - Working through findings from comprehensive 43-issue code review (`docs/reference/CODE-REVIEW-2026-02.md`). Batch 1 (critical security) merged. Batch 2 (backend bugs, transaction batching, cleanup) merged. Batch 3 (security, performance, infrastructure) in PR #519.
+**No active work** — project is stable and production is healthy.
+
+Previous focus was **code review remediation** — working through findings from comprehensive 43-issue code review (`docs/reference/CODE-REVIEW-2026-02.md`). Batch 1 (critical security) merged. Batch 2 (backend bugs, transaction batching, cleanup) merged. Batch 3 (security, performance, infrastructure) in PR #519.
 
 Next review items to address (in priority order):
 - Basic test suite (#10) - no automated tests exist
@@ -97,6 +102,11 @@ Other open work:
 ---
 
 ## Session Log
+
+### 2026-05-29
+- Fixed Google Books 429 rate limiting: book search now proxies through Cloudflare Worker with KV caching (PR #554)
+- Added `GOOGLE_BOOKS_API_KEY` wrangler secret to local, staging, and production environments
+- `.next` build cache cleared to fix Turbopack panic loop in local dev
 
 ### 2026-02-12 (Session 3)
 - **Batch 3 (PR #519 on LCWEB-review-fixes-batch3)**: 9 review findings addressed:
